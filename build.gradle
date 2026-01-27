@@ -58,7 +58,12 @@ tasks.register('copyPluginJar', Copy) {
     from tasks.named('jar').flatMap { it.archiveFile }
     into "${rootDir}/server/plugins"
     doFirst {
-        file("${rootDir}/server/plugins").mkdirs()
+        def pluginsDir = file("${rootDir}/server/plugins")
+        pluginsDir.mkdirs()
+        delete(fileTree(pluginsDir) {
+            include "${project.name}-*.jar"
+            include "pyjavabridge-*.jar"
+        })
     }
 }
 
