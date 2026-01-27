@@ -1,0 +1,76 @@
+plugins {
+    id 'java'
+}
+
+group = 'com.pyjavabridge'
+
+def resolveVersionFromGit = {
+    def versionPattern = ~/^(\d+[A-Z])\s*-\s*.*$/
+    def gitOutput = new ByteArrayOutputStream()
+    exec {
+        commandLine 'git', 'log', '--pretty=%s'
+        standardOutput = gitOutput
+        ignoreExitValue = true
+    }
+
+    def versionLine = gitOutput.toString('UTF-8')
+        .readLines()
+        .find { it ==~ versionPattern }
+
+    if (versionLine) {
+        def matcher = (versionLine =~ versionPattern)
+        return matcher[0][1]
+    }
+
+    return 'dev'
+}
+
+version = resolveVersionFromGit()
+
+def paperVersion = '1.21.4-R0.1-SNAPSHOT'
+
+dependencies {
+    compileOnly "io.papermc.paper:paper-api:${paperVersion}"
+}
+
+repositories {
+    mavenCentral()
+    maven { url = 'https://repo.papermc.io/repository/maven-public/' }
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.release = 21
+}
+
+tasks.named('jar') {
+    archiveFileName = "${project.name}-${project.version}.jar"
+}
+
+tasks.register('copyPluginJar', Copy) {
+    dependsOn tasks.named('jar')
+    from tasks.named('jar').flatMap { it.archiveFile }
+    into "${rootDir}/server/plugins"
+    doFirst {
+        file("${rootDir}/server/plugins").mkdirs()
+    }
+}
+
+tasks.register('copyReleaseJar', Copy) {
+    dependsOn tasks.named('jar')
+    from tasks.named('jar').flatMap { it.archiveFile }
+    into "${rootDir}/releases"
+    doFirst {
+        file("${rootDir}/releases").mkdirs()
+    }
+}
+
+tasks.named('build') {
+    finalizedBy tasks.named('copyPluginJar'), tasks.named('copyReleaseJar')
+}

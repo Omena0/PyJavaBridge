@@ -1,0 +1,14 @@
+name: PyJavaBridge
+main: com.pyjavabridge.PyJavaBridgePlugin
+version: 0.1.0
+api: '1.21'
+api-version: '1.21'
+author: Omena0
+commands:
+  bridge:
+    description: Manage PyJavaBridge
+    usage: /bridge reload [<script>] | /bridge debug
+    permission: pyjavabridge.admin
+permissions:
+  pyjavabridge.admin:
+    default: op
