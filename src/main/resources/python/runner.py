@@ -3,12 +3,12 @@ import sys
 
 runtime = os.environ.get("PYJAVABRIDGE_RUNTIME")
 script_path = os.environ.get("PYJAVABRIDGE_SCRIPT")
-if runtime and runtime not in sys.path:
-    sys.path.insert(0, runtime)
 if script_path:
     script_dir = os.path.dirname(script_path)
     if script_dir and script_dir not in sys.path:
         sys.path.insert(0, script_dir)
+if runtime and runtime not in sys.path:
+    sys.path.insert(1, runtime)
 
 import bridge
 
