@@ -1,11 +1,18 @@
 
 # PyJavaBridge
 
-A paper plugin that exposes bukkit APIs to python scripts.
+**Expose bukkit APIs to python scripts via easy-to-use wrappers.**
 
-See examples/ for examples.
+```py
+from bridge import *
 
-Put your scripts to plugins/pyjavabridge/scripts and they will be ran on boot.
+# Use via /helloworld
+@command("Hello world command")
+async def helloworld(event: Event):
+    event.player.send_message("Hello, World!")
+```
+
+The entire API is, at core, asynchronous.
 
 ## Docs
 
