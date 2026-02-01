@@ -18,6 +18,10 @@ class Event:
     def cancel(self) -> Awaitable[None]: ...
     player: "Player"
     entity: "Entity"
+    damager: "Entity" | "Block" | None
+    damage: float
+    final_damage: float
+    damage_cause: Any
     block: "Block"
     world: "World"
     location: "Location"
@@ -83,6 +87,13 @@ class Entity:
     type: "EntityType"
     location: "Location"
     world: "World"
+    is_projectile: bool
+    shooter: "Entity" | "Player" | "Block" | None
+    is_tamed: bool
+    owner: "Player" | None
+    owner_uuid: str | None
+    owner_name: str | None
+    source: "Entity" | "Player" | None
     def teleport(self, location: "Location") -> Awaitable[None]: ...
     def remove(self) -> Awaitable[None]: ...
     def set_velocity(self, vector: "Vector") -> Awaitable[None]: ...

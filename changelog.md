@@ -1,6 +1,18 @@
 
 # Changelog
 
+## 1D
+
+Damage event
+
+Changes:
+
+- Added damage override to damage events
+- Added damage source and damager attributes to damage events
+- Added shooter attribute to projectile entities
+- Added owner attribute to tamed entities
+- Added is_tamed attribute to entities
+
 ## 1C
 
 API cleanup

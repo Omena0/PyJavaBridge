@@ -49,6 +49,10 @@ Base event proxy. Event payloads may expose additional fields depending on event
 
 - `block`: [`Block`](#block) — The block involved in the event, if any.
 - `chunk`: [`Chunk`](#chunk) — The chunk involved in the event, if any.
+- `damager`: [`Entity`](#entity) or [`Block`](#block) — The damage source for damage-related events, if any.
+- `damage`: float — Raw damage for damage-related events.
+- `final_damage`: float — Final damage after modifiers for damage-related events.
+- `damage_cause`: [`EntityDamageEvent.DamageCause`](https://hub.spigotmc.org/javadocs/spigot/org/bukkit/event/entity/EntityDamageEvent.DamageCause.html) — Damage cause, if available.
 - `entity`: [`Entity`](#entity) — The entity involved in the event, if any.
 - `inventory`: [`Inventory`](#inventory) — The inventory involved in the event, if any.
 - `item`: [`Item`](#item) — The item involved in the event, if any.
@@ -60,6 +64,8 @@ Base event proxy. Event payloads may expose additional fields depending on event
 ### Methods
 
 - `cancel()` — Cancel the event if it is cancellable. Returns an awaitable that resolves to `None`.
+
+For damage-related events, returning a number from the handler overrides the event damage.
 
 ### Chat formatting
 
@@ -138,6 +144,13 @@ Base entity proxy.
 
 - `location`: [`Location`](#location) — Current location.
 - `type`: [`EntityType`](#entitytype) — Entity type.
+- `is_projectile`: bool — Whether this entity is a projectile.
+- `shooter`: [`Entity`](#entity) or [`Block`](#block) — Projectile shooter/source, if any.
+- `is_tamed`: bool — Whether this entity is tamed (if tameable).
+- `owner`: [`Player`](#player) — Owner (if tameable and owner is online).
+- `owner_uuid`: str — Owner UUID (if tameable).
+- `owner_name`: str — Owner name (if tameable and known).
+- `source`: [`Entity`](#entity) or [`Player`](#player) — Source for spawned entities (e.g., TNT, clouds), if available.
 - `uuid`: str — Unique id.
 - `world`: [`World`](#world) — Current world.
 

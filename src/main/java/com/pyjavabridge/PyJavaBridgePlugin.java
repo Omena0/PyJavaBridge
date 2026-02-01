@@ -14,6 +14,9 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Projectile;
+import org.bukkit.entity.Tameable;
+import org.bukkit.entity.AnimalTamer;
 import org.bukkit.event.Event;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.HandlerList;
@@ -24,6 +27,7 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.entity.CreatureSpawnEvent;
+import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.plugin.EventExecutor;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
@@ -31,6 +35,8 @@ import org.bukkit.command.CommandMap;
 import org.bukkit.util.RayTraceResult;
 import org.bukkit.util.Vector;
 import org.bukkit.permissions.PermissionAttachment;
+import org.bukkit.projectiles.BlockProjectileSource;
+import org.bukkit.projectiles.ProjectileSource;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.inventory.InventoryHolder;
@@ -825,7 +831,20 @@ public class PyJavaBridgePlugin extends JavaPlugin {
                 return;
             }
 
-            if (message.has("result") && !message.get("result").isJsonNull()) {
+            if (!message.has("result") || message.get("result").isJsonNull()) {
+                return;
+            }
+
+            String resultType = message.has("result_type") ? message.get("result_type").getAsString() : null;
+            if ("damage".equalsIgnoreCase(resultType)) {
+                JsonElement result = message.get("result");
+                if (result.isJsonPrimitive() && result.getAsJsonPrimitive().isNumber()) {
+                    pending.damageOverride = result.getAsDouble();
+                }
+                return;
+            }
+
+            if (resultType == null || "chat".equalsIgnoreCase(resultType)) {
                 pending.chatOverride = message.get("result").getAsString();
             }
         }
@@ -2142,6 +2161,8 @@ public class PyJavaBridgePlugin extends JavaPlugin {
                 fields.add("type", serialize(entity.getType(), seen));
                 fields.add("location", serialize(entity.getLocation(), seen));
                 fields.add("world", serialize(entity.getWorld(), seen));
+                fields.addProperty("is_projectile", entity instanceof Projectile);
+                addAttributionFields(entity, fields, seen);
             }
 
             if (value instanceof org.bukkit.World world) {
@@ -2545,6 +2566,12 @@ public class PyJavaBridgePlugin extends JavaPlugin {
             tryAddPayload(payload, event, "player", "getPlayer", "getWhoClicked");
             tryAddPayload(payload, event, "block", "getBlock", "getClickedBlock");
             tryAddPayload(payload, event, "entity", "getEntity");
+            tryAddPayload(payload, event, "damager", "getDamager");
+            if (event instanceof EntityDamageEvent damageEvent) {
+                payload.addProperty("damage", damageEvent.getDamage());
+                payload.addProperty("final_damage", damageEvent.getFinalDamage());
+                payload.add("damage_cause", serialize(damageEvent.getCause()));
+            }
             tryAddPayload(payload, event, "location", "getLocation");
             tryAddPayload(payload, event, "world", "getWorld");
             tryAddPayload(payload, event, "item", "getItem");
@@ -2600,6 +2627,9 @@ public class PyJavaBridgePlugin extends JavaPlugin {
                     String message = pending.chatOverride;
                     Bukkit.getScheduler().runTask(plugin,
                             () -> Bukkit.getServer().broadcast(net.kyori.adventure.text.Component.text(message)));
+                }
+                if (pending.damageOverride != null && pending.event instanceof EntityDamageEvent damageEvent) {
+                    damageEvent.setDamage(pending.damageOverride);
                 }
                 if (cancelRequested && cancelMode == CancelMode.EVENT) {
                     pending.cancellable.setCancelled(true);
@@ -2692,6 +2722,115 @@ public class PyJavaBridgePlugin extends JavaPlugin {
                     }
                 } catch (Exception ignored) {
                 }
+            }
+        }
+
+        private void addAttributionFields(org.bukkit.entity.Entity entity, JsonObject fields, Set<Object> seen) {
+            Object shooter = null;
+            if (entity instanceof Projectile projectile) {
+                shooter = projectile.getShooter();
+            } else {
+                shooter = tryInvokeNoArg(entity, "getShooter");
+            }
+            addAttribution("shooter", shooter, fields, seen);
+
+            Object source = tryInvokeNoArg(entity, "getSource");
+            addAttribution("source", source, fields, seen);
+
+            Object owner = null;
+            if (entity instanceof Tameable tameable) {
+                fields.addProperty("is_tamed", tameable.isTamed());
+                owner = tameable.getOwner();
+            }
+            if (owner == null) {
+                owner = tryInvokeNoArg(entity, "getOwner");
+            }
+            if (owner == null) {
+                owner = tryInvokeNoArg(entity, "getOwningPlayer");
+            }
+            if (owner == null) {
+                owner = tryInvokeNoArg(entity, "getOwningEntity");
+            }
+            if (owner == null) {
+                owner = tryInvokeNoArg(entity, "getSummoner");
+            }
+            addAttribution("owner", owner, fields, seen);
+
+        }
+
+        private Object tryInvokeNoArg(Object target, String methodName) {
+            try {
+                Method method = target.getClass().getMethod(methodName);
+                if (method.getParameterCount() != 0) {
+                    return null;
+                }
+                return method.invoke(target);
+            } catch (Exception ignored) {
+                return null;
+            }
+        }
+
+        private void addAttribution(String key, Object source, JsonObject fields, Set<Object> seen) {
+            if (source == null) {
+                return;
+            }
+            if (fields.has(key)) {
+                return;
+            }
+
+            Object resolved = source;
+            if (source instanceof ProjectileSource projectileSource && !(source instanceof Entity)) {
+                if (projectileSource instanceof BlockProjectileSource blockSource) {
+                    resolved = blockSource.getBlock();
+                }
+            }
+
+            if ("source".equals(key) || "shooter".equals(key)) {
+                if (resolved instanceof Entity sourceEntity) {
+                    fields.add(key, serialize(sourceEntity, seen));
+                } else if (resolved instanceof org.bukkit.block.Block block) {
+                    fields.add(key, serialize(block, seen));
+                }
+                return;
+            }
+
+            if (resolved instanceof Entity sourceEntity) {
+                fields.add(key, serialize(sourceEntity, seen));
+                fields.addProperty(key + "_uuid", sourceEntity.getUniqueId().toString());
+                if (sourceEntity instanceof Player player) {
+                    fields.addProperty(key + "_name", player.getName());
+                } else {
+                    Object name = tryInvokeNoArg(sourceEntity, "getName");
+                    if (name instanceof String nameText && !nameText.isBlank()) {
+                        fields.addProperty(key + "_name", nameText);
+                    }
+                }
+                return;
+            }
+
+            if (resolved instanceof org.bukkit.block.Block block) {
+                fields.add(key, serialize(block, seen));
+                return;
+            }
+
+            if (resolved instanceof AnimalTamer tamer) {
+                fields.addProperty(key + "_uuid", tamer.getUniqueId().toString());
+                if (tamer.getName() != null) {
+                    fields.addProperty(key + "_name", tamer.getName());
+                }
+                if (tamer instanceof Player player) {
+                    fields.add(key, serialize(player, seen));
+                }
+                return;
+            }
+
+            if (resolved instanceof UUID uuid) {
+                fields.addProperty(key + "_uuid", uuid.toString());
+                return;
+            }
+
+            if (resolved instanceof String nameText) {
+                fields.addProperty(key + "_name", nameText);
             }
         }
 
@@ -3332,6 +3471,7 @@ public class PyJavaBridgePlugin extends JavaPlugin {
             Event event;
             int id;
             String chatOverride;
+            Double damageOverride;
         }
 
         private Class<? extends Event> resolveEventClass(String eventName) throws ClassNotFoundException {

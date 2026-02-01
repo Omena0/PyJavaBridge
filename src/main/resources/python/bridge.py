@@ -1960,11 +1960,17 @@ class BridgeConnection:
             if event_id is not None:
                 if handlers:
                     override_text = None
+                    override_damage = None
+                    is_damage_event = isinstance(payload, ProxyBase) and "damage" in payload._fields
                     for result in results:
                         if isinstance(result, str):
                             override_text = result
+                        elif is_damage_event and isinstance(result, (int, float)) and not isinstance(result, bool):
+                            override_damage = float(result)
                     if override_text is not None:
-                        self.send({"type": "event_result", "id": event_id, "result": override_text})
+                        self.send({"type": "event_result", "id": event_id, "result": override_text, "result_type": "chat"})
+                    if override_damage is not None:
+                        self.send({"type": "event_result", "id": event_id, "result": override_damage, "result_type": "damage"})
                 self.send({"type": "event_done", "id": event_id})
 
     def _handle_reader_error(self, exc: Exception):
