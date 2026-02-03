@@ -8,17 +8,15 @@ def resolveVersionFromGit = {
     def versionPattern = ~/^(\d+[A-Z])\s*-\s*.*$/
     def gitOutput = new ByteArrayOutputStream()
     exec {
-        commandLine 'git', 'log', '--pretty=%s'
+        commandLine 'git', 'log', '-1', '--pretty=%s'
         standardOutput = gitOutput
         ignoreExitValue = true
     }
 
-    def versionLine = gitOutput.toString('UTF-8')
-        .readLines()
-        .find { it ==~ versionPattern }
+    def lastSubject = gitOutput.toString('UTF-8').trim()
 
-    if (versionLine) {
-        def matcher = (versionLine =~ versionPattern)
+    if (lastSubject ==~ versionPattern) {
+        def matcher = (lastSubject =~ versionPattern)
         return matcher[0][1]
     }
 
