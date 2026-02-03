@@ -2,14 +2,32 @@ from typing import Any, Awaitable, Callable, Dict, List, Optional
 from dataclasses import dataclass
 from types import SimpleNamespace
 from functools import wraps
-import inspect
 import threading
+import inspect
 import asyncio
 import socket
+import struct
 import runpy
 import uuid
 import json
 import os
+
+try:
+    import orjson as _orjson
+
+    def _json_dumps(obj: Any) -> bytes:
+        return _orjson.dumps(obj)
+
+    def _json_loads(data: Any) -> Any:
+        return _orjson.loads(data)
+
+except Exception:
+
+    def _json_dumps(obj: Any) -> bytes:
+        return json.dumps(obj, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+
+    def _json_loads(data: Any) -> Any:
+        return json.loads(data)
 
 __all__ = [
     "event",
@@ -237,18 +255,27 @@ class Server(ProxyBase):
     async def wait(self, ticks: int = 1, after: Optional[Callable[[], Any]] = None):
         """Wait for ticks and optionally run a callback."""
         await _connection.wait(ticks)
+
         if after is not None:
             result = after()
             if hasattr(result, "__await__"):
                 await result
+
         return None
 
     def frame(self):
-        """Batch calls into a single send."""
+        """
+            Batch calls into a single send.
+            Will not send before context manager exit.
+        """
         return _connection.frame()
 
     def atomic(self):
-        """Batch calls atomically (best-effort)."""
+        """
+            Batch calls atomically (best-effort).
+            If a request fails then all further ones are canceled.
+            There are no rollbacks.
+        """
         return _connection.atomic()
 
     async def flush(self):
@@ -1734,21 +1761,27 @@ class BridgeConnection:
     def __init__(self, host: str, port: int):
         self._host = host
         self._port = port
+
         try:
             self._loop = asyncio.get_event_loop()
         except RuntimeError:
             self._loop = asyncio.new_event_loop()
             asyncio.set_event_loop(self._loop)
+
         self._pending: Dict[int, asyncio.Future] = {}
         self._pending_sync: Dict[int, _SyncWait] = {}
         self._handlers: Dict[str, List[Callable[[Any], Awaitable[None]]]] = {}
+
         self._id = 1
         self._socket = socket.create_connection((host, port))
-        self._file = self._socket.makefile("rwb")
+
+        self._file = self._socket.makefile("rwb", buffering=0)
         self._lock = threading.Lock()
+
         self._batch_stack: List[str] = []
         self._batch_messages: List[Dict[str, Any]] = []
         self._batch_futures: List[asyncio.Future] = []
+
         self._thread = threading.Thread(target=self._reader, daemon=True)
         self._thread.start()
         print(f"[PyJavaBridge] Connected to {host}:{port}")
@@ -1860,8 +1893,10 @@ class BridgeConnection:
         return _BatchContext(self, "atomic")
 
     def send(self, message: Dict[str, Any]):
-        data = (json.dumps(message) + "\n").encode("utf-8")
+        data = _json_dumps(message)
+        header = struct.pack("!I", len(data))
         with self._lock:
+            self._file.write(header)
             self._file.write(data)
             self._file.flush()
 
@@ -1870,13 +1905,29 @@ class BridgeConnection:
         future.set_result(result)
         return BridgeCall(future)
 
+    def _read_exact(self, size: int) -> Optional[bytes]:
+        data = bytearray(size)
+        view = memoryview(data)
+        offset = 0
+        while offset < size:
+            chunk = self._file.read(size - offset)
+            if not chunk:
+                return None
+            view[offset:offset + len(chunk)] = chunk
+            offset += len(chunk)
+        return bytes(data)
+
     def _reader(self):
         while True:
-            line = self._file.readline()
-            if not line:
+            header = self._read_exact(4)
+            if not header:
                 break
             try:
-                message = json.loads(line.decode("utf-8"))
+                length = struct.unpack("!I", header)[0]
+                payload = self._read_exact(length)
+                if payload is None:
+                    break
+                message = _json_loads(payload)
                 msg_type = message.get("type")
                 if msg_type in ("return", "error"):
                     msg_id = message.get("id")

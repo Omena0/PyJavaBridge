@@ -53,17 +53,15 @@ import com.google.common.collect.Multimap;
 
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import org.bukkit.event.block.BlockExplodeEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.lang.reflect.Method;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
@@ -668,8 +666,8 @@ public class PyJavaBridgePlugin extends JavaPlugin {
 
         private ServerSocket serverSocket;
         private Socket socket;
-        private BufferedReader reader;
-        private BufferedWriter writer;
+        private DataInputStream reader;
+        private DataOutputStream writer;
         private Thread bridgeThread;
         private Process pythonProcess;
         private volatile boolean running = false;
@@ -745,12 +743,23 @@ public class PyJavaBridgePlugin extends JavaPlugin {
                 socket = serverSocket.accept();
                 plugin.getLogger().info("[" + name + "] Python connected");
 
-                reader = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
-                writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8));
+                reader = new DataInputStream(socket.getInputStream());
+                writer = new DataOutputStream(socket.getOutputStream());
 
-                String line;
-                while (running && (line = reader.readLine()) != null) {
-                    JsonObject message = JsonParser.parseString(line).getAsJsonObject();
+                while (running) {
+                    int length;
+                    try {
+                        length = reader.readInt();
+                    } catch (IOException eof) {
+                        break;
+                    }
+                    if (length <= 0) {
+                        continue;
+                    }
+                    byte[] payload = new byte[length];
+                    reader.readFully(payload);
+                    JsonObject message = JsonParser.parseString(new String(payload, StandardCharsets.UTF_8))
+                            .getAsJsonObject();
                     handleMessage(message);
                 }
 
@@ -763,6 +772,7 @@ public class PyJavaBridgePlugin extends JavaPlugin {
                 shutdown();
             }
         }
+
 
         private void handleMessage(JsonObject message) {
             String type = message.get("type").getAsString();
@@ -928,14 +938,62 @@ public class PyJavaBridgePlugin extends JavaPlugin {
             }
 
             CompletableFuture<Object> future = plugin.runOnMainThread(this, () -> {
-                boolean failed = false;
+                if (atomic) {
+                    List<JsonObject> responses = new ArrayList<>();
+                    List<Integer> ids = new ArrayList<>();
+                    boolean failed = false;
+                    int failedId = -1;
+                    Exception failedEx = null;
+                    String failedMessage = null;
+
+                    for (JsonObject callMessage : calls) {
+                        int id = callMessage.get("id").getAsInt();
+                        ids.add(id);
+
+                        if (failed) {
+                            continue;
+                        }
+
+                        try {
+                            Object result = invoke(callMessage);
+                            JsonObject response = new JsonObject();
+
+                            response.addProperty("type", "return");
+                            response.addProperty("id", id);
+                            response.add("result", serialize(result));
+
+                            responses.add(response);
+
+                        } catch (Exception ex) {
+                            failed = true;
+                            failedId = id;
+                            failedEx = ex;
+                            String messageText = ex.getMessage();
+                            if (messageText == null || messageText.isBlank()) {
+                                messageText = ex.getClass().getSimpleName();
+                            }
+                            failedMessage = messageText;
+                        }
+                    }
+
+                    if (failed) {
+                        for (int id : ids) {
+                            if (id == failedId) {
+                                sendError(id, failedMessage, failedEx);
+                            } else {
+                                sendError(id, "Atomic batch aborted", null, "ATOMIC_ABORT");
+                            }
+                        }
+                    } else {
+                        for (JsonObject response : responses) {
+                            send(response);
+                        }
+                    }
+                    return null;
+                }
+
                 for (JsonObject callMessage : calls) {
                     int id = callMessage.get("id").getAsInt();
-
-                    if (failed && atomic) {
-                        sendError(id, "Atomic batch aborted", null, "ATOMIC_ABORT");
-                        continue;
-                    }
 
                     try {
                         Object result = invoke(callMessage);
@@ -949,10 +1007,6 @@ public class PyJavaBridgePlugin extends JavaPlugin {
 
                     } catch (Exception ex) {
                         sendError(id, ex.getMessage(), ex);
-
-                        if (atomic) {
-                            failed = true;
-                        }
                     }
                 }
                 return null;
@@ -2839,8 +2893,9 @@ public class PyJavaBridgePlugin extends JavaPlugin {
                 return;
             }
             try {
-                writer.write(gson.toJson(response));
-                writer.write("\n");
+                byte[] payload = gson.toJson(response).getBytes(StandardCharsets.UTF_8);
+                writer.writeInt(payload.length);
+                writer.write(payload);
                 writer.flush();
             } catch (IOException e) {
                 logError("Failed to send message", e);
@@ -2856,8 +2911,9 @@ public class PyJavaBridgePlugin extends JavaPlugin {
                 message.addProperty("type", "event_batch");
                 message.addProperty("event", eventName);
                 message.add("payloads", gson.toJsonTree(payloads));
-                writer.write(gson.toJson(message));
-                writer.write("\n");
+                byte[] payload = gson.toJson(message).getBytes(StandardCharsets.UTF_8);
+                writer.writeInt(payload.length);
+                writer.write(payload);
                 writer.flush();
             } catch (IOException e) {
                 logError("Failed to send batch", e);
