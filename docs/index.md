@@ -188,6 +188,9 @@ Base entity proxy.
 - `inventory`: [`Inventory`](#inventory) — Player inventory.
 - `location`: [`Location`](#location) — Current location.
 - `name`: str — Player name.
+- `tab_list_footer`: str — Tab list footer text.
+- `tab_list_header`: str — Tab list header text.
+- `tab_list_name`: str — Tab list name.
 - `uuid`: str — Unique id.
 - `world`: [`World`](#world) — Current world.
 
@@ -219,6 +222,10 @@ Base entity proxy.
 - `send_action_bar(message: str)` — Send an action bar message. Returns an awaitable that resolves to `None`.
 - `send_message(message: str)` — Send a chat message to the player. Returns an awaitable that resolves to `None`.
 - `send_title(title: str, subtitle: str = "", fade_in: int = 10, stay: int = 70, fade_out: int = 20)` — Send a title/subtitle to the player. Returns an awaitable that resolves to `None`.
+- `set_tab_list_footer(footer: str)` — Set tab list footer. Returns an awaitable that resolves to `None`.
+- `set_tab_list_header(header: str)` — Set tab list header. Returns an awaitable that resolves to `None`.
+- `set_tab_list_header_footer(header: str = "", footer: str = "")` — Set tab list header and footer. Returns an awaitable that resolves to `None`.
+- `set_tab_list_name(name: str)` — Set tab list name. Returns an awaitable that resolves to `None`.
 - `set_exp(exp: float)` — Set experience progress $0..1$. Returns an awaitable that resolves to `None`.
 - `set_fly_speed(speed: float)` — Set flying speed. Returns an awaitable that resolves to `None`.
 - `set_flying(value: bool)` — Set flying state. Returns an awaitable that resolves to `None`.

@@ -1204,6 +1204,35 @@ public class PyJavaBridgePlugin extends JavaPlugin {
                 return null;
             }
 
+            if (target instanceof org.bukkit.entity.Player playerTarget) {
+                switch (method) {
+                    case "setTabListHeaderFooter" -> {
+                        String header = args.size() > 0 ? String.valueOf(args.get(0)) : "";
+                        String footer = args.size() > 1 ? String.valueOf(args.get(1)) : "";
+                        setTabListHeaderFooter(playerTarget, header, footer);
+                        return null;
+                    }
+                    case "setTabListHeader" -> {
+                        String header = args.size() > 0 ? String.valueOf(args.get(0)) : "";
+                        setTabListHeader(playerTarget, header);
+                        return null;
+                    }
+                    case "setTabListFooter" -> {
+                        String footer = args.size() > 0 ? String.valueOf(args.get(0)) : "";
+                        setTabListFooter(playerTarget, footer);
+                        return null;
+                    }
+                    case "getTabListHeader" -> {
+                        return getTabListHeader(playerTarget);
+                    }
+                    case "getTabListFooter" -> {
+                        return getTabListFooter(playerTarget);
+                    }
+                    default -> {
+                    }
+                }
+            }
+
             if (target instanceof org.bukkit.inventory.Inventory inventoryTarget && "getTitle".equals(method)) {
                 try {
                     Method getTitle = inventoryTarget.getClass().getMethod("getTitle");
@@ -2428,6 +2457,106 @@ public class PyJavaBridgePlugin extends JavaPlugin {
                 }
             }
             return null;
+        }
+
+        private String getTabListHeader(Player player) {
+            return getTabListValue(player, true);
+        }
+
+        private String getTabListFooter(Player player) {
+            return getTabListValue(player, false);
+        }
+
+        private String getTabListValue(Player player, boolean header) {
+            Object value = null;
+            String[] methodNames = header
+                    ? new String[] { "getPlayerListHeader", "playerListHeader" }
+                    : new String[] { "getPlayerListFooter", "playerListFooter" };
+
+            for (String name : methodNames) {
+                try {
+                    Method method = player.getClass().getMethod(name);
+                    value = method.invoke(player);
+                    break;
+                } catch (Exception ignored) {
+                }
+            }
+
+            if (value instanceof Component component) {
+                return PlainTextComponentSerializer.plainText().serialize(component);
+            }
+            return value != null ? value.toString() : "";
+        }
+
+        private void setTabListHeader(Player player, String header) {
+            if (tryTabListSetter(player, header, null, true)) {
+                return;
+            }
+            Component headerComponent = Component.text(header == null ? "" : header);
+            tryTabListSetter(player, headerComponent, null, true);
+        }
+
+        private void setTabListFooter(Player player, String footer) {
+            if (tryTabListSetter(player, footer, null, false)) {
+                return;
+            }
+            Component footerComponent = Component.text(footer == null ? "" : footer);
+            tryTabListSetter(player, footerComponent, null, false);
+        }
+
+        private void setTabListHeaderFooter(Player player, String header, String footer) {
+            String headerText = header == null ? "" : header;
+            String footerText = footer == null ? "" : footer;
+
+            if (tryTabListSetter(player, headerText, footerText, null)) {
+                return;
+            }
+
+            Component headerComponent = Component.text(headerText);
+            Component footerComponent = Component.text(footerText);
+
+            if (tryTabListSetter(player, headerComponent, footerComponent, null)) {
+                return;
+            }
+
+            setTabListHeader(player, headerText);
+            setTabListFooter(player, footerText);
+        }
+
+        private boolean tryTabListSetter(Player player, Object header, Object footer, Boolean headerOnly) {
+            List<String> methods = new ArrayList<>();
+
+            if (headerOnly == null) {
+                methods.add("setPlayerListHeaderFooter");
+                methods.add("sendPlayerListHeaderFooter");
+                methods.add("sendPlayerListHeaderAndFooter");
+            } else if (headerOnly) {
+                methods.add("setPlayerListHeader");
+                methods.add("sendPlayerListHeader");
+            } else {
+                methods.add("setPlayerListFooter");
+                methods.add("sendPlayerListFooter");
+            }
+
+            Class<?> headerType = header instanceof Component ? Component.class : String.class;
+            Class<?> footerType = footer instanceof Component ? Component.class : String.class;
+
+            for (String name : methods) {
+                try {
+                    if (headerOnly == null) {
+                        Method method = player.getClass().getMethod(name, headerType, footerType);
+                        method.invoke(player, header, footer);
+                        return true;
+                    }
+
+                    Method method = player.getClass().getMethod(name, headerType);
+                    method.invoke(player, header);
+                    return true;
+
+                } catch (Exception ignored) {
+                }
+            }
+            return false;
         }
 
         private JsonArray serializeAttributes(ItemMeta meta) {

@@ -559,6 +559,37 @@ class Player(Entity):
         """Send a title/subtitle to the player."""
         return self._call("sendTitle", title, subtitle, fade_in, stay, fade_out)
 
+    @property
+    def tab_list_header(self):
+        """Get tab list header."""
+        return self._call_sync("getTabListHeader")
+
+    @property
+    def tab_list_footer(self):
+        """Get tab list footer."""
+        return self._call_sync("getTabListFooter")
+
+    def set_tab_list_header(self, header: str):
+        """Set tab list header."""
+        return self._call("setTabListHeader", header)
+
+    def set_tab_list_footer(self, footer: str):
+        """Set tab list footer."""
+        return self._call("setTabListFooter", footer)
+
+    def set_tab_list_header_footer(self, header: str = "", footer: str = ""):
+        """Set tab list header and footer."""
+        return self._call("setTabListHeaderFooter", header, footer)
+
+    @property
+    def tab_list_name(self):
+        """Get tab list name."""
+        return self._call_sync("getPlayerListName")
+
+    def set_tab_list_name(self, name: str):
+        """Set tab list name."""
+        return self._call("setPlayerListName", name)
+
     def set_health(self, health: float):
         """Set player health."""
         return self._call("setHealth", health)
