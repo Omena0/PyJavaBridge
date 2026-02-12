@@ -1,8 +1,12 @@
-from typing import Any, Awaitable, Callable, Dict, List, Optional
+from __future__ import annotations
+
+from typing import Any, Awaitable, Callable, Dict, List, Optional, TypeVar, cast
 from dataclasses import dataclass
 from types import SimpleNamespace
 from functools import wraps
+import itertools
 import threading
+import weakref
 import inspect
 import asyncio
 import socket
@@ -13,7 +17,7 @@ import json
 import os
 
 try:
-    import orjson as _orjson
+    import orjson as _orjson  # type: ignore[import-not-found]
 
     def _json_dumps(obj: Any) -> bytes:
         return _orjson.dumps(obj)
@@ -49,6 +53,7 @@ __all__ = [
     "Chunk",
     "Inventory",
     "Item",
+    "ItemBuilder",
     "Material",
     "Effect",
     "EffectType",
@@ -70,8 +75,11 @@ __all__ = [
     "AdvancementProgress",
     "Potion",
     "RaycastResult",
+    "Config",
 ]
 
+
+_EV = TypeVar("_EV", bound="EnumValue")
 
 class BridgeError(Exception):
     """Bridge-specific runtime error."""
@@ -93,9 +101,18 @@ class RaycastResult:
     start_z: float
     yaw: float
     pitch: float
+    distance: float = 0.0
+    hit_face: Optional[str] = None
+
+class _EnumMeta(type):
+    """Metaclass enabling class-level attribute access (e.g., Material.DIAMOND)."""
+    def __getattr__(cls, name: str):
+        if name.startswith("_"):
+            raise AttributeError(name)
+        return cls.from_name(name)  # type: ignore[attr-defined]
 
 @dataclass
-class EnumValue:
+class EnumValue(metaclass=_EnumMeta):
     """Enum value proxy with class-level access (e.g., Material.DIAMOND)."""
     type: str
     name: str
@@ -105,17 +122,12 @@ class EnumValue:
         return self.name
 
     @classmethod
-    def _from_name(cls, name: str) -> "EnumValue":
+    def from_name(cls: type[_EV], name: str) -> _EV:
         return cls(cls.TYPE_NAME or cls.__name__, name)
 
-    def __class_getattr__(cls, name: str):
-        if name.startswith("_"):
-            raise AttributeError(name)
-        return cls._from_name(name)
-
-class BridgeCall(Awaitable):
+class BridgeCall(Awaitable[Any]):
     """Awaitable wrapper for async bridge calls."""
-    def __init__(self, future: asyncio.Future):
+    def __init__(self, future: "asyncio.Future[Any]"):
         self._future = future
 
     def __await__(self):
@@ -132,8 +144,8 @@ class BridgeMethod:
         self._proxy = proxy
         self._name = name
 
-    def __call__(self, *args, **kwargs):
-        return self._proxy._call(self._name, *args, **kwargs)
+    def __call__(self, *args: Any, **kwargs: Any) -> "BridgeCall":
+        return self._proxy._call(self._name, *args, **kwargs)  # type: ignore[reportPrivateUsage]
 
 class _SyncWait:
     def __init__(self):
@@ -143,7 +155,7 @@ class _SyncWait:
 
 class ProxyBase:
     """Base class for all proxy objects."""
-    def __init__(self, handle: Optional[int] = None, type_name: Optional[str] = None, fields: Optional[Dict[str, Any]] = None, target: Optional[str] = None, ref_type: Optional[str] = None, ref_id: Optional[str] = None, **kwargs):
+    def __init__(self, handle: Optional[int] = None, type_name: Optional[str] = None, fields: Optional[Dict[str, Any]] = None, target: Optional[str] = None, ref_type: Optional[str] = None, ref_id: Optional[str] = None, **kwargs: Any):
         if kwargs:
             if fields is None:
                 fields = dict(kwargs)
@@ -151,19 +163,27 @@ class ProxyBase:
                 fields.update(kwargs)
         self._handle = handle
         self._type_name = type_name
-        self._fields = fields or {}
+        self.fields = fields or {}
         self._target = target
         self._ref_type = ref_type
         self._ref_id = ref_id
 
-    def _call(self, method: str, *args, **kwargs):
+    def __del__(self):
+        handle = self.__dict__.get("_handle")
+        if handle is not None and _connection is not None:
+            try:
+                _connection._queue_release(handle)
+            except Exception:
+                pass
+
+    def _call(self, method: str, *args: Any, **kwargs: Any) -> "BridgeCall":
         if self._handle is None and self._target == "ref":
             if kwargs:
                 return _connection.call(method="call", args=[self._ref_type, self._ref_id, method, list(args), kwargs], target="ref")
             return _connection.call(method="call", args=[self._ref_type, self._ref_id, method, list(args)], target="ref")
         return _connection.call(method=method, args=list(args), handle=self._handle, target=self._target, **kwargs)
 
-    def _call_sync(self, method: str, *args, **kwargs):
+    def _call_sync(self, method: str, *args: Any, **kwargs: Any) -> Any:
         if self._handle is None and self._target == "ref":
             if kwargs:
                 return _connection.call_sync(method="call", args=[self._ref_type, self._ref_id, method, list(args), kwargs], target="ref")
@@ -171,12 +191,12 @@ class ProxyBase:
         return _connection.call_sync(method=method, args=list(args), handle=self._handle, target=self._target, **kwargs)
 
     def __getattr__(self, name: str):
-        if name in self._fields:
-            return self._fields[name]
+        if name in self.fields:
+            return self.fields[name]
         return BridgeMethod(self, name)
 
     def __setattr__(self, name: str, value: Any) -> None:
-        if name.startswith("_"):
+        if name.startswith("_") or name == "fields":
             super().__setattr__(name, value)
             return
         if self._handle is None and self._target == "ref":
@@ -184,21 +204,21 @@ class ProxyBase:
             return
         _connection.call(method="set_attr", handle=self._handle, field=name, value=value)
 
-    def _field_or_call(self, field: str, method: str):
-        if field in self._fields:
-            return self._fields[field]
+    def _field_or_call(self, field: str, method: str) -> Any:
+        if field in self.fields:
+            return self.fields[field]
         return self._call(method)
 
-    def _field_or_call_sync(self, field: str, method: str):
-        if field in self._fields:
-            return self._fields[field]
+    def _field_or_call_sync(self, field: str, method: str) -> Any:
+        if field in self.fields:
+            return self.fields[field]
         return self._call_sync(method)
 
 class Event(ProxyBase):
     """Base event proxy."""
     def cancel(self):
         """Cancel the event if it is cancellable."""
-        event_id = self._fields.get("__event_id__")
+        event_id = self.fields.get("__event_id__")
         if event_id is not None:
             _connection.send({"type": "event_cancel", "id": event_id})
             return _connection.completed_call(None)
@@ -300,11 +320,11 @@ class Server(ProxyBase):
 
     @property
     def name(self):
-        return self._fields.get("name") or self._call_sync("getName")
+        return self.fields.get("name") or self._call_sync("getName")
 
     @property
     def version(self):
-        return self._fields.get("version") or self._call_sync("getVersion")
+        return self.fields.get("version") or self._call_sync("getVersion")
 
     @property
     def motd(self):
@@ -317,11 +337,9 @@ class Server(ProxyBase):
 class Entity(ProxyBase):
     """Base entity proxy."""
     @classmethod
-    def spawn(cls, entity_type: "EntityType" | str, location: "Location", **kwargs):
+    def spawn(cls, entity_type: EntityType | str, location: Location, **kwargs: Any):
         """Spawn an entity at a location."""
-        world = None
-        if isinstance(location, Location):
-            world = location.world
+        world = location.world
         if isinstance(world, str):
             world = World(name=world)
         if world is None:
@@ -331,7 +349,7 @@ class Entity(ProxyBase):
     def __init__(self, handle: Optional[int] = None, type_name: Optional[str] = None, fields: Optional[Dict[str, Any]] = None, target: Optional[str] = None, uuid: Optional[str] = None, ref_type: Optional[str] = None, ref_id: Optional[str] = None):
         if handle is None and uuid is not None:
             super().__init__(handle=None, type_name=type_name, fields=fields, target="ref", ref_type="entity", ref_id=str(uuid))
-            self._fields.setdefault("uuid", str(uuid))
+            self.fields.setdefault("uuid", str(uuid))
             return
 
         if handle is None and ref_type is not None and ref_id is not None:
@@ -409,19 +427,19 @@ class Entity(ProxyBase):
 
     @property
     def uuid(self):
-        return self._field_or_call_sync("uuid","getUniqueId")
+        return self.fields.get("uuid")
 
     @property
     def type(self):
-        return self._field_or_call_sync("type", "getType")
+        return self.fields.get("type")
 
     @property
     def location(self):
-        return self._field_or_call_sync("location", "getLocation")
+        return self._call_sync("getLocation")
 
     @property
     def world(self):
-        return self._field_or_call_sync("world", "getWorld")
+        return self._call_sync("getWorld")
 
 class Player(Entity):
     """Player API (inherits Entity)."""
@@ -438,10 +456,9 @@ class Player(Entity):
         if handle is None and uuid is not None and name is None:
             try:
                 import uuid as uuid_mod
-                uuid_obj = uuid if isinstance(uuid, uuid_mod.UUID) else uuid and uuid_mod.UUID(str(uuid))
-                if uuid_obj is not None:
-                    super().__init__(handle=None, type_name=type_name, fields=fields, target="ref", uuid=str(uuid_obj))
-                    return
+                uuid_obj = uuid if isinstance(uuid, uuid_mod.UUID) else uuid_mod.UUID(str(uuid))
+                super().__init__(handle=None, type_name=type_name, fields=fields, target="ref", uuid=str(uuid_obj))
+                return
             except Exception:
                 name = str(uuid)
 
@@ -548,7 +565,7 @@ class Player(Entity):
     def play_sound(self, sound: "Sound", volume: float = 1.0, pitch: float = 1.0):
         """Play a sound to the player."""
         if isinstance(sound, str):
-            sound = Sound._from_name(sound.upper())
+            sound = Sound.from_name(sound.upper())
         return self._call("playSound", sound, volume, pitch)
 
     def send_action_bar(self, message: str):
@@ -653,12 +670,12 @@ class Player(Entity):
 
     @property
     def name(self):
-        return self._field_or_call_sync("name", "getName")
+        return self.fields.get("name")
 
     @property
     def uuid(self):
-        if "uuid" in self._fields:
-            return str(self._fields["uuid"])
+        if "uuid" in self.fields:
+            return str(self.fields["uuid"])
 
         ref_type = getattr(self, "_ref_type", None)
         ref_id = getattr(self, "_ref_id", None)
@@ -687,7 +704,7 @@ class Player(Entity):
 
             if result is not None:
                 result_text = str(result)
-                self._fields["uuid"] = result_text
+                self.fields["uuid"] = result_text
                 if ref_type == "player_name" and ref_id:
                     _player_uuid_cache[str(ref_id)] = result_text
                 return result_text
@@ -700,42 +717,42 @@ class Player(Entity):
 
     @property
     def location(self):
-        return self._field_or_call_sync("location", "getLocation")
+        return self._call_sync("getLocation")
 
     @property
     def world(self):
-        return self._field_or_call_sync("world", "getWorld")
+        return self._call_sync("getWorld")
 
     @property
     def game_mode(self):
-        return self._field_or_call_sync("gameMode", "getGameMode")
+        return self._call_sync("getGameMode")
 
     @property
     def health(self):
-        return self._field_or_call_sync("health", "getHealth")
+        return self._call_sync("getHealth")
 
     @property
     def food_level(self):
-        return self._field_or_call_sync("foodLevel", "getFoodLevel")
+        return self._call_sync("getFoodLevel")
 
     @property
     def inventory(self):
         if self._handle is None and self._target == "ref":
-            ref_id = self._ref_id or self._fields.get("uuid") or self._fields.get("name")
+            ref_id = self._ref_id or self.fields.get("uuid") or self.fields.get("name")
             if ref_id:
                 return Inventory(handle=None, target="ref", ref_type="player_inventory", ref_id=str(ref_id))
 
-        return self._field_or_call_sync("inventory", "getInventory")
+        return self._call_sync("getInventory")
 
 class EntityType(EnumValue):
     TYPE_NAME = "org.bukkit.entity.EntityType"
-    
+
 class World(ProxyBase):
     """World API."""
     def __init__(self, handle: Optional[int] = None, type_name: Optional[str] = None, fields: Optional[Dict[str, Any]] = None, target: Optional[str] = None, name: Optional[str] = None):
         if handle is None and name is not None:
             super().__init__(handle=None, type_name=type_name, fields=fields, target="ref", ref_type="world", ref_id=str(name))
-            self._fields.setdefault("name", str(name))
+            self.fields.setdefault("name", str(name))
         else:
             super().__init__(handle=handle, type_name=type_name, fields=fields, target=target)
 
@@ -743,14 +760,14 @@ class World(ProxyBase):
         """Get a block at coordinates."""
         return self._call("getBlockAt", x, y, z)
 
-    def spawn_entity(self, location: "Location", entity_type: EntityType, **kwargs):
+    def spawn_entity(self, location: "Location", entity_type: "EntityType | str", **kwargs: Any):
         """Spawn an entity by type.
 
         Optional kwargs: velocity (Vector or [x,y,z]), facing (Vector or [x,y,z]),
         yaw, pitch, nbt (SNBT string).
         """
         if isinstance(entity_type, str):
-            entity_type = EntityType._from_name(entity_type)
+            entity_type = EntityType.from_name(entity_type)
         try:
             return self._call("spawnEntity", location, entity_type, **kwargs)
         except BridgeError as exc:
@@ -762,7 +779,7 @@ class World(ProxyBase):
         """Get a chunk by coordinates."""
         return self._call("getChunkAt", x, z)
 
-    def spawn(self, location: "Location", entity_cls: type, **kwargs):
+    def spawn(self, location: "Location", entity_cls: type, **kwargs: Any):
         """Spawn an entity by class."""
         if isinstance(entity_cls, (EntityType, str)):
             return self.spawn_entity(location, entity_cls, **kwargs)
@@ -867,26 +884,173 @@ class World(ProxyBase):
 
     @property
     def name(self):
-        return self._field_or_call_sync("name", "getName")
+        return self.fields.get("name")
 
     @property
     def uuid(self):
-        return self._field_or_call_sync("uuid", "getUID")
+        return self.fields.get("uuid")
 
     @property
     def environment(self):
-        return self._field_or_call_sync("environment", "getEnvironment")
+        return self.fields.get("environment")
+
+    # --- Region utilities (single Java call each, no round-trip per block) ---
+
+    def set_block(self, x: int, y: int, z: int, material: Any, apply_physics: bool = False):
+        """Set a single block at coordinates."""
+        if isinstance(material, str):
+            material = Material.from_name(material.upper())
+        return _connection.call(target="region", method="setBlock", args=[self, int(x), int(y), int(z), material, apply_physics])
+
+    def fill(self, pos1: Any, pos2: Any, material: Any, apply_physics: bool = False):
+        """Fill a rectangular region between two positions with a material.
+
+        pos1/pos2 can be Location, Vector, or (x, y, z) tuples.
+        Returns an awaitable that resolves to the number of blocks placed.
+        """
+        x1, y1, z1 = _extract_xyz(pos1)
+        x2, y2, z2 = _extract_xyz(pos2)
+        if isinstance(material, str):
+            material = Material.from_name(material.upper())
+        return _connection.call(target="region", method="fill", args=[self, int(x1), int(y1), int(z1), int(x2), int(y2), int(z2), material, apply_physics])
+
+    def replace(self, pos1: Any, pos2: Any, from_material: Any, to_material: Any):
+        """Replace all blocks of one material with another in a region.
+
+        Returns an awaitable that resolves to the number of blocks replaced.
+        """
+        x1, y1, z1 = _extract_xyz(pos1)
+        x2, y2, z2 = _extract_xyz(pos2)
+        if isinstance(from_material, str):
+            from_material = Material.from_name(from_material.upper())
+        if isinstance(to_material, str):
+            to_material = Material.from_name(to_material.upper())
+        return _connection.call(target="region", method="replace", args=[self, int(x1), int(y1), int(z1), int(x2), int(y2), int(z2), from_material, to_material])
+
+    def fill_sphere(self, center: Any, radius: float, material: Any, hollow: bool = False):
+        """Fill a sphere of blocks centered at a position.
+
+        Returns an awaitable that resolves to the number of blocks placed.
+        """
+        cx, cy, cz = _extract_xyz(center)
+        if isinstance(material, str):
+            material = Material.from_name(material.upper())
+        return _connection.call(target="region", method="sphere", args=[self, float(cx), float(cy), float(cz), float(radius), material, hollow])
+
+    def fill_cylinder(self, center: Any, radius: float, height: int, material: Any, hollow: bool = False):
+        """Fill a cylinder of blocks from center upward.
+
+        Returns an awaitable that resolves to the number of blocks placed.
+        """
+        cx, cy, cz = _extract_xyz(center)
+        if isinstance(material, str):
+            material = Material.from_name(material.upper())
+        return _connection.call(target="region", method="cylinder", args=[self, float(cx), float(cy), float(cz), float(radius), int(height), material, hollow])
+
+    def fill_line(self, start: Any, end: Any, material: Any):
+        """Draw a line of blocks between two positions.
+
+        Returns an awaitable that resolves to the number of blocks placed.
+        """
+        x1, y1, z1 = _extract_xyz(start)
+        x2, y2, z2 = _extract_xyz(end)
+        if isinstance(material, str):
+            material = Material.from_name(material.upper())
+        return _connection.call(target="region", method="line", args=[self, float(x1), float(y1), float(z1), float(x2), float(y2), float(z2), material])
+
+    # --- Particle shape utilities (single Java call each) ---
+
+    def particle_line(self, start: Any, end: Any, particle: Any, density: float = 4.0, offset_x: float = 0, offset_y: float = 0, offset_z: float = 0, extra: float = 0):
+        """Spawn particles along a line between two positions.
+
+        density: particles per block distance.
+        Returns an awaitable that resolves to the particle count.
+        """
+        x1, y1, z1 = _extract_xyz(start)
+        x2, y2, z2 = _extract_xyz(end)
+        if isinstance(particle, str):
+            particle = Particle.from_name(particle.upper())
+        return _connection.call(target="particles", method="line", args=[self, particle, float(x1), float(y1), float(z1), float(x2), float(y2), float(z2), float(density), float(offset_x), float(offset_y), float(offset_z), float(extra)])
+
+    def particle_sphere(self, center: Any, radius: float, particle: Any, density: float = 4.0, hollow: bool = True, offset_x: float = 0, offset_y: float = 0, offset_z: float = 0, extra: float = 0):
+        """Spawn particles in a sphere shape.
+
+        density: particles per block^2 for hollow, per block^3 for filled.
+        Returns an awaitable that resolves to the particle count.
+        """
+        cx, cy, cz = _extract_xyz(center)
+        if isinstance(particle, str):
+            particle = Particle.from_name(particle.upper())
+        return _connection.call(target="particles", method="sphere", args=[self, particle, float(cx), float(cy), float(cz), float(radius), float(density), hollow, float(offset_x), float(offset_y), float(offset_z), float(extra)])
+
+    def particle_cube(self, pos1: Any, pos2: Any, particle: Any, density: float = 4.0, hollow: bool = True, offset_x: float = 0, offset_y: float = 0, offset_z: float = 0, extra: float = 0):
+        """Spawn particles in a cuboid shape.
+
+        density: particles per block distance.
+        Returns an awaitable that resolves to the particle count.
+        """
+        x1, y1, z1 = _extract_xyz(pos1)
+        x2, y2, z2 = _extract_xyz(pos2)
+        if isinstance(particle, str):
+            particle = Particle.from_name(particle.upper())
+        return _connection.call(target="particles", method="cube", args=[self, particle, float(x1), float(y1), float(z1), float(x2), float(y2), float(z2), float(density), hollow, float(offset_x), float(offset_y), float(offset_z), float(extra)])
+
+    def particle_ring(self, center: Any, radius: float, particle: Any, density: float = 4.0, offset_x: float = 0, offset_y: float = 0, offset_z: float = 0, extra: float = 0):
+        """Spawn particles in a horizontal ring.
+
+        density: particles per block circumference.
+        Returns an awaitable that resolves to the particle count.
+        """
+        cx, cy, cz = _extract_xyz(center)
+        if isinstance(particle, str):
+            particle = Particle.from_name(particle.upper())
+        return _connection.call(target="particles", method="ring", args=[self, particle, float(cx), float(cy), float(cz), float(radius), float(density), float(offset_x), float(offset_y), float(offset_z), float(extra)])
+
+    # --- Entity spawn helpers ---
+
+    def spawn_at_player(self, player: "Player", entity_type: Any, offset: Any = None, **kwargs: Any):
+        """Spawn an entity at a player's location with an optional offset.
+
+        offset can be a Vector, Location, or (x,y,z) tuple added to the player's position.
+        """
+        loc = player.location
+        if offset is not None:
+            ox, oy, oz = _extract_xyz(offset)
+            loc = Location(loc.x + ox, loc.y + oy, loc.z + oz, loc.world, loc.yaw, loc.pitch)
+        return self.spawn_entity(loc, entity_type, **kwargs)
+
+    def spawn_projectile(self, shooter: "Entity", entity_type: Any, velocity: Any = None, **kwargs: Any):
+        """Spawn a projectile entity at the shooter's eye location with optional velocity."""
+        loc = shooter.location
+        if isinstance(entity_type, str):
+            entity_type = EntityType.from_name(entity_type)
+        if velocity is not None:
+            if isinstance(velocity, (list, tuple)):
+                vel = cast(List[Any], velocity)
+                if len(vel) >= 3:
+                    kwargs["velocity"] = [float(vel[0]), float(vel[1]), float(vel[2])]
+            elif isinstance(velocity, (Vector, SimpleNamespace)):
+                kwargs["velocity"] = [float(velocity.x), float(velocity.y), float(velocity.z)]
+            elif hasattr(velocity, "x") and hasattr(velocity, "y") and hasattr(velocity, "z"):
+                v: Any = velocity
+                kwargs["velocity"] = [float(v.x), float(v.y), float(v.z)]
+        return self.spawn_entity(loc, entity_type, **kwargs)
+
+    def spawn_with_nbt(self, location: "Location", entity_type: Any, nbt: str, **kwargs: Any):
+        """Spawn an entity with an SNBT string applied after spawning."""
+        kwargs["nbt"] = nbt
+        return self.spawn_entity(location, entity_type, **kwargs)
 
 class Dimension(ProxyBase):
-    def __init__(self, name: Optional[str] = None, **kwargs):
+    def __init__(self, name: Optional[str] = None, **kwargs: Any):
         if name is not None and "fields" not in kwargs and "handle" not in kwargs:
             fields = {"name": name}
             super().__init__(fields=fields)
         else:
             super().__init__(**kwargs)
     @property
-    def name(self):
-        return self._field_or_call_sync("name", "getName")
+    def name(self) -> Optional[str]:
+        return self.fields.get("name")
 
 class Location(ProxyBase):
     """Location in a world with yaw and pitch."""
@@ -901,70 +1065,56 @@ class Location(ProxyBase):
         else:
             super().__init__(handle=handle, type_name=type_name, fields=fields, target=target)
     @property
-    def x(self):
-        return self._field_or_call_sync("x", "getX")
+    def x(self) -> float:
+        return self.fields.get("x", 0.0)
 
     @property
-    def y(self):
-        return self._field_or_call_sync("y", "getY")
+    def y(self) -> float:
+        return self.fields.get("y", 0.0)
 
     @property
-    def z(self):
-        return self._field_or_call_sync("z", "getZ")
+    def z(self) -> float:
+        return self.fields.get("z", 0.0)
 
     @property
-    def yaw(self):
-        return self._field_or_call_sync("yaw", "getYaw")
+    def yaw(self) -> float:
+        return self.fields.get("yaw", 0.0)
 
     @property
-    def pitch(self):
-        return self._field_or_call_sync("pitch", "getPitch")
+    def pitch(self) -> float:
+        return self.fields.get("pitch", 0.0)
 
     @property
     def world(self):
-        return self._field_or_call_sync("world", "getWorld")
+        return self.fields.get("world")
 
-    def add(self, x: float, y: float, z: float):
+    def add(self, x: float, y: float, z: float) -> "Location":
         """Add coordinates to this location."""
-        if self._handle is None and self._fields:
-            return Location(self.x + x, self.y + y, self.z + z, self.world, self.yaw, self.pitch)
-        return self._call("add", x, y, z)
+        return Location(self.x + x, self.y + y, self.z + z, self.world, self.yaw, self.pitch)
 
-    def clone(self):
+    def clone(self) -> "Location":
         """Clone this location."""
-        if self._handle is None and self._fields:
-            return Location(self.x, self.y, self.z, self.world, self.yaw, self.pitch)
-        return self._call("clone")
+        return Location(self.x, self.y, self.z, self.world, self.yaw, self.pitch)
 
-    def distance(self, other: "Location"):
+    def distance(self, other: "Location") -> float:
         """Distance to another location."""
-        if self._handle is None and self._fields and isinstance(other, Location) and other._fields:
-            dx = self.x - other.x
-            dy = self.y - other.y
-            dz = self.z - other.z
-            return (dx * dx + dy * dy + dz * dz) ** 0.5
-        return self._call("distance", other)
+        dx = self.x - other.x
+        dy = self.y - other.y
+        dz = self.z - other.z
+        return (dx * dx + dy * dy + dz * dz) ** 0.5
 
-    def distance_squared(self, other: "Location"):
+    def distance_squared(self, other: "Location") -> float:
         """Squared distance to another location."""
-        if self._handle is None and self._fields and isinstance(other, Location) and other._fields:
-            dx = self.x - other.x
-            dy = self.y - other.y
-            dz = self.z - other.z
-            return dx * dx + dy * dy + dz * dz
-        return self._call("distanceSquared", other)
-
-    def set_world(self, world: "World"):
-        """Set the world reference."""
-        return self._call("setWorld", world)
+        dx = self.x - other.x
+        dy = self.y - other.y
+        dz = self.z - other.z
+        return dx * dx + dy * dy + dz * dz
 
 class Block(ProxyBase):
     """Block in the world."""
     @classmethod
-    def create(cls, location: "Location", material: "Material" | str):
+    def create(cls, location: Location, material: Material | str):
         """Create/set a block at the given location."""
-        if not isinstance(location, Location):
-            raise BridgeError("Block.create requires a Location")
         world = location.world
         if isinstance(world, str):
             world = World(name=world)
@@ -978,13 +1128,13 @@ class Block(ProxyBase):
         if handle is None and fields is None and world is not None and x is not None and y is not None and z is not None:
             if isinstance(world, str):
                 world = World(name=world)
-                world_name = world._fields.get("name")
+                world_name = world.fields.get("name")
             else:
-                world_name = world._fields.get("name") if isinstance(world, World) else None
+                world_name = world.fields.get("name")
             fields = {"x": int(x), "y": int(y), "z": int(z), "world": world}
             if material is not None:
                 if isinstance(material, str):
-                    material = Material._from_name(material.upper())
+                    material = Material.from_name(material.upper())
                 fields["type"] = material
             ref_id = f"{world_name}:{int(x)}:{int(y)}:{int(z)}" if world_name is not None else None
             super().__init__(handle=None, type_name=type_name, fields=fields, target="ref", ref_type="block", ref_id=ref_id)
@@ -994,7 +1144,7 @@ class Block(ProxyBase):
         """Break the block naturally."""
         return self._call("breakNaturally")
 
-    def set_type(self, material: "Material"):
+    def set_type(self, material: "Material | str"):
         """Set the block type."""
         return self._call("setType", material)
 
@@ -1029,31 +1179,31 @@ class Block(ProxyBase):
     @property
     def inventory(self):
         """Get inventory if block has one."""
-        return self._field_or_call_sync("inventory", "getInventory")
+        return self._call_sync("getInventory")
 
     @property
-    def x(self):
-        return self._field_or_call_sync("x", "getX")
+    def x(self) -> int:
+        return self.fields.get("x", 0)
 
     @property
-    def y(self):
-        return self._field_or_call_sync("y", "getY")
+    def y(self) -> int:
+        return self.fields.get("y", 0)
 
     @property
-    def z(self):
-        return self._field_or_call_sync("z", "getZ")
+    def z(self) -> int:
+        return self.fields.get("z", 0)
 
     @property
     def location(self):
-        return self._field_or_call_sync("location", "getLocation")
+        return Location(self.x, self.y, self.z, self.world)
 
     @property
     def type(self):
-        return self._field_or_call_sync("type", "getType")
+        return self._call_sync("getType")
 
     @property
     def world(self):
-        return self._field_or_call_sync("world", "getWorld")
+        return self.fields.get("world")
 
 class Chunk(ProxyBase):
     """Chunk of a world (loadable/unloadable)."""
@@ -1061,25 +1211,25 @@ class Chunk(ProxyBase):
         if handle is None and fields is None and world is not None and x is not None and z is not None:
             if isinstance(world, str):
                 world = World(name=world)
-                world_name = world._fields.get("name")
+                world_name = world.fields.get("name")
             else:
-                world_name = world._fields.get("name") if isinstance(world, World) else None
+                world_name = world.fields.get("name")
             fields = {"x": int(x), "z": int(z), "world": world}
             ref_id = f"{world_name}:{int(x)}:{int(z)}" if world_name is not None else None
             super().__init__(handle=None, type_name=type_name, fields=fields, target="ref", ref_type="chunk", ref_id=ref_id)
         else:
             super().__init__(handle=handle, type_name=type_name, fields=fields, target=target)
     @property
-    def x(self):
-        return self._field_or_call_sync("x", "getX")
+    def x(self) -> int:
+        return self.fields.get("x", 0)
 
     @property
-    def z(self):
-        return self._field_or_call_sync("z", "getZ")
+    def z(self) -> int:
+        return self.fields.get("z", 0)
 
     @property
     def world(self):
-        return self._field_or_call_sync("world", "getWorld")
+        return self.fields.get("world")
 
     def load(self):
         """Load the chunk."""
@@ -1116,8 +1266,8 @@ class Inventory(ProxyBase):
     def add_item(self, item: "Item"):
         """Add an item to the inventory."""
         if self._handle is None:
-            contents = list(self._fields.get("contents") or [])
-            size = int(self._fields.get("size") or len(contents) or 0)
+            contents = list(self.fields.get("contents") or [])
+            size = int(self.fields.get("size") or len(contents) or 0)
             if size <= 0:
                 size = len(contents) or 9
             while len(contents) < size:
@@ -1125,29 +1275,29 @@ class Inventory(ProxyBase):
             for idx, slot in enumerate(contents):
                 if slot is None:
                     contents[idx] = item
-                    self._fields["contents"] = contents
+                    self.fields["contents"] = contents
                     return None
             contents.append(item)
-            self._fields["contents"] = contents
+            self.fields["contents"] = contents
             return None
         return self._call("addItem", item)
 
     def remove_item(self, item: "Item"):
         """Remove an item from the inventory."""
         if self._handle is None:
-            contents = list(self._fields.get("contents") or [])
+            contents = list(self.fields.get("contents") or [])
             for idx, slot in enumerate(contents):
                 if slot == item:
                     contents[idx] = None
                     break
-            self._fields["contents"] = contents
+            self.fields["contents"] = contents
             return None
         return self._call("removeItem", item)
 
     def clear(self):
         """Clear inventory contents."""
         if self._handle is None:
-            self._fields["contents"] = []
+            self.fields["contents"] = []
             return None
         return self._call("clear")
 
@@ -1161,8 +1311,8 @@ class Inventory(ProxyBase):
     def first_empty(self):
         """Get first empty slot index."""
         if self._handle is None:
-            contents = list(self._fields.get("contents") or [])
-            size = int(self._fields.get("size") or len(contents) or 0)
+            contents = list(self.fields.get("contents") or [])
+            size = int(self.fields.get("size") or len(contents) or 0)
             if size <= 0:
                 size = len(contents) or 9
             while len(contents) < size:
@@ -1176,25 +1326,25 @@ class Inventory(ProxyBase):
     def get_item(self, slot: int):
         """Get item in a slot."""
         if self._handle is None:
-            contents = list(self._fields.get("contents") or [])
+            contents = list(self.fields.get("contents") or [])
             return contents[slot] if 0 <= slot < len(contents) else None
         return self._call("getItem", slot)
 
     def set_item(self, slot: int, item: "Item"):
         """Set item in a slot."""
         if self._handle is None:
-            contents = list(self._fields.get("contents") or [])
+            contents = list(self.fields.get("contents") or [])
             while len(contents) <= slot:
                 contents.append(None)
             contents[slot] = item
-            self._fields["contents"] = contents
+            self.fields["contents"] = contents
             return None
         return self._call("setItem", slot, item)
 
     def contains(self, material: "Material", amount: int = 1):
         """Check if inventory contains a material."""
         if self._handle is None:
-            contents = list(self._fields.get("contents") or [])
+            contents = list(self.fields.get("contents") or [])
             count = 0
             for item in contents:
                 if item is None:
@@ -1210,30 +1360,28 @@ class Inventory(ProxyBase):
     @property
     def size(self):
         if self._handle is None:
-            return int(self._fields.get("size") or 0)
-        return self._field_or_call_sync("size", "getSize")
+            return int(self.fields.get("size") or 0)
+        return self._call_sync("getSize")
 
     @property
-    def contents(self):
+    def contents(self) -> Any:
         if self._handle is None:
-            return self._fields.get("contents") or []
-        return self._field_or_call_sync("contents", "getContents")
+            return self.fields.get("contents") or []
+        return self._call_sync("getContents")
 
     @property
     def title(self):
-        return self._field_or_call_sync("title", "getTitle")
+        return self._call_sync("getTitle")
 
     @property
     def holder(self):
-        return self._field_or_call_sync("holder", "getHolder")
+        return self._call_sync("getHolder")
 
 class Item(ProxyBase):
     """Item (ItemStack) API."""
     @classmethod
-    def drop(cls, material: "Material" | str, location: "Location", amount: int = 1, **kwargs):
+    def drop(cls, material: Material | str, location: Location, amount: int = 1, **kwargs: Any):
         """Drop an item at a location."""
-        if not isinstance(location, Location):
-            raise BridgeError("Item.drop requires a Location")
         world = location.world
         if isinstance(world, str):
             world = World(name=world)
@@ -1243,7 +1391,7 @@ class Item(ProxyBase):
         return world._call("dropItem", location, item)
 
     @classmethod
-    def give(cls, player: "Player", material: "Material" | str, amount: int = 1, **kwargs):
+    def give(cls, player: Player, material: Material | str, amount: int = 1, **kwargs: Any):
         """Give an item to a player's inventory."""
         item = Item(material=material, amount=amount, **kwargs)
         return player.inventory.add_item(item)
@@ -1251,7 +1399,7 @@ class Item(ProxyBase):
     def __init__(self, material: Optional[Material | str] = None, amount: int = 1, name: Optional[str] = None, lore: Optional[List[str]] = None, custom_model_data: Optional[int] = None, attributes: Optional[List[Dict[str, Any]]] = None, nbt: Optional[Dict[str, Any]] = None, handle: Optional[int] = None, type_name: Optional[str] = None, fields: Optional[Dict[str, Any]] = None, target: Optional[str] = None):
         if handle is None and fields is None and material is not None:
             if isinstance(material, str):
-                material = Material._from_name(material.upper())
+                material = Material.from_name(material.upper())
             fields = {"type": material, "amount": int(amount)}
             if name is not None:
                 fields["name"] = str(name)
@@ -1268,11 +1416,11 @@ class Item(ProxyBase):
             super().__init__(handle=handle, type_name=type_name, fields=fields, target=target)
     @property
     def type(self):
-        return self._field_or_call_sync("type", "getType")
+        return self.fields.get("type")
 
     @property
     def amount(self):
-        return self._field_or_call_sync("amount", "getAmount")
+        return self._call_sync("getAmount")
 
     def set_amount(self, value: int):
         """Set item amount."""
@@ -1280,56 +1428,56 @@ class Item(ProxyBase):
 
     @property
     def name(self):
-        return self._field_or_call_sync("name", "getName")
+        return self._call_sync("getName")
 
     def set_name(self, name: str):
         """Set display name."""
         if self._handle is None:
-            self._fields["name"] = str(name)
+            self.fields["name"] = str(name)
             return self
         return self._call("setName", name)
 
     @property
     def lore(self):
-        return self._field_or_call_sync("lore", "getLore")
+        return self._call_sync("getLore")
 
     def set_lore(self, lore: List[str]):
         """Set lore lines."""
         if self._handle is None:
-            self._fields["lore"] = list(lore)
+            self.fields["lore"] = list(lore)
             return self
         return self._call("setLore", lore)
 
     @property
     def custom_model_data(self):
-        return self._field_or_call_sync("customModelData", "getCustomModelData")
+        return self._call_sync("getCustomModelData")
 
     def set_custom_model_data(self, value: int):
         """Set custom model data."""
         if self._handle is None:
-            self._fields["customModelData"] = int(value)
+            self.fields["customModelData"] = int(value)
             return self
         return self._call("setCustomModelData", value)
 
     @property
     def attributes(self):
-        return self._field_or_call_sync("attributes", "getAttributes")
+        return self._call_sync("getAttributes")
 
     def set_attributes(self, attributes: List[Dict[str, Any]]):
         """Set attribute modifiers."""
         if self._handle is None:
-            self._fields["attributes"] = list(attributes)
+            self.fields["attributes"] = list(attributes)
             return self
         return self._call("setAttributes", attributes)
 
     @property
     def nbt(self):
-        return self._field_or_call_sync("nbt", "getNbt")
+        return self._call_sync("getNbt")
 
     def set_nbt(self, nbt: Dict[str, Any]):
         """Set NBT map."""
         if self._handle is None:
-            self._fields["nbt"] = nbt
+            self.fields["nbt"] = nbt
             return self
         return self._call("setNbt", nbt)
 
@@ -1345,6 +1493,140 @@ class Item(ProxyBase):
     def max_stack_size(self):
         """Get max stack size."""
         return self._call_sync("getMaxStackSize")
+
+class ItemBuilder:
+    """Fluent builder for Item objects. All methods return self for chaining.
+
+    Example::
+    ```
+        item = (ItemBuilder("diamond_sword")
+            .name("§bExcalibur")
+            .lore("§7A legendary blade", "§7Forged in fire")
+            .enchant("sharpness", 5)
+            .enchant("unbreaking", 3)
+            .unbreakable()
+            .custom_model_data(42)
+            .build())
+    ```
+    """
+
+    def __init__(self, material: Any):
+        if isinstance(material, str):
+            material = Material.from_name(material.upper())
+        self._material = material
+        self._amount: int = 1
+        self._name: Optional[str] = None
+        self._lore: List[str] = []
+        self._custom_model_data: Optional[int] = None
+        self._attributes: List[Dict[str, Any]] = []
+        self._nbt: Optional[Dict[str, Any]] = None
+        self._enchantments: Dict[str, int] = {}
+        self._unbreakable_flag: bool = False
+        self._glow_flag: bool = False
+        self._item_flags: List[str] = []
+
+    # --- Fluent setters ---
+    def amount(self, n: int) -> "ItemBuilder":
+        """Set stack amount."""
+        self._amount = int(n)
+        return self
+
+    def name(self, n: str) -> "ItemBuilder":
+        """Set display name."""
+        self._name = str(n)
+        return self
+
+    def lore(self, *lines: str) -> "ItemBuilder":
+        """Set lore lines (replaces existing)."""
+        self._lore = list(lines)
+        return self
+
+    def add_lore(self, line: str) -> "ItemBuilder":
+        """Append a lore line."""
+        self._lore.append(str(line))
+        return self
+
+    def enchant(self, enchantment: str, level: int = 1) -> "ItemBuilder":
+        """Add an enchantment (e.g. 'sharpness', 'minecraft:unbreaking')."""
+        self._enchantments[enchantment.lower()] = int(level)
+        return self
+
+    def unbreakable(self, value: bool = True) -> "ItemBuilder":
+        """Set whether the item is unbreakable."""
+        self._unbreakable_flag = bool(value)
+        return self
+
+    def glow(self, value: bool = True) -> "ItemBuilder":
+        """Make the item glow (enchantment glint override)."""
+        self._glow_flag = bool(value)
+        return self
+
+    def custom_model_data(self, value: int) -> "ItemBuilder":
+        """Set custom model data."""
+        self._custom_model_data = int(value)
+        return self
+
+    def attributes(self, attrs: List[Dict[str, Any]]) -> "ItemBuilder":
+        """Set attribute modifiers (replaces existing)."""
+        self._attributes = list(attrs)
+        return self
+
+    def add_attribute(self, attribute: str, amount: float, operation: str = "ADD_NUMBER") -> "ItemBuilder":
+        """Add a single attribute modifier."""
+        self._attributes.append({"attribute": attribute, "amount": float(amount), "operation": operation})
+        return self
+
+    def nbt(self, data: Dict[str, Any]) -> "ItemBuilder":
+        """Set raw NBT data."""
+        self._nbt = dict(data)
+        return self
+
+    def flag(self, *flags: str) -> "ItemBuilder":
+        """Add ItemFlags (e.g. 'HIDE_ENCHANTS', 'HIDE_ATTRIBUTES')."""
+        self._item_flags.extend(str(f).upper() for f in flags)
+        return self
+
+    # --- Build ---
+    def build(self) -> "Item":
+        """Build and return the Item."""
+        fields: Dict[str, Any] = {"type": self._material, "amount": self._amount}
+        if self._name is not None:
+            fields["name"] = self._name
+        if self._lore:
+            fields["lore"] = list(self._lore)
+        if self._custom_model_data is not None:
+            fields["customModelData"] = self._custom_model_data
+        if self._attributes:
+            fields["attributes"] = list(self._attributes)
+        if self._nbt:
+            fields["nbt"] = dict(self._nbt)
+        if self._enchantments:
+            fields["enchantments"] = dict(self._enchantments)
+        if self._unbreakable_flag:
+            fields["unbreakable"] = True
+        if self._glow_flag:
+            fields["glow"] = True
+        if self._item_flags:
+            fields["item_flags"] = list(self._item_flags)
+        return Item(handle=None, fields=fields)
+
+    # --- Copy ---
+    @classmethod
+    def from_item(cls, item: "Item") -> "ItemBuilder":
+        """Create a builder from an existing Item, copying its fields."""
+        builder = cls(item.type)
+        builder._amount = item.amount or 1
+        builder._name = item.name if hasattr(item, "fields") and "name" in item.fields else None
+        builder._lore = list(item.lore or []) if hasattr(item, "fields") and "lore" in item.fields else []
+        if hasattr(item, "fields"):
+            builder._custom_model_data = item.fields.get("customModelData")
+            builder._attributes = list(item.fields.get("attributes") or [])
+            builder._nbt = dict(item.fields["nbt"]) if "nbt" in item.fields else None
+            builder._enchantments = dict(item.fields.get("enchantments") or {})
+            builder._unbreakable_flag = bool(item.fields.get("unbreakable"))
+            builder._glow_flag = bool(item.fields.get("glow"))
+            builder._item_flags = list(item.fields.get("item_flags") or [])
+        return builder
 
 class Material(EnumValue):
     """
@@ -1373,7 +1655,7 @@ class Effect(ProxyBase):
     def __init__(self, effect_type: Optional[EffectType | str] = None, duration: int = 0, amplifier: int = 0, ambient: bool = False, particles: bool = True, icon: bool = True, handle: Optional[int] = None, type_name: Optional[str] = None, fields: Optional[Dict[str, Any]] = None, target: Optional[str] = None):
         if handle is None and fields is None and effect_type is not None:
             if isinstance(effect_type, str):
-                effect_type = EffectType._from_name(effect_type.upper())
+                effect_type = EffectType.from_name(effect_type.upper())
             fields = {
                 "type": effect_type,
                 "duration": int(duration),
@@ -1388,39 +1670,27 @@ class Effect(ProxyBase):
 
     @property
     def type(self):
-        if self._handle is None:
-            return self._fields.get("type")
-        return self._field_or_call_sync("type", "getType")
+        return self.fields.get("type")
 
     @property
-    def duration(self):
-        if self._handle is None:
-            return int(self._fields.get("duration") or 0)
-        return self._field_or_call_sync("duration", "getDuration")
+    def duration(self) -> int:
+        return int(self.fields.get("duration") or 0)
 
     @property
-    def amplifier(self):
-        if self._handle is None:
-            return int(self._fields.get("amplifier") or 0)
-        return self._field_or_call_sync("amplifier", "getAmplifier")
+    def amplifier(self) -> int:
+        return int(self.fields.get("amplifier") or 0)
 
     @property
-    def ambient(self):
-        if self._handle is None:
-            return bool(self._fields.get("ambient"))
-        return self._field_or_call_sync("ambient", "isAmbient")
+    def ambient(self) -> bool:
+        return bool(self.fields.get("ambient"))
 
     @property
-    def particles(self):
-        if self._handle is None:
-            return bool(self._fields.get("particles", True))
-        return self._field_or_call_sync("particles", "hasParticles")
+    def particles(self) -> bool:
+        return bool(self.fields.get("particles", True))
 
     @property
-    def icon(self):
-        if self._handle is None:
-            return bool(self._fields.get("icon", True))
-        return self._field_or_call_sync("icon", "hasIcon")
+    def icon(self) -> bool:
+        return bool(self.fields.get("icon", True))
 
     def with_duration(self, duration: int):
         """Return a copy with a different duration."""
@@ -1449,11 +1719,11 @@ class AttributeType(EnumValue):
 class Attribute(ProxyBase):
     """Attribute instance for a living entity."""
     @classmethod
-    def apply(cls, player: "Player", attribute_type: "AttributeType" | str, base_value: float):
+    def apply(cls, player: Player, attribute_type: AttributeType | str, base_value: float):
         """Set a player's base attribute value."""
         if isinstance(attribute_type, str):
-            attribute_type = AttributeType._from_name(attribute_type.upper())
-        attr = player._call("getAttribute", attribute_type)
+            attribute_type = AttributeType.from_name(attribute_type.upper())
+        attr = player._call_sync("getAttribute", attribute_type)
         if attr is None:
             return None
         return attr.set_base_value(base_value)
@@ -1501,16 +1771,16 @@ class Vector(ProxyBase):
             super().__init__(handle=handle, type_name=type_name, fields=fields, target=target)
 
     @property
-    def x(self):
-        return self._field_or_call_sync("x", "getX")
+    def x(self) -> float:
+        return self.fields.get("x", 0.0)
 
     @property
-    def y(self):
-        return self._field_or_call_sync("y", "getY")
+    def y(self) -> float:
+        return self.fields.get("y", 0.0)
 
     @property
-    def z(self):
-        return self._field_or_call_sync("z", "getZ")
+    def z(self) -> float:
+        return self.fields.get("z", 0.0)
 
 class BarColor(EnumValue):
     TYPE_NAME = "org.bukkit.boss.BarColor"
@@ -1524,10 +1794,10 @@ class BossBar(ProxyBase):
     def create(cls, title: str, color: Optional["BarColor"] = None, style: Optional["BarStyle"] = None, players: Optional[List["Player"]] = None):
         """Create a boss bar and optionally add players."""
         if color is None:
-            color = BarColor._from_name("PINK")
+            color = BarColor.from_name("PINK")
         if style is None:
-            style = BarStyle._from_name("SOLID")
-        bar = server._call("createBossBar", title, color, style)
+            style = BarStyle.from_name("SOLID")
+        bar = server._call_sync("createBossBar", title, color, style)
         if players:
             for player in players:
                 bar.add_player(player)
@@ -1591,8 +1861,8 @@ class Scoreboard(ProxyBase):
     @classmethod
     def create(cls):
         """Create a new scoreboard."""
-        manager = server._call("getScoreboardManager")
-        return manager._call("getNewScoreboard")
+        manager = server._call_sync("getScoreboardManager")
+        return manager._call_sync("getNewScoreboard")
 
     def register_objective(self, name: str, criteria: str, display_name: str = ""):
         """Register a new objective."""
@@ -1632,8 +1902,8 @@ class Team(ProxyBase):
     def create(cls, name: str, scoreboard: Optional["Scoreboard"] = None):
         """Create a team on a scoreboard."""
         if scoreboard is None:
-            scoreboard = Scoreboard.create()
-        return scoreboard.register_team(name)
+            scoreboard = Scoreboard.create()  # type: ignore[assignment]
+        return scoreboard.register_team(name)  # type: ignore[union-attr]
 
     def add_entry(self, entry: str):
         """Add an entry to the team."""
@@ -1671,8 +1941,8 @@ class Objective(ProxyBase):
     def create(cls, name: str, criteria: str, display_name: str = "", scoreboard: Optional["Scoreboard"] = None):
         """Create an objective on a scoreboard."""
         if scoreboard is None:
-            scoreboard = Scoreboard.create()
-        return scoreboard.register_objective(name, criteria, display_name)
+            scoreboard = Scoreboard.create()  # type: ignore[assignment]
+        return scoreboard.register_objective(name, criteria, display_name)  # type: ignore[union-attr]
 
     def set_display_name(self, name: str):
         """Set display name."""
@@ -1778,11 +2048,11 @@ class _BatchContext:
         self._mode = mode
 
     async def __aenter__(self):
-        self._connection._begin_batch(self._mode)
+        self._connection._begin_batch(self._mode)  # type: ignore[reportPrivateUsage]
         return self
 
-    async def __aexit__(self, exc_type, exc, tb):
-        self._connection._end_batch()
+    async def __aexit__(self, exc_type: Any, exc: Any, tb: Any):
+        self._connection._end_batch()  # type: ignore[reportPrivateUsage]
         if exc_type is None:
             await self._connection.flush()
         return False
@@ -1799,40 +2069,51 @@ class BridgeConnection:
             self._loop = asyncio.new_event_loop()
             asyncio.set_event_loop(self._loop)
 
-        self._pending: Dict[int, asyncio.Future] = {}
+        self._pending: Dict[int, "asyncio.Future[Any]"] = {}
         self._pending_sync: Dict[int, _SyncWait] = {}
         self._handlers: Dict[str, List[Callable[[Any], Awaitable[None]]]] = {}
 
-        self._id = 1
+        self._id_counter = itertools.count(1)
         self._socket = socket.create_connection((host, port))
 
         self._file = self._socket.makefile("rwb", buffering=0)
         self._lock = threading.Lock()
 
+        # Send auth token before starting reader thread
+        token = os.environ.get("PYJAVABRIDGE_TOKEN", "")
+        self.send({"type": "auth", "token": token})
+
         self._batch_stack: List[str] = []
         self._batch_messages: List[Dict[str, Any]] = []
-        self._batch_futures: List[asyncio.Future] = []
+        self._batch_futures: List["asyncio.Future[Any]"] = []
+
+        self._release_queue: List[int] = []
+        self._release_lock = threading.Lock()
 
         self._thread = threading.Thread(target=self._reader, daemon=True)
         self._thread.start()
         print(f"[PyJavaBridge] Connected to {host}:{port}")
 
-    def subscribe(self, event_name: str, once_per_tick: bool):
-        print(f"[PyJavaBridge] Subscribing to {event_name} once_per_tick={once_per_tick}")
-        self.send({"type": "subscribe", "event": event_name, "once_per_tick": once_per_tick})
+    def subscribe(self, event_name: str, once_per_tick: bool, priority: str = "NORMAL", throttle_ms: int = 0):
+        print(f"[PyJavaBridge] Subscribing to {event_name} once_per_tick={once_per_tick} priority={priority} throttle_ms={throttle_ms}")
+        self.send({"type": "subscribe", "event": event_name, "once_per_tick": once_per_tick, "priority": priority, "throttle_ms": throttle_ms})
 
-    def register_command(self, name: str):
+    def register_command(self, name: str, permission: Optional[str] = None):
         """Register a command name with the server."""
-        self.send({"type": "register_command", "name": name})
+        msg: Dict[str, Any] = {"type": "register_command", "name": name}
+        if permission is not None:
+            msg["permission"] = permission
+        self.send(msg)
 
     def on(self, event_name: str, handler: Callable[[Any], Awaitable[None]]):
         self._handlers.setdefault(event_name, []).append(handler)
 
-    def call(self, method: str, args: Optional[List[Any]] = None, handle: Optional[int] = None, target: Optional[str] = None, **kwargs) -> BridgeCall:
+    def call(self, method: str, args: Optional[List[Any]] = None, handle: Optional[int] = None, target: Optional[str] = None, **kwargs: Any) -> BridgeCall:
+        self._flush_releases()
         request_id = self._next_id()
         future = self._loop.create_future()
         self._pending[request_id] = future
-        message = {
+        message: Dict[str, Any] = {
             "type": "call",
             "id": request_id,
             "method": method,
@@ -1856,11 +2137,11 @@ class BridgeConnection:
         self.send(message)
         return BridgeCall(future)
 
-    def call_sync(self, method: str, args: Optional[List[Any]] = None, handle: Optional[int] = None, target: Optional[str] = None, **kwargs) -> Any:
+    def call_sync(self, method: str, args: Optional[List[Any]] = None, handle: Optional[int] = None, target: Optional[str] = None, **kwargs: Any) -> Any:
         request_id = self._next_id()
         wait = _SyncWait()
         self._pending_sync[request_id] = wait
-        message = {
+        message: Dict[str, Any] = {
             "type": "call",
             "id": request_id,
             "method": method,
@@ -1931,6 +2212,28 @@ class BridgeConnection:
             self._file.write(data)
             self._file.flush()
 
+    def _queue_release(self, handle: int):
+        with self._release_lock:
+            self._release_queue.append(handle)
+            if len(self._release_queue) >= 64:
+                self._flush_releases_locked()
+
+    def _flush_releases_locked(self):
+        """Flush queued handle releases. Must be called with _release_lock held."""
+        if not self._release_queue:
+            return
+        handles = self._release_queue[:]
+        self._release_queue.clear()
+        try:
+            self.send({"type": "release", "handles": handles})
+        except Exception:
+            pass
+
+    def _flush_releases(self):
+        """Flush queued handle releases."""
+        with self._release_lock:
+            self._flush_releases_locked()
+
     def completed_call(self, result: Any):
         future = self._loop.create_future()
         future.set_result(result)
@@ -1949,45 +2252,57 @@ class BridgeConnection:
         return bytes(data)
 
     def _reader(self):
-        while True:
-            header = self._read_exact(4)
-            if not header:
-                break
-            try:
-                length = struct.unpack("!I", header)[0]
-                payload = self._read_exact(length)
-                if payload is None:
+        try:
+            while True:
+                header = self._read_exact(4)
+                if not header:
                     break
-                message = _json_loads(payload)
-                msg_type = message.get("type")
-                if msg_type in ("return", "error"):
-                    msg_id = message.get("id")
-                    if msg_id is not None:
-                        wait = self._pending_sync.pop(msg_id, None)
-                        if wait is not None:
-                            if msg_type == "return":
-                                wait.result = self._deserialize(message.get("result"))
-                            else:
-                                code = message.get("code")
-                                if code == "ENTITY_GONE":
-                                    wait.error = EntityGoneException(message.get("message"))
+                try:
+                    length = struct.unpack("!I", header)[0]
+                    payload = self._read_exact(length)
+                    if payload is None:
+                        break
+                    message = _json_loads(payload)
+                    msg_type = message.get("type")
+                    if msg_type in ("return", "error"):
+                        msg_id = message.get("id")
+                        if msg_id is not None:
+                            wait = self._pending_sync.pop(msg_id, None)
+                            if wait is not None:
+                                if msg_type == "return":
+                                    wait.result = self._deserialize(message.get("result"))
                                 else:
-                                    wait.error = BridgeError(message.get("message"))
-                            wait.event.set()
-                            continue
-                self._loop.call_soon_threadsafe(self._handle_message, message)
-            except Exception as exc:
-                self._loop.call_soon_threadsafe(self._handle_reader_error, exc)
-                break
+                                    code = message.get("code")
+                                    if code == "ENTITY_GONE":
+                                        wait.error = EntityGoneException(message.get("message"))
+                                    else:
+                                        wait.error = BridgeError(message.get("message"))
+                                wait.event.set()
+                                continue
+                    self._loop.call_soon_threadsafe(self._handle_message, message)
+                except Exception as exc:
+                    self._loop.call_soon_threadsafe(self._handle_reader_error, exc)
+                    break
+        finally:
+            # Wake all pending sync waits on disconnect
+            disconnect_error = BridgeError("Connection lost")
+            for wait in list(self._pending_sync.values()):
+                wait.error = disconnect_error
+                wait.event.set()
+            self._pending_sync.clear()
+            # Wake all pending async futures
+            self._loop.call_soon_threadsafe(self._handle_reader_error, disconnect_error)
 
     def _handle_message(self, message: Dict[str, Any]):
         msg_type = message.get("type")
         if msg_type == "return":
-            future = self._pending.pop(message.get("id"), None)
+            msg_id: int = message.get("id")  # type: ignore[assignment]
+            future = self._pending.pop(msg_id, None)
             if future is not None:
                 future.set_result(self._deserialize(message.get("result")))
         elif msg_type == "error":
-            future = self._pending.pop(message.get("id"), None)
+            msg_id: int = message.get("id")  # type: ignore[assignment]
+            future = self._pending.pop(msg_id, None)
             if future is not None:
                 code = message.get("code")
                 if code == "ENTITY_GONE":
@@ -1999,20 +2314,24 @@ class BridgeConnection:
             print(f"[PyJavaBridge] Event received: {event_name}")
             payload = self._deserialize(message.get("payload"))
             if isinstance(payload, dict) and "event" in payload:
-                event_obj = payload.get("event")
+                p = cast(Dict[str, Any], payload)
+                event_obj = p.get("event")
                 if isinstance(event_obj, ProxyBase):
-                    if "id" in payload:
-                        event_obj._fields["__event_id__"] = payload.get("id")
-                    for key, value in payload.items():
+                    if "id" in p:
+                        event_obj.fields["__event_id__"] = p.get("id")
+                    for key, value in p.items():
                         if key != "event":
-                            event_obj._fields[key] = value
+                            event_obj.fields[key] = value
                     payload = event_obj
-            asyncio.create_task(self._dispatch_event(event_name, payload))
+            if event_name is not None:
+                asyncio.create_task(self._dispatch_event(event_name, payload))
         elif msg_type == "event_batch":
             event_name = message.get("event")
             payloads = message.get("payloads", [])
             for payload in payloads:
                 self._handle_message({"type": "event", "event": event_name, "payload": payload})
+        elif msg_type == "shutdown":
+            asyncio.create_task(self._handle_shutdown())
 
     async def _dispatch_event(self, event_name: str, payload: Any):
         handlers = list(self._handlers.get(event_name, []))
@@ -2038,12 +2357,12 @@ class BridgeConnection:
         finally:
             event_id = None
             if isinstance(payload, ProxyBase):
-                event_id = payload._fields.get("__event_id__")
+                event_id = payload.fields.get("__event_id__")
             if event_id is not None:
                 if handlers:
                     override_text = None
                     override_damage = None
-                    is_damage_event = isinstance(payload, ProxyBase) and "damage" in payload._fields
+                    is_damage_event = isinstance(payload, ProxyBase) and "damage" in payload.fields
                     for result in results:
                         if isinstance(result, str):
                             override_text = result
@@ -2055,52 +2374,122 @@ class BridgeConnection:
                         self.send({"type": "event_result", "id": event_id, "result": override_damage, "result_type": "damage"})
                 self.send({"type": "event_done", "id": event_id})
 
+    async def _handle_shutdown(self):
+        """Handle server shutdown - dispatch to handlers, then ack."""
+        try:
+            await self._dispatch_event("shutdown", SimpleNamespace(fields={}))
+        except Exception as e:
+            print(f"[PyJavaBridge] Shutdown handler error: {e}")
+        finally:
+            try:
+                self.send({"type": "shutdown_ack"})
+            except Exception:
+                pass
+
     def _handle_reader_error(self, exc: Exception):
         for future in self._pending.values():
             if not future.done():
                 future.set_exception(exc)
 
     def _next_id(self) -> int:
-        self._id += 1
-        return self._id - 1
+        return next(self._id_counter)
 
     def _serialize(self, value: Any) -> Any:
         if isinstance(value, ProxyBase):
-            if value._handle is not None:
-                return {"__handle__": value._handle}
-            if value._target == "ref" and value._ref_type and value._ref_id:
-                return {"__ref__": {"type": value._ref_type, "id": value._ref_id}}
-            return {"__value__": value.__class__.__name__, "fields": {k: self._serialize(v) for k, v in value._fields.items()}}
+            if value._handle is not None:  # type: ignore[reportPrivateUsage]
+                return {"__handle__": value._handle}  # type: ignore[reportPrivateUsage]
+            if value._target == "ref" and value._ref_type and value._ref_id:  # type: ignore[reportPrivateUsage]
+                return {"__ref__": {"type": value._ref_type, "id": value._ref_id}}  # type: ignore[reportPrivateUsage]
+            return {"__value__": value.__class__.__name__, "fields": {k: self._serialize(v) for k, v in value.fields.items()}}
         if isinstance(value, EnumValue):
             return {"__enum__": value.type, "name": value.name}
         if isinstance(value, uuid.UUID):
             return {"__uuid__": str(value)}
         if isinstance(value, list):
-            return [self._serialize(v) for v in value]
+            items = cast(List[Any], value)
+            return [self._serialize(v) for v in items]
         if isinstance(value, dict):
-            return {k: self._serialize(v) for k, v in value.items()}
+            d = cast(Dict[str, Any], value)
+            return {k: self._serialize(v) for k, v in d.items()}
         return value
 
     def _deserialize(self, value: Any) -> Any:
         if isinstance(value, dict):
-            if "__handle__" in value:
-                return _proxy_from(value)
-            if "__uuid__" in value:
-                return uuid.UUID(value["__uuid__"])
-            if "__enum__" in value:
-                return _enum_from(value["__enum__"], value["name"])
-            if {"x", "y", "z"}.issubset(value.keys()):
-                return SimpleNamespace(**{k: self._deserialize(v) for k, v in value.items()})
-            return {k: self._deserialize(v) for k, v in value.items()}
+            d = cast(Dict[str, Any], value)
+            if "__handle__" in d:
+                return _proxy_from(d)
+            if "__uuid__" in d:
+                return uuid.UUID(d["__uuid__"])
+            if "__enum__" in d:
+                return _enum_from(d["__enum__"], d["name"])
+            if {"x", "y", "z"}.issubset(d.keys()):
+                return SimpleNamespace(**{k: self._deserialize(v) for k, v in d.items()})
+            return {k: self._deserialize(v) for k, v in d.items()}
         if isinstance(value, list):
-            return [self._deserialize(v) for v in value]
+            items = cast(List[Any], value)
+            return [self._deserialize(v) for v in items]
         return value
+
+class _ConsolePlayer:
+    def __init__(self, sender_obj: Any):
+        self._sender = sender_obj
+        self.fields: Dict[str, Any] = {"name": "Console", "uuid": "console"}
+
+    @property
+    def name(self):
+        return "Console"
+
+    @property
+    def uuid(self):
+        return "console"
+
+    def is_op(self):
+        return _connection.completed_call(True)
+
+    def has_permission(self, permission: str):
+        return _connection.completed_call(True)
+
+    def send_message(self, message: str):
+        try:
+            if isinstance(self._sender, ProxyBase):
+                _connection.call_sync(
+                    method="sendMessage",
+                    args=[message],
+                    handle=self._sender._handle,  # type: ignore[reportPrivateUsage]
+                    target=self._sender._target,  # type: ignore[reportPrivateUsage]
+                )
+                return _connection.completed_call(None)
+            if self._sender is not None:
+                result = self._sender.sendMessage(message)
+                if hasattr(result, "__await__"):
+                    return result
+        except Exception:
+            pass
+        print(f"[PyJavaBridge] {message}")
+        return _connection.completed_call(None)
+
+    def play_sound(self, sound: Any, volume: float = 1.0, pitch: float = 1.0):
+        return _connection.completed_call(None)
+
+    def kick(self, reason: str = ""):
+        return _connection.completed_call(None)
+
 
 _connection: BridgeConnection
 _player_uuid_cache: Dict[str, str] = {}
 
+def _extract_xyz(pos:Vector | list[float] | tuple[float,float,float] | SimpleNamespace) -> tuple[float,float,float]:
+    """Extract (x, y, z) from a Location, Vector, tuple, list, or namespace."""
+    if isinstance(pos, (list, tuple)) and len(pos) >= 3:
+        return float(pos[0]), float(pos[1]), float(pos[2])
+
+    if hasattr(pos, "x") and hasattr(pos, "y") and hasattr(pos, "z"):
+        return float(pos.x), float(pos.y), float(pos.z) # type: ignore
+
+    raise BridgeError(f"Cannot extract (x, y, z) from {type(pos).__name__}")
+
 def _enum_from(type_name: str, name: str) -> EnumValue:
-    mapping = {
+    mapping: Dict[str, type[EnumValue]] = {
         "org.bukkit.Material": Material,
         "org.bukkit.block.Biome": Biome,
         "org.bukkit.GameMode": GameMode,
@@ -2117,10 +2506,10 @@ def _enum_from(type_name: str, name: str) -> EnumValue:
     return enum_cls(type_name, name)
 
 def _proxy_from(raw: Dict[str, Any]) -> ProxyBase:
-    type_name = raw.get("__type__")
-    fields = raw.get("fields") or {}
-    fields = {k: _connection._deserialize(v) for k, v in fields.items()}
-    handle = raw.get("__handle__")
+    type_name: Optional[str] = raw.get("__type__")
+    raw_fields: Any = raw.get("fields") or {}
+    fields: Dict[str, Any] = {str(k): _connection._deserialize(v) for k, v in raw_fields.items()}  # type: ignore[reportPrivateUsage]
+    handle: Optional[int] = raw.get("__handle__")
     if type_name == "Player":
         name = fields.get("name")
         player_uuid = fields.get("uuid")
@@ -2129,7 +2518,7 @@ def _proxy_from(raw: Dict[str, Any]) -> ProxyBase:
                 _player_uuid_cache[name] = str(player_uuid)
             elif isinstance(player_uuid, str):
                 _player_uuid_cache[name] = player_uuid
-    proxy_map = {
+    proxy_map: Dict[str, type[ProxyBase]] = {
         "Server": Server,
         "Player": Player,
         "Entity": Entity,
@@ -2156,7 +2545,7 @@ def _proxy_from(raw: Dict[str, Any]) -> ProxyBase:
     if type_name and type_name.endswith("Event"):
         proxy_cls = Event
     else:
-        proxy_cls = proxy_map.get(type_name, ProxyBase)
+        proxy_cls = proxy_map.get(type_name or "", ProxyBase)
         if proxy_cls is ProxyBase and type_name:
             if type_name.endswith("Player"):
                 proxy_cls = Player
@@ -2178,7 +2567,7 @@ def _proxy_from(raw: Dict[str, Any]) -> ProxyBase:
                 proxy_cls = Effect
     return proxy_cls(handle=handle, type_name=type_name, fields=fields)
 
-def event(func: Optional[Callable] = None, *, once_per_tick: bool = False):
+def event(func: Optional[Callable[[Event], Any]] = None, *, once_per_tick: bool = False, priority: str = "NORMAL", throttle_ms: int = 0):
     """
     Register an async event handler.
 
@@ -2194,15 +2583,18 @@ def event(func: Optional[Callable] = None, *, once_per_tick: bool = False):
 
     Args:
         once_per_tick: If true, the handler is throttled to once per tick.
+        priority: Bukkit EventPriority (LOWEST, LOW, NORMAL, HIGH, HIGHEST, MONITOR).
+        throttle_ms: Minimum milliseconds between event dispatches (0 = no throttle).
     """
-    def decorator(handler):
+    def decorator(handler: Callable[[Event], Any]):
         event_name = handler.__name__
         _connection.on(event_name, handler)
-        _connection.subscribe(event_name, once_per_tick)
+        _connection.subscribe(event_name, once_per_tick, priority, throttle_ms)
         return handler
 
     if func is None:
         return decorator
+
     return decorator(func)
 
 def _command_signature_params(sig: inspect.Signature):
@@ -2268,7 +2660,7 @@ def _parse_command_tokens(raw_args: List[str], positional_params: List[inspect.P
         var_args = positional_tokens
     return pos_args, var_args, kwargs, positional_tokens, allowed_kw_names
 
-def command(description: Optional[str] = None, *, name: Optional[str] = None):
+def command(description: Optional[str] = None, *, name: Optional[str] = None, permission: Optional[str] = None):
     """
     Register a command handler.
 
@@ -2289,12 +2681,12 @@ async def greet(event: Event, name: str):
     event.player.send_message(f"Hello, {name}!")
 ```
     """
-    def decorator(handler):
+    def decorator(handler: Any) -> Any:
         sig = inspect.signature(handler)
         positional_params, keyword_only_names, has_varargs, has_varkw = _command_signature_params(sig)
 
         def _format_type(annotation: Any) -> str:
-            if annotation is inspect._empty:
+            if annotation is inspect.Parameter.empty:
                 return "str"
             if isinstance(annotation, str):
                 return annotation
@@ -2311,7 +2703,7 @@ async def greet(event: Event, name: str):
             for param in positional_params:
                 type_name = _format_type(param.annotation)
                 token = f"<{param.name}: {type_name}>"
-                if param.default is not inspect._empty:
+                if param.default is not inspect.Parameter.empty:
                     token = f"[{token}]"
                 parts.append(token)
             if has_varargs:
@@ -2321,72 +2713,29 @@ async def greet(event: Event, name: str):
             args_text = " ".join(parts)
             return f"Usage: /{command_name}" + (f" {args_text}" if args_text else "")
 
-        allowed_kw_names = {p.name for p in positional_params} | set(keyword_only_names)
+        _allowed_kw_names = {p.name for p in positional_params} | set(keyword_only_names)
 
         command_name = (name or handler.__name__).lower()
 
-        class _ConsolePlayer:
-            def __init__(self, sender_obj: Any):
-                self._sender = sender_obj
-                self._fields: Dict[str, Any] = {"name": "Console", "uuid": "console"}
-
-            @property
-            def name(self):
-                return "Console"
-
-            @property
-            def uuid(self):
-                return "console"
-
-            def is_op(self):
-                return _connection.completed_call(True)
-
-            def has_permission(self, permission: str):
-                return _connection.completed_call(True)
-
-            def send_message(self, message: str):
-                try:
-                    if isinstance(self._sender, ProxyBase):
-                        _connection.call_sync(
-                            method="sendMessage",
-                            args=[message],
-                            handle=self._sender._handle,
-                            target=self._sender._target,
-                        )
-                        return _connection.completed_call(None)
-                    if self._sender is not None:
-                        result = self._sender.sendMessage(message)
-                        if hasattr(result, "__await__"):
-                            return result
-                except Exception:
-                    pass
-                print(f"[PyJavaBridge] {message}")
-                return _connection.completed_call(None)
-
-            def play_sound(self, sound: Any, volume: float = 1.0, pitch: float = 1.0):
-                return _connection.completed_call(None)
-
-            def kick(self, reason: str = ""):
-                return _connection.completed_call(None)
-
         @wraps(handler)
-        async def wrapper(event_obj):
+        async def wrapper(event_obj: Any) -> None:
             if isinstance(event_obj, ProxyBase):
-                player = event_obj._fields.get("player")
-                sender_obj = event_obj._fields.get("sender")
+                player = event_obj.fields.get("player")
+                sender_obj = event_obj.fields.get("sender")
                 if player is None and sender_obj is not None and not isinstance(sender_obj, Player):
-                    event_obj._fields["player"] = _ConsolePlayer(sender_obj)
+                    event_obj.fields["player"] = _ConsolePlayer(sender_obj)
             elif isinstance(event_obj, dict):
-                player = event_obj.get("player")
-                sender_obj = event_obj.get("sender")
+                evt = cast(Dict[str, Any], event_obj)
+                player: Any = evt.get("player")
+                sender_obj: Any = evt.get("sender")
                 if player is None and sender_obj is not None and not isinstance(sender_obj, Player):
-                    event_obj["player"] = _ConsolePlayer(sender_obj)
+                    evt["player"] = _ConsolePlayer(sender_obj)
 
             raw_args: List[str] = []
             if isinstance(event_obj, ProxyBase):
-                raw_args = event_obj._fields.get("args", []) or []
+                raw_args = event_obj.fields.get("args", []) or []
             elif isinstance(event_obj, dict):
-                raw_args = event_obj.get("args", []) or []
+                raw_args = list(cast(Dict[str, Any], event_obj).get("args", []) or [])
 
             pos_args, var_args, kwargs, positional_tokens, allowed_kw_names = _parse_command_tokens(
                 raw_args,
@@ -2405,11 +2754,12 @@ async def greet(event: Event, name: str):
                     kwargs.pop(key)
 
             if positional_tokens and not positional_params and not has_varargs:
-                target = None
+                target: Any = None
                 if isinstance(event_obj, ProxyBase):
-                    target = event_obj._fields.get("player") or event_obj._fields.get("sender")
+                    target = event_obj.fields.get("player") or event_obj.fields.get("sender")
                 elif isinstance(event_obj, dict):
-                    target = event_obj.get("player") or event_obj.get("sender")
+                    evt = cast(Dict[str, Any], event_obj)
+                    target = evt.get("player") or evt.get("sender")
                 usage = _usage_text(command_name)
                 if target is not None:
                     try:
@@ -2427,9 +2777,10 @@ async def greet(event: Event, name: str):
             except TypeError:
                 target = None
                 if isinstance(event_obj, ProxyBase):
-                    target = event_obj._fields.get("player") or event_obj._fields.get("sender")
+                    target = event_obj.fields.get("player") or event_obj.fields.get("sender")
                 elif isinstance(event_obj, dict):
-                    target = event_obj.get("player") or event_obj.get("sender")
+                    evt = cast(Dict[str, Any], event_obj)
+                    target = evt.get("player") or evt.get("sender")
                 usage = _usage_text(command_name)
                 if target is not None:
                     try:
@@ -2445,9 +2796,9 @@ async def greet(event: Event, name: str):
             return await handler(event_obj, *pos_args, *var_args, **kwargs)
         event_name = f"command_{command_name}"
         _connection.on(event_name, wrapper)
-        _connection.register_command(command_name)
-        wrapper.__command_args__ = [p.name for p in positional_params]
-        wrapper.__command_desc__ = description
+        _connection.register_command(command_name, permission=permission)
+        setattr(wrapper, "__command_args__", [p.name for p in positional_params])
+        setattr(wrapper, "__command_desc__", description)
         return wrapper
 
     return decorator
@@ -2458,12 +2809,12 @@ reflect = ReflectFacade(target="reflect")
 
 async def _prime_player_cache():
     try:
-        players = server.players
+        players: Any = server.players
         if isinstance(players, list):
-            for player in players:
+            for player in cast(List[Any], players):
                 if isinstance(player, Player):
-                    name = player._fields.get("name")
-                    player_uuid = player._fields.get("uuid")
+                    name = player.fields.get("name")
+                    player_uuid = player.fields.get("uuid")
                     if isinstance(name, str):
                         if isinstance(player_uuid, uuid.UUID):
                             _player_uuid_cache[name] = str(player_uuid)
@@ -2486,11 +2837,10 @@ async def raycast(
     if isinstance(world, str):
         world = await server.world(world)
 
-    if hasattr(start, "x") and hasattr(start, "y") and hasattr(start, "z"):
-        start_xyz = [float(start.x), float(start.y), float(start.z)]
-
+    if isinstance(start, (list, tuple)):
+        start_xyz = [float(start[0]), float(start[1]), float(start[2])]
     else:
-        start_xyz = list(start)
+        start_xyz = [float(start.x), float(start.y), float(start.z)]
 
     yaw, pitch = direction
 
@@ -2514,25 +2864,417 @@ async def raycast(
     if result is None:
         return None
 
+    getter: Callable[..., Any]
     if isinstance(result, dict):
-        getter = result.get
+        getter = cast(Dict[str, Any], result).get
     else:
-        getter = lambda key, default=None: getattr(result, key, default)
+        getter = lambda key, default=None: getattr(result, key, default)  # type: ignore[reportUnknownLambdaType]
 
     return RaycastResult(
-        x=float(getter("x")),
-        y=float(getter("y")),
-        z=float(getter("z")),
+        x=float(getter("x", 0)),
+        y=float(getter("y", 0)),
+        z=float(getter("z", 0)),
         entity=getter("entity"),
         block=getter("block"),
-        start_x=float(getter("startX")),
-        start_y=float(getter("startY")),
-        start_z=float(getter("startZ")),
-        yaw=float(getter("yaw")),
-        pitch=float(getter("pitch")),
+        start_x=float(getter("startX", 0)),
+        start_y=float(getter("startY", 0)),
+        start_z=float(getter("startZ", 0)),
+        yaw=float(getter("yaw", 0)),
+        pitch=float(getter("pitch", 0)),
+        distance=float(getter("distance", 0)),
+        hit_face=getter("hit_face"),
     )
 
-def _bootstrap(script_path: str):
+def _yaml_parse_scalar(value: str) -> Any:
+    """Parse a YAML scalar string into a Python value."""
+    if not value:
+        return None
+    if value in ("null", "Null", "NULL", "~"):
+        return None
+    if value in ("true", "True", "TRUE", "yes", "Yes", "YES", "on", "On", "ON"):
+        return True
+    if value in ("false", "False", "FALSE", "no", "No", "NO", "off", "Off", "OFF"):
+        return False
+    if (value.startswith('"') and value.endswith('"')) or (value.startswith("'") and value.endswith("'")):
+        return value[1:-1]
+    try:
+        return int(value)
+    except ValueError:
+        pass
+    try:
+        return float(value)
+    except ValueError:
+        pass
+    return value
+
+def _yaml_strip_comment(line: str) -> str:
+    """Strip inline comments from a YAML line, respecting quoted strings."""
+    in_single = False
+    in_double = False
+    for i, ch in enumerate(line):
+        if ch == "'" and not in_double:
+            in_single = not in_single
+        elif ch == '"' and not in_single:
+            in_double = not in_double
+        elif ch == '#' and not in_single and not in_double:
+            return line[:i].rstrip()
+    return line
+
+def _yaml_load(text: str) -> Any:
+    """Parse simple YAML (mappings, sequences, scalars) into Python objects."""
+    parsed: List[tuple[int, str]] = []
+    for raw in text.splitlines():
+        stripped = raw.lstrip()
+        if not stripped or stripped.startswith('#'):
+            continue
+        indent = len(raw) - len(stripped)
+        content = _yaml_strip_comment(stripped)
+        if content:
+            parsed.append((indent, content))
+    if not parsed:
+        return {}
+    result, _ = _yaml_parse_block(parsed, 0, parsed[0][0])
+    return result
+
+def _yaml_parse_block(lines: List[tuple[int, str]], start: int, block_indent: int) -> tuple[Any, int]:
+    """Parse a block at a given indent level. Returns (value, next_index)."""
+    if start >= len(lines):
+        return {}, start
+    _, content = lines[start]
+    if content.startswith('- '):
+        return _yaml_parse_sequence(lines, start, block_indent)
+    return _yaml_parse_mapping(lines, start, block_indent)
+
+def _yaml_parse_mapping(lines: List[tuple[int, str]], start: int, block_indent: int) -> tuple[Dict[str, Any], int]:
+    """Parse a YAML mapping block."""
+    result: Dict[str, Any] = {}
+    i = start
+    while i < len(lines):
+        indent, content = lines[i]
+        if indent < block_indent:
+            break
+        if indent > block_indent:
+            break
+        if content.startswith('- '):
+            break
+
+        if ': ' in content:
+            key, val_str = content.split(': ', 1)
+            result[key.strip()] = _yaml_parse_scalar(val_str.strip())
+            i += 1
+        elif content.endswith(':') and not content.endswith('::'):
+            key = content[:-1].strip()
+            i += 1
+            if i < len(lines) and lines[i][0] > block_indent:
+                child_indent = lines[i][0]
+                value, i = _yaml_parse_block(lines, i, child_indent)
+                result[key] = value
+            else:
+                result[key] = None
+        else:
+            i += 1
+    return result, i
+
+def _yaml_parse_sequence(lines: List[tuple[int, str]], start: int, block_indent: int) -> tuple[List[Any], int]:
+    """Parse a YAML sequence block."""
+    result: List[Any] = []
+    i = start
+    while i < len(lines):
+        indent, content = lines[i]
+        if indent < block_indent:
+            break
+        if indent > block_indent:
+            break
+        if not content.startswith('- '):
+            break
+
+        item_content = content[2:].strip()
+        item_indent = indent + 2
+
+        if not item_content:
+            # Bare '- ' with nested content
+            i += 1
+            if i < len(lines) and lines[i][0] >= item_indent:
+                value, i = _yaml_parse_block(lines, i, lines[i][0])
+                result.append(value)
+        elif ': ' in item_content or (item_content.endswith(':') and not item_content.endswith('::')):
+            # List item is a mapping: - key: value
+            item_dict: Dict[str, Any] = {}
+            if ': ' in item_content:
+                key, val_str = item_content.split(': ', 1)
+                item_dict[key.strip()] = _yaml_parse_scalar(val_str.strip())
+            else:
+                key = item_content[:-1].strip()
+                i += 1
+                if i < len(lines) and lines[i][0] >= item_indent:
+                    value, i = _yaml_parse_block(lines, i, lines[i][0])
+                    item_dict[key] = value
+                else:
+                    item_dict[key] = None
+                result.append(item_dict)
+                continue
+            i += 1
+            # Continue reading mapping entries at item_indent
+            while i < len(lines) and lines[i][0] >= item_indent:
+                sub_indent, sub_content = lines[i]
+                if sub_indent == item_indent:
+                    if sub_content.startswith('- '):
+                        break
+                    if ': ' in sub_content:
+                        k, v = sub_content.split(': ', 1)
+                        item_dict[k.strip()] = _yaml_parse_scalar(v.strip())
+                        i += 1
+                    elif sub_content.endswith(':') and not sub_content.endswith('::'):
+                        k = sub_content[:-1].strip()
+                        i += 1
+                        if i < len(lines) and lines[i][0] > item_indent:
+                            child_indent = lines[i][0]
+                            value, i = _yaml_parse_block(lines, i, child_indent)
+                            item_dict[k] = value
+                        else:
+                            item_dict[k] = None
+                    else:
+                        break
+                elif sub_indent > item_indent:
+                    break
+                else:
+                    break
+            result.append(item_dict)
+        else:
+            result.append(_yaml_parse_scalar(item_content))
+            i += 1
+
+    return result, i
+
+def _yaml_needs_quoting(value: str) -> bool:
+    """Check if a string value needs quoting in YAML output."""
+    if not value:
+        return True
+    if value in ("true", "false", "yes", "no", "on", "off",
+                 "True", "False", "Yes", "No", "On", "Off",
+                 "TRUE", "FALSE", "YES", "NO", "ON", "OFF",
+                 "null", "Null", "NULL", "~"):
+        return True
+    if value[0] in (' ', '\t') or value[-1] in (' ', '\t'):
+        return True
+    if any(ch in value for ch in (':', '#', '{', '}', '[', ']', ',', '&', '*', '?', '|', '>', '!', '%', '@', '`')):
+        return True
+    try:
+        int(value)
+        return True
+    except ValueError:
+        pass
+    try:
+        float(value)
+        return True
+    except ValueError:
+        pass
+    return False
+
+def _yaml_dump(data: Any, indent: int = 0) -> str:
+    """Dump a Python object to simple YAML format."""
+    prefix = '  ' * indent
+    lines: List[str] = []
+
+    if isinstance(data, dict):
+        dict_data = cast(Dict[str, Any], data)
+        for key, value in dict_data.items():
+            if isinstance(value, dict):
+                if value:
+                    lines.append(f"{prefix}{key}:")
+                    lines.append(_yaml_dump(value, indent + 1))
+                else:
+                    lines.append(f"{prefix}{key}: {{}}")
+            elif isinstance(value, list):
+                if value:
+                    lines.append(f"{prefix}{key}:")
+                    child = '  ' * (indent + 1)
+                    for item in cast(List[Any], value):
+                        if isinstance(item, dict):
+                            item_dict = cast(Dict[str, Any], item)
+                            first = True
+                            for k, v in item_dict.items():
+                                scalar = _yaml_dump_scalar(v)
+                                if first:
+                                    lines.append(f"{child}- {k}: {scalar}")
+                                    first = False
+                                else:
+                                    lines.append(f"{child}  {k}: {scalar}")
+                        else:
+                            lines.append(f"{child}- {_yaml_dump_scalar(item)}")
+                else:
+                    lines.append(f"{prefix}{key}: []")
+            else:
+                lines.append(f"{prefix}{key}: {_yaml_dump_scalar(value)}")
+    elif isinstance(data, list):
+        list_data = cast(List[Any], data)
+        for item in list_data:
+            if isinstance(item, dict):
+                item_dict = cast(Dict[str, Any], item)
+                first = True
+                for k, v in item_dict.items():
+                    scalar = _yaml_dump_scalar(v)
+                    if first:
+                        lines.append(f"{prefix}- {k}: {scalar}")
+                        first = False
+                    else:
+                        lines.append(f"{prefix}  {k}: {scalar}")
+            else:
+                lines.append(f"{prefix}- {_yaml_dump_scalar(item)}")
+    else:
+        lines.append(f"{prefix}{_yaml_dump_scalar(data)}")
+
+    return '\n'.join(lines)
+
+def _yaml_dump_scalar(value: Any) -> str:
+    """Convert a Python scalar to its YAML string representation."""
+    if value is None:
+        return 'null'
+    if isinstance(value, bool):
+        return 'true' if value else 'false'
+    if isinstance(value, (int, float)):
+        return str(value)
+    s = str(value)
+    if _yaml_needs_quoting(s):
+        escaped = s.replace('\\', '\\\\').replace('"', '\\"')
+        return f'"{escaped}"'
+    return s
+
+class Config:
+    """Per-script configuration helper with dot-path access and YAML persistence.
+
+    Usage::
+
+        config = Config(defaults={"welcome": {"enabled": True, "message": "Hello!"}})
+        if config.get_bool("welcome.enabled"):
+            msg = config.get("welcome.message", "Hi")
+        config.set("welcome.message", "Welcome!")
+        config.save()
+    """
+
+    def __init__(self, name: Optional[str] = None, defaults: Optional[Dict[str, Any]] = None):
+        script_path = os.environ.get("PYJAVABRIDGE_SCRIPT", "")
+        if name is None:
+            name = os.path.splitext(os.path.basename(script_path))[0] if script_path else "config"
+        scripts_dir = os.path.dirname(script_path) if script_path else "."
+        plugin_dir = os.path.dirname(scripts_dir)
+        config_dir = os.path.join(plugin_dir, "config", name)
+        os.makedirs(config_dir, exist_ok=True)
+
+        self._path = os.path.join(config_dir, "config.yml")
+        self._data: Dict[str, Any] = dict(defaults) if defaults else {}
+        self._defaults: Dict[str, Any] = dict(defaults) if defaults else {}
+        self.reload()
+
+    def reload(self):
+        """Reload config from disk, merging with defaults."""
+        data: Dict[str, Any] = {}
+        if os.path.exists(self._path):
+            try:
+                with open(self._path, "r", encoding="utf-8") as f:
+                    loaded = _yaml_load(f.read())
+                    data = cast(Dict[str, Any], loaded) if isinstance(loaded, dict) else {}
+            except Exception:
+                data = {}
+        merged = dict(self._defaults)
+        _deep_merge(merged, data)
+        self._data = merged
+
+    def save(self):
+        """Save current config to disk."""
+        with open(self._path, "w", encoding="utf-8") as f:
+            f.write(_yaml_dump(self._data))
+            f.write('\n')
+
+    def get(self, path: str, default: Any = None) -> Any:
+        """Get a value by dot-path (e.g. 'database.host')."""
+        keys = path.split(".")
+        data = self._data
+        for key in keys:
+            if isinstance(data, dict) and key in data:
+                data = data[key]
+            else:
+                return default
+        return data
+
+    def get_int(self, path: str, default: int = 0) -> int:
+        """Get an integer value by dot-path."""
+        v = self.get(path)
+        return int(v) if v is not None else default
+
+    def get_float(self, path: str, default: float = 0.0) -> float:
+        """Get a float value by dot-path."""
+        v = self.get(path)
+        return float(v) if v is not None else default
+
+    def get_bool(self, path: str, default: bool = False) -> bool:
+        """Get a boolean value by dot-path."""
+        v = self.get(path)
+        if v is None:
+            return default
+        if isinstance(v, str):
+            return v.lower() in ("true", "yes", "1", "on")
+        return bool(v)
+
+    def get_list(self, path: str, default: Optional[List[Any]] = None) -> List[Any]:
+        """Get a list value by dot-path."""
+        v = self.get(path)
+        if v is None:
+            return default if default is not None else []
+        result: List[Any] = list(cast(List[Any], v)) if isinstance(v, (list, tuple)) else [v]
+        return result
+
+    def set(self, path: str, value: Any):
+        """Set a value by dot-path, creating intermediate dicts as needed."""
+        keys = path.split(".")
+        data = self._data
+        for key in keys[:-1]:
+            if key not in data or not isinstance(data[key], dict):
+                data[key] = {}
+            data = data[key]
+        data[keys[-1]] = value
+
+    def delete(self, path: str) -> bool:
+        """Delete a value by dot-path. Returns True if the key existed."""
+        keys = path.split(".")
+        data = self._data
+        for key in keys[:-1]:
+            if not isinstance(data, dict) or key not in data:
+                return False
+            data = data[key]
+        if isinstance(data, dict) and keys[-1] in data:
+            del data[keys[-1]]
+            return True
+        return False
+
+    def __getitem__(self, key: str) -> Any:
+        return self.get(key)
+
+    def __setitem__(self, key: str, value: Any):
+        self.set(key, value)
+
+    def __contains__(self, key: str) -> bool:
+        return self.get(key) is not None
+
+    @property
+    def data(self) -> Dict[str, Any]:
+        """Direct access to the underlying data dict."""
+        return self._data
+
+    @property
+    def path(self) -> str:
+        """Path to the config file on disk."""
+        return self._path
+
+def _deep_merge(base: Dict[str, Any], override: Dict[str, Any]):
+    """Recursively merge override into base."""
+    for key, value in override.items():
+        if key in base and isinstance(base[key], dict) and isinstance(value, dict):
+            _deep_merge(base[key], value)  # type: ignore[reportUnknownArgumentType]
+        else:
+            base[key] = value
+
+def _bootstrap(script_path: str): # type: ignore
     global _connection
     port = int(os.environ.get("PYJAVABRIDGE_PORT", "0"))
     if port == 0:
