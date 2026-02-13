@@ -45,6 +45,14 @@ public class RefFacade {
         if (target instanceof org.bukkit.entity.Player player && !player.isOnline()) {
             throw new EntityGoneException("Player is no longer online");
         }
+        if (target instanceof org.bukkit.entity.Entity entity) {
+            if (entity.isDead()) {
+                throw new EntityGoneException("Entity is no longer valid");
+            }
+            if (!entity.isValid() && !(entity instanceof org.bukkit.entity.Display)) {
+                throw new EntityGoneException("Entity is no longer valid");
+            }
+        }
         if (target instanceof Block blockTarget && "getInventory".equals(method)) {
             BlockState state = blockTarget.getState();
             if (state instanceof InventoryHolder holder) {
@@ -74,6 +82,11 @@ public class RefFacade {
                 Map<String, Object> options = kwargs == null ? Collections.emptyMap() : instance.deserializeArgsObject(kwargs);
                 return instance.spawnEntityWithOptions(worldTarget, locationObj, typeObj, options);
             }
+        }
+        if (target instanceof World worldTarget && "spawnImagePixels".equals(method) && args.size() >= 2) {
+            Object locationObj = args.get(0);
+            Object pixelsObj = args.get(1);
+            return instance.spawnImagePixels(worldTarget, locationObj, pixelsObj);
         }
         Method[] methods = target.getClass().getMethods();
         for (Method candidate : methods) {

@@ -4,7 +4,6 @@ import com.pyjavabridge.event.CancelMode;
 import com.pyjavabridge.event.EventSubscription;
 import com.pyjavabridge.event.PendingEvent;
 import com.pyjavabridge.facade.*;
-import com.pyjavabridge.util.CallableTask;
 import com.pyjavabridge.util.EntityGoneException;
 import com.pyjavabridge.util.EnumValue;
 import com.pyjavabridge.util.NonLivingSpawner;
@@ -19,7 +18,6 @@ import com.google.common.collect.Multimap;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Bukkit;
-import org.bukkit.FluidCollisionMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
@@ -51,8 +49,15 @@ import org.bukkit.projectiles.ProjectileSource;
 import org.bukkit.projectiles.BlockProjectileSource;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeModifier;
-import org.bukkit.util.RayTraceResult;
 import org.bukkit.util.Vector;
+import org.bukkit.util.Transformation;
+import org.bukkit.Color;
+import org.bukkit.block.data.BlockData;
+import org.bukkit.entity.Display;
+import org.bukkit.entity.TextDisplay;
+import net.kyori.adventure.text.minimessage.MiniMessage;
+import org.joml.Vector3f;
+import org.joml.Quaternionf;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -74,7 +79,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.EnumMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -328,7 +332,9 @@ public class BridgeInstance {
             case "call" -> handleCall(message);
             case "call_batch" -> handleCallBatch(message);
             case "wait" -> handleWait(message);
-            case "ready" -> sendEvent("server_boot", new JsonObject());
+                case "ready" -> Bukkit.getScheduler().runTaskLater(plugin,
+                    () -> sendEvent("server_boot", new JsonObject()),
+                    2L);
             case "event_done" -> handleEventDone(message);
             case "event_cancel" -> handleEventCancel(message);
             case "event_result" -> handleEventResult(message);
@@ -666,7 +672,10 @@ public class BridgeInstance {
         }
 
         if (target instanceof org.bukkit.entity.Entity entity) {
-            if (!entity.isValid() || entity.isDead()) {
+            if (entity.isDead()) {
+                throw new EntityGoneException("Entity is no longer valid");
+            }
+            if (!entity.isValid() && !(entity instanceof Display)) {
                 throw new EntityGoneException("Entity is no longer valid");
             }
         }
@@ -714,6 +723,12 @@ public class BridgeInstance {
                 Map<String, Object> options = deserializeArgsObject(argsObj);
                 return spawnEntityWithOptions(worldTarget, locationObj, typeObj, options);
             }
+        }
+
+        if (target instanceof World worldTarget && "spawnImagePixels".equals(method) && args.size() >= 2) {
+            Object locationObj = args.get(0);
+            Object pixelsObj = args.get(1);
+            return spawnImagePixels(worldTarget, locationObj, pixelsObj);
         }
 
         if (target instanceof Block blockTarget && "getInventory".equals(method)) {
@@ -949,6 +964,58 @@ public class BridgeInstance {
 
         if (target instanceof org.bukkit.Server && "broadcastMessage".equals(method) && !args.isEmpty()) {
             plugin.getLogger().info("[broadcast] " + args.get(0));
+        }
+
+        if (target instanceof org.bukkit.Server serverTarget && "execute".equals(method) && !args.isEmpty()) {
+            String commandLine = String.valueOf(args.get(0));
+
+            if (commandLine.startsWith("/")) {
+                commandLine = commandLine.substring(1);
+            }
+
+            return serverTarget.dispatchCommand(Bukkit.getConsoleSender(), commandLine);
+        }
+
+        // TextDisplay.text() — parse MiniMessage rich text if it contains tags
+        if (target instanceof TextDisplay textDisplay && "text".equals(method) && args.size() == 1) {
+            Object arg = args.get(0);
+            if (arg instanceof String str) {
+                if (str.contains("<")) {
+                    textDisplay.text(MiniMessage.miniMessage().deserialize(str));
+                } else {
+                    textDisplay.text(Component.text(str));
+                }
+                return null;
+            }
+        }
+
+        // Display.setTransform(tx, ty, tz, sx, sy, sz) — helper for Transformation
+        if (target instanceof Display display && "setTransform".equals(method) && args.size() == 6) {
+            float tx = args.get(0) instanceof Number n ? n.floatValue() : 0f;
+            float ty = args.get(1) instanceof Number n ? n.floatValue() : 0f;
+            float tz = args.get(2) instanceof Number n ? n.floatValue() : 0f;
+            float sx = args.get(3) instanceof Number n ? n.floatValue() : 1f;
+            float sy = args.get(4) instanceof Number n ? n.floatValue() : 1f;
+            float sz = args.get(5) instanceof Number n ? n.floatValue() : 1f;
+            Quaternionf identity = new Quaternionf(0, 0, 0, 1);
+            display.setTransformation(new Transformation(
+                new Vector3f(tx, ty, tz), identity, new Vector3f(sx, sy, sz), new Quaternionf(identity)
+            ));
+            return null;
+        }
+
+        // TextDisplay.setBackgroundColor(int) — ARGB integer
+        if (target instanceof TextDisplay textDisplay && "setBackgroundColor".equals(method) && args.size() == 1) {
+            Object arg = args.get(0);
+            if (arg instanceof Number number) {
+                int argb = number.intValue();
+                int a = (argb >> 24) & 0xFF;
+                int r = (argb >> 16) & 0xFF;
+                int g = (argb >> 8) & 0xFF;
+                int b = argb & 0xFF;
+                textDisplay.setBackgroundColor(Color.fromARGB(a, r, g, b));
+                return null;
+            }
         }
 
         if ("get_attr".equals(method)) {
@@ -1187,6 +1254,148 @@ public class BridgeInstance {
         return spawned;
     }
 
+    @SuppressWarnings("unchecked")
+    public List<Entity> spawnImagePixels(World worldTarget, Object locationObj, Object pixelsObj) throws Exception {
+        Location baseLocation = resolveSpawnLocation(worldTarget, locationObj, Collections.emptyMap());
+        if (baseLocation == null) {
+            throw new IllegalArgumentException("spawnImagePixels requires a valid location");
+        }
+
+        if (!(pixelsObj instanceof List<?> pixelEntries)) {
+            throw new IllegalArgumentException("spawnImagePixels requires a list payload");
+        }
+
+        List<Entity> spawned = new ArrayList<>();
+        int spawnedViaWorldSpawn = 0;
+        int skippedEntries = 0;
+        int worldSpawnErrors = 0;
+        int nullAfterSpawn = 0;
+        String worldSpawnLastError = null;
+        plugin.getLogger().info("[" + name + "] spawnImagePixels payload entries: " + pixelEntries.size());
+
+        int baseChunkX = baseLocation.getBlockX() >> 4;
+        int baseChunkZ = baseLocation.getBlockZ() >> 4;
+        try {
+            if (!worldTarget.isChunkLoaded(baseChunkX, baseChunkZ)) {
+                worldTarget.loadChunk(baseChunkX, baseChunkZ, true);
+            }
+        } catch (Exception ex) {
+            plugin.getLogger().warning("[" + name + "] spawnImagePixels chunk preload failed: " + ex.getMessage());
+        }
+
+        for (Object entryObj : pixelEntries) {
+            float baseXShift;
+            float baseYShift;
+            float xOffset;
+            float yOffset;
+            float zOffset;
+            float baseZShift;
+            float scaleX;
+            float scaleY;
+            float scaleZ;
+            float yaw;
+            float pitch;
+            int lineWidth;
+            int argb;
+
+            if (entryObj instanceof JsonObject entryJson) {
+                baseXShift = entryJson.has("baseXShift") ? entryJson.get("baseXShift").getAsFloat() : 0f;
+                baseYShift = entryJson.has("baseYShift") ? entryJson.get("baseYShift").getAsFloat() : 0f;
+                xOffset = entryJson.has("xOffset") ? entryJson.get("xOffset").getAsFloat() : 0f;
+                yOffset = entryJson.has("yOffset") ? entryJson.get("yOffset").getAsFloat() : 0f;
+                zOffset = entryJson.has("zOffset") ? entryJson.get("zOffset").getAsFloat() : 0f;
+                baseZShift = entryJson.has("baseZShift") ? entryJson.get("baseZShift").getAsFloat() : 0f;
+
+                scaleX = entryJson.has("scaleX") ? entryJson.get("scaleX").getAsFloat() : 1f;
+                scaleY = entryJson.has("scaleY") ? entryJson.get("scaleY").getAsFloat() : 1f;
+                scaleZ = entryJson.has("scaleZ") ? entryJson.get("scaleZ").getAsFloat() : 1f;
+
+                yaw = entryJson.has("yaw") ? entryJson.get("yaw").getAsFloat() : baseLocation.getYaw();
+                pitch = entryJson.has("pitch") ? entryJson.get("pitch").getAsFloat() : baseLocation.getPitch();
+                lineWidth = entryJson.has("lineWidth") ? entryJson.get("lineWidth").getAsInt() : 1;
+                argb = entryJson.has("argb") ? entryJson.get("argb").getAsInt() : 0x00000000;
+
+            } else if (entryObj instanceof Map<?, ?> rawMap) {
+                Map<String, Object> entry = (Map<String, Object>) rawMap;
+
+                baseXShift = entry.get("baseXShift") instanceof Number n ? n.floatValue() : 0f;
+                baseYShift = entry.get("baseYShift") instanceof Number n ? n.floatValue() : 0f;
+                xOffset = entry.get("xOffset") instanceof Number n ? n.floatValue() : 0f;
+                yOffset = entry.get("yOffset") instanceof Number n ? n.floatValue() : 0f;
+                zOffset = entry.get("zOffset") instanceof Number n ? n.floatValue() : 0f;
+                baseZShift = entry.get("baseZShift") instanceof Number n ? n.floatValue() : 0f;
+
+                scaleX = entry.get("scaleX") instanceof Number n ? n.floatValue() : 1f;
+                scaleY = entry.get("scaleY") instanceof Number n ? n.floatValue() : 1f;
+                scaleZ = entry.get("scaleZ") instanceof Number n ? n.floatValue() : 1f;
+
+                yaw = entry.get("yaw") instanceof Number n ? n.floatValue() : baseLocation.getYaw();
+                pitch = entry.get("pitch") instanceof Number n ? n.floatValue() : baseLocation.getPitch();
+                lineWidth = entry.get("lineWidth") instanceof Number n ? n.intValue() : 1;
+                argb = entry.get("argb") instanceof Number n ? n.intValue() : 0x00000000;
+
+            } else {
+                skippedEntries++;
+                continue;
+            }
+
+            Location spawnLocation = baseLocation.clone();
+            spawnLocation.setX(spawnLocation.getX() + baseXShift);
+            spawnLocation.setY(spawnLocation.getY() + baseYShift);
+            spawnLocation.setZ(spawnLocation.getZ() + baseZShift);
+            spawnLocation.setYaw(yaw);
+            spawnLocation.setPitch(pitch);
+
+            TextDisplay raw = null;
+            try {
+                raw = worldTarget.spawn(spawnLocation, TextDisplay.class, entity -> {
+                });
+                if (raw != null) {
+                    spawnedViaWorldSpawn++;
+                }
+            } catch (Exception ex) {
+                worldSpawnErrors++;
+                worldSpawnLastError = ex.getClass().getSimpleName() + ": " + ex.getMessage();
+            }
+
+            if (raw == null) {
+                nullAfterSpawn++;
+                continue;
+            }
+
+            raw.setBillboard(Display.Billboard.FIXED);
+            raw.setRotation(yaw, pitch);
+            raw.setShadowed(false);
+            raw.setLineWidth(lineWidth);
+            raw.setDefaultBackground(false);
+            raw.setBackgroundColor(Color.fromARGB(argb));
+            raw.setTextOpacity((byte) 0);
+            raw.text(Component.text(" "));
+
+            Quaternionf identity = new Quaternionf(0, 0, 0, 1);
+            raw.setTransformation(new Transformation(
+                    new Vector3f(xOffset, yOffset, zOffset),
+                    identity,
+                    new Vector3f(scaleX, scaleY, scaleZ),
+                    new Quaternionf(identity)));
+
+            spawned.add(raw);
+        }
+
+        plugin.getLogger().info("[" + name + "] spawnImagePixels spawned " + spawned.size()
+                + " entities (world.spawn=" + spawnedViaWorldSpawn + ")");
+        if (spawned.isEmpty() || worldSpawnErrors > 0 || skippedEntries > 0 || nullAfterSpawn > 0) {
+            plugin.getLogger().info("[" + name + "] spawnImagePixels diagnostics: nullAfterSpawn=" + nullAfterSpawn
+                    + ", skippedEntries=" + skippedEntries
+                    + ", world.spawn.errors=" + worldSpawnErrors);
+            if (worldSpawnLastError != null) {
+                plugin.getLogger().warning("[" + name + "] world.spawn last error: " + worldSpawnLastError);
+            }
+        }
+
+        return spawned;
+    }
+
     private Object resolveTarget(String targetName, JsonObject argsObj) throws Exception {
         return switch (targetName) {
             case "server" -> Bukkit.getServer();
@@ -1319,6 +1528,36 @@ public class BridgeInstance {
 
         if (parameterType == UUID.class && arg instanceof UUID uuid) {
             return uuid;
+        }
+
+        if (Component.class.isAssignableFrom(parameterType) && arg instanceof String str) {
+            return Component.text(str);
+        }
+
+        if (parameterType.isEnum() && arg instanceof String str) {
+            try {
+                @SuppressWarnings({"rawtypes", "unchecked"})
+                Enum<?> enumVal = Enum.valueOf((Class) parameterType, str.toUpperCase());
+                return enumVal;
+            } catch (IllegalArgumentException e) {
+                return CONVERSION_FAIL;
+            }
+        }
+
+        if (BlockData.class.isAssignableFrom(parameterType)) {
+            String matName = null;
+            if (arg instanceof String str) {
+                matName = str;
+            } else if (arg instanceof EnumValue enumValue) {
+                matName = enumValue.name;
+            }
+            if (matName != null) {
+                try {
+                    return Bukkit.createBlockData(Material.valueOf(matName.toUpperCase()));
+                } catch (IllegalArgumentException e) {
+                    return CONVERSION_FAIL;
+                }
+            }
         }
 
         return CONVERSION_FAIL;

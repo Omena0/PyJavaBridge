@@ -6,7 +6,6 @@ from types import SimpleNamespace
 from functools import wraps
 import itertools
 import threading
-import weakref
 import inspect
 import asyncio
 import socket
@@ -14,7 +13,9 @@ import struct
 import runpy
 import uuid
 import json
+import time
 import os
+import math
 
 try:
     import orjson as _orjson  # type: ignore[import-not-found]
@@ -35,6 +36,7 @@ except Exception:
 
 __all__ = [
     "event",
+    "task",
     "command",
     "raycast",
     "server",
@@ -71,6 +73,16 @@ __all__ = [
     "Scoreboard",
     "Team",
     "Objective",
+    "Sidebar",
+    "Hologram",
+    "Menu",
+    "MenuItem",
+    "Cooldown",
+    "ActionBarDisplay",
+    "BossBarDisplay",
+    "BlockDisplay",
+    "ItemDisplay",
+    "ImageDisplay",
     "Advancement",
     "AdvancementProgress",
     "Potion",
@@ -81,6 +93,7 @@ __all__ = [
 
 _EV = TypeVar("_EV", bound="EnumValue")
 
+# Errors
 class BridgeError(Exception):
     """Bridge-specific runtime error."""
     pass
@@ -89,6 +102,7 @@ class EntityGoneException(BridgeError):
     """Raised when an entity/player is no longer available."""
     pass
 
+# Result classes
 @dataclass
 class RaycastResult:
     x: float
@@ -104,10 +118,11 @@ class RaycastResult:
     distance: float = 0.0
     hit_face: Optional[str] = None
 
+# Code datatypes
 class _EnumMeta(type):
     """Metaclass enabling class-level attribute access (e.g., Material.DIAMOND)."""
-    def __getattr__(cls, name: str):
-        if name.startswith("_"):
+    def __getattr__(cls, name: str) -> "EnumValue":
+        if name.startswith("_") or not name.isupper():
             raise AttributeError(name)
         return cls.from_name(name)  # type: ignore[attr-defined]
 
@@ -153,6 +168,7 @@ class _SyncWait:
         self.result: Any = None
         self.error: Optional[Exception] = None
 
+# Core proxy class
 class ProxyBase:
     """Base class for all proxy objects."""
     def __init__(self, handle: Optional[int] = None, type_name: Optional[str] = None, fields: Optional[Dict[str, Any]] = None, target: Optional[str] = None, ref_type: Optional[str] = None, ref_id: Optional[str] = None, **kwargs: Any):
@@ -214,6 +230,7 @@ class ProxyBase:
             return self.fields[field]
         return self._call_sync(method)
 
+# Proxies and enums
 class Event(ProxyBase):
     """Base event proxy."""
     def cancel(self):
@@ -229,6 +246,10 @@ class Server(ProxyBase):
     def broadcast(self, message: str):
         """Broadcast a message to all players and console."""
         return self._call("broadcastMessage", message)
+
+    def execute(self, command: str):
+        """Execute a command as the server console."""
+        return self._call("execute", command)
 
     @property
     def players(self):
@@ -2042,6 +2063,7 @@ class ReflectFacade(ProxyBase):
         """Get a Java class by name."""
         return self._call("clazz", name)
 
+# Core classes
 class _BatchContext:
     def __init__(self, connection: BridgeConnection, mode: str):
         self._connection = connection
@@ -2474,10 +2496,998 @@ class _ConsolePlayer:
     def kick(self, reason: str = ""):
         return _connection.completed_call(None)
 
+# Helpers
+class Sidebar:
+    """Helper for displaying formatted text lines on a sidebar scoreboard.
+
+    Usage:
+        sidebar = Sidebar("My Title")
+        sidebar[0] = "First line"
+        sidebar[1] = "Second line"
+        sidebar[2] = ""  # blank line
+        sidebar[3] = "Fourth line"
+        sidebar.show(player)
+
+        # Update a line later:
+        sidebar[1] = "Updated second line"
+
+        # Remove a line:
+        del sidebar[3]
+    """
+
+    _ENTRIES = [f"\u00a7{c}" for c in "0123456789abcdef"]
+    MAX_LINES = len(_ENTRIES)
+
+    def __init__(self, title: str = ""):
+        self._board = Scoreboard.create()
+        self._obj = self._board._call_sync("registerNewObjective", "sidebar", "dummy", title)
+        self._obj._call_sync("setDisplaySlot", EnumValue.SIDEBAR)
+        self._teams: dict[int, Any] = {}
+        self._lines: dict[int, str] = {}
+
+    def _ensure_slot(self, slot: int):
+        if slot < 0 or slot >= self.MAX_LINES:
+            raise IndexError(f"Sidebar supports lines 0-{self.MAX_LINES - 1}")
+        if slot not in self._teams:
+            entry = self._ENTRIES[slot]
+            team = self._board._call_sync("registerNewTeam", f"_sb{slot}")
+            team._call_sync("addEntry", entry)
+            score = self._obj._call_sync("getScore", entry)
+            score._call_sync("setScore", self.MAX_LINES - slot)
+            self._teams[slot] = team
+
+    def __setitem__(self, slot: int, text: str):
+        self._ensure_slot(slot)
+        self._teams[slot]._call_sync("setPrefix", text)
+        self._lines[slot] = text
+
+    def __getitem__(self, slot: int) -> str:
+        return self._lines.get(slot, "")
+
+    def __delitem__(self, slot: int):
+        if slot in self._teams:
+            entry = self._ENTRIES[slot]
+            self._teams[slot]._call_sync("unregister")
+            self._obj._call_sync("getScore", entry)._call_sync("resetScore")
+            del self._teams[slot]
+            self._lines.pop(slot, None)
+
+    def show(self, player: "Player"):
+        """Show this sidebar to a player."""
+        player._call_sync("setScoreboard", self._board)
+
+    @property
+    def title(self) -> str:
+        return self._obj._call_sync("getDisplayName")
+
+    @title.setter
+    def title(self, value: str):
+        self._obj._call_sync("setDisplayName", value)
+
+class Config:
+    """Per-script configuration helper with dot-path access and YAML persistence.
+
+    Usage::
+
+        config = Config(defaults={"welcome": {"enabled": True, "message": "Hello!"}})
+        if config.get_bool("welcome.enabled"):
+            msg = config.get("welcome.message", "Hi")
+        config.set("welcome.message", "Welcome!")
+        config.save()
+    """
+
+    def __init__(self, name: Optional[str] = None, defaults: Optional[Dict[str, Any]] = None):
+        script_path = os.environ.get("PYJAVABRIDGE_SCRIPT", "")
+        if name is None:
+            name = os.path.splitext(os.path.basename(script_path))[0] if script_path else "config"
+        scripts_dir = os.path.dirname(script_path) if script_path else "."
+        plugin_dir = os.path.dirname(scripts_dir)
+        config_dir = os.path.join(plugin_dir, "config", name)
+        os.makedirs(config_dir, exist_ok=True)
+
+        self._path = os.path.join(config_dir, "config.yml")
+        self._data: Dict[str, Any] = dict(defaults) if defaults else {}
+        self._defaults: Dict[str, Any] = dict(defaults) if defaults else {}
+        self.reload()
+
+    def reload(self):
+        """Reload config from disk, merging with defaults."""
+        data: Dict[str, Any] = {}
+        if os.path.exists(self._path):
+            try:
+                with open(self._path, "r", encoding="utf-8") as f:
+                    loaded = _yaml_load(f.read())
+                    data = cast(Dict[str, Any], loaded) if isinstance(loaded, dict) else {}
+            except Exception:
+                data = {}
+        merged = dict(self._defaults)
+        _deep_merge(merged, data)
+        self._data = merged
+
+    def save(self):
+        """Save current config to disk."""
+        with open(self._path, "w", encoding="utf-8") as f:
+            f.write(_yaml_dump(self._data))
+            f.write('\n')
+
+    def get(self, path: str, default: Any = None) -> Any:
+        """Get a value by dot-path (e.g. 'database.host')."""
+        keys = path.split(".")
+        data = self._data
+        for key in keys:
+            if isinstance(data, dict) and key in data:
+                data = data[key]
+            else:
+                return default
+        return data
+
+    def get_int(self, path: str, default: int = 0) -> int:
+        """Get an integer value by dot-path."""
+        v = self.get(path)
+        return int(v) if v is not None else default
+
+    def get_float(self, path: str, default: float = 0.0) -> float:
+        """Get a float value by dot-path."""
+        v = self.get(path)
+        return float(v) if v is not None else default
+
+    def get_bool(self, path: str, default: bool = False) -> bool:
+        """Get a boolean value by dot-path."""
+        v = self.get(path)
+        if v is None:
+            return default
+        if isinstance(v, str):
+            return v.lower() in ("true", "yes", "1", "on")
+        return bool(v)
+
+    def get_list(self, path: str, default: Optional[List[Any]] = None) -> List[Any]:
+        """Get a list value by dot-path."""
+        v = self.get(path)
+        if v is None:
+            return default if default is not None else []
+        result: List[Any] = list(cast(List[Any], v)) if isinstance(v, (list, tuple)) else [v]
+        return result
+
+    def set(self, path: str, value: Any):
+        """Set a value by dot-path, creating intermediate dicts as needed."""
+        keys = path.split(".")
+        data = self._data
+        for key in keys[:-1]:
+            if key not in data or not isinstance(data[key], dict):
+                data[key] = {}
+            data = data[key]
+        data[keys[-1]] = value
+
+    def delete(self, path: str) -> bool:
+        """Delete a value by dot-path. Returns True if the key existed."""
+        keys = path.split(".")
+        data = self._data
+        for key in keys[:-1]:
+            if not isinstance(data, dict) or key not in data:
+                return False
+            data = data[key]
+        if isinstance(data, dict) and keys[-1] in data:
+            del data[keys[-1]]
+            return True
+        return False
+
+    def __getitem__(self, key: str) -> Any:
+        return self.get(key)
+
+    def __setitem__(self, key: str, value: Any):
+        self.set(key, value)
+
+    def __contains__(self, key: str) -> bool:
+        return self.get(key) is not None
+
+    @property
+    def data(self) -> Dict[str, Any]:
+        """Direct access to the underlying data dict."""
+        return self._data
+
+    @property
+    def path(self) -> str:
+        """Path to the config file on disk."""
+        return self._path
+
+class Cooldown:
+    """Per-player cooldown tracker.
+
+    Usage::
+
+        cd = Cooldown(seconds=5, on_expire=lambda p: p.send_message("Ready!"))
+        if cd.check(player):
+            # ability available, cooldown now started
+            ...
+        else:
+            player.send_message(f"Wait {cd.remaining(player):.1f}s")
+    """
+
+    def __init__(self, seconds: float = 1.0,
+                 on_expire: Optional[Callable[["Player"], Any]] = None):
+        self.seconds = seconds
+        self.on_expire = on_expire
+        self._expiry: Dict[str, float] = {}
+        self._task_started = False
+
+    def _get_uuid(self, player: "Player") -> str:
+        if hasattr(player, "fields") and "uuid" in player.fields:
+            return player.fields["uuid"]
+        return str(player.uuid)
+
+    def check(self, player: "Player") -> bool:
+        """Check if the player can use the ability. If yes, starts the cooldown and returns True."""
+        uid = self._get_uuid(player)
+        now = time.time()
+        if uid in self._expiry and now < self._expiry[uid]:
+            return False
+        self._expiry[uid] = now + self.seconds
+        if self.on_expire is not None and not self._task_started:
+            self._start_expire_task()
+        return True
+
+    def remaining(self, player: "Player") -> float:
+        """Seconds remaining on this player's cooldown (0.0 if not on cooldown)."""
+        uid = self._get_uuid(player)
+        if uid not in self._expiry:
+            return 0.0
+        left = self._expiry[uid] - time.time()
+        return max(0.0, left)
+
+    def reset(self, player: "Player"):
+        """Reset (clear) the cooldown for a player."""
+        uid = self._get_uuid(player)
+        self._expiry.pop(uid, None)
+
+    def _start_expire_task(self):
+        self._task_started = True
+
+        async def _check_expiry():
+            while _connection is not None:
+                now = time.time()
+                expired = [uid for uid, exp in self._expiry.items() if now >= exp]
+                for uid in expired:
+                    del self._expiry[uid]
+                    if self.on_expire is not None:
+                        try:
+                            p = Player(uuid=uid)
+                            result = self.on_expire(p)
+                            if hasattr(result, "__await__"):
+                                await result
+                        except Exception:
+                            pass
+                await server.wait(10)  # check every 10 ticks (0.5s)
+
+        _connection.on("server_boot", lambda _: asyncio.ensure_future(_check_expiry()))
+
+class Hologram:
+    """Floating text display using a TextDisplay entity.
+
+    Usage::
+
+        holo = Hologram(location, "Line 1", "Line 2")
+        holo[0] = "Updated"
+        holo.append("New line")
+        del holo[1]
+        holo.teleport(new_location)
+        holo.remove()
+    """
+
+    def __init__(self, location: "Location", *lines: str,
+                 billboard: str = "CENTER"):
+        self._lines: list[str] = list(lines)
+
+        world: Any = location.world
+
+        if isinstance(world, str):
+            world = World(name=world)
+
+        if world is None:
+            world = World(name='world')
+
+        self._entity: Any = world._call_sync(
+            "spawnEntity", location, EntityType.from_name("TEXT_DISPLAY"))
+
+        self._entity._call("setBillboard", billboard)
+        self._update_text()
+
+    def _update_text(self):
+        text = "\n".join(self._lines) if self._lines else ""
+        self._entity._call("text", text)
+
+    def __setitem__(self, index: int, text: str):
+        if index < 0 or index >= len(self._lines):
+            raise IndexError(f"Line index {index} out of range (0-{len(self._lines) - 1})")
+        self._lines[index] = text
+        self._update_text()
+
+    def __getitem__(self, index: int) -> str:
+        return self._lines[index]
+
+    def __delitem__(self, index: int):
+        del self._lines[index]
+        self._update_text()
+
+    def __len__(self) -> int:
+        return len(self._lines)
+
+    def append(self, text: str):
+        """Add a line at the bottom."""
+        self._lines.append(text)
+        self._update_text()
+
+    def teleport(self, location: "Location"):
+        """Move the hologram to a new location."""
+        self._entity.teleport(location)
+
+    def remove(self):
+        """Remove the hologram entity."""
+        self._entity.remove()
+
+    @property
+    def billboard(self) -> str:
+        return self._entity._call_sync("getBillboard")
+
+    @billboard.setter
+    def billboard(self, value: str):
+        self._entity._call("setBillboard", value)
+
+    @property
+    def see_through(self) -> bool:
+        return self._entity._call_sync("isSeeThrough")
+
+    @see_through.setter
+    def see_through(self, value: bool):
+        self._entity._call("setSeeThrough", value)
+
+    @property
+    def shadowed(self) -> bool:
+        return self._entity._call_sync("isShadowed")
+
+    @shadowed.setter
+    def shadowed(self, value: bool):
+        self._entity._call("setShadowed", value)
+
+    @property
+    def alignment(self) -> str:
+        return self._entity._call_sync("getAlignment")
+
+    @alignment.setter
+    def alignment(self, value: str):
+        self._entity._call("setAlignment", value)
+
+    @property
+    def line_width(self) -> int:
+        return self._entity._call_sync("getLineWidth")
+
+    @line_width.setter
+    def line_width(self, value: int):
+        self._entity._call("setLineWidth", value)
+
+    @property
+    def background(self) -> Optional[int]:
+        return self._entity._call_sync("getBackgroundColor")
+
+    @background.setter
+    def background(self, value: Optional[int]):
+        if value is None:
+            self._entity._call("setDefaultBackground", True)
+        else:
+            self._entity._call("setDefaultBackground", False)
+            self._entity._call("setBackgroundColor", value)
+
+class ActionBarDisplay:
+    """Persistent action bar text that auto-refreshes.
+
+    Usage::
+
+        bar = ActionBarDisplay()
+        bar[player] = "Health: 20"
+        bar[player] = "Health: 18"  # updates immediately
+        del bar[player]              # stops showing
+    """
+
+    def __init__(self):
+        self._texts: Dict[str, str] = {}
+        self._players: Dict[str, "Player"] = {}
+        self._task_started = False
+
+    def _get_uuid(self, player: "Player") -> str:
+        if hasattr(player, "fields") and "uuid" in player.fields:
+            return player.fields["uuid"]
+        return str(player.uuid)
+
+    def __setitem__(self, player: "Player", text: str):
+        uid = self._get_uuid(player)
+        self._texts[uid] = text
+        self._players[uid] = player
+        player.send_action_bar(text)
+        if not self._task_started:
+            self._start_refresh()
+
+    def __getitem__(self, player: "Player") -> str:
+        uid = self._get_uuid(player)
+        return self._texts.get(uid, "")
+
+    def __delitem__(self, player: "Player"):
+        uid = self._get_uuid(player)
+        self._texts.pop(uid, None)
+        self._players.pop(uid, None)
+
+    def _start_refresh(self):
+        self._task_started = True
+
+        async def _refresh():
+            while _connection is not None:
+                for uid, text in list(self._texts.items()):
+                    p = self._players.get(uid)
+                    if p is not None:
+                        try:
+                            p.send_action_bar(text)
+                        except Exception:
+                            pass
+                await server.wait(40)  # refresh every 2 seconds
+
+        _connection.on("server_boot", lambda _: asyncio.ensure_future(_refresh()))
+
+class BossBarDisplay:
+    """Convenient boss bar display with value/max support and cooldown linking.
+
+    Usage::
+
+        # Simple text
+        bar = BossBarDisplay("Welcome!", color="BLUE")
+        bar.show(player)
+        bar.text = "Server TPS: 20"
+
+        # Progress bar
+        bar = BossBarDisplay("Loading...", color="RED")
+        bar.value = 50
+        bar.max = 100
+
+        # Linked to a Cooldown
+        cd = Cooldown(seconds=10)
+        bar = BossBarDisplay("Ability Cooldown", color="YELLOW")
+        bar.link_cooldown(cd, player)
+    """
+
+    def __init__(self, title: str = "", color: str = "PINK",
+                 style: str = "SOLID"):
+        self._bar = BossBar.create(title,
+                EnumValue.from_name(color.upper()),
+                EnumValue.from_name(style.upper())
+        )
+
+        self._value: float = 0.0
+        self._max: float = 1.0
+        self._linked_task_started = False
+
+    def show(self, player: "Player"):
+        """Show this boss bar to a player."""
+        self._bar.add_player(player)
+
+    def hide(self, player: "Player"):
+        """Hide this boss bar from a player."""
+        self._bar.remove_player(player)
+
+    @property
+    def text(self) -> str:
+        return self._bar.title
+
+    @text.setter
+    def text(self, value: str):
+        self._bar.set_title(value)
+
+    @property
+    def color(self) -> str:
+        return self._bar.color
+
+    @color.setter
+    def color(self, value: str):
+        self._bar.set_color(EnumValue.from_name(value.upper()))
+
+    @property
+    def style(self) -> str:
+        return self._bar.style
+
+    @style.setter
+    def style(self, value: str):
+        self._bar.set_style(EnumValue.from_name(value.upper()))
+
+    @property
+    def value(self) -> float:
+        return self._value
+
+    @value.setter
+    def value(self, v: float):
+        self._value = v
+        self._update_progress()
+
+    @property
+    def max(self) -> float:
+        return self._max
+
+    @max.setter
+    def max(self, v: float):
+        self._max = max(v, 0.001)
+        self._update_progress()
+
+    @property
+    def progress(self) -> float:
+        return self._bar.progress
+
+    @progress.setter
+    def progress(self, v: float):
+        self._bar.set_progress(max(0.0, min(1.0, v)))
+
+    @property
+    def visible(self) -> bool:
+        return self._bar.visible
+
+    @visible.setter
+    def visible(self, v: bool):
+        self._bar.set_visible(v)
+
+    def _update_progress(self):
+        self._bar.set_progress(max(0.0, min(1.0, self._value / self._max)))
+
+    def link_cooldown(self, cooldown: "Cooldown", player: "Player"):
+        """Link this boss bar's progress to a Cooldown, auto-updating as it ticks down."""
+        self.show(player)
+        self._max = cooldown.seconds
+
+        async def _update():
+            while _connection is not None:
+                remaining = cooldown.remaining(player)
+                self._value = remaining
+                self._update_progress()
+                if remaining <= 0:
+                    break
+                await server.wait(2)  # update ~10x per second
+
+        asyncio.ensure_future(_update())
+
+class BlockDisplay:
+    """Block display entity wrapper.
+
+    Usage::
+
+        display = BlockDisplay(location, "DIAMOND_BLOCK")
+        display.teleport(new_location)
+        display.remove()
+    """
+
+    def __init__(self, location: "Location", block_type: str,
+                 billboard: str = "FIXED"):
+        world: Any = location.world
+        if isinstance(world, str):
+            world = World(name=world)
+        if world is None:
+            world = World(name='world')
+
+        self._entity: Any = world._call_sync(
+            "spawnEntity", location, EntityType.from_name("BLOCK_DISPLAY"))
+        self._entity._call("setBlock", block_type)
+        self._entity._call("setBillboard", billboard)
+
+    def teleport(self, location: "Location"):
+        """Move the display to a new location."""
+        self._entity.teleport(location)
+
+    def remove(self):
+        """Remove the display entity."""
+        self._entity.remove()
+
+    @property
+    def billboard(self) -> str:
+        return self._entity._call_sync("getBillboard")
+
+    @billboard.setter
+    def billboard(self, value: str):
+        self._entity._call("setBillboard", value)
+
+class ItemDisplay:
+    """Item display entity wrapper.
+
+    Usage::
+
+        display = ItemDisplay(location, "DIAMOND_SWORD")
+        display.teleport(new_location)
+        display.remove()
+    """
+
+    def __init__(self, location: "Location", item: Any,
+                 billboard: str = "FIXED"):
+        world: Any = location.world
+        if isinstance(world, str):
+            world = World(name=world)
+        if world is None:
+            world = World(name='world')
+
+        self._entity: Any = world._call_sync(
+            "spawnEntity", location, EntityType.from_name("ITEM_DISPLAY"))
+
+        if isinstance(item, str):
+            item = Item(item)
+        self._entity._call("setItemStack", item)
+        self._entity._call("setBillboard", billboard)
+
+    def teleport(self, location: "Location"):
+        """Move the display to a new location."""
+        self._entity.teleport(location)
+
+    def remove(self):
+        """Remove the display entity."""
+        self._entity.remove()
+
+    @property
+    def billboard(self) -> str:
+        return self._entity._call_sync("getBillboard")
+
+    @billboard.setter
+    def billboard(self, value: str):
+        self._entity._call("setBillboard", value)
+
+class ImageDisplay:
+    """Render pixel art images in-world using one TextDisplay per pixel.
+
+    This uses TextDisplay background color only (no glyph text) to avoid
+    character spacing gaps and row spacing artifacts.
+    """
+
+    def __init__(self, location: "Location", image_path: str,
+                 pixel_size: float = 1/16,
+                 dual_sided: bool = False,
+                 dual_side_mode: str = "mirror"):
+        try:
+            from PIL import Image  # type: ignore[import-not-found]
+        except ImportError:
+            raise ImportError(
+                "Pillow is required for ImageDisplay. Install with: pip install Pillow")
+
+        img: Any = Image.open(image_path).convert("RGBA")
+        width: int = int(img.size[0])
+        height: int = int(img.size[1])
+        pixels: Any = img.load()
+
+        world: Any = location.world
+        if isinstance(world, str):
+            world = World(name=world)
+        if world is None:
+            world = World(name='world')
+
+        self._entities: list[Any] = []
+        self._placements: list[tuple[Any, float, float, float, float, float, float, float, float, float, float]] = []
+        self._location = location
+        self._pixel_size = pixel_size
+        self._width = width
+        self._height = height
+        self._dual_sided = dual_sided
+
+        yaw = float(getattr(location, 'yaw', 0.0))
+        pitch = float(getattr(location, 'pitch', 0.0))
+        pixel_scale = float(pixel_size) * 8
+        pixel_step = pixel_scale / 8
+        scale_x = pixel_scale
+        scale_y = pixel_scale/2
+        scale_z = max(pixel_scale * 0.08, 0.001)
+
+        x_base_offset = pixel_step * 0.5
+        y_base_offset = -1.0 * pixel_step
+        dual_depth_shift = 0.01
+
+        def _local_to_world_shift(local_x: float, local_y: float, entity_yaw: float, entity_pitch: float, local_z: float = 0.0) -> tuple[float, float, float]:
+            yaw_rad = math.radians(entity_yaw)
+            pitch_rad = math.radians(entity_pitch)
+
+            fwd_x = -math.sin(yaw_rad) * math.cos(pitch_rad)
+            fwd_y = -math.sin(pitch_rad)
+            fwd_z = math.cos(yaw_rad) * math.cos(pitch_rad)
+
+            right_x = fwd_z
+            right_y = 0.0
+            right_z = -fwd_x
+            right_len = math.sqrt((right_x * right_x) + (right_y * right_y) + (right_z * right_z))
+            if right_len <= 1e-9:
+                right_x, right_y, right_z = 1.0, 0.0, 0.0
+            else:
+                inv = 1.0 / right_len
+                right_x *= inv
+                right_y *= inv
+                right_z *= inv
+
+            up_x = (fwd_y * right_z) - (fwd_z * right_y)
+            up_y = (fwd_z * right_x) - (fwd_x * right_z)
+            up_z = (fwd_x * right_y) - (fwd_y * right_x)
+
+            return (
+                (right_x * local_x) + (up_x * local_y) + (fwd_x * local_z),
+                (right_y * local_x) + (up_y * local_y) + (fwd_y * local_z),
+                (right_z * local_x) + (up_z * local_y) + (fwd_z * local_z),
+            )
+
+        payload: list[dict[str, Any]] = []
+        placement_meta: list[tuple[float, float, float, float, float, float, float, float, float, float]] = []
+
+        for row in range(height):
+            for col in range(width):
+                r, g, b, a = pixels[col, row]
+                if a <= 0:
+                    continue
+
+                argb = (int(a) << 24) | (int(r) << 16) | (int(g) << 8) | int(b)
+                x_offset = x_base_offset + (float(col) * pixel_step)
+                y_offset = y_base_offset - (float(row) * pixel_step)
+                z_offset = 0.0
+                base_z_shift = 0.0
+                base_x_shift, base_y_shift, base_xy_z_shift = _local_to_world_shift(x_offset, y_offset, yaw, pitch)
+
+                payload.append({
+                    "xOffset": 0.0,
+                    "yOffset": 0.0,
+                    "zOffset": z_offset,
+                    "baseXShift": base_x_shift,
+                    "baseYShift": base_y_shift,
+                    "baseZShift": base_z_shift + base_xy_z_shift,
+                    "yaw": yaw,
+                    "pitch": pitch,
+                    "argb": int(argb),
+                    "lineWidth": 1,
+                    "scaleX": scale_x,
+                    "scaleY": scale_y,
+                    "scaleZ": scale_z,
+                })
+                placement_meta.append((base_x_shift, base_y_shift, base_z_shift + base_xy_z_shift, z_offset, yaw, pitch, scale_x, scale_y, scale_z, 0.0))
+
+                if dual_sided:
+                    back_yaw = yaw + 180.0
+                    back_x_offset = -x_offset
+                    back_base_x_shift, back_base_y_shift, back_base_z_shift = _local_to_world_shift(back_x_offset, y_offset, back_yaw, pitch, -dual_depth_shift)
+
+                    payload.append({
+                        "xOffset": 0.0,
+                        "yOffset": 0.0,
+                        "zOffset": dual_depth_shift,
+                        "baseXShift": back_base_x_shift,
+                        "baseYShift": back_base_y_shift,
+                        "baseZShift": back_base_z_shift,
+                        "yaw": back_yaw,
+                        "pitch": pitch,
+                        "argb": int(argb),
+                        "lineWidth": 1,
+                        "scaleX": scale_x,
+                        "scaleY": scale_y,
+                        "scaleZ": scale_z,
+                    })
+                    placement_meta.append((back_base_x_shift, back_base_y_shift, back_base_z_shift, dual_depth_shift, back_yaw, pitch, scale_x, scale_y, scale_z, 0.0))
+
+        spawned = world._call_sync("spawnImagePixels", location, payload)
+        spawned_list = spawned if isinstance(spawned, list) else []
+
+        for entity, meta in zip(spawned_list, placement_meta):
+            base_x_shift, base_y_shift, base_z_shift, z_offset, entity_yaw, entity_pitch, sx, sy, sz, xy_zero = meta
+            self._entities.append(entity)
+            self._placements.append((entity, base_x_shift, base_y_shift, base_z_shift, z_offset, entity_yaw, entity_pitch, sx, sy, sz, xy_zero))
+
+    def teleport(self, location: "Location"):
+        """Move all pixel entities to a new base location."""
+        alive_placements: list[tuple[Any, float, float, float, float, float, float, float, float, float, float]] = []
+        for entity, base_x_shift, base_y_shift, base_z_shift, z_offset, yaw, pitch, sx, sy, sz, xy_zero in self._placements:
+            try:
+                loc = Location(
+                    x=location.x + float(base_x_shift),
+                    y=location.y + float(base_y_shift),
+                    z=location.z + float(base_z_shift),
+                    world=location.world,
+                    yaw=yaw,
+                    pitch=pitch,
+                )
+                entity.teleport(loc)
+                entity._call_sync("setRotation", float(yaw), float(pitch))
+                entity._call_sync("setTransform", float(xy_zero), float(xy_zero), float(z_offset),
+                                  float(sx), float(sy), float(sz))
+                alive_placements.append((entity, base_x_shift, base_y_shift, base_z_shift, z_offset, yaw, pitch, sx, sy, sz, xy_zero))
+            except EntityGoneException:
+                pass
+
+        self._placements = alive_placements
+        self._entities = [entry[0] for entry in alive_placements]
+        self._location = location
+
+    def remove(self):
+        """Remove all spawned pixel entities."""
+        for entity in self._entities:
+            try:
+                entity.remove()
+            except EntityGoneException:
+                pass
+        self._entities.clear()
+        self._placements.clear()
+
+class Menu:
+    """Interactive chest GUI menu with click handlers.
+
+    Usage::
+
+        menu = Menu("Shop", rows=3)
+        menu[13] = MenuItem("diamond_sword", on_click=buy_sword)
+        menu[13] = MenuItem(Item("diamond"), on_click=buy_diamond)
+        menu.fill_border(Item("black_stained_glass_pane"))
+        menu.open(player)
+    """
+
+    def __init__(self, title: str = "", rows: int = 3):
+        self._title = title
+        self._rows = max(1, min(6, rows))
+        self._items: Dict[int, MenuItem] = {}
+
+    def __setitem__(self, slot: int, menu_item: MenuItem):
+        if slot < 0 or slot >= self._rows * 9:
+            raise IndexError(f"Slot {slot} out of range (0-{self._rows * 9 - 1})")
+        self._items[slot] = menu_item
+
+    def __getitem__(self, slot: int) -> Optional[MenuItem]:
+        return self._items.get(slot)
+
+    def __delitem__(self, slot: int):
+        self._items.pop(slot, None)
+
+    def fill_border(self, item: "Item"):
+        """Fill the border slots with the given item (no click handler)."""
+        size = self._rows * 9
+        for slot in range(size):
+            row, col = divmod(slot, 9)
+            if row == 0 or row == self._rows - 1 or col == 0 or col == 8:
+                if slot not in self._items:
+                    self._items[slot] = MenuItem(item)
+
+    def open(self, player: "Player"):
+        """Open this menu for a player."""
+        _register_menu_events()
+        inv = Inventory(size=self._rows * 9, title=self._title)
+        for slot, menu_item in self._items.items():
+            inv.set_item(slot, menu_item.item)
+        p_uuid = str(player.uuid)
+        _open_menus[p_uuid] = self
+        inv.open(player)
+
+    @property
+    def title(self) -> str:
+        return self._title
+
+    @property
+    def rows(self) -> int:
+        return self._rows
+
+@dataclass
+class MenuItem:
+    """An item in a Menu with an optional click callback.
+
+    Args:
+        item: An Item instance, or a material name string (e.g. ``"diamond_sword"``).
+        on_click: Optional callback ``(player, event) -> None`` called when clicked.
+    """
+    item: Any  # Item | str
+    on_click: Optional[Callable[..., Any]] = None
+
+    def __post_init__(self):
+        if isinstance(self.item, str):
+            self.item = Item(self.item)
+
+# Global menu tracking
+_open_menus: Dict[str, "Menu"] = {}
+_menu_events_registered = False
+
+def _register_menu_events():
+    global _menu_events_registered
+    if _menu_events_registered:
+        return
+    _menu_events_registered = True
+
+    async def _on_inventory_click(event: Event):
+        player = event.fields.get("player")
+        if player is None:
+            return
+        player_uuid = player.fields.get("uuid") if hasattr(player, "fields") else None
+        if player_uuid is None:
+            return
+        menu = _open_menus.get(player_uuid)
+        if menu is None:
+            return
+        event.cancel()
+        slot = event.fields.get("slot")
+        if slot is not None and 0 <= slot < menu.rows * 9:
+            menu_item = menu[slot]
+            if menu_item is not None and menu_item.on_click is not None:
+                p = Player(fields=player.fields) if hasattr(player, "fields") else player
+                try:
+                    result = menu_item.on_click(p, event)
+                    if hasattr(result, "__await__"):
+                        await result
+                except Exception as e:
+                    print(f"[PyJavaBridge] Menu click handler error: {e}")
+
+    async def _on_inventory_close(event: Event):
+        player = event.fields.get("player")
+        if player is None:
+            return
+        player_uuid = player.fields.get("uuid") if hasattr(player, "fields") else None
+        if player_uuid is None:
+            return
+        _open_menus.pop(player_uuid, None)
+
+    _connection.on("inventory_click", _on_inventory_click)
+    _connection.subscribe("inventory_click", False)
+    _connection.on("inventory_close", _on_inventory_close)
+    _connection.subscribe("inventory_close", False)
+
+# User util funcs
+async def raycast(
+    world: World,
+    start: Vector|tuple[float,float,float],
+    direction: tuple[float,float],
+    max_distance: float = 64.0,
+    ray_size: float = 0.2,
+    include_entities: bool = True,
+    include_blocks: bool = True,
+    ignore_passable: bool = True,
+):
+    """Raycast helper returning RaycastResult or None."""
+    if isinstance(world, str):
+        world = await server.world(world)
+
+    if isinstance(start, (list, tuple)):
+        start_xyz = [float(start[0]), float(start[1]), float(start[2])]
+    else:
+        start_xyz = [float(start.x), float(start.y), float(start.z)]
+
+    yaw, pitch = direction
+
+    result = await _connection.call(
+        target="raycast",
+        method="trace",
+        args=[
+            world,
+            start_xyz[0],
+            start_xyz[1],
+            start_xyz[2],
+            yaw,
+            pitch,
+            float(max_distance),
+            float(ray_size),
+            bool(include_entities),
+            bool(include_blocks),
+            bool(ignore_passable),
+        ]
+    )
+    if result is None:
+        return None
+
+    getter: Callable[..., Any]
+    if isinstance(result, dict):
+        getter = cast(Dict[str, Any], result).get
+    else:
+        getter = lambda key, default=None: getattr(result, key, default)  # type: ignore[reportUnknownLambdaType]
+
+    return RaycastResult(
+        x=float(getter("x", 0)),
+        y=float(getter("y", 0)),
+        z=float(getter("z", 0)),
+        entity=getter("entity"),
+        block=getter("block"),
+        start_x=float(getter("startX", 0)),
+        start_y=float(getter("startY", 0)),
+        start_z=float(getter("startZ", 0)),
+        yaw=float(getter("yaw", 0)),
+        pitch=float(getter("pitch", 0)),
+        distance=float(getter("distance", 0)),
+        hit_face=getter("hit_face"),
+    )
 
 _connection: BridgeConnection
 _player_uuid_cache: Dict[str, str] = {}
 
+# Utils
 def _extract_xyz(pos:Vector | list[float] | tuple[float,float,float] | SimpleNamespace) -> tuple[float,float,float]:
     """Extract (x, y, z) from a Location, Vector, tuple, list, or namespace."""
     if isinstance(pos, (list, tuple)) and len(pos) >= 3:
@@ -2567,36 +3577,6 @@ def _proxy_from(raw: Dict[str, Any]) -> ProxyBase:
                 proxy_cls = Effect
     return proxy_cls(handle=handle, type_name=type_name, fields=fields)
 
-def event(func: Optional[Callable[[Event], Any]] = None, *, once_per_tick: bool = False, priority: str = "NORMAL", throttle_ms: int = 0):
-    """
-    Register an async event handler.
-
-    The handler name is mapped to a Bukkit/Paper event class using snake_case
-    (e.g., player_join -> PlayerJoinEvent). Events are registered on demand.
-
-    Supported events:
-    - Any Bukkit/Paper event class reachable in the standard event packages.
-    - Common examples: server_boot, player_join, block_break, block_place,
-      block_explode, entity_explode, player_move, player_quit, player_chat,
-      player_interact, inventory_click, inventory_close, entity_damage,
-      entity_death, world_load, world_unload, weather_change.
-
-    Args:
-        once_per_tick: If true, the handler is throttled to once per tick.
-        priority: Bukkit EventPriority (LOWEST, LOW, NORMAL, HIGH, HIGHEST, MONITOR).
-        throttle_ms: Minimum milliseconds between event dispatches (0 = no throttle).
-    """
-    def decorator(handler: Callable[[Event], Any]):
-        event_name = handler.__name__
-        _connection.on(event_name, handler)
-        _connection.subscribe(event_name, once_per_tick, priority, throttle_ms)
-        return handler
-
-    if func is None:
-        return decorator
-
-    return decorator(func)
-
 def _command_signature_params(sig: inspect.Signature):
     params = list(sig.parameters.values())
     positional_params: List[inspect.Parameter] = []
@@ -2659,231 +3639,6 @@ def _parse_command_tokens(raw_args: List[str], positional_params: List[inspect.P
     elif has_varargs:
         var_args = positional_tokens
     return pos_args, var_args, kwargs, positional_tokens, allowed_kw_names
-
-def command(description: Optional[str] = None, *, name: Optional[str] = None, permission: Optional[str] = None):
-    """
-    Register a command handler.
-
-    The handler name is registered as a server command unless a custom
-    command name is provided via name=.
-
-    The first decorator argument is a description string.
-
-    The handler receives an event-like object with:
-    - event: the CommandSender
-    - label: the invoked command label
-    - args: list of arguments
-
-    Example:
-```
-@command("Greet a player")
-async def greet(event: Event, name: str):
-    event.player.send_message(f"Hello, {name}!")
-```
-    """
-    def decorator(handler: Any) -> Any:
-        sig = inspect.signature(handler)
-        positional_params, keyword_only_names, has_varargs, has_varkw = _command_signature_params(sig)
-
-        def _format_type(annotation: Any) -> str:
-            if annotation is inspect.Parameter.empty:
-                return "str"
-            if isinstance(annotation, str):
-                return annotation
-            name = getattr(annotation, "__name__", None)
-            if name:
-                return name
-            text = str(annotation)
-            if text.startswith("typing."):
-                return text.replace("typing.", "")
-            return text
-
-        def _usage_text(command_name: str) -> str:
-            parts: List[str] = []
-            for param in positional_params:
-                type_name = _format_type(param.annotation)
-                token = f"<{param.name}: {type_name}>"
-                if param.default is not inspect.Parameter.empty:
-                    token = f"[{token}]"
-                parts.append(token)
-            if has_varargs:
-                parts.append("[<args...>]" )
-            if has_varkw:
-                parts.append("[<key:value...>]" )
-            args_text = " ".join(parts)
-            return f"Usage: /{command_name}" + (f" {args_text}" if args_text else "")
-
-        _allowed_kw_names = {p.name for p in positional_params} | set(keyword_only_names)
-
-        command_name = (name or handler.__name__).lower()
-
-        @wraps(handler)
-        async def wrapper(event_obj: Any) -> None:
-            if isinstance(event_obj, ProxyBase):
-                player = event_obj.fields.get("player")
-                sender_obj = event_obj.fields.get("sender")
-                if player is None and sender_obj is not None and not isinstance(sender_obj, Player):
-                    event_obj.fields["player"] = _ConsolePlayer(sender_obj)
-            elif isinstance(event_obj, dict):
-                evt = cast(Dict[str, Any], event_obj)
-                player: Any = evt.get("player")
-                sender_obj: Any = evt.get("sender")
-                if player is None and sender_obj is not None and not isinstance(sender_obj, Player):
-                    evt["player"] = _ConsolePlayer(sender_obj)
-
-            raw_args: List[str] = []
-            if isinstance(event_obj, ProxyBase):
-                raw_args = event_obj.fields.get("args", []) or []
-            elif isinstance(event_obj, dict):
-                raw_args = list(cast(Dict[str, Any], event_obj).get("args", []) or [])
-
-            pos_args, var_args, kwargs, positional_tokens, allowed_kw_names = _parse_command_tokens(
-                raw_args,
-                positional_params,
-                keyword_only_names,
-                has_varargs,
-                has_varkw,
-            )
-
-            if not has_varkw:
-                kwargs = {k: v for k, v in kwargs.items() if k in allowed_kw_names}
-
-            used_names = {p.name for p in positional_params[:len(pos_args)]}
-            for key in list(kwargs.keys()):
-                if key in used_names:
-                    kwargs.pop(key)
-
-            if positional_tokens and not positional_params and not has_varargs:
-                target: Any = None
-                if isinstance(event_obj, ProxyBase):
-                    target = event_obj.fields.get("player") or event_obj.fields.get("sender")
-                elif isinstance(event_obj, dict):
-                    evt = cast(Dict[str, Any], event_obj)
-                    target = evt.get("player") or evt.get("sender")
-                usage = _usage_text(command_name)
-                if target is not None:
-                    try:
-                        result = target.send_message(usage)
-                        if hasattr(result, "__await__"):
-                            await result
-                    except Exception:
-                        pass
-                else:
-                    print(f"[PyJavaBridge] {usage}")
-                return None
-
-            try:
-                sig.bind(event_obj, *pos_args, *var_args, **kwargs)
-            except TypeError:
-                target = None
-                if isinstance(event_obj, ProxyBase):
-                    target = event_obj.fields.get("player") or event_obj.fields.get("sender")
-                elif isinstance(event_obj, dict):
-                    evt = cast(Dict[str, Any], event_obj)
-                    target = evt.get("player") or evt.get("sender")
-                usage = _usage_text(command_name)
-                if target is not None:
-                    try:
-                        result = target.send_message(usage)
-                        if hasattr(result, "__await__"):
-                            await result
-                    except Exception:
-                        pass
-                else:
-                    print(f"[PyJavaBridge] {usage}")
-                return None
-
-            return await handler(event_obj, *pos_args, *var_args, **kwargs)
-        event_name = f"command_{command_name}"
-        _connection.on(event_name, wrapper)
-        _connection.register_command(command_name, permission=permission)
-        setattr(wrapper, "__command_args__", [p.name for p in positional_params])
-        setattr(wrapper, "__command_desc__", description)
-        return wrapper
-
-    return decorator
-
-server = Server(target="server")
-chat = ChatFacade(target="chat")
-reflect = ReflectFacade(target="reflect")
-
-async def _prime_player_cache():
-    try:
-        players: Any = server.players
-        if isinstance(players, list):
-            for player in cast(List[Any], players):
-                if isinstance(player, Player):
-                    name = player.fields.get("name")
-                    player_uuid = player.fields.get("uuid")
-                    if isinstance(name, str):
-                        if isinstance(player_uuid, uuid.UUID):
-                            _player_uuid_cache[name] = str(player_uuid)
-                        elif isinstance(player_uuid, str):
-                            _player_uuid_cache[name] = player_uuid
-    except Exception:
-        pass
-
-async def raycast(
-    world: World,
-    start: Vector|tuple[float,float,float],
-    direction: tuple[float,float],
-    max_distance: float = 64.0,
-    ray_size: float = 0.2,
-    include_entities: bool = True,
-    include_blocks: bool = True,
-    ignore_passable: bool = True,
-):
-    """Raycast helper returning RaycastResult or None."""
-    if isinstance(world, str):
-        world = await server.world(world)
-
-    if isinstance(start, (list, tuple)):
-        start_xyz = [float(start[0]), float(start[1]), float(start[2])]
-    else:
-        start_xyz = [float(start.x), float(start.y), float(start.z)]
-
-    yaw, pitch = direction
-
-    result = await _connection.call(
-        target="raycast",
-        method="trace",
-        args=[
-            world,
-            start_xyz[0],
-            start_xyz[1],
-            start_xyz[2],
-            yaw,
-            pitch,
-            float(max_distance),
-            float(ray_size),
-            bool(include_entities),
-            bool(include_blocks),
-            bool(ignore_passable),
-        ]
-    )
-    if result is None:
-        return None
-
-    getter: Callable[..., Any]
-    if isinstance(result, dict):
-        getter = cast(Dict[str, Any], result).get
-    else:
-        getter = lambda key, default=None: getattr(result, key, default)  # type: ignore[reportUnknownLambdaType]
-
-    return RaycastResult(
-        x=float(getter("x", 0)),
-        y=float(getter("y", 0)),
-        z=float(getter("z", 0)),
-        entity=getter("entity"),
-        block=getter("block"),
-        start_x=float(getter("startX", 0)),
-        start_y=float(getter("startY", 0)),
-        start_z=float(getter("startZ", 0)),
-        yaw=float(getter("yaw", 0)),
-        pitch=float(getter("pitch", 0)),
-        distance=float(getter("distance", 0)),
-        hit_face=getter("hit_face"),
-    )
 
 def _yaml_parse_scalar(value: str) -> Any:
     """Parse a YAML scalar string into a Python value."""
@@ -3140,132 +3895,6 @@ def _yaml_dump_scalar(value: Any) -> str:
         return f'"{escaped}"'
     return s
 
-class Config:
-    """Per-script configuration helper with dot-path access and YAML persistence.
-
-    Usage::
-
-        config = Config(defaults={"welcome": {"enabled": True, "message": "Hello!"}})
-        if config.get_bool("welcome.enabled"):
-            msg = config.get("welcome.message", "Hi")
-        config.set("welcome.message", "Welcome!")
-        config.save()
-    """
-
-    def __init__(self, name: Optional[str] = None, defaults: Optional[Dict[str, Any]] = None):
-        script_path = os.environ.get("PYJAVABRIDGE_SCRIPT", "")
-        if name is None:
-            name = os.path.splitext(os.path.basename(script_path))[0] if script_path else "config"
-        scripts_dir = os.path.dirname(script_path) if script_path else "."
-        plugin_dir = os.path.dirname(scripts_dir)
-        config_dir = os.path.join(plugin_dir, "config", name)
-        os.makedirs(config_dir, exist_ok=True)
-
-        self._path = os.path.join(config_dir, "config.yml")
-        self._data: Dict[str, Any] = dict(defaults) if defaults else {}
-        self._defaults: Dict[str, Any] = dict(defaults) if defaults else {}
-        self.reload()
-
-    def reload(self):
-        """Reload config from disk, merging with defaults."""
-        data: Dict[str, Any] = {}
-        if os.path.exists(self._path):
-            try:
-                with open(self._path, "r", encoding="utf-8") as f:
-                    loaded = _yaml_load(f.read())
-                    data = cast(Dict[str, Any], loaded) if isinstance(loaded, dict) else {}
-            except Exception:
-                data = {}
-        merged = dict(self._defaults)
-        _deep_merge(merged, data)
-        self._data = merged
-
-    def save(self):
-        """Save current config to disk."""
-        with open(self._path, "w", encoding="utf-8") as f:
-            f.write(_yaml_dump(self._data))
-            f.write('\n')
-
-    def get(self, path: str, default: Any = None) -> Any:
-        """Get a value by dot-path (e.g. 'database.host')."""
-        keys = path.split(".")
-        data = self._data
-        for key in keys:
-            if isinstance(data, dict) and key in data:
-                data = data[key]
-            else:
-                return default
-        return data
-
-    def get_int(self, path: str, default: int = 0) -> int:
-        """Get an integer value by dot-path."""
-        v = self.get(path)
-        return int(v) if v is not None else default
-
-    def get_float(self, path: str, default: float = 0.0) -> float:
-        """Get a float value by dot-path."""
-        v = self.get(path)
-        return float(v) if v is not None else default
-
-    def get_bool(self, path: str, default: bool = False) -> bool:
-        """Get a boolean value by dot-path."""
-        v = self.get(path)
-        if v is None:
-            return default
-        if isinstance(v, str):
-            return v.lower() in ("true", "yes", "1", "on")
-        return bool(v)
-
-    def get_list(self, path: str, default: Optional[List[Any]] = None) -> List[Any]:
-        """Get a list value by dot-path."""
-        v = self.get(path)
-        if v is None:
-            return default if default is not None else []
-        result: List[Any] = list(cast(List[Any], v)) if isinstance(v, (list, tuple)) else [v]
-        return result
-
-    def set(self, path: str, value: Any):
-        """Set a value by dot-path, creating intermediate dicts as needed."""
-        keys = path.split(".")
-        data = self._data
-        for key in keys[:-1]:
-            if key not in data or not isinstance(data[key], dict):
-                data[key] = {}
-            data = data[key]
-        data[keys[-1]] = value
-
-    def delete(self, path: str) -> bool:
-        """Delete a value by dot-path. Returns True if the key existed."""
-        keys = path.split(".")
-        data = self._data
-        for key in keys[:-1]:
-            if not isinstance(data, dict) or key not in data:
-                return False
-            data = data[key]
-        if isinstance(data, dict) and keys[-1] in data:
-            del data[keys[-1]]
-            return True
-        return False
-
-    def __getitem__(self, key: str) -> Any:
-        return self.get(key)
-
-    def __setitem__(self, key: str, value: Any):
-        self.set(key, value)
-
-    def __contains__(self, key: str) -> bool:
-        return self.get(key) is not None
-
-    @property
-    def data(self) -> Dict[str, Any]:
-        """Direct access to the underlying data dict."""
-        return self._data
-
-    @property
-    def path(self) -> str:
-        """Path to the config file on disk."""
-        return self._path
-
 def _deep_merge(base: Dict[str, Any], override: Dict[str, Any]):
     """Recursively merge override into base."""
     for key, value in override.items():
@@ -3273,6 +3902,245 @@ def _deep_merge(base: Dict[str, Any], override: Dict[str, Any]):
             _deep_merge(base[key], value)  # type: ignore[reportUnknownArgumentType]
         else:
             base[key] = value
+
+async def _prime_player_cache():
+    try:
+        players: Any = server.players
+        if isinstance(players, list):
+            for player in cast(List[Any], players):
+                if isinstance(player, Player):
+                    name = player.fields.get("name")
+                    player_uuid = player.fields.get("uuid")
+                    if isinstance(name, str):
+                        if isinstance(player_uuid, uuid.UUID):
+                            _player_uuid_cache[name] = str(player_uuid)
+                        elif isinstance(player_uuid, str):
+                            _player_uuid_cache[name] = player_uuid
+    except Exception:
+        pass
+
+# Decorators
+def event(func: Optional[Callable[[Event], Any]] = None, *, once_per_tick: bool = False, priority: str = "NORMAL", throttle_ms: int = 0):
+    """
+    Register an async event handler.
+
+    The handler name is mapped to a Bukkit/Paper event class using snake_case
+    (e.g., player_join -> PlayerJoinEvent). Events are registered on demand.
+
+    Supported events:
+    - Any Bukkit/Paper event class reachable in the standard event packages.
+    - Common examples: server_boot, player_join, block_break, block_place,
+      block_explode, entity_explode, player_move, player_quit, player_chat,
+      player_interact, inventory_click, inventory_close, entity_damage,
+      entity_death, world_load, world_unload, weather_change.
+
+    Args:
+        once_per_tick: If true, the handler is throttled to once per tick.
+        priority: Bukkit EventPriority (LOWEST, LOW, NORMAL, HIGH, HIGHEST, MONITOR).
+        throttle_ms: Minimum milliseconds between event dispatches (0 = no throttle).
+    """
+    def decorator(handler: Callable[[Event], Any]):
+        event_name = handler.__name__
+        _connection.on(event_name, handler)
+        _connection.subscribe(event_name, once_per_tick, priority, throttle_ms)
+        return handler
+
+    if func is None:
+        return decorator
+
+    return decorator(func)
+
+def task(func: Optional[Callable[[], Any]] = None, *, interval: int = 20, delay: int = 0):
+    """
+    Register a repeating async task.
+
+    The decorated function is called repeatedly with a fixed tick interval.
+    Use server.wait() internally for tick-accurate delays.
+
+    Args:
+        interval: Ticks between each call (default 20 = 1 second).
+        delay: Ticks to wait before the first call (default 0).
+
+    Usage:
+        @task(interval=20)
+        async def my_loop():
+            # runs every second
+            ...
+
+        @task  # defaults: interval=20, delay=0
+        async def heartbeat():
+            ...
+    """
+    def decorator(handler: Callable[[], Any]):
+        async def _loop():
+            try:
+                if delay > 0:
+                    await server.wait(delay)
+                while _connection is not None and _connection._thread.is_alive():
+                    try:
+                        result = handler()
+                        if hasattr(result, "__await__"):
+                            await result
+                    except Exception as e:
+                        print(f"[PyJavaBridge] Task {handler.__name__} error: {e}")
+                    await server.wait(interval)
+            except Exception:
+                pass
+
+        _connection.on("server_boot", lambda _: asyncio.ensure_future(_loop()))
+        return handler
+
+    if func is None:
+        return decorator
+
+    return decorator(func)
+
+def command(description: Optional[str] = None, *, name: Optional[str] = None, permission: Optional[str] = None):
+    """
+    Register a command handler.
+
+    The handler name is registered as a server command unless a custom
+    command name is provided via name=.
+
+    The first decorator argument is a description string.
+
+    The handler receives an event-like object with:
+    - event: the CommandSender
+    - label: the invoked command label
+    - args: list of arguments
+
+    Example:
+```
+@command("Greet a player")
+async def greet(event: Event, name: str):
+    event.player.send_message(f"Hello, {name}!")
+```
+    """
+    def decorator(handler: Any) -> Any:
+        sig = inspect.signature(handler)
+        positional_params, keyword_only_names, has_varargs, has_varkw = _command_signature_params(sig)
+
+        def _format_type(annotation: Any) -> str:
+            if annotation is inspect.Parameter.empty:
+                return "str"
+            if isinstance(annotation, str):
+                return annotation
+            name = getattr(annotation, "__name__", None)
+            if name:
+                return name
+            text = str(annotation)
+            if text.startswith("typing."):
+                return text.replace("typing.", "")
+            return text
+
+        def _usage_text(command_name: str) -> str:
+            parts: List[str] = []
+            for param in positional_params:
+                type_name = _format_type(param.annotation)
+                token = f"<{param.name}: {type_name}>"
+                if param.default is not inspect.Parameter.empty:
+                    token = f"[{token}]"
+                parts.append(token)
+            if has_varargs:
+                parts.append("[<args...>]" )
+            if has_varkw:
+                parts.append("[<key:value...>]" )
+            args_text = " ".join(parts)
+            return f"Usage: /{command_name}" + (f" {args_text}" if args_text else "")
+
+        _allowed_kw_names = {p.name for p in positional_params} | set(keyword_only_names)
+
+        command_name = (name or handler.__name__).lower()
+
+        @wraps(handler)
+        async def wrapper(event_obj: Any) -> None:
+            if isinstance(event_obj, ProxyBase):
+                player = event_obj.fields.get("player")
+                sender_obj = event_obj.fields.get("sender")
+                if player is None and sender_obj is not None and not isinstance(sender_obj, Player):
+                    event_obj.fields["player"] = _ConsolePlayer(sender_obj)
+            elif isinstance(event_obj, dict):
+                evt = cast(Dict[str, Any], event_obj)
+                player: Any = evt.get("player")
+                sender_obj: Any = evt.get("sender")
+                if player is None and sender_obj is not None and not isinstance(sender_obj, Player):
+                    evt["player"] = _ConsolePlayer(sender_obj)
+
+            raw_args: List[str] = []
+            if isinstance(event_obj, ProxyBase):
+                raw_args = event_obj.fields.get("args", []) or []
+            elif isinstance(event_obj, dict):
+                raw_args = list(cast(Dict[str, Any], event_obj).get("args", []) or [])
+
+            pos_args, var_args, kwargs, positional_tokens, allowed_kw_names = _parse_command_tokens(
+                raw_args,
+                positional_params,
+                keyword_only_names,
+                has_varargs,
+                has_varkw,
+            )
+
+            if not has_varkw:
+                kwargs = {k: v for k, v in kwargs.items() if k in allowed_kw_names}
+
+            used_names = {p.name for p in positional_params[:len(pos_args)]}
+            for key in list(kwargs.keys()):
+                if key in used_names:
+                    kwargs.pop(key)
+
+            if positional_tokens and not positional_params and not has_varargs:
+                target: Any = None
+                if isinstance(event_obj, ProxyBase):
+                    target = event_obj.fields.get("player") or event_obj.fields.get("sender")
+                elif isinstance(event_obj, dict):
+                    evt = cast(Dict[str, Any], event_obj)
+                    target = evt.get("player") or evt.get("sender")
+                usage = _usage_text(command_name)
+                if target is not None:
+                    try:
+                        result = target.send_message(usage)
+                        if hasattr(result, "__await__"):
+                            await result
+                    except Exception:
+                        pass
+                else:
+                    print(f"[PyJavaBridge] {usage}")
+                return None
+
+            try:
+                sig.bind(event_obj, *pos_args, *var_args, **kwargs)
+            except TypeError:
+                target = None
+                if isinstance(event_obj, ProxyBase):
+                    target = event_obj.fields.get("player") or event_obj.fields.get("sender")
+                elif isinstance(event_obj, dict):
+                    evt = cast(Dict[str, Any], event_obj)
+                    target = evt.get("player") or evt.get("sender")
+                usage = _usage_text(command_name)
+                if target is not None:
+                    try:
+                        result = target.send_message(usage)
+                        if hasattr(result, "__await__"):
+                            await result
+                    except Exception:
+                        pass
+                else:
+                    print(f"[PyJavaBridge] {usage}")
+                return None
+
+            return await handler(event_obj, *pos_args, *var_args, **kwargs)
+        event_name = f"command_{command_name}"
+        _connection.on(event_name, wrapper)
+        _connection.register_command(command_name, permission=permission)
+        setattr(wrapper, "__command_args__", [p.name for p in positional_params])
+        setattr(wrapper, "__command_desc__", description)
+        return wrapper
+
+    return decorator
+
+server = Server(target="server")
+chat = ChatFacade(target="chat")
+reflect = ReflectFacade(target="reflect")
 
 def _bootstrap(script_path: str): # type: ignore
     global _connection
