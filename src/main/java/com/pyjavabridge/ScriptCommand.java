@@ -1,8 +1,13 @@
 package com.pyjavabridge;
 
 import com.google.gson.JsonObject;
+import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
+import org.bukkit.command.CommandMap;
 import org.bukkit.command.CommandSender;
+
+import java.lang.reflect.Field;
+import java.util.logging.Logger;
 
 class ScriptCommand extends Command {
     private volatile BridgeInstance instance;
@@ -23,6 +28,49 @@ class ScriptCommand extends Command {
 
     void setScriptPermission(String permission) {
         this.permission = permission;
+    }
+
+    static void registerScriptCommand(String name, BridgeInstance instance, String permission, Logger logger) {
+        CommandMap map = getCommandMap(logger);
+
+        if (map == null) {
+            logger.warning("Could not register command: " + name);
+            return;
+        }
+
+        String commandName = name.toLowerCase();
+        Command existing = map.getCommand(commandName);
+
+        if (existing instanceof ScriptCommand scriptCommand) {
+            scriptCommand.setInstance(instance);
+            if (permission != null) {
+                scriptCommand.setScriptPermission(permission);
+            }
+            return;
+        }
+
+        if (existing != null) {
+            logger.warning("Command /" + commandName + " already registered by another plugin.");
+        }
+
+        ScriptCommand cmd = new ScriptCommand(commandName, instance);
+        if (permission != null) {
+            cmd.setScriptPermission(permission);
+        }
+        map.register("pyjavabridge", cmd);
+    }
+
+    private static CommandMap getCommandMap(Logger logger) {
+        try {
+            Field field = Bukkit.getServer().getClass().getDeclaredField("commandMap");
+            field.setAccessible(true);
+
+            return (CommandMap) field.get(Bukkit.getServer());
+
+        } catch (Exception e) {
+            logger.warning("Failed to access commandMap: " + e.getMessage());
+            return null;
+        }
     }
 
     @Override

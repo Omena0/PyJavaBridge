@@ -1,5 +1,14 @@
-server
-build
+# Gradle
 .gradle
+gradle
+gradlew.bat
+
+# Build
+build
 bin
+
+# MC Server
+server
+
+# Cache
 __pycache__/

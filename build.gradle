@@ -6,14 +6,12 @@ group = 'com.pyjavabridge'
 
 def resolveVersionFromGit = {
     def versionPattern = ~/^(\d+[A-Z])\s*-\s*.*$/
-    def gitOutput = new ByteArrayOutputStream()
-    exec {
+    def result = providers.exec {
         commandLine 'git', 'log', '-1', '--pretty=%s'
-        standardOutput = gitOutput
         ignoreExitValue = true
     }
 
-    def lastSubject = gitOutput.toString('UTF-8').trim()
+    def lastSubject = result.standardOutput.asText.get().trim()
 
     if (lastSubject ==~ versionPattern) {
         def matcher = (lastSubject =~ versionPattern)
@@ -54,12 +52,11 @@ tasks.named('jar') {
 tasks.register('copyPluginJar', Copy) {
     dependsOn tasks.named('jar')
     from tasks.named('jar').flatMap { it.archiveFile }
-    into "${rootDir}/server/plugins"
+    def pluginsDir = layout.projectDirectory.dir("server/plugins")
+    into pluginsDir
     doFirst {
-        def pluginsDir = file("${rootDir}/server/plugins")
-        pluginsDir.mkdirs()
+        pluginsDir.asFile.mkdirs()
         delete(fileTree(pluginsDir) {
-            include "${project.name}-*.jar"
             include "pyjavabridge-*.jar"
         })
     }
