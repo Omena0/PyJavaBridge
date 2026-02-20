@@ -14,13 +14,9 @@ async def helloworld(event: Event):
 
 The entire API is, at core, asynchronous.
 
-## Docs
+## Documentation
 
-See [The documentation](docs/index.md)
-
-## Examples
-
-See [examples](examples/index.md)
+See [The Docs](https://omena0.github.io/PyJavaBridge/index.html)
 
 ## Changelog
 
