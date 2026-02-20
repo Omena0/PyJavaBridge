@@ -272,6 +272,11 @@ TEMPLATE = """\
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{title} — PyJavaBridge</title>
+  <meta property="og:title" content="{title} — PyJavaBridge">
+  <meta property="og:description" content="{og_description}">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="PyJavaBridge Docs">
+  <meta name="theme-color" content="#6366f1">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -355,9 +360,13 @@ def build_page(slug):
     # Build sidebar
     sidebar = build_toc_sidebar(toc_tokens, slug)
 
+    # Build OG description from subtitle or first paragraph
+    og_description = subtitle if subtitle else f"{title} — PyJavaBridge documentation"
+
     # Render template
     out_html = TEMPLATE.format(
         title=title,
+        og_description=og_description,
         subtitle_html=subtitle_html,
         body=body_html,
         sidebar=sidebar,
