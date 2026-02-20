@@ -93,7 +93,7 @@ Drop your `.py` file into the server's `scripts/` folder and reload. The bridge 
 
 | Page | Description |
 |------|-------------|
-| [Config](config.md) | YAML configuration files |
+| [Config](config.md) | Configuration files (TOML, JSON, properties) |
 | [Cooldown](cooldown.md) | Per-player cooldowns |
 | [Hologram](hologram.md) | Floating text entities |
 | [Menu](menu.md) | Chest GUI builder |

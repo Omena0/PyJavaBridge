@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Config — PyJavaBridge</title>
   <meta property="og:title" content="Config — PyJavaBridge">
-  <meta property="og:description" content="YAML configuration files">
+  <meta property="og:description" content="Configuration files (TOML, JSON, properties)">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="PyJavaBridge Docs">
   <meta name="theme-color" content="#6366f1">
@@ -153,24 +153,32 @@
   <!-- Main -->
   <main class="main">
     <div class="content">
-      <p class="subtitle">YAML configuration files</p>
+      <p class="subtitle">Configuration files (TOML, JSON, properties)</p>
       <h1 id="config">Config</h1>
-<p><code>Config</code> provides a simple interface for reading and writing YAML configuration files. Config files are stored in the plugin's data folder and persist across server restarts.</p>
+<p><code>Config</code> provides a simple interface for reading and writing configuration files. Config files are stored in the plugin's data folder and persist across server restarts.</p>
+<p>Supported formats: <strong>TOML</strong> (default), <strong>JSON</strong>, and <strong>properties</strong>.</p>
 <hr />
 <h2 id="constructor">Constructor</h2>
-<pre><code class="language-python">Config(name=<span class="kw">None</span>, defaults=<span class="kw">None</span>)
+<pre><code class="language-python">Config(name=<span class="kw">None</span>, defaults=<span class="kw">None</span>, format=<span class="st">&quot;toml&quot;</span>)
 </code></pre>
 <p>Load or create a configuration file.</p>
 <ul>
 <li><strong>Parameters:</strong></li>
-<li><code>name</code> (<code>str | None</code>) — File name (without <code>.yml</code> extension). If <code>None</code>, uses the default <code>config.yml</code>.</li>
+<li><code>name</code> (<code>str | None</code>) — File name (without extension). If <code>None</code>, uses the script name.</li>
 <li><code>defaults</code> (<code>dict[str, Any] | None</code>) — Default values to merge into the config if they don't already exist.</li>
+<li><code>format</code> (<code>str</code>) — File format: <code>"toml"</code> (default), <code>"json"</code>, or <code>"properties"</code>.</li>
 </ul>
-<pre><code class="language-python"><span class="cm"># Default config.yml</span>
+<pre><code class="language-python"><span class="cm"># Default config.toml</span>
 config = Config()
 
 <span class="cm"># Named config</span>
 bans = Config(<span class="st">&quot;bans&quot;</span>)
+
+<span class="cm"># JSON format</span>
+data = Config(<span class="st">&quot;data&quot;</span>, format=<span class="st">&quot;json&quot;</span>)
+
+<span class="cm"># Properties format</span>
+props = Config(<span class="st">&quot;server&quot;</span>, format=<span class="st">&quot;properties&quot;</span>)
 
 <span class="cm"># With defaults</span>
 settings = Config(<span class="st">&quot;settings&quot;</span>, defaults={
@@ -190,7 +198,7 @@ settings = Config(<span class="st">&quot;settings&quot;</span>, defaults={
 <ul>
 <li><strong>Type:</strong> <code>str</code></li>
 </ul>
-<p>Absolute file path to the YAML file.</p>
+<p>Absolute file path to the config file.</p>
 <hr />
 <h2 id="methods">Methods</h2>
 <h3 id="get">get</h3>

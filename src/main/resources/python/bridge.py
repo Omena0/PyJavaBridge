@@ -2521,7 +2521,7 @@ class Sidebar:
     def __init__(self, title: str = ""):
         self._board = Scoreboard.create()
         self._obj = self._board._call_sync("registerNewObjective", "sidebar", "dummy", title)
-        self._obj._call_sync("setDisplaySlot", EnumValue.SIDEBAR)
+        self._obj._call_sync("setDisplaySlot", EnumValue("org.bukkit.scoreboard.DisplaySlot", "SIDEBAR"))
         self._teams: dict[int, Any] = {}
         self._lines: dict[int, str] = {}
 
@@ -2565,7 +2565,9 @@ class Sidebar:
         self._obj._call_sync("setDisplayName", value)
 
 class Config:
-    """Per-script configuration helper with dot-path access and YAML persistence.
+    """Per-script configuration helper with dot-path access and file persistence.
+
+    Supported formats: ``"toml"`` (default), ``"json"``, ``"properties"``.
 
     Usage::
 
@@ -2576,7 +2578,12 @@ class Config:
         config.save()
     """
 
-    def __init__(self, name: Optional[str] = None, defaults: Optional[Dict[str, Any]] = None):
+    _EXTENSIONS = {"toml": ".toml", "json": ".json", "properties": ".properties"}
+
+    def __init__(self, name: Optional[str] = None, defaults: Optional[Dict[str, Any]] = None, format: str = "toml"):
+        if format not in self._EXTENSIONS:
+            raise ValueError(f"Unsupported config format: {format!r} (expected toml, json, or properties)")
+        self._format = format
         script_path = os.environ.get("PYJAVABRIDGE_SCRIPT", "")
         if name is None:
             name = os.path.splitext(os.path.basename(script_path))[0] if script_path else "config"
@@ -2585,7 +2592,8 @@ class Config:
         config_dir = os.path.join(plugin_dir, "config", name)
         os.makedirs(config_dir, exist_ok=True)
 
-        self._path = os.path.join(config_dir, "config.yml")
+        ext = self._EXTENSIONS[format]
+        self._path = os.path.join(config_dir, f"config{ext}")
         self._data: Dict[str, Any] = dict(defaults) if defaults else {}
         self._defaults: Dict[str, Any] = dict(defaults) if defaults else {}
         self.reload()
@@ -2595,9 +2603,16 @@ class Config:
         data: Dict[str, Any] = {}
         if os.path.exists(self._path):
             try:
-                with open(self._path, "r", encoding="utf-8") as f:
-                    loaded = _yaml_load(f.read())
-                    data = cast(Dict[str, Any], loaded) if isinstance(loaded, dict) else {}
+                if self._format == "toml":
+                    import tomllib
+                    with open(self._path, "rb") as fb:
+                        data = tomllib.load(fb)
+                elif self._format == "json":
+                    with open(self._path, "r", encoding="utf-8") as f:
+                        loaded = json.load(f)
+                        data = cast(Dict[str, Any], loaded) if isinstance(loaded, dict) else {}
+                elif self._format == "properties":
+                    data = _properties_load(self._path)
             except Exception:
                 data = {}
         merged = dict(self._defaults)
@@ -2607,8 +2622,13 @@ class Config:
     def save(self):
         """Save current config to disk."""
         with open(self._path, "w", encoding="utf-8") as f:
-            f.write(_yaml_dump(self._data))
-            f.write('\n')
+            if self._format == "toml":
+                f.write(_toml_dumps(self._data))
+            elif self._format == "json":
+                json.dump(self._data, f, indent=2, ensure_ascii=False)
+                f.write("\n")
+            elif self._format == "properties":
+                f.write(_properties_dumps(self._data))
 
     def get(self, path: str, default: Any = None) -> Any:
         """Get a value by dot-path (e.g. 'database.host')."""
@@ -2954,8 +2974,8 @@ class BossBarDisplay:
     def __init__(self, title: str = "", color: str = "PINK",
                  style: str = "SOLID"):
         self._bar = BossBar.create(title,
-                EnumValue.from_name(color.upper()),
-                EnumValue.from_name(style.upper())
+                BarColor.from_name(color.upper()),
+                BarStyle.from_name(style.upper())
         )
 
         self._value: float = 0.0
@@ -2984,7 +3004,7 @@ class BossBarDisplay:
 
     @color.setter
     def color(self, value: str):
-        self._bar.set_color(EnumValue.from_name(value.upper()))
+        self._bar.set_color(BarColor.from_name(value.upper()))
 
     @property
     def style(self) -> str:
@@ -2992,7 +3012,7 @@ class BossBarDisplay:
 
     @style.setter
     def style(self, value: str):
-        self._bar.set_style(EnumValue.from_name(value.upper()))
+        self._bar.set_style(BarStyle.from_name(value.upper()))
 
     @property
     def value(self) -> float:
@@ -3484,7 +3504,7 @@ async def raycast(
         hit_face=getter("hit_face"),
     )
 
-_connection: BridgeConnection
+_connection: Optional[BridgeConnection] = None
 _player_uuid_cache: Dict[str, str] = {}
 
 # Utils
@@ -3640,18 +3660,112 @@ def _parse_command_tokens(raw_args: List[str], positional_params: List[inspect.P
         var_args = positional_tokens
     return pos_args, var_args, kwargs, positional_tokens, allowed_kw_names
 
-def _yaml_parse_scalar(value: str) -> Any:
-    """Parse a YAML scalar string into a Python value."""
+def _toml_dumps(data: Dict[str, Any]) -> str:
+    """Dump a dict to TOML format string."""
+    lines: List[str] = []
+    _toml_write_table(data, [], lines)
+    return "\n".join(lines) + "\n"
+
+
+def _toml_write_table(data: Dict[str, Any], path: List[str], lines: List[str]):
+    """Recursively write a TOML table, emitting simple keys first, then sub-tables."""
+    for key, value in data.items():
+        if value is None:
+            continue
+        if isinstance(value, dict):
+            continue
+        if isinstance(value, list) and value and isinstance(value[0], dict):
+            continue
+        lines.append(f"{_toml_key(key)} = {_toml_value(value)}")
+    for key, value in data.items():
+        if value is None:
+            continue
+        if isinstance(value, dict):
+            sub_path = path + [key]
+            if lines and lines[-1] != "":
+                lines.append("")
+            lines.append(f"[{'.'.join(_toml_key(p) for p in sub_path)}]")
+            _toml_write_table(cast(Dict[str, Any], value), sub_path, lines)
+        elif isinstance(value, list) and value and isinstance(value[0], dict):
+            sub_path = path + [key]
+            for item in cast(List[Dict[str, Any]], value):
+                if lines and lines[-1] != "":
+                    lines.append("")
+                lines.append(f"[[{'.'.join(_toml_key(p) for p in sub_path)}]]")
+                _toml_write_table(item, sub_path, lines)
+
+
+def _toml_key(key: str) -> str:
+    """Return a bare TOML key if safe, otherwise a quoted key."""
+    if key and all(c.isalnum() or c in "-_" for c in key):
+        return key
+    escaped = key.replace("\\", "\\\\").replace('"', '\\"')
+    return f'"{escaped}"'
+
+
+def _toml_value(value: Any) -> str:
+    """Encode a Python value as a TOML value string."""
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    if isinstance(value, int):
+        return str(value)
+    if isinstance(value, float):
+        return str(value)
+    if isinstance(value, str):
+        escaped = value.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n").replace("\r", "\\r").replace("\t", "\\t")
+        return f'"{escaped}"'
+    if isinstance(value, list):
+        items = [_toml_value(v) for v in cast(List[Any], value) if v is not None]
+        return f"[{', '.join(items)}]"
+    if isinstance(value, dict):
+        items = [f"{_toml_key(k)} = {_toml_value(v)}" for k, v in cast(Dict[str, Any], value).items() if v is not None]
+        return "{" + ", ".join(items) + "}"
+    escaped = str(value).replace("\\", "\\\\").replace('"', '\\"')
+    return f'"{escaped}"'
+
+
+def _properties_load(path: str) -> Dict[str, Any]:
+    """Load a Java-style .properties file into a nested dict."""
+    data: Dict[str, Any] = {}
+    with open(path, "r", encoding="utf-8") as f:
+        for raw_line in f:
+            line = raw_line.strip()
+            if not line or line.startswith("#") or line.startswith("!"):
+                continue
+            sep = -1
+            for i, ch in enumerate(line):
+                if ch == "\\" :
+                    continue
+                if ch in ("=", ":"):
+                    sep = i
+                    break
+            if sep < 0:
+                continue
+            key = line[:sep].rstrip()
+            val_str = line[sep + 1:].lstrip()
+            _properties_set_nested(data, key, _properties_parse_value(val_str))
+    return data
+
+
+def _properties_set_nested(data: Dict[str, Any], key: str, value: Any):
+    """Set a dot-separated key path in a nested dict."""
+    parts = key.split(".")
+    node = data
+    for part in parts[:-1]:
+        if part not in node or not isinstance(node[part], dict):
+            node[part] = {}
+        node = cast(Dict[str, Any], node[part])
+    node[parts[-1]] = value
+
+
+def _properties_parse_value(value: str) -> Any:
+    """Parse a properties value string into an appropriate Python type."""
     if not value:
-        return None
-    if value in ("null", "Null", "NULL", "~"):
-        return None
-    if value in ("true", "True", "TRUE", "yes", "Yes", "YES", "on", "On", "ON"):
+        return ""
+    if value in ("true", "True", "TRUE"):
         return True
-    if value in ("false", "False", "FALSE", "no", "No", "NO", "off", "Off", "OFF"):
+    if value in ("false", "False", "FALSE"):
         return False
-    if (value.startswith('"') and value.endswith('"')) or (value.startswith("'") and value.endswith("'")):
-        return value[1:-1]
     try:
         return int(value)
     except ValueError:
@@ -3662,238 +3776,29 @@ def _yaml_parse_scalar(value: str) -> Any:
         pass
     return value
 
-def _yaml_strip_comment(line: str) -> str:
-    """Strip inline comments from a YAML line, respecting quoted strings."""
-    in_single = False
-    in_double = False
-    for i, ch in enumerate(line):
-        if ch == "'" and not in_double:
-            in_single = not in_single
-        elif ch == '"' and not in_single:
-            in_double = not in_double
-        elif ch == '#' and not in_single and not in_double:
-            return line[:i].rstrip()
-    return line
 
-def _yaml_load(text: str) -> Any:
-    """Parse simple YAML (mappings, sequences, scalars) into Python objects."""
-    parsed: List[tuple[int, str]] = []
-    for raw in text.splitlines():
-        stripped = raw.lstrip()
-        if not stripped or stripped.startswith('#'):
-            continue
-        indent = len(raw) - len(stripped)
-        content = _yaml_strip_comment(stripped)
-        if content:
-            parsed.append((indent, content))
-    if not parsed:
-        return {}
-    result, _ = _yaml_parse_block(parsed, 0, parsed[0][0])
-    return result
-
-def _yaml_parse_block(lines: List[tuple[int, str]], start: int, block_indent: int) -> tuple[Any, int]:
-    """Parse a block at a given indent level. Returns (value, next_index)."""
-    if start >= len(lines):
-        return {}, start
-    _, content = lines[start]
-    if content.startswith('- '):
-        return _yaml_parse_sequence(lines, start, block_indent)
-    return _yaml_parse_mapping(lines, start, block_indent)
-
-def _yaml_parse_mapping(lines: List[tuple[int, str]], start: int, block_indent: int) -> tuple[Dict[str, Any], int]:
-    """Parse a YAML mapping block."""
-    result: Dict[str, Any] = {}
-    i = start
-    while i < len(lines):
-        indent, content = lines[i]
-        if indent < block_indent:
-            break
-        if indent > block_indent:
-            break
-        if content.startswith('- '):
-            break
-
-        if ': ' in content:
-            key, val_str = content.split(': ', 1)
-            result[key.strip()] = _yaml_parse_scalar(val_str.strip())
-            i += 1
-        elif content.endswith(':') and not content.endswith('::'):
-            key = content[:-1].strip()
-            i += 1
-            if i < len(lines) and lines[i][0] > block_indent:
-                child_indent = lines[i][0]
-                value, i = _yaml_parse_block(lines, i, child_indent)
-                result[key] = value
-            else:
-                result[key] = None
-        else:
-            i += 1
-    return result, i
-
-def _yaml_parse_sequence(lines: List[tuple[int, str]], start: int, block_indent: int) -> tuple[List[Any], int]:
-    """Parse a YAML sequence block."""
-    result: List[Any] = []
-    i = start
-    while i < len(lines):
-        indent, content = lines[i]
-        if indent < block_indent:
-            break
-        if indent > block_indent:
-            break
-        if not content.startswith('- '):
-            break
-
-        item_content = content[2:].strip()
-        item_indent = indent + 2
-
-        if not item_content:
-            # Bare '- ' with nested content
-            i += 1
-            if i < len(lines) and lines[i][0] >= item_indent:
-                value, i = _yaml_parse_block(lines, i, lines[i][0])
-                result.append(value)
-        elif ': ' in item_content or (item_content.endswith(':') and not item_content.endswith('::')):
-            # List item is a mapping: - key: value
-            item_dict: Dict[str, Any] = {}
-            if ': ' in item_content:
-                key, val_str = item_content.split(': ', 1)
-                item_dict[key.strip()] = _yaml_parse_scalar(val_str.strip())
-            else:
-                key = item_content[:-1].strip()
-                i += 1
-                if i < len(lines) and lines[i][0] >= item_indent:
-                    value, i = _yaml_parse_block(lines, i, lines[i][0])
-                    item_dict[key] = value
-                else:
-                    item_dict[key] = None
-                result.append(item_dict)
-                continue
-            i += 1
-            # Continue reading mapping entries at item_indent
-            while i < len(lines) and lines[i][0] >= item_indent:
-                sub_indent, sub_content = lines[i]
-                if sub_indent == item_indent:
-                    if sub_content.startswith('- '):
-                        break
-                    if ': ' in sub_content:
-                        k, v = sub_content.split(': ', 1)
-                        item_dict[k.strip()] = _yaml_parse_scalar(v.strip())
-                        i += 1
-                    elif sub_content.endswith(':') and not sub_content.endswith('::'):
-                        k = sub_content[:-1].strip()
-                        i += 1
-                        if i < len(lines) and lines[i][0] > item_indent:
-                            child_indent = lines[i][0]
-                            value, i = _yaml_parse_block(lines, i, child_indent)
-                            item_dict[k] = value
-                        else:
-                            item_dict[k] = None
-                    else:
-                        break
-                elif sub_indent > item_indent:
-                    break
-                else:
-                    break
-            result.append(item_dict)
-        else:
-            result.append(_yaml_parse_scalar(item_content))
-            i += 1
-
-    return result, i
-
-def _yaml_needs_quoting(value: str) -> bool:
-    """Check if a string value needs quoting in YAML output."""
-    if not value:
-        return True
-    if value in ("true", "false", "yes", "no", "on", "off",
-                 "True", "False", "Yes", "No", "On", "Off",
-                 "TRUE", "FALSE", "YES", "NO", "ON", "OFF",
-                 "null", "Null", "NULL", "~"):
-        return True
-    if value[0] in (' ', '\t') or value[-1] in (' ', '\t'):
-        return True
-    if any(ch in value for ch in (':', '#', '{', '}', '[', ']', ',', '&', '*', '?', '|', '>', '!', '%', '@', '`')):
-        return True
-    try:
-        int(value)
-        return True
-    except ValueError:
-        pass
-    try:
-        float(value)
-        return True
-    except ValueError:
-        pass
-    return False
-
-def _yaml_dump(data: Any, indent: int = 0) -> str:
-    """Dump a Python object to simple YAML format."""
-    prefix = '  ' * indent
+def _properties_dumps(data: Dict[str, Any]) -> str:
+    """Dump a nested dict to .properties format with dot-separated keys."""
     lines: List[str] = []
+    _properties_flatten(data, [], lines)
+    return "\n".join(lines) + "\n"
 
-    if isinstance(data, dict):
-        dict_data = cast(Dict[str, Any], data)
-        for key, value in dict_data.items():
-            if isinstance(value, dict):
-                if value:
-                    lines.append(f"{prefix}{key}:")
-                    lines.append(_yaml_dump(value, indent + 1))
-                else:
-                    lines.append(f"{prefix}{key}: {{}}")
-            elif isinstance(value, list):
-                if value:
-                    lines.append(f"{prefix}{key}:")
-                    child = '  ' * (indent + 1)
-                    for item in cast(List[Any], value):
-                        if isinstance(item, dict):
-                            item_dict = cast(Dict[str, Any], item)
-                            first = True
-                            for k, v in item_dict.items():
-                                scalar = _yaml_dump_scalar(v)
-                                if first:
-                                    lines.append(f"{child}- {k}: {scalar}")
-                                    first = False
-                                else:
-                                    lines.append(f"{child}  {k}: {scalar}")
-                        else:
-                            lines.append(f"{child}- {_yaml_dump_scalar(item)}")
-                else:
-                    lines.append(f"{prefix}{key}: []")
-            else:
-                lines.append(f"{prefix}{key}: {_yaml_dump_scalar(value)}")
-    elif isinstance(data, list):
-        list_data = cast(List[Any], data)
-        for item in list_data:
-            if isinstance(item, dict):
-                item_dict = cast(Dict[str, Any], item)
-                first = True
-                for k, v in item_dict.items():
-                    scalar = _yaml_dump_scalar(v)
-                    if first:
-                        lines.append(f"{prefix}- {k}: {scalar}")
-                        first = False
-                    else:
-                        lines.append(f"{prefix}  {k}: {scalar}")
-            else:
-                lines.append(f"{prefix}- {_yaml_dump_scalar(item)}")
-    else:
-        lines.append(f"{prefix}{_yaml_dump_scalar(data)}")
 
-    return '\n'.join(lines)
-
-def _yaml_dump_scalar(value: Any) -> str:
-    """Convert a Python scalar to its YAML string representation."""
-    if value is None:
-        return 'null'
-    if isinstance(value, bool):
-        return 'true' if value else 'false'
-    if isinstance(value, (int, float)):
-        return str(value)
-    s = str(value)
-    if _yaml_needs_quoting(s):
-        escaped = s.replace('\\', '\\\\').replace('"', '\\"')
-        return f'"{escaped}"'
-    return s
+def _properties_flatten(data: Dict[str, Any], path: List[str], lines: List[str]):
+    """Flatten a nested dict into dot-separated key=value lines."""
+    for key, value in data.items():
+        full_path = path + [key]
+        if value is None:
+            continue
+        if isinstance(value, dict):
+            _properties_flatten(cast(Dict[str, Any], value), full_path, lines)
+        elif isinstance(value, bool):
+            lines.append(f"{'.'.join(full_path)}={'true' if value else 'false'}")
+        elif isinstance(value, list):
+            serialized = ",".join(str(v) for v in cast(List[Any], value))
+            lines.append(f"{'.'.join(full_path)}={serialized}")
+        else:
+            lines.append(f"{'.'.join(full_path)}={value}")
 
 def _deep_merge(base: Dict[str, Any], override: Dict[str, Any]):
     """Recursively merge override into base."""

@@ -77,14 +77,22 @@ public class BridgeInstance {
 
     private static final Object UNHANDLED = new Object();
 
-    @SuppressWarnings("unused")
-    private final AtomicInteger requestId = new AtomicInteger(1);
     private final Map<Integer, PendingEvent> pendingEvents = new ConcurrentHashMap<>();
     private final Object writeLock = new Object();
 
     private final BridgeSerializer serializer;
     private final EventDispatcher eventDispatcher;
     private final EntitySpawner entitySpawner;
+
+    private final ChatFacade chatFacade = new ChatFacade();
+    private final RaycastFacade raycastFacade = new RaycastFacade();
+    private final ReflectFacade reflectFacade = new ReflectFacade();
+    private final RegionFacade regionFacade = new RegionFacade();
+    private final ParticleFacade particleFacade = new ParticleFacade();
+    private PermissionsFacade permissionsFacade;
+    private MetricsFacade metricsFacade;
+    private RefFacade refFacade;
+    private CommandsFacade commandsFacade;
 
     private ServerSocket serverSocket;
     private Socket socket;
@@ -105,6 +113,10 @@ public class BridgeInstance {
         this.serializer = new BridgeSerializer(registry, gson, plugin);
         this.entitySpawner = new EntitySpawner(plugin.getLogger(), name);
         this.eventDispatcher = new EventDispatcher(plugin, serializer, name, pendingEvents, this::send, gson);
+        this.permissionsFacade = new PermissionsFacade(plugin, permissionAttachments);
+        this.metricsFacade = new MetricsFacade(plugin);
+        this.refFacade = new RefFacade(this);
+        this.commandsFacade = new CommandsFacade(plugin, this);
     }
 
     public boolean isRunning() {
@@ -145,10 +157,15 @@ public class BridgeInstance {
         bridgeThread.start();
     }
 
+    private volatile boolean shutdownStarted = false;
+
     void shutdown() {
+        synchronized (writeLock) {
+            if (shutdownStarted) return;
+            shutdownStarted = true;
+        }
         if (Bukkit.isPrimaryThread()) {
             new Thread(this::shutdownInternal, "PyJavaBridge-Shutdown-" + name).start();
-
         } else {
             shutdownInternal();
         }
@@ -216,8 +233,8 @@ public class BridgeInstance {
                 } catch (IOException eof) {
                     break;
                 }
-                if (length <= 0 || length > 1_073_741_824) {
-                    logError("Invalid message length: " + length, null);
+                if (length <= 0 || length > 16_777_216) {
+                    plugin.getLogger().severe("[" + name + "] Invalid message length: " + length);
                     break;
                 }
                 byte[] payload = new byte[length];
@@ -950,15 +967,15 @@ public class BridgeInstance {
     private Object resolveTarget(String targetName, JsonObject argsObj) throws Exception {
         return switch (targetName) {
             case "server" -> Bukkit.getServer();
-            case "chat" -> new ChatFacade();
-            case "raycast" -> new RaycastFacade();
-            case "permissions" -> new PermissionsFacade(plugin, permissionAttachments);
-            case "metrics" -> new MetricsFacade(plugin);
-            case "ref" -> new RefFacade(this);
-            case "reflect" -> new ReflectFacade();
-            case "commands" -> new CommandsFacade(plugin, this);
-            case "region" -> new RegionFacade();
-            case "particle" -> new ParticleFacade();
+            case "chat" -> chatFacade;
+            case "raycast" -> raycastFacade;
+            case "permissions" -> permissionsFacade;
+            case "metrics" -> metricsFacade;
+            case "ref" -> refFacade;
+            case "reflect" -> reflectFacade;
+            case "commands" -> commandsFacade;
+            case "region" -> regionFacade;
+            case "particle" -> particleFacade;
             default -> throw new IllegalArgumentException("Unknown target: " + targetName);
         };
     }
@@ -1211,8 +1228,9 @@ public class BridgeInstance {
     }
 
     void logError(String message, Throwable ex) {
-        plugin.getLogger().severe("[" + name + "] " + message + ": " + ex.getMessage());
-        plugin.broadcastErrorToDebugPlayers("[" + name + "] " + message + ": " + ex.getMessage());
+        String detail = ex != null ? ex.getMessage() : "unknown";
+        plugin.getLogger().severe("[" + name + "] " + message + ": " + detail);
+        plugin.broadcastErrorToDebugPlayers("[" + name + "] " + message + ": " + detail);
     }
 
     private void startPythonProcess(int port) {

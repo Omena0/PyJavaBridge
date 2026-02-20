@@ -54,6 +54,7 @@ Feature update
 #### Misc
 
 - Added dev versioning for non-release commits
+- Added wiki site
 
 ## 1D
 

@@ -45,6 +45,12 @@ tasks.withType(JavaCompile).configureEach {
     options.release = 21
 }
 
+tasks.named('processResources') {
+    filesMatching('plugin.yml') {
+        expand(version: project.version)
+    }
+}
+
 tasks.named('jar') {
     archiveFileName = "${project.name}-${project.version}.jar"
 }

@@ -1,32 +1,41 @@
 ---
 title: Config
-subtitle: YAML configuration files
+subtitle: Configuration files (TOML, JSON, properties)
 ---
 
 # Config
 
-`Config` provides a simple interface for reading and writing YAML configuration files. Config files are stored in the plugin's data folder and persist across server restarts.
+`Config` provides a simple interface for reading and writing configuration files. Config files are stored in the plugin's data folder and persist across server restarts.
+
+Supported formats: **TOML** (default), **JSON**, and **properties**.
 
 ---
 
 ## Constructor
 
 ```python
-Config(name=None, defaults=None)
+Config(name=None, defaults=None, format="toml")
 ```
 
 Load or create a configuration file.
 
 - **Parameters:**
-  - `name` (`str | None`) — File name (without `.yml` extension). If `None`, uses the default `config.yml`.
+  - `name` (`str | None`) — File name (without extension). If `None`, uses the script name.
   - `defaults` (`dict[str, Any] | None`) — Default values to merge into the config if they don't already exist.
+  - `format` (`str`) — File format: `"toml"` (default), `"json"`, or `"properties"`.
 
 ```python
-# Default config.yml
+# Default config.toml
 config = Config()
 
 # Named config
 bans = Config("bans")
+
+# JSON format
+data = Config("data", format="json")
+
+# Properties format
+props = Config("server", format="properties")
 
 # With defaults
 settings = Config("settings", defaults={
@@ -50,7 +59,7 @@ The entire config as a dictionary.
 
 - **Type:** `str`
 
-Absolute file path to the YAML file.
+Absolute file path to the config file.
 
 ---
 
