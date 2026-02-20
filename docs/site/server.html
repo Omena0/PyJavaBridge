@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Server — PyJavaBridge</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Header -->
+  <header class="site-header">
+    <button class="menu-toggle" aria-label="Toggle menu">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M3 12h18M3 6h18M3 18h18"/>
+      </svg>
+    </button>
+    <a href="index.html" class="header-brand">
+      <span class="logo">Py</span>
+      PyJavaBridge
+    </a>
+    <nav class="header-nav">
+      <a href="index.html">Docs</a>
+      <a href="examples.html">Examples</a>
+      <a href="https://github.com/Omena0/PyJavaBridge">GitHub</a>
+    </nav>
+  </header>
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+<div class="search-box">
+  <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+  <input type="text" id="sidebar-search" placeholder="Search docs…">
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading" data-section="on-this-page">On This Page</div>
+  <ul class="sidebar-links">
+    <li><a href="#attributes">Attributes</a></li>
+    <li><a href="#players" style="padding-left:40px;font-size:.8rem">players</a></li>
+    <li><a href="#worlds" style="padding-left:40px;font-size:.8rem">worlds</a></li>
+    <li><a href="#name" style="padding-left:40px;font-size:.8rem">name</a></li>
+    <li><a href="#version" style="padding-left:40px;font-size:.8rem">version</a></li>
+    <li><a href="#motd" style="padding-left:40px;font-size:.8rem">motd</a></li>
+    <li><a href="#max_players" style="padding-left:40px;font-size:.8rem">max_players</a></li>
+    <li><a href="#tps" style="padding-left:40px;font-size:.8rem">tps</a></li>
+    <li><a href="#mspt" style="padding-left:40px;font-size:.8rem">mspt</a></li>
+    <li><a href="#last_tick_time" style="padding-left:40px;font-size:.8rem">last_tick_time</a></li>
+    <li><a href="#queue_len" style="padding-left:40px;font-size:.8rem">queue_len</a></li>
+    <li><a href="#boss_bars" style="padding-left:40px;font-size:.8rem">boss_bars</a></li>
+    <li><a href="#plugin_manager" style="padding-left:40px;font-size:.8rem">plugin_manager</a></li>
+    <li><a href="#scheduler" style="padding-left:40px;font-size:.8rem">scheduler</a></li>
+    <li><a href="#scoreboard_manager" style="padding-left:40px;font-size:.8rem">scoreboard_manager</a></li>
+    <li><a href="#methods">Methods</a></li>
+    <li><a href="#broadcast" style="padding-left:40px;font-size:.8rem">broadcast</a></li>
+    <li><a href="#execute" style="padding-left:40px;font-size:.8rem">execute</a></li>
+    <li><a href="#world" style="padding-left:40px;font-size:.8rem">world</a></li>
+    <li><a href="#create_boss_bar" style="padding-left:40px;font-size:.8rem">create_boss_bar</a></li>
+    <li><a href="#get_advancement" style="padding-left:40px;font-size:.8rem">get_advancement</a></li>
+    <li><a href="#wait" style="padding-left:40px;font-size:.8rem">wait</a></li>
+    <li><a href="#frame" style="padding-left:40px;font-size:.8rem">frame</a></li>
+    <li><a href="#atomic" style="padding-left:40px;font-size:.8rem">atomic</a></li>
+    <li><a href="#flush" style="padding-left:40px;font-size:.8rem">flush</a></li>
+  </ul>
+</div>
+
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="getting-started">Getting Started</div>
+  <ul class="sidebar-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="decorators.html">Decorators</a></li>
+    <li><a href="exceptions.html">Exceptions</a></li>
+    <li><a href="examples.html">Examples</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="core">Core</div>
+  <ul class="sidebar-links">
+    <li><a href="server.html" class="active">Server</a></li>
+    <li><a href="event.html">Event</a></li>
+    <li><a href="entity.html">Entity</a></li>
+    <li><a href="player.html">Player</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="world-space">World & Space</div>
+  <ul class="sidebar-links">
+    <li><a href="world.html">World</a></li>
+    <li><a href="location.html">Location</a></li>
+    <li><a href="block.html">Block</a></li>
+    <li><a href="chunk.html">Chunk</a></li>
+    <li><a href="vector.html">Vector</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="items-inventory">Items & Inventory</div>
+  <ul class="sidebar-links">
+    <li><a href="item.html">Item</a></li>
+    <li><a href="itembuilder.html">ItemBuilder</a></li>
+    <li><a href="inventory.html">Inventory</a></li>
+    <li><a href="menu.html">Menu</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="effects-attributes">Effects & Attributes</div>
+  <ul class="sidebar-links">
+    <li><a href="effect.html">Effect</a></li>
+    <li><a href="potion.html">Potion</a></li>
+    <li><a href="attribute.html">Attribute</a></li>
+    <li><a href="advancement.html">Advancement</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="scoreboards-ui">Scoreboards & UI</div>
+  <ul class="sidebar-links">
+    <li><a href="bossbar.html">BossBar</a></li>
+    <li><a href="scoreboard.html">Scoreboard</a></li>
+    <li><a href="objective.html">Objective</a></li>
+    <li><a href="team.html">Team</a></li>
+    <li><a href="sidebar.html">Sidebar</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="helpers">Helpers</div>
+  <ul class="sidebar-links">
+    <li><a href="config.html">Config</a></li>
+    <li><a href="cooldown.html">Cooldown</a></li>
+    <li><a href="hologram.html">Hologram</a></li>
+    <li><a href="enumvalue.html">EnumValue</a></li>
+    <li><a href="enums.html">Enums</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="display-entities">Display Entities</div>
+  <ul class="sidebar-links">
+    <li><a href="actionbardisplay.html">ActionBarDisplay</a></li>
+    <li><a href="bossbardisplay.html">BossBarDisplay</a></li>
+    <li><a href="blockdisplay.html">BlockDisplay</a></li>
+    <li><a href="itemdisplay.html">ItemDisplay</a></li>
+    <li><a href="imagedisplay.html">ImageDisplay</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="utilities">Utilities</div>
+  <ul class="sidebar-links">
+    <li><a href="raycast.html">Raycast</a></li>
+    <li><a href="chat.html">Chat</a></li>
+    <li><a href="reflect.html">Reflect</a></li>
+  </ul>
+</div>
+  </aside>
+  <div class="sidebar-overlay"></div>
+
+  <!-- Main -->
+  <main class="main">
+    <div class="content">
+      <p class="subtitle">Global server API</p>
+      <h1 id="server">Server</h1>
+<p>The <code>server</code> object is a module-level global available in every script. It provides access to players, worlds, boss bars, and server-wide operations.</p>
+<pre><code class="language-python"><span class="kw">from</span> bridge <span class="kw">import</span> *
+<span class="cm"># `server` is available immediately</span>
+players = server.players
+</code></pre>
+<hr />
+<h2 id="attributes">Attributes</h2>
+<h3 id="players">players</h3>
+<ul>
+<li><strong>Type:</strong> <code>list[</code><a href="player.html"><code>Player</code></a><code>]</code></li>
+</ul>
+<p>All currently online players. This is a snapshot — the list is re-fetched each time you access it.</p>
+<pre><code class="language-python"><span class="kw">for</span> p <span class="kw">in</span> server.players:
+    <span class="kw">await</span> p.send_message(<span class="st">&quot;Hello everyone!&quot;</span>)
+</code></pre>
+<h3 id="worlds">worlds</h3>
+<ul>
+<li><strong>Type:</strong> <code>list[</code><a href="world.html"><code>World</code></a><code>]</code></li>
+</ul>
+<p>All loaded worlds.</p>
+<h3 id="name">name</h3>
+<ul>
+<li><strong>Type:</strong> <code>str</code></li>
+</ul>
+<p>The server name as configured in <code>server.properties</code>.</p>
+<h3 id="version">version</h3>
+<ul>
+<li><strong>Type:</strong> <code>str</code></li>
+</ul>
+<p>The full server version string (e.g. <code>"git-Paper-123 (MC: 1.21.4)"</code>).</p>
+<h3 id="motd">motd</h3>
+<ul>
+<li><strong>Type:</strong> <code>str</code></li>
+</ul>
+<p>The server's Message of the Day.</p>
+<h3 id="max_players">max_players</h3>
+<ul>
+<li><strong>Type:</strong> <code>int</code></li>
+</ul>
+<p>Maximum number of players allowed.</p>
+<h3 id="tps">tps</h3>
+<ul>
+<li><strong>Type:</strong> <code>list[float]</code></li>
+</ul>
+<p>Server TPS (ticks per second) values. Typically contains 1-minute, 5-minute, and 15-minute averages. A healthy server runs at 20 TPS.</p>
+<h3 id="mspt">mspt</h3>
+<ul>
+<li><strong>Type:</strong> <code>float</code></li>
+</ul>
+<p>Milliseconds per tick. Lower is better. At 20 TPS, this should be ≤ 50ms.</p>
+<h3 id="last_tick_time">last_tick_time</h3>
+<ul>
+<li><strong>Type:</strong> <code>float</code></li>
+</ul>
+<p>Duration of the last tick in milliseconds.</p>
+<h3 id="queue_len">queue_len</h3>
+<ul>
+<li><strong>Type:</strong> <code>int</code></li>
+</ul>
+<p>Number of tasks currently in the main thread queue.</p>
+<h3 id="boss_bars">boss_bars</h3>
+<ul>
+<li><strong>Type:</strong> <code>list[</code><a href="bossbar.html"><code>BossBar</code></a><code>]</code></li>
+</ul>
+<p>All active boss bars on the server.</p>
+<h3 id="plugin_manager">plugin_manager</h3>
+<ul>
+<li><strong>Type:</strong> <code>any</code></li>
+</ul>
+<p>The Bukkit plugin manager. Primarily useful for advanced reflection use cases.</p>
+<h3 id="scheduler">scheduler</h3>
+<ul>
+<li><strong>Type:</strong> <code>any</code></li>
+</ul>
+<p>The Bukkit scheduler. Rarely needed — use <code>server.wait()</code> and <code>@task</code> instead.</p>
+<h3 id="scoreboard_manager">scoreboard_manager</h3>
+<ul>
+<li><strong>Type:</strong> <code>any</code></li>
+</ul>
+<p>The server's scoreboard manager.</p>
+<hr />
+<h2 id="methods">Methods</h2>
+<h3 id="broadcast">broadcast</h3>
+<pre><code class="language-python"><span class="kw">await</span> server.broadcast(message: str)
+</code></pre>
+<p>Broadcast a message to all online players and the server console.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>message</code> (<code>str</code>) — The message to broadcast. Supports Minecraft color codes with <code>§</code>.</li>
+<li><strong>Returns:</strong> <code>Awaitable[None]</code></li>
+</ul>
+<pre><code class="language-python"><span class="kw">await</span> server.broadcast(<span class="st">&quot;§a[Server]§r Restarting in 10 seconds!&quot;</span>)
+</code></pre>
+<h3 id="execute">execute</h3>
+<pre><code class="language-python">result = <span class="kw">await</span> server.execute(command: str)
+</code></pre>
+<p>Execute a command as the server console. This runs with full server permissions.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>command</code> (<code>str</code>) — The command to execute, without the leading <code>/</code>.</li>
+<li><strong>Returns:</strong> <code>Awaitable[bool]</code> — <code>True</code> if the command was recognized.</li>
+</ul>
+<pre><code class="language-python"><span class="kw">await</span> server.execute(<span class="st">&quot;weather clear&quot;</span>)
+<span class="kw">await</span> server.execute(<span class="st">&quot;give Steve diamond 64&quot;</span>)
+</code></pre>
+<h3 id="world">world</h3>
+<pre><code class="language-python">w = <span class="kw">await</span> server.world(name: str)
+</code></pre>
+<p>Get a world by name.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>name</code> (<code>str</code>) — The world name (e.g. <code>"world"</code>, <code>"world_nether"</code>).</li>
+<li><strong>Returns:</strong> <code>Awaitable[</code><a href="world.html"><code>World</code></a><code>]</code></li>
+</ul>
+<pre><code class="language-python">nether = <span class="kw">await</span> server.world(<span class="st">&quot;world_nether&quot;</span>)
+</code></pre>
+<h3 id="create_boss_bar">create_boss_bar</h3>
+<pre><code class="language-python">bar = <span class="kw">await</span> server.create_boss_bar(title: str, color: BarColor, style: BarStyle)
+</code></pre>
+<p>Create a new boss bar.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>title</code> (<code>str</code>) — Display title.</li>
+<li><code>color</code> (<a href="enums.html"><code>BarColor</code></a>) — Bar color.</li>
+<li><code>style</code> (<a href="enums.html"><code>BarStyle</code></a>) — Bar style.</li>
+<li><strong>Returns:</strong> <code>Awaitable[</code><a href="bossbar.html"><code>BossBar</code></a><code>]</code></li>
+</ul>
+<pre><code class="language-python">bar = <span class="kw">await</span> server.create_boss_bar(<span class="st">&quot;Event Timer&quot;</span>, BarColor.RED, BarStyle.SEGMENTED_6)
+</code></pre>
+<h3 id="get_advancement">get_advancement</h3>
+<pre><code class="language-python">adv = <span class="kw">await</span> server.get_advancement(key: str)
+</code></pre>
+<p>Get an advancement by its namespaced key.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>key</code> (<code>str</code>) — The advancement key (e.g. <code>"minecraft:story/mine_diamond"</code>).</li>
+<li><strong>Returns:</strong> <code>Awaitable[</code><a href="advancement.html"><code>Advancement</code></a><code>]</code></li>
+</ul>
+<h3 id="wait">wait</h3>
+<pre><code class="language-python"><span class="kw">await</span> server.wait(ticks: int = <span class="nb">1</span>, after: callable | <span class="kw">None</span> = <span class="kw">None</span>)
+</code></pre>
+<p>Pause execution for a number of ticks. Optionally run a callback after the wait.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>ticks</code> (<code>int</code>) — Number of ticks to wait. Default <code>1</code>. (20 ticks = 1 second)</li>
+<li><code>after</code> (<code>callable | None</code>) — Optional callback to run after the wait completes.</li>
+<li><strong>Returns:</strong> <code>Awaitable[None]</code></li>
+</ul>
+<pre><code class="language-python"><span class="kw">await</span> server.wait(<span class="nb">20</span>)  <span class="cm"># Wait 1 second</span>
+<span class="kw">await</span> server.wait(<span class="nb">60</span>)  <span class="cm"># Wait 3 seconds</span>
+
+<span class="cm"># With callback</span>
+<span class="kw">await</span> server.wait(<span class="nb">20</span>, after=<span class="kw">lambda</span>: print(<span class="st">&quot;Done waiting!&quot;</span>))
+</code></pre>
+<h3 id="frame">frame</h3>
+<pre><code class="language-python"><span class="kw">async</span> <span class="kw">with</span> server.frame():
+    <span class="kw">await</span> player.send_message(<span class="st">&quot;Line 1&quot;</span>)
+    <span class="kw">await</span> player.send_message(<span class="st">&quot;Line 2&quot;</span>)
+</code></pre>
+<p>Async context manager that batches multiple bridge calls into a single network send. Useful for reducing round-trips when making many calls at once.</p>
+<h3 id="atomic">atomic</h3>
+<pre><code class="language-python"><span class="kw">async</span> <span class="kw">with</span> server.atomic():
+    <span class="kw">await</span> player.set_health(<span class="nb">20</span>)
+    <span class="kw">await</span> player.set_food_level(<span class="nb">20</span>)
+</code></pre>
+<p>Async context manager that batches calls as an atomic group. All calls succeed or fail together.</p>
+<h3 id="flush">flush</h3>
+<pre><code class="language-python"><span class="kw">await</span> server.flush()
+</code></pre>
+<p>Send all pending batched requests immediately. Use this inside a <code>frame()</code> or <code>atomic()</code> block if you need partial results before the block ends.</p>
+<ul>
+<li><strong>Returns:</strong> <code>Awaitable[None]</code></li>
+</ul>
+    </div>
+    <footer class="site-footer">
+      &copy; Omena0 2026 &middot; PyJavaBridge Documentation
+    </footer>
+  </main>
+
+  <!-- Back to top -->
+  <button class="back-to-top" aria-label="Back to top">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+      <path d="M18 15l-6-6-6 6"/>
+    </svg>
+  </button>
+
+  <script src="script.js"></script>
+</body>
+</html>

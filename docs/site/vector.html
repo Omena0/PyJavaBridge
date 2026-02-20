@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vector — PyJavaBridge</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Header -->
+  <header class="site-header">
+    <button class="menu-toggle" aria-label="Toggle menu">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M3 12h18M3 6h18M3 18h18"/>
+      </svg>
+    </button>
+    <a href="index.html" class="header-brand">
+      <span class="logo">Py</span>
+      PyJavaBridge
+    </a>
+    <nav class="header-nav">
+      <a href="index.html">Docs</a>
+      <a href="examples.html">Examples</a>
+      <a href="https://github.com/Omena0/PyJavaBridge">GitHub</a>
+    </nav>
+  </header>
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+<div class="search-box">
+  <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+  <input type="text" id="sidebar-search" placeholder="Search docs…">
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading" data-section="on-this-page">On This Page</div>
+  <ul class="sidebar-links">
+    <li><a href="#constructor">Constructor</a></li>
+    <li><a href="#attributes">Attributes</a></li>
+    <li><a href="#x" style="padding-left:40px;font-size:.8rem">x</a></li>
+    <li><a href="#y" style="padding-left:40px;font-size:.8rem">y</a></li>
+    <li><a href="#z" style="padding-left:40px;font-size:.8rem">z</a></li>
+    <li><a href="#common-uses">Common Uses</a></li>
+    <li><a href="#setting-entity-velocity" style="padding-left:40px;font-size:.8rem">Setting entity velocity</a></li>
+    <li><a href="#spawning-projectiles-with-velocity" style="padding-left:40px;font-size:.8rem">Spawning projectiles with velocity</a></li>
+    <li><a href="#as-position-tuples" style="padding-left:40px;font-size:.8rem">As position tuples</a></li>
+    <li><a href="#player-spawn-offset" style="padding-left:40px;font-size:.8rem">Player spawn offset</a></li>
+  </ul>
+</div>
+
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="getting-started">Getting Started</div>
+  <ul class="sidebar-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="decorators.html">Decorators</a></li>
+    <li><a href="exceptions.html">Exceptions</a></li>
+    <li><a href="examples.html">Examples</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="core">Core</div>
+  <ul class="sidebar-links">
+    <li><a href="server.html">Server</a></li>
+    <li><a href="event.html">Event</a></li>
+    <li><a href="entity.html">Entity</a></li>
+    <li><a href="player.html">Player</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="world-space">World & Space</div>
+  <ul class="sidebar-links">
+    <li><a href="world.html">World</a></li>
+    <li><a href="location.html">Location</a></li>
+    <li><a href="block.html">Block</a></li>
+    <li><a href="chunk.html">Chunk</a></li>
+    <li><a href="vector.html" class="active">Vector</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="items-inventory">Items & Inventory</div>
+  <ul class="sidebar-links">
+    <li><a href="item.html">Item</a></li>
+    <li><a href="itembuilder.html">ItemBuilder</a></li>
+    <li><a href="inventory.html">Inventory</a></li>
+    <li><a href="menu.html">Menu</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="effects-attributes">Effects & Attributes</div>
+  <ul class="sidebar-links">
+    <li><a href="effect.html">Effect</a></li>
+    <li><a href="potion.html">Potion</a></li>
+    <li><a href="attribute.html">Attribute</a></li>
+    <li><a href="advancement.html">Advancement</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="scoreboards-ui">Scoreboards & UI</div>
+  <ul class="sidebar-links">
+    <li><a href="bossbar.html">BossBar</a></li>
+    <li><a href="scoreboard.html">Scoreboard</a></li>
+    <li><a href="objective.html">Objective</a></li>
+    <li><a href="team.html">Team</a></li>
+    <li><a href="sidebar.html">Sidebar</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="helpers">Helpers</div>
+  <ul class="sidebar-links">
+    <li><a href="config.html">Config</a></li>
+    <li><a href="cooldown.html">Cooldown</a></li>
+    <li><a href="hologram.html">Hologram</a></li>
+    <li><a href="enumvalue.html">EnumValue</a></li>
+    <li><a href="enums.html">Enums</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="display-entities">Display Entities</div>
+  <ul class="sidebar-links">
+    <li><a href="actionbardisplay.html">ActionBarDisplay</a></li>
+    <li><a href="bossbardisplay.html">BossBarDisplay</a></li>
+    <li><a href="blockdisplay.html">BlockDisplay</a></li>
+    <li><a href="itemdisplay.html">ItemDisplay</a></li>
+    <li><a href="imagedisplay.html">ImageDisplay</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="utilities">Utilities</div>
+  <ul class="sidebar-links">
+    <li><a href="raycast.html">Raycast</a></li>
+    <li><a href="chat.html">Chat</a></li>
+    <li><a href="reflect.html">Reflect</a></li>
+  </ul>
+</div>
+  </aside>
+  <div class="sidebar-overlay"></div>
+
+  <!-- Main -->
+  <main class="main">
+    <div class="content">
+      <p class="subtitle">3D direction and velocity</p>
+      <h1 id="vector">Vector</h1>
+<p>A <code>Vector</code> is a simple 3D coordinate used for velocities, offsets, and directional calculations. Unlike <a href="location.html"><code>Location</code></a>, a Vector has no world, yaw, or pitch.</p>
+<hr />
+<h2 id="constructor">Constructor</h2>
+<pre><code class="language-python">Vector(x=<span class="nb">0.0</span>, y=<span class="nb">0.0</span>, z=<span class="nb">0.0</span>)
+</code></pre>
+<p>Create a vector.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>x</code> (<code>float</code>) — X component. Default 0.</li>
+<li><code>y</code> (<code>float</code>) — Y component. Default 0.</li>
+<li><code>z</code> (<code>float</code>) — Z component. Default 0.</li>
+</ul>
+<pre><code class="language-python">velocity = Vector(<span class="nb">0</span>, <span class="nb">1.5</span>, <span class="nb">0</span>)       <span class="cm"># Straight up</span>
+direction = Vector(<span class="nb">0.5</span>, <span class="nb">0.2</span>, -<span class="nb">0.3</span>) <span class="cm"># Angled</span>
+</code></pre>
+<hr />
+<h2 id="attributes">Attributes</h2>
+<h3 id="x">x</h3>
+<ul>
+<li><strong>Type:</strong> <code>float</code></li>
+</ul>
+<p>X component.</p>
+<h3 id="y">y</h3>
+<ul>
+<li><strong>Type:</strong> <code>float</code></li>
+</ul>
+<p>Y component.</p>
+<h3 id="z">z</h3>
+<ul>
+<li><strong>Type:</strong> <code>float</code></li>
+</ul>
+<p>Z component.</p>
+<hr />
+<h2 id="common-uses">Common Uses</h2>
+<h3 id="setting-entity-velocity">Setting entity velocity</h3>
+<pre><code class="language-python"><span class="cm"># Launch a player upward</span>
+<span class="kw">await</span> player.set_velocity(Vector(<span class="nb">0</span>, <span class="nb">2.0</span>, <span class="nb">0</span>))
+</code></pre>
+<h3 id="spawning-projectiles-with-velocity">Spawning projectiles with velocity</h3>
+<pre><code class="language-python">arrow = <span class="kw">await</span> world.spawn_projectile(
+    player,
+    <span class="st">&quot;ARROW&quot;</span>,
+    velocity=Vector(<span class="nb">0</span>, <span class="nb">1</span>, <span class="nb">0</span>)
+)
+</code></pre>
+<h3 id="as-position-tuples">As position tuples</h3>
+<p>Many methods accept <code>Vector | tuple[int,int,int]</code> interchangeably:</p>
+<pre><code class="language-python"><span class="cm"># Both are equivalent</span>
+<span class="kw">await</span> world.fill(Vector(<span class="nb">0</span>, <span class="nb">60</span>, <span class="nb">0</span>), Vector(<span class="nb">10</span>, <span class="nb">65</span>, <span class="nb">10</span>), <span class="st">&quot;STONE&quot;</span>)
+<span class="kw">await</span> world.fill((<span class="nb">0</span>, <span class="nb">60</span>, <span class="nb">0</span>), (<span class="nb">10</span>, <span class="nb">65</span>, <span class="nb">10</span>), <span class="st">&quot;STONE&quot;</span>)
+</code></pre>
+<h3 id="player-spawn-offset">Player spawn offset</h3>
+<pre><code class="language-python"><span class="kw">await</span> world.spawn_at_player(player, <span class="st">&quot;ZOMBIE&quot;</span>, offset=Vector(<span class="nb">3</span>, <span class="nb">0</span>, <span class="nb">0</span>))
+</code></pre>
+    </div>
+    <footer class="site-footer">
+      &copy; Omena0 2026 &middot; PyJavaBridge Documentation
+    </footer>
+  </main>
+
+  <!-- Back to top -->
+  <button class="back-to-top" aria-label="Back to top">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+      <path d="M18 15l-6-6-6 6"/>
+    </svg>
+  </button>
+
+  <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Examples — PyJavaBridge</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Header -->
+  <header class="site-header">
+    <button class="menu-toggle" aria-label="Toggle menu">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M3 12h18M3 6h18M3 18h18"/>
+      </svg>
+    </button>
+    <a href="index.html" class="header-brand">
+      <span class="logo">Py</span>
+      PyJavaBridge
+    </a>
+    <nav class="header-nav">
+      <a href="index.html">Docs</a>
+      <a href="examples.html">Examples</a>
+      <a href="https://github.com/Omena0/PyJavaBridge">GitHub</a>
+    </nav>
+  </header>
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+<div class="search-box">
+  <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+  <input type="text" id="sidebar-search" placeholder="Search docs…">
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading" data-section="on-this-page">On This Page</div>
+  <ul class="sidebar-links">
+    <li><a href="#commands-gui">Commands &amp; GUI</a></li>
+    <li><a href="#spawn-protection">Spawn Protection</a></li>
+    <li><a href="#temporary-ban-system">Temporary Ban System</a></li>
+    <li><a href="#tips-for-writing-scripts">Tips for Writing Scripts</a></li>
+  </ul>
+</div>
+
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="getting-started">Getting Started</div>
+  <ul class="sidebar-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="decorators.html">Decorators</a></li>
+    <li><a href="exceptions.html">Exceptions</a></li>
+    <li><a href="examples.html" class="active">Examples</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="core">Core</div>
+  <ul class="sidebar-links">
+    <li><a href="server.html">Server</a></li>
+    <li><a href="event.html">Event</a></li>
+    <li><a href="entity.html">Entity</a></li>
+    <li><a href="player.html">Player</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="world-space">World & Space</div>
+  <ul class="sidebar-links">
+    <li><a href="world.html">World</a></li>
+    <li><a href="location.html">Location</a></li>
+    <li><a href="block.html">Block</a></li>
+    <li><a href="chunk.html">Chunk</a></li>
+    <li><a href="vector.html">Vector</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="items-inventory">Items & Inventory</div>
+  <ul class="sidebar-links">
+    <li><a href="item.html">Item</a></li>
+    <li><a href="itembuilder.html">ItemBuilder</a></li>
+    <li><a href="inventory.html">Inventory</a></li>
+    <li><a href="menu.html">Menu</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="effects-attributes">Effects & Attributes</div>
+  <ul class="sidebar-links">
+    <li><a href="effect.html">Effect</a></li>
+    <li><a href="potion.html">Potion</a></li>
+    <li><a href="attribute.html">Attribute</a></li>
+    <li><a href="advancement.html">Advancement</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="scoreboards-ui">Scoreboards & UI</div>
+  <ul class="sidebar-links">
+    <li><a href="bossbar.html">BossBar</a></li>
+    <li><a href="scoreboard.html">Scoreboard</a></li>
+    <li><a href="objective.html">Objective</a></li>
+    <li><a href="team.html">Team</a></li>
+    <li><a href="sidebar.html">Sidebar</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="helpers">Helpers</div>
+  <ul class="sidebar-links">
+    <li><a href="config.html">Config</a></li>
+    <li><a href="cooldown.html">Cooldown</a></li>
+    <li><a href="hologram.html">Hologram</a></li>
+    <li><a href="enumvalue.html">EnumValue</a></li>
+    <li><a href="enums.html">Enums</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="display-entities">Display Entities</div>
+  <ul class="sidebar-links">
+    <li><a href="actionbardisplay.html">ActionBarDisplay</a></li>
+    <li><a href="bossbardisplay.html">BossBarDisplay</a></li>
+    <li><a href="blockdisplay.html">BlockDisplay</a></li>
+    <li><a href="itemdisplay.html">ItemDisplay</a></li>
+    <li><a href="imagedisplay.html">ImageDisplay</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="utilities">Utilities</div>
+  <ul class="sidebar-links">
+    <li><a href="raycast.html">Raycast</a></li>
+    <li><a href="chat.html">Chat</a></li>
+    <li><a href="reflect.html">Reflect</a></li>
+  </ul>
+</div>
+  </aside>
+  <div class="sidebar-overlay"></div>
+
+  <!-- Main -->
+  <main class="main">
+    <div class="content">
+      <p class="subtitle">Complete script examples</p>
+      <h1 id="examples">Examples</h1>
+<p>Full working scripts that demonstrate PyJavaBridge features.</p>
+<hr />
+<h2 id="commands-gui">Commands &amp; GUI</h2>
+<p>A script demonstrating commands, raycast teleportation, inventory GUIs, and inventory click events.</p>
+<pre><code class="language-python"><span class="kw">from</span> bridge <span class="kw">import</span> *
+
+<span class="cm"># Simple hello world command</span>
+<span class="dc">@command</span>(<span class="st">&quot;Hello world command&quot;</span>)
+<span class="kw">async</span> <span class="kw">def</span> helloworld(event: Event):
+    event.player.send_message(<span class="st">&quot;Hello, World!&quot;</span>)
+
+<span class="cm"># Command with arguments</span>
+<span class="dc">@command</span>(<span class="st">&quot;Greet command&quot;</span>)
+<span class="kw">async</span> <span class="kw">def</span> greet(event: Event, name: str = <span class="kw">None</span>):
+    event.player.send_message(<span class="st">f&quot;Hello, {name or event.player.name}!&quot;</span>)
+
+<span class="cm"># Raycast to find ground level, then teleport</span>
+<span class="dc">@command</span>(<span class="st">&quot;Teleport to spawn&quot;</span>)
+<span class="kw">async</span> <span class="kw">def</span> spawn(event: Event):
+    ray = <span class="kw">await</span> raycast('world', (<span class="nb">0.5</span>, <span class="nb">320</span>, <span class="nb">0.5</span>), (<span class="nb">0</span>, <span class="nb">90</span>), <span class="nb">384</span>, <span class="nb">0.5</span>, <span class="kw">False</span>)
+    event.player.teleport((<span class="nb">0.5</span>, ray.y + <span class="nb">0.5</span>, <span class="nb">0.5</span>))
+
+<span class="cm"># Custom inventory GUI</span>
+<span class="dc">@command</span>(<span class="st">&quot;open test gui&quot;</span>)
+<span class="kw">async</span> <span class="kw">def</span> gui(event: Event):
+    inv = Inventory(
+        <span class="nb">3</span> * <span class="nb">9</span>,
+        title=<span class="st">&quot;Test GUI&quot;</span>,
+        contents=[
+            Item('light_gray_stained_glass_pane').set_name(<span class="st">&quot; &quot;</span>)
+            <span class="kw">for</span> _ <span class="kw">in</span> range(<span class="nb">3</span> * <span class="nb">9</span>)
+        ]
+    )
+    inv.set_item(<span class="nb">9</span> + <span class="nb">4</span>, Item('totem_of_undying').set_name(<span class="st">&quot;Bing chilling&quot;</span>))
+    inv.open(event.player)
+
+<span class="cm"># Handle clicks in the GUI</span>
+<span class="dc">@event</span>
+<span class="kw">async</span> <span class="kw">def</span> inventory_click(event: Event):
+    <span class="kw">if</span> event.inventory.title != 'Test GUI':
+        <span class="kw">return</span>
+
+    event.cancel()
+
+    <span class="kw">if</span> event.slot == <span class="nb">9</span> + <span class="nb">4</span>:
+        event.player.play_sound('item_totem_use')
+        event.player.send_message('Bing chilling')
+        event.inventory.close()
+
+<span class="cm"># Prevent dragging in the GUI</span>
+<span class="dc">@event</span>
+<span class="kw">async</span> <span class="kw">def</span> inventory_drag(event: Event):
+    <span class="kw">if</span> event.inventory.title == 'Test GUI':
+        event.cancel()
+
+<span class="cm"># View another player's inventory</span>
+<span class="dc">@command</span>(<span class="st">&quot;Open someones inv&quot;</span>)
+<span class="kw">async</span> <span class="kw">def</span> invsee(event: Event, p: str):
+    <span class="kw">if</span> p == event.player.name:
+        event.player.send_message(<span class="st">&quot;You cannot open your own inventory!&quot;</span>)
+        event.player.play_sound('block_note_block_bass')
+        <span class="kw">return</span>
+
+    Player(p).inventory.open(event.player)
+</code></pre>
+<p><strong>Concepts demonstrated:</strong>
+- <a href="decorators.html"><code>@command</code></a> with and without arguments
+- <a href="raycast.html"><code>raycast()</code></a> for finding ground level
+- <a href="inventory.html"><code>Inventory</code></a> with custom contents
+- <a href="decorators.html"><code>@event</code></a> for <code>inventory_click</code> and <code>inventory_drag</code>
+- <a href="event.html#cancel"><code>Event.cancel()</code></a> to prevent default behavior
+- <a href="player.html"><code>Player</code></a> messaging, sounds, and teleportation</p>
+<hr />
+<h2 id="spawn-protection">Spawn Protection</h2>
+<p>A script that prevents building near spawn using block events.</p>
+<pre><code class="language-python"><span class="kw">from</span> bridge <span class="kw">import</span> *
+
+<span class="dc">@event</span>
+<span class="kw">async</span> <span class="kw">def</span> load(event: Event):
+    server.broadcast(<span class="st">&quot;server start&quot;</span>)
+
+<span class="dc">@event</span>
+<span class="kw">async</span> <span class="kw">def</span> block_break(event: Event):
+    <span class="kw">if</span> (abs(event.block.x) + abs(event.block.z)) &lt; <span class="nb">15</span>:
+        event.player.send_message(<span class="st">&quot;You cannot break blocks there!&quot;</span>)
+        <span class="kw">await</span> event.cancel()
+
+<span class="dc">@event</span>
+<span class="kw">async</span> <span class="kw">def</span> block_place(event: Event):
+    <span class="kw">if</span> (abs(event.block.x) + abs(event.block.z)) &lt; <span class="nb">15</span>:
+        event.player.send_message(<span class="st">&quot;You cannot place blocks there!&quot;</span>)
+        <span class="kw">await</span> event.cancel()
+
+<span class="dc">@event</span>
+<span class="kw">async</span> <span class="kw">def</span> block_explode(event: Event):
+    <span class="kw">if</span> (abs(event.block.x) + abs(event.block.z)) &lt; <span class="nb">15</span>:
+        event.cancel()
+</code></pre>
+<p><strong>Concepts demonstrated:</strong>
+- <a href="decorators.html"><code>@event</code></a> for <code>block_break</code>, <code>block_place</code>, <code>block_explode</code>, and <code>load</code>
+- <a href="event.html#cancel"><code>Event.cancel()</code></a> to prevent block modification
+- <a href="event.html#block"><code>Event.block</code></a> to access block coordinates
+- <a href="server.html#broadcast"><code>server.broadcast()</code></a> for server-wide messages
+- Diamond (taxicab) distance check for a protection zone</p>
+<hr />
+<h2 id="temporary-ban-system">Temporary Ban System</h2>
+<p>A full ban system with configurable durations and persistence.</p>
+<pre><code class="language-python"><span class="st">&quot;&quot;&quot;Ban users for customizable amounts of time.&quot;&quot;&quot;</span>
+<span class="kw">from</span> humanfriendly <span class="kw">import</span> format_timespan
+<span class="kw">from</span> time <span class="kw">import</span> time <span class="kw">as</span> time_now
+<span class="kw">from</span> bridge <span class="kw">import</span> *
+<span class="kw">import</span> re
+
+bans = {}
+
+<span class="kw">def</span> parse_time(time: str) -&gt; int:
+    <span class="st">&quot;&quot;&quot;Parse a time string like '1h30m' into seconds.&quot;&quot;&quot;</span>
+    <span class="kw">if</span> <span class="kw">not</span> time:
+        <span class="kw">raise</span> ValueError('Time string <span class="kw">is</span> required')
+
+    units = {
+        's': <span class="nb">1</span>, 'm': <span class="nb">60</span>, 'h': <span class="nb">3600</span>,
+        'd': <span class="nb">86400</span>, 'w': <span class="nb">604800</span>,
+        'mo': <span class="nb">2592000</span>, 'y': <span class="nb">31536000</span>,
+    }
+
+    pattern = re.compile(r'(\d+)(mo|[smhdwy])', re.IGNORECASE)
+    total = <span class="nb">0</span>
+    time_str = time.strip().lower()
+    idx = <span class="nb">0</span>
+
+    <span class="kw">for</span> match <span class="kw">in</span> pattern.finditer(time_str):
+        <span class="kw">if</span> match.start() != idx:
+            <span class="kw">raise</span> ValueError(<span class="st">f&quot;Invalid time format: {time}&quot;</span>)
+        value = int(match.group(<span class="nb">1</span>))
+        unit = match.group(<span class="nb">2</span>)
+        <span class="kw">if</span> unit <span class="kw">not</span> <span class="kw">in</span> units:
+            <span class="kw">raise</span> ValueError(<span class="st">f&quot;Unknown time unit: {unit}&quot;</span>)
+        total += value * units[unit]
+        idx = match.end()
+
+    <span class="kw">if</span> idx != len(time_str):
+        <span class="kw">raise</span> ValueError(<span class="st">f&quot;Invalid time format: {time}&quot;</span>)
+    <span class="kw">return</span> total
+
+<span class="dc">@command</span>('Ban someone <span class="kw">for</span> a specified time <span class="kw">or</span> permanently')
+<span class="kw">async</span> <span class="kw">def</span> ban(event: Event, user: str, t: str = <span class="kw">None</span>, r: str = <span class="kw">None</span>):
+    <span class="kw">global</span> bans
+
+    <span class="kw">if</span> <span class="kw">not</span> event.player.is_op():
+        event.player.send_message('No permission!')
+        event.player.play_sound('block_note_block_bass')
+        <span class="kw">return</span>
+
+    target = Player(user)
+    duration = parse_time(t) <span class="kw">if</span> t <span class="kw">else</span> <span class="kw">None</span>
+    reason = r <span class="kw">or</span> <span class="st">&quot;Ban hammer has spoken!&quot;</span>
+
+    reason_text = (
+        <span class="st">f&quot;You have been {'permanently ' if not duration else ''}banned&quot;</span>
+        <span class="st">f&quot;{f' for {format_timespan(duration)}' if duration else ''}&quot;</span>
+        <span class="st">f&quot;\nReason: {reason}&quot;</span>
+    )
+
+    <span class="kw">await</span> target.kick(reason_text)
+    bans[target.uuid] = (time_now() + duration <span class="kw">if</span> duration <span class="kw">else</span> <span class="kw">None</span>, reason)
+
+    event.player.send_message(
+        <span class="st">f&quot;{user} has been {'permanently ' if not duration else ''}banned&quot;</span>
+        <span class="st">f&quot;{f' for {format_timespan(duration)}' if duration else ''}&quot;</span>
+    )
+
+<span class="dc">@command</span>('Unban someone')
+<span class="kw">async</span> <span class="kw">def</span> unban(event: Event, user: str):
+    <span class="kw">global</span> bans
+
+    <span class="kw">if</span> <span class="kw">not</span> event.player.is_op():
+        event.player.send_message('No permission!')
+        event.player.play_sound('block_note_block_bass')
+        <span class="kw">return</span>
+
+    target = Player(user)
+    <span class="kw">if</span> target.uuid <span class="kw">not</span> <span class="kw">in</span> bans:
+        event.player.send_message(<span class="st">&quot;That user is not banned&quot;</span>)
+        event.player.play_sound('block_note_block_bass')
+        <span class="kw">return</span>
+
+    bans.pop(target.uuid)
+    event.player.send_message(<span class="st">f&quot;{user} has been unbanned.&quot;</span>)
+
+<span class="dc">@event</span>
+<span class="kw">async</span> <span class="kw">def</span> player_join(event: Event):
+    <span class="kw">global</span> bans
+    uuid = event.player.uuid
+
+    <span class="kw">if</span> uuid <span class="kw">not</span> <span class="kw">in</span> bans:
+        <span class="kw">return</span>
+
+    time, reason = bans[uuid]
+    <span class="kw">if</span> time:
+        time -= time_now()
+
+    <span class="kw">if</span> time <span class="kw">and</span> time &lt;= <span class="nb">0</span>:
+        bans.pop(uuid)
+        <span class="kw">return</span>
+
+    event.player.kick(
+        <span class="st">f&quot;You have been {'permanently ' if not time else ''}banned&quot;</span>
+        <span class="st">f&quot;{f' for {format_timespan(time)}' if time else ''}&quot;</span>
+        <span class="st">f&quot;\nReason: {reason}&quot;</span>
+    )
+</code></pre>
+<p><strong>Concepts demonstrated:</strong>
+- <a href="decorators.html"><code>@command</code></a> with multiple optional arguments
+- <a href="player.html"><code>Player</code></a> creation by name for offline lookups
+- <a href="player.html#kick"><code>Player.kick()</code></a> with a formatted reason
+- <a href="player.html#is_op"><code>Player.is_op</code></a> for permission checking
+- <a href="decorators.html"><code>@event</code></a> for <code>player_join</code> to enforce bans on login
+- Python standard library usage (<code>re</code>, <code>time</code>)
+- Third-party library usage (<code>humanfriendly</code>)
+- State management with a global dictionary</p>
+<hr />
+<h2 id="tips-for-writing-scripts">Tips for Writing Scripts</h2>
+<ol>
+<li><strong>Always import from bridge:</strong> <code>from bridge import *</code></li>
+<li><strong>Use async/await:</strong> Most bridge methods return awaitables</li>
+<li><strong>Name your event handlers after the event:</strong> <code>async def block_break(event)</code> handles <code>block_break</code> events</li>
+<li><strong>Commands auto-register:</strong> The function name becomes the command name</li>
+<li><strong>Cancel events to prevent default behavior:</strong> <code>await event.cancel()</code></li>
+<li><strong>Use the <a href="config.html"><code>Config</code></a> class for persistence</strong> instead of global dictionaries</li>
+</ol>
+    </div>
+    <footer class="site-footer">
+      &copy; Omena0 2026 &middot; PyJavaBridge Documentation
+    </footer>
+  </main>
+
+  <!-- Back to top -->
+  <button class="back-to-top" aria-label="Back to top">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+      <path d="M18 15l-6-6-6 6"/>
+    </svg>
+  </button>
+
+  <script src="script.js"></script>
+</body>
+</html>

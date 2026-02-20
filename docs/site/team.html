@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Team — PyJavaBridge</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Header -->
+  <header class="site-header">
+    <button class="menu-toggle" aria-label="Toggle menu">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M3 12h18M3 6h18M3 18h18"/>
+      </svg>
+    </button>
+    <a href="index.html" class="header-brand">
+      <span class="logo">Py</span>
+      PyJavaBridge
+    </a>
+    <nav class="header-nav">
+      <a href="index.html">Docs</a>
+      <a href="examples.html">Examples</a>
+      <a href="https://github.com/Omena0/PyJavaBridge">GitHub</a>
+    </nav>
+  </header>
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+<div class="search-box">
+  <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+  <input type="text" id="sidebar-search" placeholder="Search docs…">
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading" data-section="on-this-page">On This Page</div>
+  <ul class="sidebar-links">
+    <li><a href="#class-methods">Class Methods</a></li>
+    <li><a href="#create" style="padding-left:40px;font-size:.8rem">create</a></li>
+    <li><a href="#attributes">Attributes</a></li>
+    <li><a href="#color" style="padding-left:40px;font-size:.8rem">color</a></li>
+    <li><a href="#entries" style="padding-left:40px;font-size:.8rem">entries</a></li>
+    <li><a href="#methods">Methods</a></li>
+    <li><a href="#add_entry" style="padding-left:40px;font-size:.8rem">add_entry</a></li>
+    <li><a href="#remove_entry" style="padding-left:40px;font-size:.8rem">remove_entry</a></li>
+    <li><a href="#set_prefix" style="padding-left:40px;font-size:.8rem">set_prefix</a></li>
+    <li><a href="#set_suffix" style="padding-left:40px;font-size:.8rem">set_suffix</a></li>
+    <li><a href="#set_color" style="padding-left:40px;font-size:.8rem">set_color</a></li>
+    <li><a href="#example-pvp-teams">Example: PvP teams</a></li>
+  </ul>
+</div>
+
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="getting-started">Getting Started</div>
+  <ul class="sidebar-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="decorators.html">Decorators</a></li>
+    <li><a href="exceptions.html">Exceptions</a></li>
+    <li><a href="examples.html">Examples</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="core">Core</div>
+  <ul class="sidebar-links">
+    <li><a href="server.html">Server</a></li>
+    <li><a href="event.html">Event</a></li>
+    <li><a href="entity.html">Entity</a></li>
+    <li><a href="player.html">Player</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="world-space">World & Space</div>
+  <ul class="sidebar-links">
+    <li><a href="world.html">World</a></li>
+    <li><a href="location.html">Location</a></li>
+    <li><a href="block.html">Block</a></li>
+    <li><a href="chunk.html">Chunk</a></li>
+    <li><a href="vector.html">Vector</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="items-inventory">Items & Inventory</div>
+  <ul class="sidebar-links">
+    <li><a href="item.html">Item</a></li>
+    <li><a href="itembuilder.html">ItemBuilder</a></li>
+    <li><a href="inventory.html">Inventory</a></li>
+    <li><a href="menu.html">Menu</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="effects-attributes">Effects & Attributes</div>
+  <ul class="sidebar-links">
+    <li><a href="effect.html">Effect</a></li>
+    <li><a href="potion.html">Potion</a></li>
+    <li><a href="attribute.html">Attribute</a></li>
+    <li><a href="advancement.html">Advancement</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="scoreboards-ui">Scoreboards & UI</div>
+  <ul class="sidebar-links">
+    <li><a href="bossbar.html">BossBar</a></li>
+    <li><a href="scoreboard.html">Scoreboard</a></li>
+    <li><a href="objective.html">Objective</a></li>
+    <li><a href="team.html" class="active">Team</a></li>
+    <li><a href="sidebar.html">Sidebar</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="helpers">Helpers</div>
+  <ul class="sidebar-links">
+    <li><a href="config.html">Config</a></li>
+    <li><a href="cooldown.html">Cooldown</a></li>
+    <li><a href="hologram.html">Hologram</a></li>
+    <li><a href="enumvalue.html">EnumValue</a></li>
+    <li><a href="enums.html">Enums</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="display-entities">Display Entities</div>
+  <ul class="sidebar-links">
+    <li><a href="actionbardisplay.html">ActionBarDisplay</a></li>
+    <li><a href="bossbardisplay.html">BossBarDisplay</a></li>
+    <li><a href="blockdisplay.html">BlockDisplay</a></li>
+    <li><a href="itemdisplay.html">ItemDisplay</a></li>
+    <li><a href="imagedisplay.html">ImageDisplay</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="utilities">Utilities</div>
+  <ul class="sidebar-links">
+    <li><a href="raycast.html">Raycast</a></li>
+    <li><a href="chat.html">Chat</a></li>
+    <li><a href="reflect.html">Reflect</a></li>
+  </ul>
+</div>
+  </aside>
+  <div class="sidebar-overlay"></div>
+
+  <!-- Main -->
+  <main class="main">
+    <div class="content">
+      <p class="subtitle">Scoreboard team API</p>
+      <h1 id="team">Team</h1>
+<p>A <code>Team</code> groups players on a <a href="scoreboard.html"><code>Scoreboard</code></a> for shared prefixes, suffixes, colors, and friendly-fire settings.</p>
+<hr />
+<h2 id="class-methods">Class Methods</h2>
+<h3 id="create">create</h3>
+<pre><code class="language-python">team = Team.create(name, scoreboard=<span class="kw">None</span>)
+</code></pre>
+<p>Create a new team. This is synchronous.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>name</code> (<code>str</code>) — Internal team name.</li>
+<li><code>scoreboard</code> (<a href="scoreboard.html"><code>Scoreboard</code></a> <code>| None</code>) — Scoreboard to register on. If <code>None</code>, uses the main scoreboard.</li>
+<li><strong>Returns:</strong> <a href="#"><code>Team</code></a></li>
+</ul>
+<pre><code class="language-python">red = Team.create(<span class="st">&quot;red&quot;</span>)
+<span class="kw">await</span> red.set_prefix(<span class="st">&quot;§c[RED] &quot;</span>)
+<span class="kw">await</span> red.set_color(<span class="st">&quot;RED&quot;</span>)
+</code></pre>
+<hr />
+<h2 id="attributes">Attributes</h2>
+<h3 id="color">color</h3>
+<ul>
+<li><strong>Type:</strong> <code>Any</code></li>
+</ul>
+<p>The team's color used for name tag coloring.</p>
+<h3 id="entries">entries</h3>
+<ul>
+<li><strong>Type:</strong> <code>set[str]</code></li>
+</ul>
+<p>Player names currently on this team.</p>
+<hr />
+<h2 id="methods">Methods</h2>
+<h3 id="add_entry">add_entry</h3>
+<pre><code class="language-python"><span class="kw">await</span> team.add_entry(entry)
+</code></pre>
+<p>Add a player to this team.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>entry</code> (<code>str</code>) — Player name.</li>
+<li><strong>Returns:</strong> <code>Awaitable[None]</code></li>
+</ul>
+<pre><code class="language-python"><span class="kw">await</span> red_team.add_entry(player.name)
+</code></pre>
+<h3 id="remove_entry">remove_entry</h3>
+<pre><code class="language-python"><span class="kw">await</span> team.remove_entry(entry)
+</code></pre>
+<p>Remove a player from this team.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>entry</code> (<code>str</code>) — Player name.</li>
+<li><strong>Returns:</strong> <code>Awaitable[None]</code></li>
+</ul>
+<h3 id="set_prefix">set_prefix</h3>
+<pre><code class="language-python"><span class="kw">await</span> team.set_prefix(prefix)
+</code></pre>
+<p>Set the name tag prefix for all team members.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>prefix</code> (<code>str</code>) — Prefix text. Supports <code>§</code> color codes.</li>
+<li><strong>Returns:</strong> <code>Awaitable[None]</code></li>
+</ul>
+<pre><code class="language-python"><span class="kw">await</span> team.set_prefix(<span class="st">&quot;§a[VIP] &quot;</span>)
+</code></pre>
+<h3 id="set_suffix">set_suffix</h3>
+<pre><code class="language-python"><span class="kw">await</span> team.set_suffix(suffix)
+</code></pre>
+<p>Set the name tag suffix for all team members.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>suffix</code> (<code>str</code>) — Suffix text.</li>
+<li><strong>Returns:</strong> <code>Awaitable[None]</code></li>
+</ul>
+<h3 id="set_color">set_color</h3>
+<pre><code class="language-python"><span class="kw">await</span> team.set_color(color)
+</code></pre>
+<p>Set the team color (affects name tag color and tab list).</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>color</code> (<code>Any</code>) — Color name (e.g. <code>"RED"</code>, <code>"BLUE"</code>, <code>"GREEN"</code>).</li>
+<li><strong>Returns:</strong> <code>Awaitable[None]</code></li>
+</ul>
+<hr />
+<h2 id="example-pvp-teams">Example: PvP teams</h2>
+<pre><code class="language-python"><span class="kw">from</span> bridge <span class="kw">import</span> *
+
+board = Scoreboard.create()
+red_team = board.register_team(<span class="st">&quot;red&quot;</span>)
+blue_team = board.register_team(<span class="st">&quot;blue&quot;</span>)
+
+<span class="dc">@command</span>(<span class="st">&quot;Join a team&quot;</span>)
+<span class="kw">async</span> <span class="kw">def</span> team_join(player: Player, args: list[str]):
+    <span class="kw">if</span> <span class="kw">not</span> args:
+        <span class="kw">await</span> player.send_message(<span class="st">&quot;§cUsage: /team &lt;red|blue&gt;&quot;</span>)
+        <span class="kw">return</span>
+
+    name = args[<span class="nb">0</span>].lower()
+    <span class="kw">if</span> name == <span class="st">&quot;red&quot;</span>:
+        <span class="kw">await</span> red_team.add_entry(player.name)
+        <span class="kw">await</span> red_team.set_prefix(<span class="st">&quot;§c[RED] &quot;</span>)
+        <span class="kw">await</span> red_team.set_color(<span class="st">&quot;RED&quot;</span>)
+        <span class="kw">await</span> player.send_message(<span class="st">&quot;§cYou joined the Red team!&quot;</span>)
+    <span class="kw">elif</span> name == <span class="st">&quot;blue&quot;</span>:
+        <span class="kw">await</span> blue_team.add_entry(player.name)
+        <span class="kw">await</span> blue_team.set_prefix(<span class="st">&quot;§9[BLUE] &quot;</span>)
+        <span class="kw">await</span> blue_team.set_color(<span class="st">&quot;BLUE&quot;</span>)
+        <span class="kw">await</span> player.send_message(<span class="st">&quot;§9You joined the Blue team!&quot;</span>)
+
+    <span class="kw">await</span> player.set_scoreboard(board)
+</code></pre>
+    </div>
+    <footer class="site-footer">
+      &copy; Omena0 2026 &middot; PyJavaBridge Documentation
+    </footer>
+  </main>
+
+  <!-- Back to top -->
+  <button class="back-to-top" aria-label="Back to top">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+      <path d="M18 15l-6-6-6 6"/>
+    </svg>
+  </button>
+
+  <script src="script.js"></script>
+</body>
+</html>

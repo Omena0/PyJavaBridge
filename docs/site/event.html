@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Event — PyJavaBridge</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Header -->
+  <header class="site-header">
+    <button class="menu-toggle" aria-label="Toggle menu">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M3 12h18M3 6h18M3 18h18"/>
+      </svg>
+    </button>
+    <a href="index.html" class="header-brand">
+      <span class="logo">Py</span>
+      PyJavaBridge
+    </a>
+    <nav class="header-nav">
+      <a href="index.html">Docs</a>
+      <a href="examples.html">Examples</a>
+      <a href="https://github.com/Omena0/PyJavaBridge">GitHub</a>
+    </nav>
+  </header>
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+<div class="search-box">
+  <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+  <input type="text" id="sidebar-search" placeholder="Search docs…">
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading" data-section="on-this-page">On This Page</div>
+  <ul class="sidebar-links">
+    <li><a href="#attributes">Attributes</a></li>
+    <li><a href="#player" style="padding-left:40px;font-size:.8rem">player</a></li>
+    <li><a href="#entity" style="padding-left:40px;font-size:.8rem">entity</a></li>
+    <li><a href="#block" style="padding-left:40px;font-size:.8rem">block</a></li>
+    <li><a href="#world" style="padding-left:40px;font-size:.8rem">world</a></li>
+    <li><a href="#location" style="padding-left:40px;font-size:.8rem">location</a></li>
+    <li><a href="#item" style="padding-left:40px;font-size:.8rem">item</a></li>
+    <li><a href="#inventory" style="padding-left:40px;font-size:.8rem">inventory</a></li>
+    <li><a href="#chunk" style="padding-left:40px;font-size:.8rem">chunk</a></li>
+    <li><a href="#slot" style="padding-left:40px;font-size:.8rem">slot</a></li>
+    <li><a href="#damager" style="padding-left:40px;font-size:.8rem">damager</a></li>
+    <li><a href="#damage" style="padding-left:40px;font-size:.8rem">damage</a></li>
+    <li><a href="#final_damage" style="padding-left:40px;font-size:.8rem">final_damage</a></li>
+    <li><a href="#damage_cause" style="padding-left:40px;font-size:.8rem">damage_cause</a></li>
+    <li><a href="#methods">Methods</a></li>
+    <li><a href="#cancel" style="padding-left:40px;font-size:.8rem">cancel</a></li>
+    <li><a href="#damage-override">Damage Override</a></li>
+    <li><a href="#chat-override">Chat Override</a></li>
+    <li><a href="#event-type-mapping">Event Type Mapping</a></li>
+    <li><a href="#special-cases" style="padding-left:40px;font-size:.8rem">Special cases</a></li>
+    <li><a href="#supported-packages" style="padding-left:40px;font-size:.8rem">Supported packages</a></li>
+  </ul>
+</div>
+
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="getting-started">Getting Started</div>
+  <ul class="sidebar-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="decorators.html">Decorators</a></li>
+    <li><a href="exceptions.html">Exceptions</a></li>
+    <li><a href="examples.html">Examples</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="core">Core</div>
+  <ul class="sidebar-links">
+    <li><a href="server.html">Server</a></li>
+    <li><a href="event.html" class="active">Event</a></li>
+    <li><a href="entity.html">Entity</a></li>
+    <li><a href="player.html">Player</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="world-space">World & Space</div>
+  <ul class="sidebar-links">
+    <li><a href="world.html">World</a></li>
+    <li><a href="location.html">Location</a></li>
+    <li><a href="block.html">Block</a></li>
+    <li><a href="chunk.html">Chunk</a></li>
+    <li><a href="vector.html">Vector</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="items-inventory">Items & Inventory</div>
+  <ul class="sidebar-links">
+    <li><a href="item.html">Item</a></li>
+    <li><a href="itembuilder.html">ItemBuilder</a></li>
+    <li><a href="inventory.html">Inventory</a></li>
+    <li><a href="menu.html">Menu</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="effects-attributes">Effects & Attributes</div>
+  <ul class="sidebar-links">
+    <li><a href="effect.html">Effect</a></li>
+    <li><a href="potion.html">Potion</a></li>
+    <li><a href="attribute.html">Attribute</a></li>
+    <li><a href="advancement.html">Advancement</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="scoreboards-ui">Scoreboards & UI</div>
+  <ul class="sidebar-links">
+    <li><a href="bossbar.html">BossBar</a></li>
+    <li><a href="scoreboard.html">Scoreboard</a></li>
+    <li><a href="objective.html">Objective</a></li>
+    <li><a href="team.html">Team</a></li>
+    <li><a href="sidebar.html">Sidebar</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="helpers">Helpers</div>
+  <ul class="sidebar-links">
+    <li><a href="config.html">Config</a></li>
+    <li><a href="cooldown.html">Cooldown</a></li>
+    <li><a href="hologram.html">Hologram</a></li>
+    <li><a href="enumvalue.html">EnumValue</a></li>
+    <li><a href="enums.html">Enums</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="display-entities">Display Entities</div>
+  <ul class="sidebar-links">
+    <li><a href="actionbardisplay.html">ActionBarDisplay</a></li>
+    <li><a href="bossbardisplay.html">BossBarDisplay</a></li>
+    <li><a href="blockdisplay.html">BlockDisplay</a></li>
+    <li><a href="itemdisplay.html">ItemDisplay</a></li>
+    <li><a href="imagedisplay.html">ImageDisplay</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="utilities">Utilities</div>
+  <ul class="sidebar-links">
+    <li><a href="raycast.html">Raycast</a></li>
+    <li><a href="chat.html">Chat</a></li>
+    <li><a href="reflect.html">Reflect</a></li>
+  </ul>
+</div>
+  </aside>
+  <div class="sidebar-overlay"></div>
+
+  <!-- Main -->
+  <main class="main">
+    <div class="content">
+      <p class="subtitle">Event proxy and event type mapping</p>
+      <h1 id="event">Event</h1>
+<p>The <code>Event</code> class is the proxy object passed to your <code>@event</code> handlers. It exposes fields relevant to the specific Bukkit event that fired. Fields that don't apply to the current event type are <code>None</code>.</p>
+<hr />
+<h2 id="attributes">Attributes</h2>
+<h3 id="player">player</h3>
+<ul>
+<li><strong>Type:</strong> <a href="player.html"><code>Player</code></a> | <code>None</code></li>
+</ul>
+<p>The player involved in the event. Available for all player-related events (<code>player_join</code>, <code>player_chat</code>, <code>player_interact</code>, etc.).</p>
+<pre><code class="language-python"><span class="dc">@event</span>
+<span class="kw">async</span> <span class="kw">def</span> player_join(e):
+    <span class="kw">await</span> e.player.send_message(<span class="st">f&quot;Welcome, {e.player.name}!&quot;</span>)
+</code></pre>
+<h3 id="entity">entity</h3>
+<ul>
+<li><strong>Type:</strong> <a href="entity.html"><code>Entity</code></a> | <code>None</code></li>
+</ul>
+<p>The entity involved in the event. Available for entity events (<code>entity_damage</code>, <code>entity_death</code>, etc.).</p>
+<h3 id="block">block</h3>
+<ul>
+<li><strong>Type:</strong> <a href="block.html"><code>Block</code></a> | <code>None</code></li>
+</ul>
+<p>The block involved in the event. Available for block events (<code>block_break</code>, <code>block_place</code>, etc.).</p>
+<h3 id="world">world</h3>
+<ul>
+<li><strong>Type:</strong> <a href="world.html"><code>World</code></a> | <code>None</code></li>
+</ul>
+<p>The world where the event occurred.</p>
+<h3 id="location">location</h3>
+<ul>
+<li><strong>Type:</strong> <a href="location.html"><code>Location</code></a> | <code>None</code></li>
+</ul>
+<p>The location relevant to the event.</p>
+<h3 id="item">item</h3>
+<ul>
+<li><strong>Type:</strong> <a href="item.html"><code>Item</code></a> | <code>None</code></li>
+</ul>
+<p>The item involved in the event. Available for interact events, inventory events, etc.</p>
+<h3 id="inventory">inventory</h3>
+<ul>
+<li><strong>Type:</strong> <a href="inventory.html"><code>Inventory</code></a> | <code>None</code></li>
+</ul>
+<p>The inventory involved in the event. Available for <code>inventory_click</code>, <code>inventory_close</code>, etc.</p>
+<h3 id="chunk">chunk</h3>
+<ul>
+<li><strong>Type:</strong> <a href="chunk.html"><code>Chunk</code></a> | <code>None</code></li>
+</ul>
+<p>The chunk involved in the event.</p>
+<h3 id="slot">slot</h3>
+<ul>
+<li><strong>Type:</strong> <code>int</code></li>
+</ul>
+<p>The inventory slot index for <code>inventory_click</code> events.</p>
+<h3 id="damager">damager</h3>
+<ul>
+<li><strong>Type:</strong> <a href="entity.html"><code>Entity</code></a> | <a href="block.html"><code>Block</code></a> | <code>None</code></li>
+</ul>
+<p>The source of damage for <code>entity_damage</code> events. Can be an entity (attacker, projectile) or a block (cactus, lava).</p>
+<h3 id="damage">damage</h3>
+<ul>
+<li><strong>Type:</strong> <code>float</code></li>
+</ul>
+<p>The raw damage amount for <code>entity_damage</code> events (before armor/enchantment modifiers).</p>
+<h3 id="final_damage">final_damage</h3>
+<ul>
+<li><strong>Type:</strong> <code>float</code></li>
+</ul>
+<p>The final damage after all modifiers for <code>entity_damage</code> events.</p>
+<h3 id="damage_cause">damage_cause</h3>
+<ul>
+<li><strong>Type:</strong> <code>str | None</code></li>
+</ul>
+<p>The <a href="https://hub.spigotmc.org/javadocs/spigot/org/bukkit/event/entity/EntityDamageEvent.DamageCause.html">DamageCause</a> for damage events (e.g. <code>"ENTITY_ATTACK"</code>, <code>"FALL"</code>, <code>"FIRE"</code>).</p>
+<hr />
+<h2 id="methods">Methods</h2>
+<h3 id="cancel">cancel</h3>
+<pre><code class="language-python"><span class="kw">await</span> event.cancel()
+</code></pre>
+<p>Cancel the event, preventing its default action. Only works on cancellable events.</p>
+<ul>
+<li><strong>Returns:</strong> <code>Awaitable[None]</code></li>
+</ul>
+<pre><code class="language-python"><span class="dc">@event</span>
+<span class="kw">async</span> <span class="kw">def</span> block_break(e):
+    <span class="kw">if</span> e.block.type.name == <span class="st">&quot;BEDROCK&quot;</span>:
+        <span class="kw">await</span> e.cancel()
+        <span class="kw">await</span> e.player.send_message(<span class="st">&quot;You can't break bedrock!&quot;</span>)
+</code></pre>
+<hr />
+<h2 id="damage-override">Damage Override</h2>
+<p>For <code>entity_damage</code> events, returning a number from the handler overrides the final damage:</p>
+<pre><code class="language-python"><span class="dc">@event</span>
+<span class="kw">async</span> <span class="kw">def</span> entity_damage(e):
+    <span class="kw">if</span> e.damage_cause == <span class="st">&quot;FALL&quot;</span>:
+        <span class="kw">return</span> <span class="nb">0</span>  <span class="cm"># Cancel all fall damage</span>
+    <span class="kw">if</span> e.player:
+        <span class="kw">return</span> e.damage * <span class="nb">0.5</span>  <span class="cm"># Half damage for players</span>
+</code></pre>
+<hr />
+<h2 id="chat-override">Chat Override</h2>
+<p>For <code>player_chat</code> events, returning a string cancels the original message and broadcasts your string instead:</p>
+<pre><code class="language-python"><span class="dc">@event</span>
+<span class="kw">async</span> <span class="kw">def</span> player_chat(e):
+    <span class="kw">return</span> <span class="st">f&quot;[VIP] {e.player.name}: {e.message}&quot;</span>
+</code></pre>
+<p>Returning <code>None</code> (or not returning) leaves the chat message unchanged.</p>
+<hr />
+<h2 id="event-type-mapping">Event Type Mapping</h2>
+<p>Events are resolved from handler function names: <code>snake_case</code> → <code>PascalCase</code> + <code>Event</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Function name</th>
+<th>Bukkit event</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>player_join</code></td>
+<td><code>PlayerJoinEvent</code></td>
+</tr>
+<tr>
+<td><code>player_quit</code></td>
+<td><code>PlayerQuitEvent</code></td>
+</tr>
+<tr>
+<td><code>player_chat</code></td>
+<td><code>AsyncPlayerChatEvent</code></td>
+</tr>
+<tr>
+<td><code>player_move</code></td>
+<td><code>PlayerMoveEvent</code></td>
+</tr>
+<tr>
+<td><code>player_interact</code></td>
+<td><code>PlayerInteractEvent</code></td>
+</tr>
+<tr>
+<td><code>block_break</code></td>
+<td><code>BlockBreakEvent</code></td>
+</tr>
+<tr>
+<td><code>block_place</code></td>
+<td><code>BlockPlaceEvent</code></td>
+</tr>
+<tr>
+<td><code>entity_damage</code></td>
+<td><code>EntityDamageEvent</code> / <code>EntityDamageByEntityEvent</code></td>
+</tr>
+<tr>
+<td><code>entity_death</code></td>
+<td><code>EntityDeathEvent</code></td>
+</tr>
+<tr>
+<td><code>inventory_click</code></td>
+<td><code>InventoryClickEvent</code></td>
+</tr>
+<tr>
+<td><code>inventory_close</code></td>
+<td><code>InventoryCloseEvent</code></td>
+</tr>
+<tr>
+<td><code>world_load</code></td>
+<td><code>WorldLoadEvent</code></td>
+</tr>
+<tr>
+<td><code>weather_change</code></td>
+<td><code>WeatherChangeEvent</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="special-cases">Special cases</h3>
+<ul>
+<li><strong><code>server_boot</code></strong> maps to <code>ServerLoadEvent</code></li>
+<li><strong><code>block_explode</code></strong> is dispatched for both <code>BlockExplodeEvent</code> and <code>EntityExplodeEvent</code></li>
+</ul>
+<h3 id="supported-packages">Supported packages</h3>
+<p>The bridge discovers events from all standard Bukkit event packages:</p>
+<ul>
+<li><code>org.bukkit.event.player.*</code></li>
+<li><code>org.bukkit.event.block.*</code></li>
+<li><code>org.bukkit.event.entity.*</code></li>
+<li><code>org.bukkit.event.inventory.*</code></li>
+<li><code>org.bukkit.event.server.*</code></li>
+<li><code>org.bukkit.event.world.*</code></li>
+<li><code>org.bukkit.event.weather.*</code></li>
+<li><code>org.bukkit.event.vehicle.*</code></li>
+<li><code>org.bukkit.event.hanging.*</code></li>
+<li><code>org.bukkit.event.enchantment.*</code></li>
+<li><code>org.bukkit.event.*</code></li>
+</ul>
+    </div>
+    <footer class="site-footer">
+      &copy; Omena0 2026 &middot; PyJavaBridge Documentation
+    </footer>
+  </main>
+
+  <!-- Back to top -->
+  <button class="back-to-top" aria-label="Back to top">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+      <path d="M18 15l-6-6-6 6"/>
+    </svg>
+  </button>
+
+  <script src="script.js"></script>
+</body>
+</html>

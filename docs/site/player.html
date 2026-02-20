@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Player — PyJavaBridge</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Header -->
+  <header class="site-header">
+    <button class="menu-toggle" aria-label="Toggle menu">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M3 12h18M3 6h18M3 18h18"/>
+      </svg>
+    </button>
+    <a href="index.html" class="header-brand">
+      <span class="logo">Py</span>
+      PyJavaBridge
+    </a>
+    <nav class="header-nav">
+      <a href="index.html">Docs</a>
+      <a href="examples.html">Examples</a>
+      <a href="https://github.com/Omena0/PyJavaBridge">GitHub</a>
+    </nav>
+  </header>
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+<div class="search-box">
+  <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+  <input type="text" id="sidebar-search" placeholder="Search docs…">
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading" data-section="on-this-page">On This Page</div>
+  <ul class="sidebar-links">
+    <li><a href="#constructor">Constructor</a></li>
+    <li><a href="#attributes">Attributes</a></li>
+    <li><a href="#name" style="padding-left:40px;font-size:.8rem">name</a></li>
+    <li><a href="#uuid" style="padding-left:40px;font-size:.8rem">uuid</a></li>
+    <li><a href="#location" style="padding-left:40px;font-size:.8rem">location</a></li>
+    <li><a href="#world" style="padding-left:40px;font-size:.8rem">world</a></li>
+    <li><a href="#health" style="padding-left:40px;font-size:.8rem">health</a></li>
+    <li><a href="#food_level" style="padding-left:40px;font-size:.8rem">food_level</a></li>
+    <li><a href="#game_mode" style="padding-left:40px;font-size:.8rem">game_mode</a></li>
+    <li><a href="#inventory" style="padding-left:40px;font-size:.8rem">inventory</a></li>
+    <li><a href="#level" style="padding-left:40px;font-size:.8rem">level</a></li>
+    <li><a href="#exp" style="padding-left:40px;font-size:.8rem">exp</a></li>
+    <li><a href="#is_op" style="padding-left:40px;font-size:.8rem">is_op</a></li>
+    <li><a href="#is_flying" style="padding-left:40px;font-size:.8rem">is_flying</a></li>
+    <li><a href="#is_sneaking" style="padding-left:40px;font-size:.8rem">is_sneaking</a></li>
+    <li><a href="#is_sprinting" style="padding-left:40px;font-size:.8rem">is_sprinting</a></li>
+    <li><a href="#scoreboard" style="padding-left:40px;font-size:.8rem">scoreboard</a></li>
+    <li><a href="#permission_groups" style="padding-left:40px;font-size:.8rem">permission_groups</a></li>
+    <li><a href="#primary_group" style="padding-left:40px;font-size:.8rem">primary_group</a></li>
+    <li><a href="#tab_list_header" style="padding-left:40px;font-size:.8rem">tab_list_header</a></li>
+    <li><a href="#tab_list_footer" style="padding-left:40px;font-size:.8rem">tab_list_footer</a></li>
+    <li><a href="#tab_list_name" style="padding-left:40px;font-size:.8rem">tab_list_name</a></li>
+    <li><a href="#methods">Methods</a></li>
+    <li><a href="#send_message" style="padding-left:40px;font-size:.8rem">send_message</a></li>
+    <li><a href="#chat" style="padding-left:40px;font-size:.8rem">chat</a></li>
+    <li><a href="#kick" style="padding-left:40px;font-size:.8rem">kick</a></li>
+    <li><a href="#teleport" style="padding-left:40px;font-size:.8rem">teleport</a></li>
+    <li><a href="#give_exp" style="padding-left:40px;font-size:.8rem">give_exp</a></li>
+    <li><a href="#set_exp" style="padding-left:40px;font-size:.8rem">set_exp</a></li>
+    <li><a href="#set_level" style="padding-left:40px;font-size:.8rem">set_level</a></li>
+    <li><a href="#set_health" style="padding-left:40px;font-size:.8rem">set_health</a></li>
+    <li><a href="#set_food_level" style="padding-left:40px;font-size:.8rem">set_food_level</a></li>
+    <li><a href="#set_game_mode" style="padding-left:40px;font-size:.8rem">set_game_mode</a></li>
+    <li><a href="#set_op" style="padding-left:40px;font-size:.8rem">set_op</a></li>
+    <li><a href="#set_flying" style="padding-left:40px;font-size:.8rem">set_flying</a></li>
+    <li><a href="#set_sneaking" style="padding-left:40px;font-size:.8rem">set_sneaking</a></li>
+    <li><a href="#set_sprinting" style="padding-left:40px;font-size:.8rem">set_sprinting</a></li>
+    <li><a href="#set_walk_speed" style="padding-left:40px;font-size:.8rem">set_walk_speed</a></li>
+    <li><a href="#set_fly_speed" style="padding-left:40px;font-size:.8rem">set_fly_speed</a></li>
+    <li><a href="#set_scoreboard" style="padding-left:40px;font-size:.8rem">set_scoreboard</a></li>
+    <li><a href="#effects">Effects</a></li>
+    <li><a href="#add_effect" style="padding-left:40px;font-size:.8rem">add_effect</a></li>
+    <li><a href="#remove_effect" style="padding-left:40px;font-size:.8rem">remove_effect</a></li>
+    <li><a href="#sounds-ui">Sounds &amp; UI</a></li>
+    <li><a href="#play_sound" style="padding-left:40px;font-size:.8rem">play_sound</a></li>
+    <li><a href="#send_action_bar" style="padding-left:40px;font-size:.8rem">send_action_bar</a></li>
+    <li><a href="#send_title" style="padding-left:40px;font-size:.8rem">send_title</a></li>
+    <li><a href="#tab-list">Tab List</a></li>
+    <li><a href="#set_tab_list_header" style="padding-left:40px;font-size:.8rem">set_tab_list_header</a></li>
+    <li><a href="#set_tab_list_footer" style="padding-left:40px;font-size:.8rem">set_tab_list_footer</a></li>
+    <li><a href="#set_tab_list_header_footer" style="padding-left:40px;font-size:.8rem">set_tab_list_header_footer</a></li>
+    <li><a href="#set_tab_list_name" style="padding-left:40px;font-size:.8rem">set_tab_list_name</a></li>
+    <li><a href="#permissions">Permissions</a></li>
+    <li><a href="#has_permission" style="padding-left:40px;font-size:.8rem">has_permission</a></li>
+    <li><a href="#add_permission" style="padding-left:40px;font-size:.8rem">add_permission</a></li>
+    <li><a href="#remove_permission" style="padding-left:40px;font-size:.8rem">remove_permission</a></li>
+    <li><a href="#has_group" style="padding-left:40px;font-size:.8rem">has_group</a></li>
+    <li><a href="#add_group" style="padding-left:40px;font-size:.8rem">add_group</a></li>
+    <li><a href="#remove_group" style="padding-left:40px;font-size:.8rem">remove_group</a></li>
+  </ul>
+</div>
+
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="getting-started">Getting Started</div>
+  <ul class="sidebar-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="decorators.html">Decorators</a></li>
+    <li><a href="exceptions.html">Exceptions</a></li>
+    <li><a href="examples.html">Examples</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="core">Core</div>
+  <ul class="sidebar-links">
+    <li><a href="server.html">Server</a></li>
+    <li><a href="event.html">Event</a></li>
+    <li><a href="entity.html">Entity</a></li>
+    <li><a href="player.html" class="active">Player</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="world-space">World & Space</div>
+  <ul class="sidebar-links">
+    <li><a href="world.html">World</a></li>
+    <li><a href="location.html">Location</a></li>
+    <li><a href="block.html">Block</a></li>
+    <li><a href="chunk.html">Chunk</a></li>
+    <li><a href="vector.html">Vector</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="items-inventory">Items & Inventory</div>
+  <ul class="sidebar-links">
+    <li><a href="item.html">Item</a></li>
+    <li><a href="itembuilder.html">ItemBuilder</a></li>
+    <li><a href="inventory.html">Inventory</a></li>
+    <li><a href="menu.html">Menu</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="effects-attributes">Effects & Attributes</div>
+  <ul class="sidebar-links">
+    <li><a href="effect.html">Effect</a></li>
+    <li><a href="potion.html">Potion</a></li>
+    <li><a href="attribute.html">Attribute</a></li>
+    <li><a href="advancement.html">Advancement</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="scoreboards-ui">Scoreboards & UI</div>
+  <ul class="sidebar-links">
+    <li><a href="bossbar.html">BossBar</a></li>
+    <li><a href="scoreboard.html">Scoreboard</a></li>
+    <li><a href="objective.html">Objective</a></li>
+    <li><a href="team.html">Team</a></li>
+    <li><a href="sidebar.html">Sidebar</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="helpers">Helpers</div>
+  <ul class="sidebar-links">
+    <li><a href="config.html">Config</a></li>
+    <li><a href="cooldown.html">Cooldown</a></li>
+    <li><a href="hologram.html">Hologram</a></li>
+    <li><a href="enumvalue.html">EnumValue</a></li>
+    <li><a href="enums.html">Enums</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="display-entities">Display Entities</div>
+  <ul class="sidebar-links">
+    <li><a href="actionbardisplay.html">ActionBarDisplay</a></li>
+    <li><a href="bossbardisplay.html">BossBarDisplay</a></li>
+    <li><a href="blockdisplay.html">BlockDisplay</a></li>
+    <li><a href="itemdisplay.html">ItemDisplay</a></li>
+    <li><a href="imagedisplay.html">ImageDisplay</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="utilities">Utilities</div>
+  <ul class="sidebar-links">
+    <li><a href="raycast.html">Raycast</a></li>
+    <li><a href="chat.html">Chat</a></li>
+    <li><a href="reflect.html">Reflect</a></li>
+  </ul>
+</div>
+  </aside>
+  <div class="sidebar-overlay"></div>
+
+  <!-- Main -->
+  <main class="main">
+    <div class="content">
+      <p class="subtitle">Player API — extends Entity</p>
+      <h1 id="player">Player</h1>
+<p><code>Player</code> extends <a href="entity.html"><code>Entity</code></a> with player-specific functionality: health, hunger, experience, permissions, inventory, tab list, game mode, and more.</p>
+<hr />
+<h2 id="constructor">Constructor</h2>
+<pre><code class="language-python">Player(uuid: str | <span class="kw">None</span> = <span class="kw">None</span>, name: str | <span class="kw">None</span> = <span class="kw">None</span>)
+</code></pre>
+<p>Resolve a player by UUID or name. At least one must be provided. The player must be online.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>uuid</code> (<code>str | None</code>) — The player's UUID.</li>
+<li><code>name</code> (<code>str | None</code>) — The player's name (case-insensitive lookup).</li>
+</ul>
+<pre><code class="language-python">p = Player(name=<span class="st">&quot;Steve&quot;</span>)
+p = Player(uuid=<span class="st">&quot;550e8400-e29b-41d4-a716-446655440000&quot;</span>)
+</code></pre>
+<hr />
+<h2 id="attributes">Attributes</h2>
+<h3 id="name">name</h3>
+<ul>
+<li><strong>Type:</strong> <code>str</code></li>
+</ul>
+<p>The player's display name.</p>
+<h3 id="uuid">uuid</h3>
+<ul>
+<li><strong>Type:</strong> <code>str</code></li>
+</ul>
+<p>The player's UUID.</p>
+<h3 id="location">location</h3>
+<ul>
+<li><strong>Type:</strong> <a href="location.html"><code>Location</code></a></li>
+</ul>
+<p>Current player location.</p>
+<h3 id="world">world</h3>
+<ul>
+<li><strong>Type:</strong> <a href="world.html"><code>World</code></a></li>
+</ul>
+<p>The world the player is in.</p>
+<h3 id="health">health</h3>
+<ul>
+<li><strong>Type:</strong> <code>float</code></li>
+</ul>
+<p>Current health (0–20 by default, 0 = dead).</p>
+<h3 id="food_level">food_level</h3>
+<ul>
+<li><strong>Type:</strong> <code>int</code></li>
+</ul>
+<p>Hunger level (0–20, 20 = full).</p>
+<h3 id="game_mode">game_mode</h3>
+<ul>
+<li><strong>Type:</strong> <a href="enums.html"><code>GameMode</code></a></li>
+</ul>
+<p>Current game mode (e.g. <code>GameMode.SURVIVAL</code>, <code>GameMode.CREATIVE</code>).</p>
+<h3 id="inventory">inventory</h3>
+<ul>
+<li><strong>Type:</strong> <a href="inventory.html"><code>Inventory</code></a></li>
+</ul>
+<p>The player's inventory (36 slots + armor + offhand).</p>
+<h3 id="level">level</h3>
+<ul>
+<li><strong>Type:</strong> <code>int</code></li>
+</ul>
+<p>Player experience level (the green number).</p>
+<h3 id="exp">exp</h3>
+<ul>
+<li><strong>Type:</strong> <code>float</code></li>
+</ul>
+<p>Experience progress within the current level (0.0 to 1.0).</p>
+<h3 id="is_op">is_op</h3>
+<ul>
+<li><strong>Type:</strong> <code>bool</code></li>
+</ul>
+<p>Whether the player is a server operator.</p>
+<h3 id="is_flying">is_flying</h3>
+<ul>
+<li><strong>Type:</strong> <code>bool</code></li>
+</ul>
+<p>Whether the player is currently flying.</p>
+<h3 id="is_sneaking">is_sneaking</h3>
+<ul>
+<li><strong>Type:</strong> <code>bool</code></li>
+</ul>
+<p>Whether the player is sneaking (shift held).</p>
+<h3 id="is_sprinting">is_sprinting</h3>
+<ul>
+<li><strong>Type:</strong> <code>bool</code></li>
+</ul>
+<p>Whether the player is sprinting.</p>
+<h3 id="scoreboard">scoreboard</h3>
+<ul>
+<li><strong>Type:</strong> <a href="scoreboard.html"><code>Scoreboard</code></a></li>
+</ul>
+<p>The player's current scoreboard.</p>
+<h3 id="permission_groups">permission_groups</h3>
+<ul>
+<li><strong>Type:</strong> <code>list[str]</code></li>
+</ul>
+<p>The player's permission groups. LuckPerms-aware — returns LuckPerms groups if available, otherwise falls back to the basic permission system.</p>
+<h3 id="primary_group">primary_group</h3>
+<ul>
+<li><strong>Type:</strong> <code>str | None</code></li>
+</ul>
+<p>The player's primary permission group (LuckPerms). <code>None</code> if LuckPerms is not installed.</p>
+<h3 id="tab_list_header">tab_list_header</h3>
+<ul>
+<li><strong>Type:</strong> <code>str</code></li>
+</ul>
+<p>The player's tab list header text.</p>
+<h3 id="tab_list_footer">tab_list_footer</h3>
+<ul>
+<li><strong>Type:</strong> <code>str</code></li>
+</ul>
+<p>The player's tab list footer text.</p>
+<h3 id="tab_list_name">tab_list_name</h3>
+<ul>
+<li><strong>Type:</strong> <code>str</code></li>
+</ul>
+<p>The player's display name in the tab list.</p>
+<hr />
+<h2 id="methods">Methods</h2>
+<h3 id="send_message">send_message</h3>
+<pre><code class="language-python"><span class="kw">await</span> player.send_message(message)
+</code></pre>
+<p>Send a chat message to the player.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>message</code> (<code>str</code>) — The message. Supports <code>§</code> color codes.</li>
+<li><strong>Returns:</strong> <code>Awaitable[None]</code></li>
+</ul>
+<pre><code class="language-python"><span class="kw">await</span> player.send_message(<span class="st">&quot;§aYou found a secret!&quot;</span>)
+</code></pre>
+<h3 id="chat">chat</h3>
+<pre><code class="language-python"><span class="kw">await</span> player.chat(message)
+</code></pre>
+<p>Make the player send a chat message (as if they typed it).</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>message</code> (<code>str</code>) — The message to send.</li>
+<li><strong>Returns:</strong> <code>Awaitable[None]</code></li>
+</ul>
+<h3 id="kick">kick</h3>
+<pre><code class="language-python"><span class="kw">await</span> player.kick(reason=<span class="st">&quot;&quot;</span>)
+</code></pre>
+<p>Kick the player from the server.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>reason</code> (<code>str</code>) — Kick reason shown to the player. Default empty.</li>
+<li><strong>Returns:</strong> <code>Awaitable[None]</code></li>
+</ul>
+<pre><code class="language-python"><span class="kw">await</span> player.kick(<span class="st">&quot;§cYou have been banned!&quot;</span>)
+</code></pre>
+<h3 id="teleport">teleport</h3>
+<pre><code class="language-python"><span class="kw">await</span> player.teleport(location)
+</code></pre>
+<p>Teleport the player. Inherited from <a href="entity.html"><code>Entity</code></a>.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>location</code> (<a href="location.html"><code>Location</code></a>) — Destination.</li>
+<li><strong>Returns:</strong> <code>Awaitable[None]</code></li>
+</ul>
+<h3 id="give_exp">give_exp</h3>
+<pre><code class="language-python"><span class="kw">await</span> player.give_exp(amount)
+</code></pre>
+<p>Give raw experience points to the player.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>amount</code> (<code>int</code>) — XP points to add.</li>
+<li><strong>Returns:</strong> <code>Awaitable[None]</code></li>
+</ul>
+<h3 id="set_exp">set_exp</h3>
+<pre><code class="language-python"><span class="kw">await</span> player.set_exp(exp)
+</code></pre>
+<p>Set the experience progress bar within the current level.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>exp</code> (<code>float</code>) — Progress from 0.0 to 1.0.</li>
+<li><strong>Returns:</strong> <code>Awaitable[None]</code></li>
+</ul>
+<h3 id="set_level">set_level</h3>
+<pre><code class="language-python"><span class="kw">await</span> player.set_level(level)
+</code></pre>
+<p>Set the player's experience level.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>level</code> (<code>int</code>) — The level number.</li>
+<li><strong>Returns:</strong> <code>Awaitable[None]</code></li>
+</ul>
+<h3 id="set_health">set_health</h3>
+<pre><code class="language-python"><span class="kw">await</span> player.set_health(health)
+</code></pre>
+<p>Set the player's health.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>health</code> (<code>float</code>) — Health from 0.0 to 20.0 (default max).</li>
+<li><strong>Returns:</strong> <code>Awaitable[None]</code></li>
+</ul>
+<h3 id="set_food_level">set_food_level</h3>
+<pre><code class="language-python"><span class="kw">await</span> player.set_food_level(level)
+</code></pre>
+<p>Set the player's hunger level.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>level</code> (<code>int</code>) — Food level from 0 to 20.</li>
+<li><strong>Returns:</strong> <code>Awaitable[None]</code></li>
+</ul>
+<h3 id="set_game_mode">set_game_mode</h3>
+<pre><code class="language-python"><span class="kw">await</span> player.set_game_mode(mode)
+</code></pre>
+<p>Set the player's game mode.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>mode</code> (<a href="enums.html"><code>GameMode</code></a>) — The game mode.</li>
+<li><strong>Returns:</strong> <code>Awaitable[None]</code></li>
+</ul>
+<pre><code class="language-python"><span class="kw">await</span> player.set_game_mode(GameMode.CREATIVE)
+</code></pre>
+<h3 id="set_op">set_op</h3>
+<pre><code class="language-python"><span class="kw">await</span> player.set_op(value)
+</code></pre>
+<p>Set operator status.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>value</code> (<code>bool</code>) — <code>True</code> for op, <code>False</code> to deop.</li>
+<li><strong>Returns:</strong> <code>Awaitable[None]</code></li>
+</ul>
+<h3 id="set_flying">set_flying</h3>
+<pre><code class="language-python"><span class="kw">await</span> player.set_flying(value)
+</code></pre>
+<p>Set flying state. The player must be allowed to fly (creative mode or flight allowed).</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>value</code> (<code>bool</code>)</li>
+<li><strong>Returns:</strong> <code>Awaitable[None]</code></li>
+</ul>
+<h3 id="set_sneaking">set_sneaking</h3>
+<pre><code class="language-python"><span class="kw">await</span> player.set_sneaking(value)
+</code></pre>
+<p>Force the sneaking state.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>value</code> (<code>bool</code>)</li>
+<li><strong>Returns:</strong> <code>Awaitable[None]</code></li>
+</ul>
+<h3 id="set_sprinting">set_sprinting</h3>
+<pre><code class="language-python"><span class="kw">await</span> player.set_sprinting(value)
+</code></pre>
+<p>Force the sprinting state.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>value</code> (<code>bool</code>)</li>
+<li><strong>Returns:</strong> <code>Awaitable[None]</code></li>
+</ul>
+<h3 id="set_walk_speed">set_walk_speed</h3>
+<pre><code class="language-python"><span class="kw">await</span> player.set_walk_speed(speed)
+</code></pre>
+<p>Set walking speed.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>speed</code> (<code>float</code>) — Speed multiplier. Default is 0.2. Range: -1.0 to 1.0.</li>
+<li><strong>Returns:</strong> <code>Awaitable[None]</code></li>
+</ul>
+<h3 id="set_fly_speed">set_fly_speed</h3>
+<pre><code class="language-python"><span class="kw">await</span> player.set_fly_speed(speed)
+</code></pre>
+<p>Set flying speed.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>speed</code> (<code>float</code>) — Speed multiplier. Default is 0.1. Range: -1.0 to 1.0.</li>
+<li><strong>Returns:</strong> <code>Awaitable[None]</code></li>
+</ul>
+<h3 id="set_scoreboard">set_scoreboard</h3>
+<pre><code class="language-python"><span class="kw">await</span> player.set_scoreboard(scoreboard)
+</code></pre>
+<p>Set the player's active scoreboard.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>scoreboard</code> (<a href="scoreboard.html"><code>Scoreboard</code></a>) — The scoreboard to display.</li>
+<li><strong>Returns:</strong> <code>Awaitable[None]</code></li>
+</ul>
+<hr />
+<h2 id="effects">Effects</h2>
+<h3 id="add_effect">add_effect</h3>
+<pre><code class="language-python"><span class="kw">await</span> player.add_effect(effect)
+</code></pre>
+<p>Apply a potion effect to the player.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>effect</code> (<a href="effect.html"><code>Effect</code></a>) — The effect to apply.</li>
+<li><strong>Returns:</strong> <code>Awaitable[None]</code></li>
+</ul>
+<pre><code class="language-python"><span class="kw">await</span> player.add_effect(Effect(EffectType.SPEED, duration=<span class="nb">200</span>, amplifier=<span class="nb">1</span>))
+</code></pre>
+<h3 id="remove_effect">remove_effect</h3>
+<pre><code class="language-python"><span class="kw">await</span> player.remove_effect(effect_type)
+</code></pre>
+<p>Remove an active potion effect.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>effect_type</code> (<a href="enums.html"><code>EffectType</code></a>) — The effect type to remove.</li>
+<li><strong>Returns:</strong> <code>Awaitable[None]</code></li>
+</ul>
+<hr />
+<h2 id="sounds-ui">Sounds &amp; UI</h2>
+<h3 id="play_sound">play_sound</h3>
+<pre><code class="language-python"><span class="kw">await</span> player.play_sound(sound, volume=<span class="nb">1.0</span>, pitch=<span class="nb">1.0</span>)
+</code></pre>
+<p>Play a sound to the player at their location.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>sound</code> (<a href="enums.html"><code>Sound</code></a>) — The sound to play.</li>
+<li><code>volume</code> (<code>float</code>) — Volume. Default 1.0.</li>
+<li><code>pitch</code> (<code>float</code>) — Pitch. Default 1.0.</li>
+<li><strong>Returns:</strong> <code>Awaitable[None]</code></li>
+</ul>
+<pre><code class="language-python"><span class="kw">await</span> player.play_sound(Sound.ENTITY_EXPERIENCE_ORB_PICKUP)
+<span class="kw">await</span> player.play_sound('block_note_block_bass', volume=<span class="nb">0.5</span>, pitch=<span class="nb">2.0</span>)
+</code></pre>
+<h3 id="send_action_bar">send_action_bar</h3>
+<pre><code class="language-python"><span class="kw">await</span> player.send_action_bar(message)
+</code></pre>
+<p>Display a message in the action bar (above the hotbar).</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>message</code> (<code>str</code>) — The message. Supports <code>§</code> color codes.</li>
+<li><strong>Returns:</strong> <code>Awaitable[None]</code></li>
+</ul>
+<h3 id="send_title">send_title</h3>
+<pre><code class="language-python"><span class="kw">await</span> player.send_title(title, subtitle=<span class="st">&quot;&quot;</span>, fade_in=<span class="nb">10</span>, stay=<span class="nb">70</span>, fade_out=<span class="nb">20</span>)
+</code></pre>
+<p>Display a title and subtitle on the player's screen.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>title</code> (<code>str</code>) — The main title text.</li>
+<li><code>subtitle</code> (<code>str</code>) — Subtitle text below the title.</li>
+<li><code>fade_in</code> (<code>int</code>) — Fade-in time in ticks. Default 10 (0.5s).</li>
+<li><code>stay</code> (<code>int</code>) — Display time in ticks. Default 70 (3.5s).</li>
+<li><code>fade_out</code> (<code>int</code>) — Fade-out time in ticks. Default 20 (1s).</li>
+<li><strong>Returns:</strong> <code>Awaitable[None]</code></li>
+</ul>
+<pre><code class="language-python"><span class="kw">await</span> player.send_title(<span class="st">&quot;§6Victory!&quot;</span>, <span class="st">&quot;§eYou won the game&quot;</span>, fade_in=<span class="nb">5</span>, stay=<span class="nb">40</span>, fade_out=<span class="nb">10</span>)
+</code></pre>
+<hr />
+<h2 id="tab-list">Tab List</h2>
+<h3 id="set_tab_list_header">set_tab_list_header</h3>
+<pre><code class="language-python"><span class="kw">await</span> player.set_tab_list_header(header)
+</code></pre>
+<p>Set the header text shown above the player list in the tab screen.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>header</code> (<code>str</code>) — Header text. Supports <code>§</code> color codes and <code>\n</code> for multiple lines.</li>
+<li><strong>Returns:</strong> <code>Awaitable[None]</code></li>
+</ul>
+<h3 id="set_tab_list_footer">set_tab_list_footer</h3>
+<pre><code class="language-python"><span class="kw">await</span> player.set_tab_list_footer(footer)
+</code></pre>
+<p>Set the footer text shown below the player list.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>footer</code> (<code>str</code>) — Footer text.</li>
+<li><strong>Returns:</strong> <code>Awaitable[None]</code></li>
+</ul>
+<h3 id="set_tab_list_header_footer">set_tab_list_header_footer</h3>
+<pre><code class="language-python"><span class="kw">await</span> player.set_tab_list_header_footer(header=<span class="st">&quot;&quot;</span>, footer=<span class="st">&quot;&quot;</span>)
+</code></pre>
+<p>Set both header and footer in a single call.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>header</code> (<code>str</code>) — Header text.</li>
+<li><code>footer</code> (<code>str</code>) — Footer text.</li>
+<li><strong>Returns:</strong> <code>Awaitable[None]</code></li>
+</ul>
+<h3 id="set_tab_list_name">set_tab_list_name</h3>
+<pre><code class="language-python"><span class="kw">await</span> player.set_tab_list_name(name)
+</code></pre>
+<p>Set the player's display name in the tab list.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>name</code> (<code>str</code>) — Display name. Supports <code>§</code> color codes.</li>
+<li><strong>Returns:</strong> <code>Awaitable[None]</code></li>
+</ul>
+<pre><code class="language-python"><span class="kw">await</span> player.set_tab_list_name(<span class="st">&quot;§c[Admin]§r Steve&quot;</span>)
+</code></pre>
+<hr />
+<h2 id="permissions">Permissions</h2>
+<h3 id="has_permission">has_permission</h3>
+<pre><code class="language-python">result = <span class="kw">await</span> player.has_permission(permission)
+</code></pre>
+<p>Check if the player has a permission node.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>permission</code> (<code>str</code>) — The permission node (e.g. <code>"myplugin.use"</code>).</li>
+<li><strong>Returns:</strong> <code>Awaitable[bool]</code></li>
+</ul>
+<h3 id="add_permission">add_permission</h3>
+<pre><code class="language-python">result = <span class="kw">await</span> player.add_permission(permission, value=<span class="kw">True</span>)
+</code></pre>
+<p>Add or set a permission on the player. LuckPerms-aware.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>permission</code> (<code>str</code>) — The permission node.</li>
+<li><code>value</code> (<code>bool</code>) — <code>True</code> to grant, <code>False</code> to negate. Default <code>True</code>.</li>
+<li><strong>Returns:</strong> <code>Awaitable[bool]</code></li>
+</ul>
+<h3 id="remove_permission">remove_permission</h3>
+<pre><code class="language-python">result = <span class="kw">await</span> player.remove_permission(permission)
+</code></pre>
+<p>Remove a permission from the player. LuckPerms-aware.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>permission</code> (<code>str</code>) — The permission node to remove.</li>
+<li><strong>Returns:</strong> <code>Awaitable[bool]</code></li>
+</ul>
+<h3 id="has_group">has_group</h3>
+<pre><code class="language-python">result = <span class="kw">await</span> player.has_group(group)
+</code></pre>
+<p>Check if the player belongs to a permission group. <strong>LuckPerms only.</strong></p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>group</code> (<code>str</code>) — The group name.</li>
+<li><strong>Returns:</strong> <code>Awaitable[bool]</code></li>
+</ul>
+<h3 id="add_group">add_group</h3>
+<pre><code class="language-python">result = <span class="kw">await</span> player.add_group(group)
+</code></pre>
+<p>Add the player to a permission group. <strong>LuckPerms only.</strong></p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>group</code> (<code>str</code>) — The group name.</li>
+<li><strong>Returns:</strong> <code>Awaitable[bool]</code></li>
+</ul>
+<h3 id="remove_group">remove_group</h3>
+<pre><code class="language-python">result = <span class="kw">await</span> player.remove_group(group)
+</code></pre>
+<p>Remove the player from a permission group. <strong>LuckPerms only.</strong></p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>group</code> (<code>str</code>) — The group name.</li>
+<li><strong>Returns:</strong> <code>Awaitable[bool]</code></li>
+</ul>
+    </div>
+    <footer class="site-footer">
+      &copy; Omena0 2026 &middot; PyJavaBridge Documentation
+    </footer>
+  </main>
+
+  <!-- Back to top -->
+  <button class="back-to-top" aria-label="Back to top">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+      <path d="M18 15l-6-6-6 6"/>
+    </svg>
+  </button>
+
+  <script src="script.js"></script>
+</body>
+</html>

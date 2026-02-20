@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>World — PyJavaBridge</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Header -->
+  <header class="site-header">
+    <button class="menu-toggle" aria-label="Toggle menu">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M3 12h18M3 6h18M3 18h18"/>
+      </svg>
+    </button>
+    <a href="index.html" class="header-brand">
+      <span class="logo">Py</span>
+      PyJavaBridge
+    </a>
+    <nav class="header-nav">
+      <a href="index.html">Docs</a>
+      <a href="examples.html">Examples</a>
+      <a href="https://github.com/Omena0/PyJavaBridge">GitHub</a>
+    </nav>
+  </header>
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+<div class="search-box">
+  <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+  <input type="text" id="sidebar-search" placeholder="Search docs…">
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading" data-section="on-this-page">On This Page</div>
+  <ul class="sidebar-links">
+    <li><a href="#constructor">Constructor</a></li>
+    <li><a href="#attributes">Attributes</a></li>
+    <li><a href="#name" style="padding-left:40px;font-size:.8rem">name</a></li>
+    <li><a href="#uuid" style="padding-left:40px;font-size:.8rem">uuid</a></li>
+    <li><a href="#environment" style="padding-left:40px;font-size:.8rem">environment</a></li>
+    <li><a href="#entities" style="padding-left:40px;font-size:.8rem">entities</a></li>
+    <li><a href="#players" style="padding-left:40px;font-size:.8rem">players</a></li>
+    <li><a href="#time" style="padding-left:40px;font-size:.8rem">time</a></li>
+    <li><a href="#full_time" style="padding-left:40px;font-size:.8rem">full_time</a></li>
+    <li><a href="#difficulty" style="padding-left:40px;font-size:.8rem">difficulty</a></li>
+    <li><a href="#spawn_location" style="padding-left:40px;font-size:.8rem">spawn_location</a></li>
+    <li><a href="#has_storm" style="padding-left:40px;font-size:.8rem">has_storm</a></li>
+    <li><a href="#is_thundering" style="padding-left:40px;font-size:.8rem">is_thundering</a></li>
+    <li><a href="#weather_duration" style="padding-left:40px;font-size:.8rem">weather_duration</a></li>
+    <li><a href="#thunder_duration" style="padding-left:40px;font-size:.8rem">thunder_duration</a></li>
+    <li><a href="#methods">Methods</a></li>
+    <li><a href="#block_at" style="padding-left:40px;font-size:.8rem">block_at</a></li>
+    <li><a href="#chunk_at" style="padding-left:40px;font-size:.8rem">chunk_at</a></li>
+    <li><a href="#spawn" style="padding-left:40px;font-size:.8rem">spawn</a></li>
+    <li><a href="#spawn_entity" style="padding-left:40px;font-size:.8rem">spawn_entity</a></li>
+    <li><a href="#spawn_particle" style="padding-left:40px;font-size:.8rem">spawn_particle</a></li>
+    <li><a href="#play_sound" style="padding-left:40px;font-size:.8rem">play_sound</a></li>
+    <li><a href="#strike_lightning" style="padding-left:40px;font-size:.8rem">strike_lightning</a></li>
+    <li><a href="#strike_lightning_effect" style="padding-left:40px;font-size:.8rem">strike_lightning_effect</a></li>
+    <li><a href="#time-weather-setters">Time &amp; Weather Setters</a></li>
+    <li><a href="#set_time" style="padding-left:40px;font-size:.8rem">set_time</a></li>
+    <li><a href="#set_full_time" style="padding-left:40px;font-size:.8rem">set_full_time</a></li>
+    <li><a href="#set_difficulty" style="padding-left:40px;font-size:.8rem">set_difficulty</a></li>
+    <li><a href="#set_spawn_location" style="padding-left:40px;font-size:.8rem">set_spawn_location</a></li>
+    <li><a href="#set_storm" style="padding-left:40px;font-size:.8rem">set_storm</a></li>
+    <li><a href="#set_thundering" style="padding-left:40px;font-size:.8rem">set_thundering</a></li>
+    <li><a href="#set_weather_duration" style="padding-left:40px;font-size:.8rem">set_weather_duration</a></li>
+    <li><a href="#set_thunder_duration" style="padding-left:40px;font-size:.8rem">set_thunder_duration</a></li>
+    <li><a href="#region-utilities">Region Utilities</a></li>
+    <li><a href="#set_block" style="padding-left:40px;font-size:.8rem">set_block</a></li>
+    <li><a href="#fill" style="padding-left:40px;font-size:.8rem">fill</a></li>
+    <li><a href="#replace" style="padding-left:40px;font-size:.8rem">replace</a></li>
+    <li><a href="#fill_sphere" style="padding-left:40px;font-size:.8rem">fill_sphere</a></li>
+    <li><a href="#fill_cylinder" style="padding-left:40px;font-size:.8rem">fill_cylinder</a></li>
+    <li><a href="#fill_line" style="padding-left:40px;font-size:.8rem">fill_line</a></li>
+    <li><a href="#particle-shape-utilities">Particle Shape Utilities</a></li>
+    <li><a href="#particle_line" style="padding-left:40px;font-size:.8rem">particle_line</a></li>
+    <li><a href="#particle_sphere" style="padding-left:40px;font-size:.8rem">particle_sphere</a></li>
+    <li><a href="#particle_cube" style="padding-left:40px;font-size:.8rem">particle_cube</a></li>
+    <li><a href="#particle_ring" style="padding-left:40px;font-size:.8rem">particle_ring</a></li>
+    <li><a href="#entity-spawn-helpers">Entity Spawn Helpers</a></li>
+    <li><a href="#spawn_at_player" style="padding-left:40px;font-size:.8rem">spawn_at_player</a></li>
+    <li><a href="#spawn_projectile" style="padding-left:40px;font-size:.8rem">spawn_projectile</a></li>
+    <li><a href="#spawn_with_nbt" style="padding-left:40px;font-size:.8rem">spawn_with_nbt</a></li>
+  </ul>
+</div>
+
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="getting-started">Getting Started</div>
+  <ul class="sidebar-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="decorators.html">Decorators</a></li>
+    <li><a href="exceptions.html">Exceptions</a></li>
+    <li><a href="examples.html">Examples</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="core">Core</div>
+  <ul class="sidebar-links">
+    <li><a href="server.html">Server</a></li>
+    <li><a href="event.html">Event</a></li>
+    <li><a href="entity.html">Entity</a></li>
+    <li><a href="player.html">Player</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="world-space">World & Space</div>
+  <ul class="sidebar-links">
+    <li><a href="world.html" class="active">World</a></li>
+    <li><a href="location.html">Location</a></li>
+    <li><a href="block.html">Block</a></li>
+    <li><a href="chunk.html">Chunk</a></li>
+    <li><a href="vector.html">Vector</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="items-inventory">Items & Inventory</div>
+  <ul class="sidebar-links">
+    <li><a href="item.html">Item</a></li>
+    <li><a href="itembuilder.html">ItemBuilder</a></li>
+    <li><a href="inventory.html">Inventory</a></li>
+    <li><a href="menu.html">Menu</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="effects-attributes">Effects & Attributes</div>
+  <ul class="sidebar-links">
+    <li><a href="effect.html">Effect</a></li>
+    <li><a href="potion.html">Potion</a></li>
+    <li><a href="attribute.html">Attribute</a></li>
+    <li><a href="advancement.html">Advancement</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="scoreboards-ui">Scoreboards & UI</div>
+  <ul class="sidebar-links">
+    <li><a href="bossbar.html">BossBar</a></li>
+    <li><a href="scoreboard.html">Scoreboard</a></li>
+    <li><a href="objective.html">Objective</a></li>
+    <li><a href="team.html">Team</a></li>
+    <li><a href="sidebar.html">Sidebar</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="helpers">Helpers</div>
+  <ul class="sidebar-links">
+    <li><a href="config.html">Config</a></li>
+    <li><a href="cooldown.html">Cooldown</a></li>
+    <li><a href="hologram.html">Hologram</a></li>
+    <li><a href="enumvalue.html">EnumValue</a></li>
+    <li><a href="enums.html">Enums</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="display-entities">Display Entities</div>
+  <ul class="sidebar-links">
+    <li><a href="actionbardisplay.html">ActionBarDisplay</a></li>
+    <li><a href="bossbardisplay.html">BossBarDisplay</a></li>
+    <li><a href="blockdisplay.html">BlockDisplay</a></li>
+    <li><a href="itemdisplay.html">ItemDisplay</a></li>
+    <li><a href="imagedisplay.html">ImageDisplay</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="utilities">Utilities</div>
+  <ul class="sidebar-links">
+    <li><a href="raycast.html">Raycast</a></li>
+    <li><a href="chat.html">Chat</a></li>
+    <li><a href="reflect.html">Reflect</a></li>
+  </ul>
+</div>
+  </aside>
+  <div class="sidebar-overlay"></div>
+
+  <!-- Main -->
+  <main class="main">
+    <div class="content">
+      <p class="subtitle">World API with region utilities, particle shapes, and spawn helpers</p>
+      <h1 id="world">World</h1>
+<p>The <code>World</code> class provides access to world properties, blocks, entities, weather, time, and advanced utilities for working with regions, particles, and entity spawning.</p>
+<hr />
+<h2 id="constructor">Constructor</h2>
+<pre><code class="language-python">World(name: str | <span class="kw">None</span> = <span class="kw">None</span>)
+</code></pre>
+<p>Resolve a world by name. You can also get worlds from <code>server.worlds</code> or <code>server.world("name")</code>.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>name</code> (<code>str | None</code>) — The world name (e.g. <code>"world"</code>, <code>"world_nether"</code>, <code>"world_the_end"</code>).</li>
+</ul>
+<hr />
+<h2 id="attributes">Attributes</h2>
+<h3 id="name">name</h3>
+<ul>
+<li><strong>Type:</strong> <code>str</code></li>
+</ul>
+<p>The world name.</p>
+<h3 id="uuid">uuid</h3>
+<ul>
+<li><strong>Type:</strong> <code>str</code></li>
+</ul>
+<p>The world's unique identifier.</p>
+<h3 id="environment">environment</h3>
+<ul>
+<li><strong>Type:</strong> <code>any</code></li>
+</ul>
+<p>The world environment (NORMAL, NETHER, THE_END).</p>
+<h3 id="entities">entities</h3>
+<ul>
+<li><strong>Type:</strong> <code>list[</code><a href="entity.html"><code>Entity</code></a><code>]</code></li>
+</ul>
+<p>All entities currently in the world, including players, mobs, dropped items, etc.</p>
+<h3 id="players">players</h3>
+<ul>
+<li><strong>Type:</strong> <code>list[</code><a href="player.html"><code>Player</code></a><code>]</code></li>
+</ul>
+<p>All players currently in this world.</p>
+<h3 id="time">time</h3>
+<ul>
+<li><strong>Type:</strong> <code>int</code></li>
+</ul>
+<p>Current world time (0–24000). 0 = dawn, 6000 = noon, 12000 = dusk, 18000 = midnight.</p>
+<h3 id="full_time">full_time</h3>
+<ul>
+<li><strong>Type:</strong> <code>int</code></li>
+</ul>
+<p>Absolute world time that is not reset by sleeping.</p>
+<h3 id="difficulty">difficulty</h3>
+<ul>
+<li><strong>Type:</strong> <a href="enums.html"><code>Difficulty</code></a></li>
+</ul>
+<p>World difficulty level.</p>
+<h3 id="spawn_location">spawn_location</h3>
+<ul>
+<li><strong>Type:</strong> <a href="location.html"><code>Location</code></a></li>
+</ul>
+<p>The world's spawn location.</p>
+<h3 id="has_storm">has_storm</h3>
+<ul>
+<li><strong>Type:</strong> <code>bool</code></li>
+</ul>
+<p>Whether it is currently raining/snowing.</p>
+<h3 id="is_thundering">is_thundering</h3>
+<ul>
+<li><strong>Type:</strong> <code>bool</code></li>
+</ul>
+<p>Whether there is a thunderstorm.</p>
+<h3 id="weather_duration">weather_duration</h3>
+<ul>
+<li><strong>Type:</strong> <code>int</code></li>
+</ul>
+<p>Remaining weather duration in ticks.</p>
+<h3 id="thunder_duration">thunder_duration</h3>
+<ul>
+<li><strong>Type:</strong> <code>int</code></li>
+</ul>
+<p>Remaining thunder duration in ticks.</p>
+<hr />
+<h2 id="methods">Methods</h2>
+<h3 id="block_at">block_at</h3>
+<pre><code class="language-python">block = <span class="kw">await</span> world.block_at(x, y, z)
+</code></pre>
+<p>Get the block at specific coordinates.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>x</code> (<code>int</code>) — X coordinate.</li>
+<li><code>y</code> (<code>int</code>) — Y coordinate.</li>
+<li><code>z</code> (<code>int</code>) — Z coordinate.</li>
+<li><strong>Returns:</strong> <code>Awaitable[</code><a href="block.html"><code>Block</code></a><code>]</code></li>
+</ul>
+<pre><code class="language-python">block = <span class="kw">await</span> world.block_at(<span class="nb">0</span>, <span class="nb">64</span>, <span class="nb">0</span>)
+print(block.type)  <span class="cm"># Material.GRASS_BLOCK</span>
+</code></pre>
+<h3 id="chunk_at">chunk_at</h3>
+<pre><code class="language-python">chunk = <span class="kw">await</span> world.chunk_at(x, z)
+</code></pre>
+<p>Get the chunk at chunk coordinates.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>x</code> (<code>int</code>) — Chunk X (block X ÷ 16).</li>
+<li><code>z</code> (<code>int</code>) — Chunk Z (block Z ÷ 16).</li>
+<li><strong>Returns:</strong> <code>Awaitable[</code><a href="chunk.html"><code>Chunk</code></a><code>]</code></li>
+</ul>
+<h3 id="spawn">spawn</h3>
+<pre><code class="language-python">entity = <span class="kw">await</span> world.spawn(location, entity_cls, **kwargs)
+</code></pre>
+<p>Spawn an entity at a location.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>location</code> (<a href="location.html"><code>Location</code></a>) — Spawn position.</li>
+<li><code>entity_cls</code> (<code>type | EntityType | str</code>) — Entity type to spawn.</li>
+<li><code>**kwargs</code> — Additional spawn options.</li>
+<li><strong>Returns:</strong> <code>Awaitable[</code><a href="entity.html"><code>Entity</code></a><code>]</code></li>
+</ul>
+<pre><code class="language-python">zombie = <span class="kw">await</span> world.spawn(Location(<span class="nb">0</span>, <span class="nb">64</span>, <span class="nb">0</span>), EntityType.ZOMBIE)
+</code></pre>
+<h3 id="spawn_entity">spawn_entity</h3>
+<pre><code class="language-python">entity = <span class="kw">await</span> world.spawn_entity(location, entity_type, **kwargs)
+</code></pre>
+<p>Spawn an entity by type name.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>location</code> (<a href="location.html"><code>Location</code></a>) — Spawn position.</li>
+<li><code>entity_type</code> (<a href="enums.html"><code>EntityType</code></a> <code>| str</code>) — Entity type.</li>
+<li><code>**kwargs</code> — Additional options.</li>
+<li><strong>Returns:</strong> <code>Awaitable[</code><a href="entity.html"><code>Entity</code></a><code>]</code></li>
+</ul>
+<h3 id="spawn_particle">spawn_particle</h3>
+<pre><code class="language-python"><span class="kw">await</span> world.spawn_particle(particle, location, count=<span class="nb">1</span>, offset_x=<span class="nb">0</span>, offset_y=<span class="nb">0</span>, offset_z=<span class="nb">0</span>, extra=<span class="nb">0</span>)
+</code></pre>
+<p>Spawn particles visible to all players in the world.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>particle</code> (<a href="enums.html"><code>Particle</code></a>) — Particle type.</li>
+<li><code>location</code> (<a href="location.html"><code>Location</code></a>) — Center position.</li>
+<li><code>count</code> (<code>int</code>) — Number of particles.</li>
+<li><code>offset_x/y/z</code> (<code>float</code>) — Random offset range on each axis.</li>
+<li><code>extra</code> (<code>float</code>) — Extra data (usually speed).</li>
+<li><strong>Returns:</strong> <code>Awaitable[None]</code></li>
+</ul>
+<pre><code class="language-python"><span class="kw">await</span> world.spawn_particle(Particle.FLAME, player.location, count=<span class="nb">50</span>, offset_x=<span class="nb">0.5</span>, offset_y=<span class="nb">1</span>, offset_z=<span class="nb">0.5</span>)
+</code></pre>
+<h3 id="play_sound">play_sound</h3>
+<pre><code class="language-python"><span class="kw">await</span> world.play_sound(location, sound, volume=<span class="nb">1.0</span>, pitch=<span class="nb">1.0</span>)
+</code></pre>
+<p>Play a sound at a location, audible to nearby players.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>location</code> (<a href="location.html"><code>Location</code></a>) — Sound source position.</li>
+<li><code>sound</code> (<a href="enums.html"><code>Sound</code></a>) — Sound to play.</li>
+<li><code>volume</code> (<code>float</code>) — Volume. Default 1.0.</li>
+<li><code>pitch</code> (<code>float</code>) — Pitch. Default 1.0.</li>
+<li><strong>Returns:</strong> <code>Awaitable[None]</code></li>
+</ul>
+<h3 id="strike_lightning">strike_lightning</h3>
+<pre><code class="language-python">entity = <span class="kw">await</span> world.strike_lightning(location)
+</code></pre>
+<p>Strike lightning at a location. This deals damage and starts fires.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>location</code> (<a href="location.html"><code>Location</code></a>) — Strike position.</li>
+<li><strong>Returns:</strong> <code>Awaitable[</code><a href="entity.html"><code>Entity</code></a><code>]</code> — The lightning entity.</li>
+</ul>
+<h3 id="strike_lightning_effect">strike_lightning_effect</h3>
+<pre><code class="language-python"><span class="kw">await</span> world.strike_lightning_effect(location)
+</code></pre>
+<p>Strike visual-only lightning (no damage, no fire).</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>location</code> (<a href="location.html"><code>Location</code></a>) — Strike position.</li>
+<li><strong>Returns:</strong> <code>Awaitable[None]</code></li>
+</ul>
+<hr />
+<h2 id="time-weather-setters">Time &amp; Weather Setters</h2>
+<h3 id="set_time">set_time</h3>
+<pre><code class="language-python"><span class="kw">await</span> world.set_time(time)
+</code></pre>
+<p>Set the world time.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>time</code> (<code>int</code>) — Time value (0–24000).</li>
+<li><strong>Returns:</strong> <code>Awaitable[None]</code></li>
+</ul>
+<h3 id="set_full_time">set_full_time</h3>
+<pre><code class="language-python"><span class="kw">await</span> world.set_full_time(time)
+</code></pre>
+<p>Set the absolute (non-resetting) time.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>time</code> (<code>int</code>) — Absolute time value.</li>
+<li><strong>Returns:</strong> <code>Awaitable[None]</code></li>
+</ul>
+<h3 id="set_difficulty">set_difficulty</h3>
+<pre><code class="language-python"><span class="kw">await</span> world.set_difficulty(difficulty)
+</code></pre>
+<p>Set the world difficulty.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>difficulty</code> (<a href="enums.html"><code>Difficulty</code></a>) — Difficulty level.</li>
+<li><strong>Returns:</strong> <code>Awaitable[None]</code></li>
+</ul>
+<h3 id="set_spawn_location">set_spawn_location</h3>
+<pre><code class="language-python"><span class="kw">await</span> world.set_spawn_location(location)
+</code></pre>
+<p>Set the world spawn point.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>location</code> (<a href="location.html"><code>Location</code></a>) — New spawn location.</li>
+<li><strong>Returns:</strong> <code>Awaitable[None]</code></li>
+</ul>
+<h3 id="set_storm">set_storm</h3>
+<pre><code class="language-python"><span class="kw">await</span> world.set_storm(value)
+</code></pre>
+<p>Start or stop rain/snow.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>value</code> (<code>bool</code>) — <code>True</code> = start storm, <code>False</code> = clear.</li>
+<li><strong>Returns:</strong> <code>Awaitable[None]</code></li>
+</ul>
+<h3 id="set_thundering">set_thundering</h3>
+<pre><code class="language-python"><span class="kw">await</span> world.set_thundering(value)
+</code></pre>
+<p>Start or stop thunderstorm.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>value</code> (<code>bool</code>)</li>
+<li><strong>Returns:</strong> <code>Awaitable[None]</code></li>
+</ul>
+<h3 id="set_weather_duration">set_weather_duration</h3>
+<pre><code class="language-python"><span class="kw">await</span> world.set_weather_duration(ticks)
+</code></pre>
+<p>Set how long the current weather lasts.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>ticks</code> (<code>int</code>) — Duration in ticks.</li>
+<li><strong>Returns:</strong> <code>Awaitable[None]</code></li>
+</ul>
+<h3 id="set_thunder_duration">set_thunder_duration</h3>
+<pre><code class="language-python"><span class="kw">await</span> world.set_thunder_duration(ticks)
+</code></pre>
+<p>Set how long the current thunder lasts.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>ticks</code> (<code>int</code>) — Duration in ticks.</li>
+<li><strong>Returns:</strong> <code>Awaitable[None]</code></li>
+</ul>
+<hr />
+<h2 id="region-utilities">Region Utilities</h2>
+<p>These methods operate on regions of blocks in the world. Position arguments accept <a href="location.html"><code>Location</code></a>, <code>tuple[int,int,int]</code>, or <a href="vector.html"><code>Vector</code></a>.</p>
+<h3 id="set_block">set_block</h3>
+<pre><code class="language-python">count = <span class="kw">await</span> world.set_block(x, y, z, material, apply_physics=<span class="kw">False</span>)
+</code></pre>
+<p>Set a single block.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>x, y, z</code> (<code>int</code>) — Block coordinates.</li>
+<li><code>material</code> (<a href="enums.html"><code>Material</code></a> <code>| str</code>) — Block material.</li>
+<li><code>apply_physics</code> (<code>bool</code>) — Whether to trigger physics updates. Default <code>False</code>.</li>
+<li><strong>Returns:</strong> <code>Awaitable[int]</code> — Number of blocks changed (0 or 1).</li>
+</ul>
+<h3 id="fill">fill</h3>
+<pre><code class="language-python">count = <span class="kw">await</span> world.fill(pos1, pos2, material, apply_physics=<span class="kw">False</span>)
+</code></pre>
+<p>Fill a cuboid region with a material.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>pos1</code> — First corner.</li>
+<li><code>pos2</code> — Opposite corner.</li>
+<li><code>material</code> (<a href="enums.html"><code>Material</code></a> <code>| str</code>) — Block material.</li>
+<li><code>apply_physics</code> (<code>bool</code>) — Default <code>False</code>.</li>
+<li><strong>Returns:</strong> <code>Awaitable[int]</code> — Number of blocks changed.</li>
+</ul>
+<pre><code class="language-python"><span class="kw">await</span> world.fill((<span class="nb">0</span>, <span class="nb">60</span>, <span class="nb">0</span>), (<span class="nb">10</span>, <span class="nb">70</span>, <span class="nb">10</span>), Material.STONE)
+</code></pre>
+<h3 id="replace">replace</h3>
+<pre><code class="language-python">count = <span class="kw">await</span> world.replace(pos1, pos2, from_material, to_material)
+</code></pre>
+<p>Replace all blocks of one material with another in a region.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>pos1</code> — First corner.</li>
+<li><code>pos2</code> — Opposite corner.</li>
+<li><code>from_material</code> (<a href="enums.html"><code>Material</code></a> <code>| str</code>) — Material to replace.</li>
+<li><code>to_material</code> (<a href="enums.html"><code>Material</code></a> <code>| str</code>) — Replacement material.</li>
+<li><strong>Returns:</strong> <code>Awaitable[int]</code> — Number of blocks replaced.</li>
+</ul>
+<pre><code class="language-python"><span class="kw">await</span> world.replace((<span class="nb">0</span>, <span class="nb">60</span>, <span class="nb">0</span>), (<span class="nb">10</span>, <span class="nb">70</span>, <span class="nb">10</span>), <span class="st">&quot;DIRT&quot;</span>, <span class="st">&quot;GRASS_BLOCK&quot;</span>)
+</code></pre>
+<h3 id="fill_sphere">fill_sphere</h3>
+<pre><code class="language-python">count = <span class="kw">await</span> world.fill_sphere(center, radius, material, hollow=<span class="kw">False</span>)
+</code></pre>
+<p>Fill a sphere with a material.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>center</code> — Center position.</li>
+<li><code>radius</code> (<code>float</code>) — Sphere radius in blocks.</li>
+<li><code>material</code> (<a href="enums.html"><code>Material</code></a> <code>| str</code>) — Block material.</li>
+<li><code>hollow</code> (<code>bool</code>) — If <code>True</code>, only the shell is filled.</li>
+<li><strong>Returns:</strong> <code>Awaitable[int]</code> — Number of blocks changed.</li>
+</ul>
+<pre><code class="language-python"><span class="kw">await</span> world.fill_sphere(player.location, <span class="nb">5</span>, Material.GLASS, hollow=<span class="kw">True</span>)
+</code></pre>
+<h3 id="fill_cylinder">fill_cylinder</h3>
+<pre><code class="language-python">count = <span class="kw">await</span> world.fill_cylinder(center, radius, height, material, hollow=<span class="kw">False</span>)
+</code></pre>
+<p>Fill a vertical cylinder.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>center</code> — Center of the base.</li>
+<li><code>radius</code> (<code>float</code>) — Cylinder radius.</li>
+<li><code>height</code> (<code>int</code>) — Height in blocks.</li>
+<li><code>material</code> (<a href="enums.html"><code>Material</code></a> <code>| str</code>) — Block material.</li>
+<li><code>hollow</code> (<code>bool</code>) — If <code>True</code>, only the walls are filled.</li>
+<li><strong>Returns:</strong> <code>Awaitable[int]</code></li>
+</ul>
+<h3 id="fill_line">fill_line</h3>
+<pre><code class="language-python">count = <span class="kw">await</span> world.fill_line(start, end, material)
+</code></pre>
+<p>Place blocks along a line between two points.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>start</code> — Start position.</li>
+<li><code>end</code> — End position.</li>
+<li><code>material</code> (<a href="enums.html"><code>Material</code></a> <code>| str</code>) — Block material.</li>
+<li><strong>Returns:</strong> <code>Awaitable[int]</code></li>
+</ul>
+<hr />
+<h2 id="particle-shape-utilities">Particle Shape Utilities</h2>
+<p>All particle shape methods accept optional <code>offset_x</code>, <code>offset_y</code>, <code>offset_z</code>, <code>extra</code> parameters for per-particle randomization.</p>
+<h3 id="particle_line">particle_line</h3>
+<pre><code class="language-python">count = <span class="kw">await</span> world.particle_line(start, end, particle, density=<span class="nb">4.0</span>)
+</code></pre>
+<p>Draw a line of particles between two points.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>start</code> — Start position.</li>
+<li><code>end</code> — End position.</li>
+<li><code>particle</code> (<a href="enums.html"><code>Particle</code></a> <code>| str</code>) — Particle type.</li>
+<li><code>density</code> (<code>float</code>) — Particles per block. Default 4.0.</li>
+<li><strong>Returns:</strong> <code>Awaitable[int]</code> — Number of particles spawned.</li>
+</ul>
+<h3 id="particle_sphere">particle_sphere</h3>
+<pre><code class="language-python">count = <span class="kw">await</span> world.particle_sphere(center, radius, particle, density=<span class="nb">4.0</span>, hollow=<span class="kw">True</span>)
+</code></pre>
+<p>Draw a sphere of particles.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>center</code> — Center position.</li>
+<li><code>radius</code> (<code>float</code>) — Sphere radius.</li>
+<li><code>particle</code> (<a href="enums.html"><code>Particle</code></a> <code>| str</code>) — Particle type.</li>
+<li><code>density</code> (<code>float</code>) — Particles per block. Default 4.0.</li>
+<li><code>hollow</code> (<code>bool</code>) — If <code>True</code>, only surface particles. Default <code>True</code>.</li>
+<li><strong>Returns:</strong> <code>Awaitable[int]</code></li>
+</ul>
+<h3 id="particle_cube">particle_cube</h3>
+<pre><code class="language-python">count = <span class="kw">await</span> world.particle_cube(pos1, pos2, particle, density=<span class="nb">4.0</span>, hollow=<span class="kw">True</span>)
+</code></pre>
+<p>Draw a cuboid of particles.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>pos1</code> — First corner.</li>
+<li><code>pos2</code> — Opposite corner.</li>
+<li><code>particle</code> (<a href="enums.html"><code>Particle</code></a> <code>| str</code>) — Particle type.</li>
+<li><code>density</code> (<code>float</code>) — Default 4.0.</li>
+<li><code>hollow</code> (<code>bool</code>) — Default <code>True</code>.</li>
+<li><strong>Returns:</strong> <code>Awaitable[int]</code></li>
+</ul>
+<h3 id="particle_ring">particle_ring</h3>
+<pre><code class="language-python">count = <span class="kw">await</span> world.particle_ring(center, radius, particle, density=<span class="nb">4.0</span>)
+</code></pre>
+<p>Draw a horizontal ring of particles.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>center</code> — Center position.</li>
+<li><code>radius</code> (<code>float</code>) — Ring radius.</li>
+<li><code>particle</code> (<a href="enums.html"><code>Particle</code></a> <code>| str</code>) — Particle type.</li>
+<li><code>density</code> (<code>float</code>) — Default 4.0.</li>
+<li><strong>Returns:</strong> <code>Awaitable[int]</code></li>
+</ul>
+<hr />
+<h2 id="entity-spawn-helpers">Entity Spawn Helpers</h2>
+<h3 id="spawn_at_player">spawn_at_player</h3>
+<pre><code class="language-python">entity = <span class="kw">await</span> world.spawn_at_player(player, entity_type, offset=<span class="kw">None</span>, **kwargs)
+</code></pre>
+<p>Spawn an entity at a player's current position with an optional offset.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>player</code> (<a href="player.html"><code>Player</code></a>) — The player.</li>
+<li><code>entity_type</code> (<a href="enums.html"><code>EntityType</code></a> <code>| str</code>) — Entity type to spawn.</li>
+<li><code>offset</code> (<a href="vector.html"><code>Vector</code></a> <code>| tuple | None</code>) — Offset from player position.</li>
+<li><code>**kwargs</code> — Additional spawn options.</li>
+<li><strong>Returns:</strong> <code>Awaitable[</code><a href="entity.html"><code>Entity</code></a><code>]</code></li>
+</ul>
+<pre><code class="language-python">zombie = <span class="kw">await</span> world.spawn_at_player(player, <span class="st">&quot;ZOMBIE&quot;</span>, offset=(<span class="nb">2</span>, <span class="nb">0</span>, <span class="nb">0</span>))
+</code></pre>
+<h3 id="spawn_projectile">spawn_projectile</h3>
+<pre><code class="language-python">entity = <span class="kw">await</span> world.spawn_projectile(shooter, entity_type, velocity=<span class="kw">None</span>, **kwargs)
+</code></pre>
+<p>Spawn a projectile from an entity with an optional initial velocity.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>shooter</code> (<a href="entity.html"><code>Entity</code></a>) — The entity shooting the projectile.</li>
+<li><code>entity_type</code> (<a href="enums.html"><code>EntityType</code></a> <code>| str</code>) — Projectile type (e.g. <code>"ARROW"</code>, <code>"FIREBALL"</code>).</li>
+<li><code>velocity</code> (<a href="vector.html"><code>Vector</code></a> <code>| tuple | None</code>) — Initial velocity.</li>
+<li><code>**kwargs</code> — Additional options.</li>
+<li><strong>Returns:</strong> <code>Awaitable[</code><a href="entity.html"><code>Entity</code></a><code>]</code></li>
+</ul>
+<h3 id="spawn_with_nbt">spawn_with_nbt</h3>
+<pre><code class="language-python">entity = <span class="kw">await</span> world.spawn_with_nbt(location, entity_type, nbt, **kwargs)
+</code></pre>
+<p>Spawn an entity with custom SNBT (Stringified NBT) data.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>location</code> (<a href="location.html"><code>Location</code></a>) — Spawn position.</li>
+<li><code>entity_type</code> (<a href="enums.html"><code>EntityType</code></a> <code>| str</code>) — Entity type.</li>
+<li><code>nbt</code> (<code>str</code>) — SNBT string.</li>
+<li><code>**kwargs</code> — Additional options.</li>
+<li><strong>Returns:</strong> <code>Awaitable[</code><a href="entity.html"><code>Entity</code></a><code>]</code></li>
+</ul>
+<pre><code class="language-python"><span class="kw">await</span> world.spawn_with_nbt(loc, <span class="st">&quot;ZOMBIE&quot;</span>, '{IsBaby:1b,CustomName:\'{<span class="st">&quot;text&quot;</span>:<span class="st">&quot;Baby Zombie&quot;</span>}\'}')
+</code></pre>
+    </div>
+    <footer class="site-footer">
+      &copy; Omena0 2026 &middot; PyJavaBridge Documentation
+    </footer>
+  </main>
+
+  <!-- Back to top -->
+  <button class="back-to-top" aria-label="Back to top">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+      <path d="M18 15l-6-6-6 6"/>
+    </svg>
+  </button>
+
+  <script src="script.js"></script>
+</body>
+</html>

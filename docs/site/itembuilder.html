@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ItemBuilder — PyJavaBridge</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Header -->
+  <header class="site-header">
+    <button class="menu-toggle" aria-label="Toggle menu">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M3 12h18M3 6h18M3 18h18"/>
+      </svg>
+    </button>
+    <a href="index.html" class="header-brand">
+      <span class="logo">Py</span>
+      PyJavaBridge
+    </a>
+    <nav class="header-nav">
+      <a href="index.html">Docs</a>
+      <a href="examples.html">Examples</a>
+      <a href="https://github.com/Omena0/PyJavaBridge">GitHub</a>
+    </nav>
+  </header>
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+<div class="search-box">
+  <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+  <input type="text" id="sidebar-search" placeholder="Search docs…">
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading" data-section="on-this-page">On This Page</div>
+  <ul class="sidebar-links">
+    <li><a href="#constructor">Constructor</a></li>
+    <li><a href="#class-methods">Class Methods</a></li>
+    <li><a href="#from_item" style="padding-left:40px;font-size:.8rem">from_item</a></li>
+    <li><a href="#chain-methods">Chain Methods</a></li>
+    <li><a href="#amount" style="padding-left:40px;font-size:.8rem">amount</a></li>
+    <li><a href="#name" style="padding-left:40px;font-size:.8rem">name</a></li>
+    <li><a href="#lore" style="padding-left:40px;font-size:.8rem">lore</a></li>
+    <li><a href="#add_lore" style="padding-left:40px;font-size:.8rem">add_lore</a></li>
+    <li><a href="#enchant" style="padding-left:40px;font-size:.8rem">enchant</a></li>
+    <li><a href="#unbreakable" style="padding-left:40px;font-size:.8rem">unbreakable</a></li>
+    <li><a href="#glow" style="padding-left:40px;font-size:.8rem">glow</a></li>
+    <li><a href="#custom_model_data" style="padding-left:40px;font-size:.8rem">custom_model_data</a></li>
+    <li><a href="#attributes" style="padding-left:40px;font-size:.8rem">attributes</a></li>
+    <li><a href="#add_attribute" style="padding-left:40px;font-size:.8rem">add_attribute</a></li>
+    <li><a href="#nbt" style="padding-left:40px;font-size:.8rem">nbt</a></li>
+    <li><a href="#flag" style="padding-left:40px;font-size:.8rem">flag</a></li>
+    <li><a href="#build">build</a></li>
+  </ul>
+</div>
+
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="getting-started">Getting Started</div>
+  <ul class="sidebar-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="decorators.html">Decorators</a></li>
+    <li><a href="exceptions.html">Exceptions</a></li>
+    <li><a href="examples.html">Examples</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="core">Core</div>
+  <ul class="sidebar-links">
+    <li><a href="server.html">Server</a></li>
+    <li><a href="event.html">Event</a></li>
+    <li><a href="entity.html">Entity</a></li>
+    <li><a href="player.html">Player</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="world-space">World & Space</div>
+  <ul class="sidebar-links">
+    <li><a href="world.html">World</a></li>
+    <li><a href="location.html">Location</a></li>
+    <li><a href="block.html">Block</a></li>
+    <li><a href="chunk.html">Chunk</a></li>
+    <li><a href="vector.html">Vector</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="items-inventory">Items & Inventory</div>
+  <ul class="sidebar-links">
+    <li><a href="item.html">Item</a></li>
+    <li><a href="itembuilder.html" class="active">ItemBuilder</a></li>
+    <li><a href="inventory.html">Inventory</a></li>
+    <li><a href="menu.html">Menu</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="effects-attributes">Effects & Attributes</div>
+  <ul class="sidebar-links">
+    <li><a href="effect.html">Effect</a></li>
+    <li><a href="potion.html">Potion</a></li>
+    <li><a href="attribute.html">Attribute</a></li>
+    <li><a href="advancement.html">Advancement</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="scoreboards-ui">Scoreboards & UI</div>
+  <ul class="sidebar-links">
+    <li><a href="bossbar.html">BossBar</a></li>
+    <li><a href="scoreboard.html">Scoreboard</a></li>
+    <li><a href="objective.html">Objective</a></li>
+    <li><a href="team.html">Team</a></li>
+    <li><a href="sidebar.html">Sidebar</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="helpers">Helpers</div>
+  <ul class="sidebar-links">
+    <li><a href="config.html">Config</a></li>
+    <li><a href="cooldown.html">Cooldown</a></li>
+    <li><a href="hologram.html">Hologram</a></li>
+    <li><a href="enumvalue.html">EnumValue</a></li>
+    <li><a href="enums.html">Enums</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="display-entities">Display Entities</div>
+  <ul class="sidebar-links">
+    <li><a href="actionbardisplay.html">ActionBarDisplay</a></li>
+    <li><a href="bossbardisplay.html">BossBarDisplay</a></li>
+    <li><a href="blockdisplay.html">BlockDisplay</a></li>
+    <li><a href="itemdisplay.html">ItemDisplay</a></li>
+    <li><a href="imagedisplay.html">ImageDisplay</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="utilities">Utilities</div>
+  <ul class="sidebar-links">
+    <li><a href="raycast.html">Raycast</a></li>
+    <li><a href="chat.html">Chat</a></li>
+    <li><a href="reflect.html">Reflect</a></li>
+  </ul>
+</div>
+  </aside>
+  <div class="sidebar-overlay"></div>
+
+  <!-- Main -->
+  <main class="main">
+    <div class="content">
+      <p class="subtitle">Fluent item construction</p>
+      <h1 id="itembuilder">ItemBuilder</h1>
+<p>A fluent builder for constructing <a href="item.html"><code>Item</code></a> objects. Every setter method returns <code>self</code>, allowing chained calls.</p>
+<hr />
+<h2 id="constructor">Constructor</h2>
+<pre><code class="language-python">ItemBuilder(material)
+</code></pre>
+<p>Start building an item with the given material.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>material</code> (<a href="enums.html"><code>Material</code></a> <code>| str</code>) — Item material.</li>
+</ul>
+<pre><code class="language-python">sword = (
+    ItemBuilder(<span class="st">&quot;DIAMOND_SWORD&quot;</span>)
+    .name(<span class="st">&quot;§6Excalibur&quot;</span>)
+    .lore(<span class="st">&quot;§7Legendary blade&quot;</span>, <span class="st">&quot;§7of kings&quot;</span>)
+    .enchant(<span class="st">&quot;SHARPNESS&quot;</span>, <span class="nb">5</span>)
+    .unbreakable()
+    .glow()
+    .build()
+)
+</code></pre>
+<hr />
+<h2 id="class-methods">Class Methods</h2>
+<h3 id="from_item">from_item</h3>
+<pre><code class="language-python">builder = ItemBuilder.from_item(item)
+</code></pre>
+<p>Create a builder pre-filled with settings from an existing item.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>item</code> (<a href="item.html"><code>Item</code></a>) — Existing item to copy.</li>
+<li><strong>Returns:</strong> <a href="#"><code>ItemBuilder</code></a></li>
+</ul>
+<pre><code class="language-python">builder = ItemBuilder.from_item(existing_item)
+upgraded = builder.enchant(<span class="st">&quot;SHARPNESS&quot;</span>, <span class="nb">10</span>).build()
+</code></pre>
+<hr />
+<h2 id="chain-methods">Chain Methods</h2>
+<p>All chain methods return the builder, so you can chain them:</p>
+<pre><code class="language-python">item = (
+    ItemBuilder(<span class="st">&quot;IRON_CHESTPLATE&quot;</span>)
+    .name(<span class="st">&quot;§bFrost Armor&quot;</span>)
+    .lore(<span class="st">&quot;§7Chills attackers&quot;</span>)
+    .enchant(<span class="st">&quot;PROTECTION&quot;</span>, <span class="nb">4</span>)
+    .enchant(<span class="st">&quot;THORNS&quot;</span>, <span class="nb">3</span>)
+    .unbreakable()
+    .custom_model_data(<span class="nb">1001</span>)
+    .add_attribute(<span class="st">&quot;GENERIC_ARMOR&quot;</span>, <span class="nb">12</span>, <span class="st">&quot;ADD_NUMBER&quot;</span>)
+    .flag(<span class="st">&quot;HIDE_ENCHANTS&quot;</span>, <span class="st">&quot;HIDE_ATTRIBUTES&quot;</span>)
+    .build()
+)
+</code></pre>
+<h3 id="amount">amount</h3>
+<pre><code class="language-python">builder.amount(n)
+</code></pre>
+<p>Set the stack size.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>n</code> (<code>int</code>) — Stack amount.</li>
+</ul>
+<h3 id="name">name</h3>
+<pre><code class="language-python">builder.name(n)
+</code></pre>
+<p>Set the display name.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>n</code> (<code>str</code>) — Display name. Supports <code>§</code> color codes.</li>
+</ul>
+<h3 id="lore">lore</h3>
+<pre><code class="language-python">builder.lore(*lines)
+</code></pre>
+<p>Set lore lines (replaces any existing lore).</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>*lines</code> (<code>str</code>) — One or more lore lines.</li>
+</ul>
+<h3 id="add_lore">add_lore</h3>
+<pre><code class="language-python">builder.add_lore(line)
+</code></pre>
+<p>Append a single lore line.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>line</code> (<code>str</code>) — Lore line to add.</li>
+</ul>
+<h3 id="enchant">enchant</h3>
+<pre><code class="language-python">builder.enchant(enchantment, level=<span class="nb">1</span>)
+</code></pre>
+<p>Add an enchantment.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>enchantment</code> (<code>str</code>) — Enchantment name (e.g. <code>"SHARPNESS"</code>, <code>"PROTECTION"</code>).</li>
+<li><code>level</code> (<code>int</code>) — Enchantment level. Default 1.</li>
+</ul>
+<h3 id="unbreakable">unbreakable</h3>
+<pre><code class="language-python">builder.unbreakable(value=<span class="kw">True</span>)
+</code></pre>
+<p>Set the unbreakable flag.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>value</code> (<code>bool</code>) — Whether the item is unbreakable. Default <code>True</code>.</li>
+</ul>
+<h3 id="glow">glow</h3>
+<pre><code class="language-python">builder.glow(value=<span class="kw">True</span>)
+</code></pre>
+<p>Add a glow effect (enchantment glint without visible enchantments).</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>value</code> (<code>bool</code>) — Whether to add glow. Default <code>True</code>.</li>
+</ul>
+<h3 id="custom_model_data">custom_model_data</h3>
+<pre><code class="language-python">builder.custom_model_data(value)
+</code></pre>
+<p>Set custom model data for resource packs.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>value</code> (<code>int</code>) — Model data value.</li>
+</ul>
+<h3 id="attributes">attributes</h3>
+<pre><code class="language-python">builder.attributes(attrs)
+</code></pre>
+<p>Set attribute modifiers (replaces any existing).</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>attrs</code> (<code>list[dict[str, Any]]</code>) — Attribute modifier list.</li>
+</ul>
+<h3 id="add_attribute">add_attribute</h3>
+<pre><code class="language-python">builder.add_attribute(attribute, amount, operation=<span class="st">&quot;ADD_NUMBER&quot;</span>)
+</code></pre>
+<p>Add a single attribute modifier.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>attribute</code> (<code>str</code>) — Attribute name (e.g. <code>"GENERIC_ARMOR"</code>, <code>"GENERIC_ATTACK_DAMAGE"</code>).</li>
+<li><code>amount</code> (<code>float</code>) — Modifier amount.</li>
+<li><code>operation</code> (<code>str</code>) — Operation type. Default <code>"ADD_NUMBER"</code>. Options: <code>"ADD_NUMBER"</code>, <code>"ADD_SCALAR"</code>, <code>"MULTIPLY_SCALAR_1"</code>.</li>
+</ul>
+<h3 id="nbt">nbt</h3>
+<pre><code class="language-python">builder.nbt(data)
+</code></pre>
+<p>Set raw NBT data.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>data</code> (<code>dict[str, Any]</code>) — NBT data dictionary.</li>
+</ul>
+<h3 id="flag">flag</h3>
+<pre><code class="language-python">builder.flag(*flags)
+</code></pre>
+<p>Add item flags to hide information from the tooltip.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>*flags</code> (<code>str</code>) — Flag names: <code>"HIDE_ENCHANTS"</code>, <code>"HIDE_ATTRIBUTES"</code>, <code>"HIDE_UNBREAKABLE"</code>, <code>"HIDE_DESTROYS"</code>, <code>"HIDE_PLACED_ON"</code>, <code>"HIDE_DYE"</code>.</li>
+</ul>
+<hr />
+<h2 id="build">build</h2>
+<pre><code class="language-python">item = builder.build()
+</code></pre>
+<p>Construct the final <a href="item.html"><code>Item</code></a> from the builder state.</p>
+<ul>
+<li><strong>Returns:</strong> <a href="item.html"><code>Item</code></a></li>
+</ul>
+<div class="callout callout-info"><p><strong>Note:</strong> <code>build()</code> is synchronous. The resulting <code>Item</code> can be used immediately in inventory operations, give, drop, etc.</p></div>
+    </div>
+    <footer class="site-footer">
+      &copy; Omena0 2026 &middot; PyJavaBridge Documentation
+    </footer>
+  </main>
+
+  <!-- Back to top -->
+  <button class="back-to-top" aria-label="Back to top">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+      <path d="M18 15l-6-6-6 6"/>
+    </svg>
+  </button>
+
+  <script src="script.js"></script>
+</body>
+</html>

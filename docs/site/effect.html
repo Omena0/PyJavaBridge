@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Effect — PyJavaBridge</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Header -->
+  <header class="site-header">
+    <button class="menu-toggle" aria-label="Toggle menu">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M3 12h18M3 6h18M3 18h18"/>
+      </svg>
+    </button>
+    <a href="index.html" class="header-brand">
+      <span class="logo">Py</span>
+      PyJavaBridge
+    </a>
+    <nav class="header-nav">
+      <a href="index.html">Docs</a>
+      <a href="examples.html">Examples</a>
+      <a href="https://github.com/Omena0/PyJavaBridge">GitHub</a>
+    </nav>
+  </header>
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+<div class="search-box">
+  <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+  <input type="text" id="sidebar-search" placeholder="Search docs…">
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading" data-section="on-this-page">On This Page</div>
+  <ul class="sidebar-links">
+    <li><a href="#constructor">Constructor</a></li>
+    <li><a href="#class-methods">Class Methods</a></li>
+    <li><a href="#apply" style="padding-left:40px;font-size:.8rem">apply</a></li>
+    <li><a href="#attributes">Attributes</a></li>
+    <li><a href="#type" style="padding-left:40px;font-size:.8rem">type</a></li>
+    <li><a href="#duration" style="padding-left:40px;font-size:.8rem">duration</a></li>
+    <li><a href="#amplifier" style="padding-left:40px;font-size:.8rem">amplifier</a></li>
+    <li><a href="#ambient" style="padding-left:40px;font-size:.8rem">ambient</a></li>
+    <li><a href="#particles" style="padding-left:40px;font-size:.8rem">particles</a></li>
+    <li><a href="#icon" style="padding-left:40px;font-size:.8rem">icon</a></li>
+    <li><a href="#methods">Methods</a></li>
+    <li><a href="#with_duration" style="padding-left:40px;font-size:.8rem">with_duration</a></li>
+    <li><a href="#with_amplifier" style="padding-left:40px;font-size:.8rem">with_amplifier</a></li>
+    <li><a href="#applying-to-players">Applying to Players</a></li>
+    <li><a href="#duration-reference">Duration Reference</a></li>
+  </ul>
+</div>
+
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="getting-started">Getting Started</div>
+  <ul class="sidebar-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="decorators.html">Decorators</a></li>
+    <li><a href="exceptions.html">Exceptions</a></li>
+    <li><a href="examples.html">Examples</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="core">Core</div>
+  <ul class="sidebar-links">
+    <li><a href="server.html">Server</a></li>
+    <li><a href="event.html">Event</a></li>
+    <li><a href="entity.html">Entity</a></li>
+    <li><a href="player.html">Player</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="world-space">World & Space</div>
+  <ul class="sidebar-links">
+    <li><a href="world.html">World</a></li>
+    <li><a href="location.html">Location</a></li>
+    <li><a href="block.html">Block</a></li>
+    <li><a href="chunk.html">Chunk</a></li>
+    <li><a href="vector.html">Vector</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="items-inventory">Items & Inventory</div>
+  <ul class="sidebar-links">
+    <li><a href="item.html">Item</a></li>
+    <li><a href="itembuilder.html">ItemBuilder</a></li>
+    <li><a href="inventory.html">Inventory</a></li>
+    <li><a href="menu.html">Menu</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="effects-attributes">Effects & Attributes</div>
+  <ul class="sidebar-links">
+    <li><a href="effect.html" class="active">Effect</a></li>
+    <li><a href="potion.html">Potion</a></li>
+    <li><a href="attribute.html">Attribute</a></li>
+    <li><a href="advancement.html">Advancement</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="scoreboards-ui">Scoreboards & UI</div>
+  <ul class="sidebar-links">
+    <li><a href="bossbar.html">BossBar</a></li>
+    <li><a href="scoreboard.html">Scoreboard</a></li>
+    <li><a href="objective.html">Objective</a></li>
+    <li><a href="team.html">Team</a></li>
+    <li><a href="sidebar.html">Sidebar</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="helpers">Helpers</div>
+  <ul class="sidebar-links">
+    <li><a href="config.html">Config</a></li>
+    <li><a href="cooldown.html">Cooldown</a></li>
+    <li><a href="hologram.html">Hologram</a></li>
+    <li><a href="enumvalue.html">EnumValue</a></li>
+    <li><a href="enums.html">Enums</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="display-entities">Display Entities</div>
+  <ul class="sidebar-links">
+    <li><a href="actionbardisplay.html">ActionBarDisplay</a></li>
+    <li><a href="bossbardisplay.html">BossBarDisplay</a></li>
+    <li><a href="blockdisplay.html">BlockDisplay</a></li>
+    <li><a href="itemdisplay.html">ItemDisplay</a></li>
+    <li><a href="imagedisplay.html">ImageDisplay</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="utilities">Utilities</div>
+  <ul class="sidebar-links">
+    <li><a href="raycast.html">Raycast</a></li>
+    <li><a href="chat.html">Chat</a></li>
+    <li><a href="reflect.html">Reflect</a></li>
+  </ul>
+</div>
+  </aside>
+  <div class="sidebar-overlay"></div>
+
+  <!-- Main -->
+  <main class="main">
+    <div class="content">
+      <p class="subtitle">Potion effects API</p>
+      <h1 id="effect">Effect</h1>
+<p>An <code>Effect</code> represents a potion effect (speed, strength, invisibility, etc.) that can be applied to players. Effects have a type, duration, amplifier, and visual settings.</p>
+<hr />
+<h2 id="constructor">Constructor</h2>
+<pre><code class="language-python">Effect(effect_type=<span class="kw">None</span>, duration=<span class="nb">0</span>, amplifier=<span class="nb">0</span>, ambient=<span class="kw">False</span>, particles=<span class="kw">True</span>, icon=<span class="kw">True</span>)
+</code></pre>
+<p>Create an effect.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>effect_type</code> (<a href="enums.html"><code>EffectType</code></a> <code>| str | None</code>) — The effect type (e.g. <code>"SPEED"</code>, <code>EffectType.INVISIBILITY</code>).</li>
+<li><code>duration</code> (<code>int</code>) — Duration in ticks (20 ticks = 1 second). Default 0.</li>
+<li><code>amplifier</code> (<code>int</code>) — Effect level minus 1. Speed II = amplifier 1. Default 0.</li>
+<li><code>ambient</code> (<code>bool</code>) — Whether the effect came from a beacon (translucent particles). Default <code>False</code>.</li>
+<li><code>particles</code> (<code>bool</code>) — Whether to show particles. Default <code>True</code>.</li>
+<li><code>icon</code> (<code>bool</code>) — Whether to show the effect icon in the HUD. Default <code>True</code>.</li>
+</ul>
+<pre><code class="language-python">speed = Effect(<span class="st">&quot;SPEED&quot;</span>, duration=<span class="nb">600</span>, amplifier=<span class="nb">1</span>)         <span class="cm"># Speed II for 30 seconds</span>
+invis = Effect(EffectType.INVISIBILITY, duration=<span class="nb">1200</span>)      <span class="cm"># Invisibility for 60 seconds</span>
+silent = Effect(<span class="st">&quot;REGENERATION&quot;</span>, <span class="nb">200</span>, particles=<span class="kw">False</span>, icon=<span class="kw">False</span>) <span class="cm"># Hidden regen</span>
+</code></pre>
+<hr />
+<h2 id="class-methods">Class Methods</h2>
+<h3 id="apply">apply</h3>
+<pre><code class="language-python"><span class="kw">await</span> Effect.apply(player, effect_type=<span class="kw">None</span>, duration=<span class="nb">0</span>, amplifier=<span class="nb">0</span>, ambient=<span class="kw">False</span>, particles=<span class="kw">True</span>, icon=<span class="kw">True</span>)
+</code></pre>
+<p>Create and apply an effect to a player in one call.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>player</code> (<a href="player.html"><code>Player</code></a>) — Target player.</li>
+<li><code>effect_type</code> (<a href="enums.html"><code>EffectType</code></a> <code>| str | None</code>) — Effect type.</li>
+<li><code>duration</code> (<code>int</code>) — Duration in ticks. Default 0.</li>
+<li><code>amplifier</code> (<code>int</code>) — Effect level minus 1. Default 0.</li>
+<li><code>ambient</code> (<code>bool</code>) — Beacon-style particles. Default <code>False</code>.</li>
+<li><code>particles</code> (<code>bool</code>) — Show particles. Default <code>True</code>.</li>
+<li><code>icon</code> (<code>bool</code>) — Show icon. Default <code>True</code>.</li>
+<li><strong>Returns:</strong> <code>Awaitable[Any]</code></li>
+</ul>
+<pre><code class="language-python"><span class="kw">await</span> Effect.apply(player, <span class="st">&quot;SPEED&quot;</span>, duration=<span class="nb">600</span>, amplifier=<span class="nb">1</span>)
+</code></pre>
+<hr />
+<h2 id="attributes">Attributes</h2>
+<h3 id="type">type</h3>
+<ul>
+<li><strong>Type:</strong> <a href="enums.html"><code>EffectType</code></a></li>
+</ul>
+<p>The effect type.</p>
+<h3 id="duration">duration</h3>
+<ul>
+<li><strong>Type:</strong> <code>int</code></li>
+</ul>
+<p>Remaining duration in ticks.</p>
+<h3 id="amplifier">amplifier</h3>
+<ul>
+<li><strong>Type:</strong> <code>int</code></li>
+</ul>
+<p>Effect amplifier (level minus 1).</p>
+<h3 id="ambient">ambient</h3>
+<ul>
+<li><strong>Type:</strong> <code>bool</code></li>
+</ul>
+<p>Whether particles are translucent (beacon-style).</p>
+<h3 id="particles">particles</h3>
+<ul>
+<li><strong>Type:</strong> <code>bool</code></li>
+</ul>
+<p>Whether particles are visible.</p>
+<h3 id="icon">icon</h3>
+<ul>
+<li><strong>Type:</strong> <code>bool</code></li>
+</ul>
+<p>Whether the HUD icon is shown.</p>
+<hr />
+<h2 id="methods">Methods</h2>
+<h3 id="with_duration">with_duration</h3>
+<pre><code class="language-python">new_effect = <span class="kw">await</span> effect.with_duration(duration)
+</code></pre>
+<p>Create a copy of this effect with a different duration.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>duration</code> (<code>int</code>) — New duration in ticks.</li>
+<li><strong>Returns:</strong> <code>Awaitable[</code><a href="#"><code>Effect</code></a><code>]</code></li>
+</ul>
+<pre><code class="language-python">base = Effect(<span class="st">&quot;SPEED&quot;</span>, <span class="nb">100</span>, amplifier=<span class="nb">2</span>)
+long_speed = <span class="kw">await</span> base.with_duration(<span class="nb">6000</span>)  <span class="cm"># 5 minutes</span>
+</code></pre>
+<h3 id="with_amplifier">with_amplifier</h3>
+<pre><code class="language-python">new_effect = <span class="kw">await</span> effect.with_amplifier(amplifier)
+</code></pre>
+<p>Create a copy of this effect with a different amplifier.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>amplifier</code> (<code>int</code>) — New amplifier.</li>
+<li><strong>Returns:</strong> <code>Awaitable[</code><a href="#"><code>Effect</code></a><code>]</code></li>
+</ul>
+<hr />
+<h2 id="applying-to-players">Applying to Players</h2>
+<p>You can apply effects in two ways:</p>
+<pre><code class="language-python"><span class="cm"># 1. Using the class method shortcut</span>
+<span class="kw">await</span> Effect.apply(player, <span class="st">&quot;SPEED&quot;</span>, duration=<span class="nb">200</span>, amplifier=<span class="nb">1</span>)
+
+<span class="cm"># 2. Construct then apply via Player</span>
+speed = Effect(<span class="st">&quot;SPEED&quot;</span>, duration=<span class="nb">200</span>, amplifier=<span class="nb">1</span>)
+<span class="kw">await</span> player.add_effect(speed)
+</code></pre>
+<p>To remove an effect:</p>
+<pre><code class="language-python"><span class="kw">await</span> player.remove_effect(EffectType.SPEED)
+</code></pre>
+<p>To list active effects:</p>
+<pre><code class="language-python"><span class="kw">for</span> effect <span class="kw">in</span> player.effects:
+    print(<span class="st">f&quot;{effect.type.name}: {effect.duration} ticks remaining&quot;</span>)
+</code></pre>
+<hr />
+<h2 id="duration-reference">Duration Reference</h2>
+<table>
+<thead>
+<tr>
+<th>Duration</th>
+<th>Ticks</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1 second</td>
+<td>20</td>
+</tr>
+<tr>
+<td>5 seconds</td>
+<td>100</td>
+</tr>
+<tr>
+<td>30 seconds</td>
+<td>600</td>
+</tr>
+<tr>
+<td>1 minute</td>
+<td>1200</td>
+</tr>
+<tr>
+<td>5 minutes</td>
+<td>6000</td>
+</tr>
+<tr>
+<td>10 minutes</td>
+<td>12000</td>
+</tr>
+</tbody>
+</table>
+    </div>
+    <footer class="site-footer">
+      &copy; Omena0 2026 &middot; PyJavaBridge Documentation
+    </footer>
+  </main>
+
+  <!-- Back to top -->
+  <button class="back-to-top" aria-label="Back to top">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+      <path d="M18 15l-6-6-6 6"/>
+    </svg>
+  </button>
+
+  <script src="script.js"></script>
+</body>
+</html>

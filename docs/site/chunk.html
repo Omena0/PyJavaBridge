@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chunk — PyJavaBridge</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Header -->
+  <header class="site-header">
+    <button class="menu-toggle" aria-label="Toggle menu">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M3 12h18M3 6h18M3 18h18"/>
+      </svg>
+    </button>
+    <a href="index.html" class="header-brand">
+      <span class="logo">Py</span>
+      PyJavaBridge
+    </a>
+    <nav class="header-nav">
+      <a href="index.html">Docs</a>
+      <a href="examples.html">Examples</a>
+      <a href="https://github.com/Omena0/PyJavaBridge">GitHub</a>
+    </nav>
+  </header>
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+<div class="search-box">
+  <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+  <input type="text" id="sidebar-search" placeholder="Search docs…">
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading" data-section="on-this-page">On This Page</div>
+  <ul class="sidebar-links">
+    <li><a href="#constructor">Constructor</a></li>
+    <li><a href="#attributes">Attributes</a></li>
+    <li><a href="#x" style="padding-left:40px;font-size:.8rem">x</a></li>
+    <li><a href="#z" style="padding-left:40px;font-size:.8rem">z</a></li>
+    <li><a href="#world" style="padding-left:40px;font-size:.8rem">world</a></li>
+    <li><a href="#is_loaded" style="padding-left:40px;font-size:.8rem">is_loaded</a></li>
+    <li><a href="#methods">Methods</a></li>
+    <li><a href="#load" style="padding-left:40px;font-size:.8rem">load</a></li>
+    <li><a href="#unload" style="padding-left:40px;font-size:.8rem">unload</a></li>
+  </ul>
+</div>
+
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="getting-started">Getting Started</div>
+  <ul class="sidebar-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="decorators.html">Decorators</a></li>
+    <li><a href="exceptions.html">Exceptions</a></li>
+    <li><a href="examples.html">Examples</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="core">Core</div>
+  <ul class="sidebar-links">
+    <li><a href="server.html">Server</a></li>
+    <li><a href="event.html">Event</a></li>
+    <li><a href="entity.html">Entity</a></li>
+    <li><a href="player.html">Player</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="world-space">World & Space</div>
+  <ul class="sidebar-links">
+    <li><a href="world.html">World</a></li>
+    <li><a href="location.html">Location</a></li>
+    <li><a href="block.html">Block</a></li>
+    <li><a href="chunk.html" class="active">Chunk</a></li>
+    <li><a href="vector.html">Vector</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="items-inventory">Items & Inventory</div>
+  <ul class="sidebar-links">
+    <li><a href="item.html">Item</a></li>
+    <li><a href="itembuilder.html">ItemBuilder</a></li>
+    <li><a href="inventory.html">Inventory</a></li>
+    <li><a href="menu.html">Menu</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="effects-attributes">Effects & Attributes</div>
+  <ul class="sidebar-links">
+    <li><a href="effect.html">Effect</a></li>
+    <li><a href="potion.html">Potion</a></li>
+    <li><a href="attribute.html">Attribute</a></li>
+    <li><a href="advancement.html">Advancement</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="scoreboards-ui">Scoreboards & UI</div>
+  <ul class="sidebar-links">
+    <li><a href="bossbar.html">BossBar</a></li>
+    <li><a href="scoreboard.html">Scoreboard</a></li>
+    <li><a href="objective.html">Objective</a></li>
+    <li><a href="team.html">Team</a></li>
+    <li><a href="sidebar.html">Sidebar</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="helpers">Helpers</div>
+  <ul class="sidebar-links">
+    <li><a href="config.html">Config</a></li>
+    <li><a href="cooldown.html">Cooldown</a></li>
+    <li><a href="hologram.html">Hologram</a></li>
+    <li><a href="enumvalue.html">EnumValue</a></li>
+    <li><a href="enums.html">Enums</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="display-entities">Display Entities</div>
+  <ul class="sidebar-links">
+    <li><a href="actionbardisplay.html">ActionBarDisplay</a></li>
+    <li><a href="bossbardisplay.html">BossBarDisplay</a></li>
+    <li><a href="blockdisplay.html">BlockDisplay</a></li>
+    <li><a href="itemdisplay.html">ItemDisplay</a></li>
+    <li><a href="imagedisplay.html">ImageDisplay</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="utilities">Utilities</div>
+  <ul class="sidebar-links">
+    <li><a href="raycast.html">Raycast</a></li>
+    <li><a href="chat.html">Chat</a></li>
+    <li><a href="reflect.html">Reflect</a></li>
+  </ul>
+</div>
+  </aside>
+  <div class="sidebar-overlay"></div>
+
+  <!-- Main -->
+  <main class="main">
+    <div class="content">
+      <p class="subtitle">World chunk API</p>
+      <h1 id="chunk">Chunk</h1>
+<p>A <code>Chunk</code> represents a 16×256×16 (or 16×384×16 in 1.18+) column of blocks in a world. Use it to force-load or release terrain.</p>
+<hr />
+<h2 id="constructor">Constructor</h2>
+<pre><code class="language-python">Chunk(world=<span class="kw">None</span>, x=<span class="kw">None</span>, z=<span class="kw">None</span>)
+</code></pre>
+<p>Reference a chunk by world and chunk coordinates.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>world</code> (<a href="world.html"><code>World</code></a> <code>| str | None</code>) — The world.</li>
+<li><code>x</code> (<code>int | None</code>) — Chunk X coordinate (block X ÷ 16).</li>
+<li><code>z</code> (<code>int | None</code>) — Chunk Z coordinate (block Z ÷ 16).</li>
+</ul>
+<div class="callout callout-info"><p><strong>Note:</strong> Chunk coordinates are block coordinates divided by 16. A block at X=100 is in chunk X=6.</p></div>
+<pre><code class="language-python">chunk = Chunk(<span class="st">&quot;world&quot;</span>, <span class="nb">5</span>, <span class="nb">10</span>)
+</code></pre>
+<p>You can also get a chunk from a world:</p>
+<pre><code class="language-python">chunk = <span class="kw">await</span> world.chunk_at(<span class="nb">5</span>, <span class="nb">10</span>)
+</code></pre>
+<hr />
+<h2 id="attributes">Attributes</h2>
+<h3 id="x">x</h3>
+<ul>
+<li><strong>Type:</strong> <code>int</code></li>
+</ul>
+<p>Chunk X coordinate.</p>
+<h3 id="z">z</h3>
+<ul>
+<li><strong>Type:</strong> <code>int</code></li>
+</ul>
+<p>Chunk Z coordinate.</p>
+<h3 id="world">world</h3>
+<ul>
+<li><strong>Type:</strong> <a href="world.html"><code>World</code></a></li>
+</ul>
+<p>The world this chunk is in.</p>
+<h3 id="is_loaded">is_loaded</h3>
+<ul>
+<li><strong>Type:</strong> <code>bool</code></li>
+</ul>
+<p>Whether this chunk is currently loaded in memory.</p>
+<hr />
+<h2 id="methods">Methods</h2>
+<h3 id="load">load</h3>
+<pre><code class="language-python">result = <span class="kw">await</span> chunk.load()
+</code></pre>
+<p>Force-load this chunk into memory. If the chunk is already loaded, this is a no-op.</p>
+<ul>
+<li><strong>Returns:</strong> <code>Awaitable[bool]</code> — <code>True</code> if the chunk was loaded successfully.</li>
+</ul>
+<pre><code class="language-python">chunk = <span class="kw">await</span> world.chunk_at(<span class="nb">0</span>, <span class="nb">0</span>)
+<span class="kw">await</span> chunk.load()
+</code></pre>
+<h3 id="unload">unload</h3>
+<pre><code class="language-python">result = <span class="kw">await</span> chunk.unload()
+</code></pre>
+<p>Allow this chunk to be unloaded from memory. The server will unload it when no players are nearby.</p>
+<ul>
+<li><strong>Returns:</strong> <code>Awaitable[bool]</code> — <code>True</code> if the chunk was unloaded successfully.</li>
+</ul>
+<div class="callout callout-info"><p><strong>Warning:</strong> Unloading a chunk with players in it may cause issues. Only unload chunks you know are safe to release.</p></div>
+    </div>
+    <footer class="site-footer">
+      &copy; Omena0 2026 &middot; PyJavaBridge Documentation
+    </footer>
+  </main>
+
+  <!-- Back to top -->
+  <button class="back-to-top" aria-label="Back to top">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+      <path d="M18 15l-6-6-6 6"/>
+    </svg>
+  </button>
+
+  <script src="script.js"></script>
+</body>
+</html>

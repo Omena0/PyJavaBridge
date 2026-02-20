@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BlockDisplay — PyJavaBridge</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Header -->
+  <header class="site-header">
+    <button class="menu-toggle" aria-label="Toggle menu">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M3 12h18M3 6h18M3 18h18"/>
+      </svg>
+    </button>
+    <a href="index.html" class="header-brand">
+      <span class="logo">Py</span>
+      PyJavaBridge
+    </a>
+    <nav class="header-nav">
+      <a href="index.html">Docs</a>
+      <a href="examples.html">Examples</a>
+      <a href="https://github.com/Omena0/PyJavaBridge">GitHub</a>
+    </nav>
+  </header>
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+<div class="search-box">
+  <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+  <input type="text" id="sidebar-search" placeholder="Search docs…">
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading" data-section="on-this-page">On This Page</div>
+  <ul class="sidebar-links">
+    <li><a href="#constructor">Constructor</a></li>
+    <li><a href="#attributes">Attributes</a></li>
+    <li><a href="#billboard" style="padding-left:40px;font-size:.8rem">billboard</a></li>
+    <li><a href="#methods">Methods</a></li>
+    <li><a href="#teleport" style="padding-left:40px;font-size:.8rem">teleport</a></li>
+    <li><a href="#remove" style="padding-left:40px;font-size:.8rem">remove</a></li>
+    <li><a href="#example-floating-block-marker">Example: Floating block marker</a></li>
+  </ul>
+</div>
+
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="getting-started">Getting Started</div>
+  <ul class="sidebar-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="decorators.html">Decorators</a></li>
+    <li><a href="exceptions.html">Exceptions</a></li>
+    <li><a href="examples.html">Examples</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="core">Core</div>
+  <ul class="sidebar-links">
+    <li><a href="server.html">Server</a></li>
+    <li><a href="event.html">Event</a></li>
+    <li><a href="entity.html">Entity</a></li>
+    <li><a href="player.html">Player</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="world-space">World & Space</div>
+  <ul class="sidebar-links">
+    <li><a href="world.html">World</a></li>
+    <li><a href="location.html">Location</a></li>
+    <li><a href="block.html">Block</a></li>
+    <li><a href="chunk.html">Chunk</a></li>
+    <li><a href="vector.html">Vector</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="items-inventory">Items & Inventory</div>
+  <ul class="sidebar-links">
+    <li><a href="item.html">Item</a></li>
+    <li><a href="itembuilder.html">ItemBuilder</a></li>
+    <li><a href="inventory.html">Inventory</a></li>
+    <li><a href="menu.html">Menu</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="effects-attributes">Effects & Attributes</div>
+  <ul class="sidebar-links">
+    <li><a href="effect.html">Effect</a></li>
+    <li><a href="potion.html">Potion</a></li>
+    <li><a href="attribute.html">Attribute</a></li>
+    <li><a href="advancement.html">Advancement</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="scoreboards-ui">Scoreboards & UI</div>
+  <ul class="sidebar-links">
+    <li><a href="bossbar.html">BossBar</a></li>
+    <li><a href="scoreboard.html">Scoreboard</a></li>
+    <li><a href="objective.html">Objective</a></li>
+    <li><a href="team.html">Team</a></li>
+    <li><a href="sidebar.html">Sidebar</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="helpers">Helpers</div>
+  <ul class="sidebar-links">
+    <li><a href="config.html">Config</a></li>
+    <li><a href="cooldown.html">Cooldown</a></li>
+    <li><a href="hologram.html">Hologram</a></li>
+    <li><a href="enumvalue.html">EnumValue</a></li>
+    <li><a href="enums.html">Enums</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="display-entities">Display Entities</div>
+  <ul class="sidebar-links">
+    <li><a href="actionbardisplay.html">ActionBarDisplay</a></li>
+    <li><a href="bossbardisplay.html">BossBarDisplay</a></li>
+    <li><a href="blockdisplay.html" class="active">BlockDisplay</a></li>
+    <li><a href="itemdisplay.html">ItemDisplay</a></li>
+    <li><a href="imagedisplay.html">ImageDisplay</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="utilities">Utilities</div>
+  <ul class="sidebar-links">
+    <li><a href="raycast.html">Raycast</a></li>
+    <li><a href="chat.html">Chat</a></li>
+    <li><a href="reflect.html">Reflect</a></li>
+  </ul>
+</div>
+  </aside>
+  <div class="sidebar-overlay"></div>
+
+  <!-- Main -->
+  <main class="main">
+    <div class="content">
+      <p class="subtitle">Block display entity</p>
+      <h1 id="blockdisplay">BlockDisplay</h1>
+<p>A <code>BlockDisplay</code> renders a block as a display entity in the world (1.19.4+). Unlike placed blocks, display entities don't have collision and can be positioned at any coordinates.</p>
+<hr />
+<h2 id="constructor">Constructor</h2>
+<pre><code class="language-python">BlockDisplay(location, block_type, billboard=<span class="st">&quot;FIXED&quot;</span>)
+</code></pre>
+<p>Create and spawn a block display entity.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>location</code> (<a href="location.html"><code>Location</code></a>) — Spawn position.</li>
+<li><code>block_type</code> (<code>str</code>) — Block material name (e.g. <code>"DIAMOND_BLOCK"</code>, <code>"STONE"</code>).</li>
+<li><code>billboard</code> (<code>str</code>) — Billboard mode. Default <code>"FIXED"</code>.</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>Billboard</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>"FIXED"</code></td>
+<td>No rotation (default for blocks)</td>
+</tr>
+<tr>
+<td><code>"CENTER"</code></td>
+<td>Always faces the player</td>
+</tr>
+<tr>
+<td><code>"HORIZONTAL"</code></td>
+<td>Only rotates horizontally</td>
+</tr>
+<tr>
+<td><code>"VERTICAL"</code></td>
+<td>Only rotates vertically</td>
+</tr>
+</tbody>
+</table>
+<pre><code class="language-python">display = BlockDisplay(
+    Location(<span class="nb">100</span>, <span class="nb">70</span>, <span class="nb">200</span>, <span class="st">&quot;world&quot;</span>),
+    <span class="st">&quot;DIAMOND_BLOCK&quot;</span>,
+    billboard=<span class="st">&quot;FIXED&quot;</span>
+)
+</code></pre>
+<hr />
+<h2 id="attributes">Attributes</h2>
+<h3 id="billboard">billboard</h3>
+<ul>
+<li><strong>Type:</strong> <code>str</code></li>
+</ul>
+<p>Current billboard mode.</p>
+<hr />
+<h2 id="methods">Methods</h2>
+<h3 id="teleport">teleport</h3>
+<pre><code class="language-python">display.teleport(location)
+</code></pre>
+<p>Move the display entity. This is synchronous.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>location</code> (<a href="location.html"><code>Location</code></a>) — New position.</li>
+</ul>
+<h3 id="remove">remove</h3>
+<pre><code class="language-python">display.remove()
+</code></pre>
+<p>Despawn and destroy the display entity. This is synchronous.</p>
+<hr />
+<h2 id="example-floating-block-marker">Example: Floating block marker</h2>
+<pre><code class="language-python"><span class="kw">from</span> bridge <span class="kw">import</span> *
+
+<span class="dc">@command</span>(<span class="st">&quot;Place a marker&quot;</span>)
+<span class="kw">async</span> <span class="kw">def</span> marker(player: Player, args: list[str]):
+    loc = player.location.add(<span class="nb">0</span>, <span class="nb">3</span>, <span class="nb">0</span>)
+    block = BlockDisplay(loc, <span class="st">&quot;BEACON&quot;</span>, billboard=<span class="st">&quot;FIXED&quot;</span>)
+    <span class="kw">await</span> player.send_message(<span class="st">&quot;§aMarker placed above you!&quot;</span>)
+</code></pre>
+    </div>
+    <footer class="site-footer">
+      &copy; Omena0 2026 &middot; PyJavaBridge Documentation
+    </footer>
+  </main>
+
+  <!-- Back to top -->
+  <button class="back-to-top" aria-label="Back to top">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+      <path d="M18 15l-6-6-6 6"/>
+    </svg>
+  </button>
+
+  <script src="script.js"></script>
+</body>
+</html>

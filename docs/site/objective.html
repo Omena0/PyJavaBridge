@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Objective — PyJavaBridge</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Header -->
+  <header class="site-header">
+    <button class="menu-toggle" aria-label="Toggle menu">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M3 12h18M3 6h18M3 18h18"/>
+      </svg>
+    </button>
+    <a href="index.html" class="header-brand">
+      <span class="logo">Py</span>
+      PyJavaBridge
+    </a>
+    <nav class="header-nav">
+      <a href="index.html">Docs</a>
+      <a href="examples.html">Examples</a>
+      <a href="https://github.com/Omena0/PyJavaBridge">GitHub</a>
+    </nav>
+  </header>
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+<div class="search-box">
+  <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+  <input type="text" id="sidebar-search" placeholder="Search docs…">
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading" data-section="on-this-page">On This Page</div>
+  <ul class="sidebar-links">
+    <li><a href="#class-methods">Class Methods</a></li>
+    <li><a href="#create" style="padding-left:40px;font-size:.8rem">create</a></li>
+    <li><a href="#attributes">Attributes</a></li>
+    <li><a href="#name" style="padding-left:40px;font-size:.8rem">name</a></li>
+    <li><a href="#criteria" style="padding-left:40px;font-size:.8rem">criteria</a></li>
+    <li><a href="#display_slot" style="padding-left:40px;font-size:.8rem">display_slot</a></li>
+    <li><a href="#methods">Methods</a></li>
+    <li><a href="#set_display_name" style="padding-left:40px;font-size:.8rem">set_display_name</a></li>
+    <li><a href="#set_display_slot" style="padding-left:40px;font-size:.8rem">set_display_slot</a></li>
+    <li><a href="#get_score" style="padding-left:40px;font-size:.8rem">get_score</a></li>
+    <li><a href="#criteria-types">Criteria Types</a></li>
+    <li><a href="#example-custom-sidebar">Example: Custom sidebar</a></li>
+  </ul>
+</div>
+
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="getting-started">Getting Started</div>
+  <ul class="sidebar-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="decorators.html">Decorators</a></li>
+    <li><a href="exceptions.html">Exceptions</a></li>
+    <li><a href="examples.html">Examples</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="core">Core</div>
+  <ul class="sidebar-links">
+    <li><a href="server.html">Server</a></li>
+    <li><a href="event.html">Event</a></li>
+    <li><a href="entity.html">Entity</a></li>
+    <li><a href="player.html">Player</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="world-space">World & Space</div>
+  <ul class="sidebar-links">
+    <li><a href="world.html">World</a></li>
+    <li><a href="location.html">Location</a></li>
+    <li><a href="block.html">Block</a></li>
+    <li><a href="chunk.html">Chunk</a></li>
+    <li><a href="vector.html">Vector</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="items-inventory">Items & Inventory</div>
+  <ul class="sidebar-links">
+    <li><a href="item.html">Item</a></li>
+    <li><a href="itembuilder.html">ItemBuilder</a></li>
+    <li><a href="inventory.html">Inventory</a></li>
+    <li><a href="menu.html">Menu</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="effects-attributes">Effects & Attributes</div>
+  <ul class="sidebar-links">
+    <li><a href="effect.html">Effect</a></li>
+    <li><a href="potion.html">Potion</a></li>
+    <li><a href="attribute.html">Attribute</a></li>
+    <li><a href="advancement.html">Advancement</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="scoreboards-ui">Scoreboards & UI</div>
+  <ul class="sidebar-links">
+    <li><a href="bossbar.html">BossBar</a></li>
+    <li><a href="scoreboard.html">Scoreboard</a></li>
+    <li><a href="objective.html" class="active">Objective</a></li>
+    <li><a href="team.html">Team</a></li>
+    <li><a href="sidebar.html">Sidebar</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="helpers">Helpers</div>
+  <ul class="sidebar-links">
+    <li><a href="config.html">Config</a></li>
+    <li><a href="cooldown.html">Cooldown</a></li>
+    <li><a href="hologram.html">Hologram</a></li>
+    <li><a href="enumvalue.html">EnumValue</a></li>
+    <li><a href="enums.html">Enums</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="display-entities">Display Entities</div>
+  <ul class="sidebar-links">
+    <li><a href="actionbardisplay.html">ActionBarDisplay</a></li>
+    <li><a href="bossbardisplay.html">BossBarDisplay</a></li>
+    <li><a href="blockdisplay.html">BlockDisplay</a></li>
+    <li><a href="itemdisplay.html">ItemDisplay</a></li>
+    <li><a href="imagedisplay.html">ImageDisplay</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="utilities">Utilities</div>
+  <ul class="sidebar-links">
+    <li><a href="raycast.html">Raycast</a></li>
+    <li><a href="chat.html">Chat</a></li>
+    <li><a href="reflect.html">Reflect</a></li>
+  </ul>
+</div>
+  </aside>
+  <div class="sidebar-overlay"></div>
+
+  <!-- Main -->
+  <main class="main">
+    <div class="content">
+      <p class="subtitle">Scoreboard objective API</p>
+      <h1 id="objective">Objective</h1>
+<p>An <code>Objective</code> tracks a score for each player on a <a href="scoreboard.html"><code>Scoreboard</code></a>. Objectives can be displayed in the sidebar, below name tags, or in the tab list.</p>
+<hr />
+<h2 id="class-methods">Class Methods</h2>
+<h3 id="create">create</h3>
+<pre><code class="language-python">obj = Objective.create(name, criteria, display_name=<span class="st">&quot;&quot;</span>, scoreboard=<span class="kw">None</span>)
+</code></pre>
+<p>Create a new objective. This is synchronous.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>name</code> (<code>str</code>) — Internal objective name (unique per scoreboard).</li>
+<li><code>criteria</code> (<code>str</code>) — Score criteria. See <a href="#criteria-types">Criteria table</a> below.</li>
+<li><code>display_name</code> (<code>str</code>) — Name displayed to players. Default <code>""</code>.</li>
+<li><code>scoreboard</code> (<a href="scoreboard.html"><code>Scoreboard</code></a> <code>| None</code>) — Scoreboard to register on. If <code>None</code>, uses the main scoreboard.</li>
+<li><strong>Returns:</strong> <a href="#"><code>Objective</code></a></li>
+</ul>
+<pre><code class="language-python">obj = Objective.create(<span class="st">&quot;kills&quot;</span>, <span class="st">&quot;dummy&quot;</span>, <span class="st">&quot;§6Kill Count&quot;</span>)
+</code></pre>
+<hr />
+<h2 id="attributes">Attributes</h2>
+<h3 id="name">name</h3>
+<ul>
+<li><strong>Type:</strong> <code>str</code></li>
+</ul>
+<p>Internal name of the objective.</p>
+<h3 id="criteria">criteria</h3>
+<ul>
+<li><strong>Type:</strong> <code>str</code></li>
+</ul>
+<p>The criteria type (e.g. <code>"dummy"</code>, <code>"health"</code>).</p>
+<h3 id="display_slot">display_slot</h3>
+<ul>
+<li><strong>Type:</strong> <code>Any</code></li>
+</ul>
+<p>Current display slot, or <code>None</code> if not displayed.</p>
+<hr />
+<h2 id="methods">Methods</h2>
+<h3 id="set_display_name">set_display_name</h3>
+<pre><code class="language-python"><span class="kw">await</span> obj.set_display_name(name)
+</code></pre>
+<p>Change the display name.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>name</code> (<code>str</code>) — New display name. Supports <code>§</code> color codes.</li>
+<li><strong>Returns:</strong> <code>Awaitable[None]</code></li>
+</ul>
+<h3 id="set_display_slot">set_display_slot</h3>
+<pre><code class="language-python"><span class="kw">await</span> obj.set_display_slot(slot)
+</code></pre>
+<p>Set where this objective is displayed.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>slot</code> (<code>Any</code>) — Display slot. Common values: <code>"SIDEBAR"</code>, <code>"BELOW_NAME"</code>, <code>"PLAYER_LIST"</code>.</li>
+<li><strong>Returns:</strong> <code>Awaitable[None]</code></li>
+</ul>
+<pre><code class="language-python"><span class="kw">await</span> obj.set_display_slot(<span class="st">&quot;SIDEBAR&quot;</span>)     <span class="cm"># Right side of screen</span>
+<span class="kw">await</span> obj.set_display_slot(<span class="st">&quot;BELOW_NAME&quot;</span>)  <span class="cm"># Under name tags</span>
+<span class="kw">await</span> obj.set_display_slot(<span class="st">&quot;PLAYER_LIST&quot;</span>) <span class="cm"># In tab list</span>
+</code></pre>
+<h3 id="get_score">get_score</h3>
+<pre><code class="language-python">score = obj.get_score(entry)
+</code></pre>
+<p>Get the score tracker for a player. This is synchronous and returns a score object.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>entry</code> (<code>str</code>) — Player name.</li>
+<li><strong>Returns:</strong> Score object</li>
+</ul>
+<pre><code class="language-python">score = obj.get_score(player.name)
+</code></pre>
+<hr />
+<h2 id="criteria-types">Criteria Types</h2>
+<table>
+<thead>
+<tr>
+<th>Criteria</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>dummy</code></td>
+<td>Manual scores only — set by commands/plugins</td>
+</tr>
+<tr>
+<td><code>health</code></td>
+<td>Player health (auto-updated)</td>
+</tr>
+<tr>
+<td><code>playerKillCount</code></td>
+<td>Player kills (auto-updated)</td>
+</tr>
+<tr>
+<td><code>totalKillCount</code></td>
+<td>Total kills (auto-updated)</td>
+</tr>
+<tr>
+<td><code>deathCount</code></td>
+<td>Deaths (auto-updated)</td>
+</tr>
+<tr>
+<td><code>food</code></td>
+<td>Food level (auto-updated)</td>
+</tr>
+<tr>
+<td><code>air</code></td>
+<td>Air remaining (auto-updated)</td>
+</tr>
+<tr>
+<td><code>armor</code></td>
+<td>Armor points (auto-updated)</td>
+</tr>
+<tr>
+<td><code>xp</code></td>
+<td>XP level (auto-updated)</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="example-custom-sidebar">Example: Custom sidebar</h2>
+<pre><code class="language-python"><span class="kw">from</span> bridge <span class="kw">import</span> *
+
+board = Scoreboard.create()
+sidebar = board.register_objective(<span class="st">&quot;display&quot;</span>, <span class="st">&quot;dummy&quot;</span>, <span class="st">&quot;§6§lMy Server&quot;</span>)
+<span class="kw">await</span> sidebar.set_display_slot(<span class="st">&quot;SIDEBAR&quot;</span>)
+
+<span class="cm"># Set lines (higher score = higher position)</span>
+sidebar.get_score(<span class="st">&quot;§7───────────&quot;</span>).score = <span class="nb">10</span>
+sidebar.get_score(<span class="st">&quot;§fKills: §a0&quot;</span>).score = <span class="nb">9</span>
+sidebar.get_score(<span class="st">&quot;§fDeaths: §c0&quot;</span>).score = <span class="nb">8</span>
+sidebar.get_score(<span class="st">&quot;§fCoins: §e0&quot;</span>).score = <span class="nb">7</span>
+sidebar.get_score(<span class="st">&quot;§7───────────&quot;</span>).score = <span class="nb">6</span>
+
+<span class="dc">@event</span>
+<span class="kw">async</span> <span class="kw">def</span> player_join(e: Event):
+    <span class="kw">await</span> e.player.set_scoreboard(board)
+</code></pre>
+<div class="callout callout-info"><p><strong>Tip:</strong> For a simpler sidebar API that handles line management automatically, see <a href="sidebar.html"><code>Sidebar</code></a>.</p></div>
+    </div>
+    <footer class="site-footer">
+      &copy; Omena0 2026 &middot; PyJavaBridge Documentation
+    </footer>
+  </main>
+
+  <!-- Back to top -->
+  <button class="back-to-top" aria-label="Back to top">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+      <path d="M18 15l-6-6-6 6"/>
+    </svg>
+  </button>
+
+  <script src="script.js"></script>
+</body>
+</html>

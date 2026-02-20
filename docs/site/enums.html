@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Enums — PyJavaBridge</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Header -->
+  <header class="site-header">
+    <button class="menu-toggle" aria-label="Toggle menu">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M3 12h18M3 6h18M3 18h18"/>
+      </svg>
+    </button>
+    <a href="index.html" class="header-brand">
+      <span class="logo">Py</span>
+      PyJavaBridge
+    </a>
+    <nav class="header-nav">
+      <a href="index.html">Docs</a>
+      <a href="examples.html">Examples</a>
+      <a href="https://github.com/Omena0/PyJavaBridge">GitHub</a>
+    </nav>
+  </header>
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+<div class="search-box">
+  <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+  <input type="text" id="sidebar-search" placeholder="Search docs…">
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading" data-section="on-this-page">On This Page</div>
+  <ul class="sidebar-links">
+    <li><a href="#how-enums-work">How Enums Work</a></li>
+    <li><a href="#material">Material</a></li>
+    <li><a href="#entitytype">EntityType</a></li>
+    <li><a href="#effecttype">EffectType</a></li>
+    <li><a href="#attributetype">AttributeType</a></li>
+    <li><a href="#gamemode">GameMode</a></li>
+    <li><a href="#sound">Sound</a></li>
+    <li><a href="#particle">Particle</a></li>
+    <li><a href="#difficulty">Difficulty</a></li>
+    <li><a href="#biome">Biome</a></li>
+    <li><a href="#barcolor">BarColor</a></li>
+    <li><a href="#barstyle">BarStyle</a></li>
+  </ul>
+</div>
+
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="getting-started">Getting Started</div>
+  <ul class="sidebar-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="decorators.html">Decorators</a></li>
+    <li><a href="exceptions.html">Exceptions</a></li>
+    <li><a href="examples.html">Examples</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="core">Core</div>
+  <ul class="sidebar-links">
+    <li><a href="server.html">Server</a></li>
+    <li><a href="event.html">Event</a></li>
+    <li><a href="entity.html">Entity</a></li>
+    <li><a href="player.html">Player</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="world-space">World & Space</div>
+  <ul class="sidebar-links">
+    <li><a href="world.html">World</a></li>
+    <li><a href="location.html">Location</a></li>
+    <li><a href="block.html">Block</a></li>
+    <li><a href="chunk.html">Chunk</a></li>
+    <li><a href="vector.html">Vector</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="items-inventory">Items & Inventory</div>
+  <ul class="sidebar-links">
+    <li><a href="item.html">Item</a></li>
+    <li><a href="itembuilder.html">ItemBuilder</a></li>
+    <li><a href="inventory.html">Inventory</a></li>
+    <li><a href="menu.html">Menu</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="effects-attributes">Effects & Attributes</div>
+  <ul class="sidebar-links">
+    <li><a href="effect.html">Effect</a></li>
+    <li><a href="potion.html">Potion</a></li>
+    <li><a href="attribute.html">Attribute</a></li>
+    <li><a href="advancement.html">Advancement</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="scoreboards-ui">Scoreboards & UI</div>
+  <ul class="sidebar-links">
+    <li><a href="bossbar.html">BossBar</a></li>
+    <li><a href="scoreboard.html">Scoreboard</a></li>
+    <li><a href="objective.html">Objective</a></li>
+    <li><a href="team.html">Team</a></li>
+    <li><a href="sidebar.html">Sidebar</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="helpers">Helpers</div>
+  <ul class="sidebar-links">
+    <li><a href="config.html">Config</a></li>
+    <li><a href="cooldown.html">Cooldown</a></li>
+    <li><a href="hologram.html">Hologram</a></li>
+    <li><a href="enumvalue.html">EnumValue</a></li>
+    <li><a href="enums.html" class="active">Enums</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="display-entities">Display Entities</div>
+  <ul class="sidebar-links">
+    <li><a href="actionbardisplay.html">ActionBarDisplay</a></li>
+    <li><a href="bossbardisplay.html">BossBarDisplay</a></li>
+    <li><a href="blockdisplay.html">BlockDisplay</a></li>
+    <li><a href="itemdisplay.html">ItemDisplay</a></li>
+    <li><a href="imagedisplay.html">ImageDisplay</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="utilities">Utilities</div>
+  <ul class="sidebar-links">
+    <li><a href="raycast.html">Raycast</a></li>
+    <li><a href="chat.html">Chat</a></li>
+    <li><a href="reflect.html">Reflect</a></li>
+  </ul>
+</div>
+  </aside>
+  <div class="sidebar-overlay"></div>
+
+  <!-- Main -->
+  <main class="main">
+    <div class="content">
+      <p class="subtitle">Enum types reference</p>
+      <h1 id="enums">Enums</h1>
+<p>PyJavaBridge wraps Minecraft's Java enums as <a href="enumvalue.html"><code>EnumValue</code></a> subclasses. Each enum type supports attribute-style access (<code>EnumType.VALUE_NAME</code>) and <code>from_name("VALUE_NAME")</code>.</p>
+<hr />
+<h2 id="how-enums-work">How Enums Work</h2>
+<p>All enum types inherit from <a href="enumvalue.html"><code>EnumValue</code></a>:</p>
+<pre><code class="language-python"><span class="cm"># Attribute-style access</span>
+material = Material.DIAMOND_SWORD
+sound = Sound.ENTITY_EXPERIENCE_ORB_PICKUP
+
+<span class="cm"># from_name (useful for dynamic values)</span>
+material = Material.from_name(<span class="st">&quot;DIAMOND_SWORD&quot;</span>)
+</code></pre>
+<p>See the <a href="enumvalue.html"><code>EnumValue</code></a> page for full details.</p>
+<hr />
+<h2 id="material">Material</h2>
+<pre><code class="language-python"><span class="kw">from</span> bridge <span class="kw">import</span> Material
+</code></pre>
+<p>Block and item types. Minecraft has hundreds of materials.</p>
+<p><strong>Common materials:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Category</th>
+<th>Examples</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Ores</td>
+<td><code>DIAMOND_ORE</code>, <code>IRON_ORE</code>, <code>GOLD_ORE</code>, <code>COAL_ORE</code></td>
+</tr>
+<tr>
+<td>Blocks</td>
+<td><code>STONE</code>, <code>DIRT</code>, <code>GRASS_BLOCK</code>, <code>OAK_PLANKS</code>, <code>COBBLESTONE</code></td>
+</tr>
+<tr>
+<td>Items</td>
+<td><code>DIAMOND_SWORD</code>, <code>IRON_PICKAXE</code>, <code>BOW</code>, <code>ARROW</code>, <code>STICK</code></td>
+</tr>
+<tr>
+<td>Food</td>
+<td><code>GOLDEN_APPLE</code>, <code>COOKED_BEEF</code>, <code>BREAD</code>, <code>CAKE</code></td>
+</tr>
+<tr>
+<td>Armor</td>
+<td><code>DIAMOND_HELMET</code>, <code>IRON_CHESTPLATE</code>, <code>LEATHER_BOOTS</code></td>
+</tr>
+<tr>
+<td>Glass</td>
+<td><code>GLASS</code>, <code>RED_STAINED_GLASS</code>, <code>GLASS_PANE</code></td>
+</tr>
+<tr>
+<td>Wool</td>
+<td><code>WHITE_WOOL</code>, <code>RED_WOOL</code>, <code>BLUE_WOOL</code></td>
+</tr>
+<tr>
+<td>Misc</td>
+<td><code>BEACON</code>, <code>ENDER_PEARL</code>, <code>NETHER_STAR</code>, <code>TOTEM_OF_UNDYING</code></td>
+</tr>
+</tbody>
+</table>
+<pre><code class="language-python">sword = Item(Material.DIAMOND_SWORD)
+<span class="kw">await</span> world.set_block(<span class="nb">0</span>, <span class="nb">60</span>, <span class="nb">0</span>, Material.STONE)
+</code></pre>
+<hr />
+<h2 id="entitytype">EntityType</h2>
+<pre><code class="language-python"><span class="kw">from</span> bridge <span class="kw">import</span> EntityType
+</code></pre>
+<p>Mob and entity types.</p>
+<table>
+<thead>
+<tr>
+<th>Category</th>
+<th>Examples</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Hostile</td>
+<td><code>ZOMBIE</code>, <code>SKELETON</code>, <code>CREEPER</code>, <code>SPIDER</code>, <code>ENDERMAN</code>, <code>WITCH</code></td>
+</tr>
+<tr>
+<td>Passive</td>
+<td><code>COW</code>, <code>PIG</code>, <code>SHEEP</code>, <code>CHICKEN</code>, <code>VILLAGER</code>, <code>HORSE</code></td>
+</tr>
+<tr>
+<td>Projectiles</td>
+<td><code>ARROW</code>, <code>FIREBALL</code>, <code>SNOWBALL</code>, <code>ENDER_PEARL</code>, <code>TRIDENT</code></td>
+</tr>
+<tr>
+<td>Misc</td>
+<td><code>ITEM</code>, <code>EXPERIENCE_ORB</code>, <code>ARMOR_STAND</code>, <code>LIGHTNING_BOLT</code></td>
+</tr>
+</tbody>
+</table>
+<pre><code class="language-python"><span class="kw">await</span> Entity.spawn(EntityType.ZOMBIE, location)
+<span class="kw">await</span> world.spawn_projectile(player, EntityType.FIREBALL)
+</code></pre>
+<hr />
+<h2 id="effecttype">EffectType</h2>
+<pre><code class="language-python"><span class="kw">from</span> bridge <span class="kw">import</span> EffectType
+</code></pre>
+<p>Potion effect types.</p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>SPEED</code></td>
+<td>Increases movement speed</td>
+</tr>
+<tr>
+<td><code>SLOWNESS</code></td>
+<td>Decreases movement speed</td>
+</tr>
+<tr>
+<td><code>HASTE</code></td>
+<td>Increases mining speed</td>
+</tr>
+<tr>
+<td><code>MINING_FATIGUE</code></td>
+<td>Decreases mining speed</td>
+</tr>
+<tr>
+<td><code>STRENGTH</code></td>
+<td>Increases attack damage</td>
+</tr>
+<tr>
+<td><code>INSTANT_HEALTH</code></td>
+<td>Heals instantly</td>
+</tr>
+<tr>
+<td><code>INSTANT_DAMAGE</code></td>
+<td>Damages instantly</td>
+</tr>
+<tr>
+<td><code>JUMP_BOOST</code></td>
+<td>Increases jump height</td>
+</tr>
+<tr>
+<td><code>REGENERATION</code></td>
+<td>Restores health over time</td>
+</tr>
+<tr>
+<td><code>RESISTANCE</code></td>
+<td>Reduces damage taken</td>
+</tr>
+<tr>
+<td><code>FIRE_RESISTANCE</code></td>
+<td>Immunity to fire damage</td>
+</tr>
+<tr>
+<td><code>WATER_BREATHING</code></td>
+<td>Breathe underwater</td>
+</tr>
+<tr>
+<td><code>INVISIBILITY</code></td>
+<td>Invisible to other players</td>
+</tr>
+<tr>
+<td><code>BLINDNESS</code></td>
+<td>Restricts vision</td>
+</tr>
+<tr>
+<td><code>NIGHT_VISION</code></td>
+<td>See in the dark</td>
+</tr>
+<tr>
+<td><code>POISON</code></td>
+<td>Deals damage over time</td>
+</tr>
+<tr>
+<td><code>WITHER</code></td>
+<td>Deals wither damage over time</td>
+</tr>
+<tr>
+<td><code>ABSORPTION</code></td>
+<td>Adds absorption hearts</td>
+</tr>
+<tr>
+<td><code>SATURATION</code></td>
+<td>Restores hunger</td>
+</tr>
+<tr>
+<td><code>GLOWING</code></td>
+<td>Glowing outline</td>
+</tr>
+<tr>
+<td><code>LEVITATION</code></td>
+<td>Float upward</td>
+</tr>
+<tr>
+<td><code>SLOW_FALLING</code></td>
+<td>Fall slowly</td>
+</tr>
+</tbody>
+</table>
+<pre><code class="language-python"><span class="kw">await</span> Effect.apply(player, EffectType.SPEED, duration=<span class="nb">600</span>, amplifier=<span class="nb">1</span>)
+</code></pre>
+<hr />
+<h2 id="attributetype">AttributeType</h2>
+<pre><code class="language-python"><span class="kw">from</span> bridge <span class="kw">import</span> AttributeType
+</code></pre>
+<p>Entity attribute types for stat modification.</p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>GENERIC_MAX_HEALTH</code></td>
+<td>20.0</td>
+<td>Maximum health</td>
+</tr>
+<tr>
+<td><code>GENERIC_MOVEMENT_SPEED</code></td>
+<td>0.1</td>
+<td>Walking speed</td>
+</tr>
+<tr>
+<td><code>GENERIC_ATTACK_DAMAGE</code></td>
+<td>1.0</td>
+<td>Melee damage</td>
+</tr>
+<tr>
+<td><code>GENERIC_ATTACK_SPEED</code></td>
+<td>4.0</td>
+<td>Attack cooldown</td>
+</tr>
+<tr>
+<td><code>GENERIC_ARMOR</code></td>
+<td>0.0</td>
+<td>Armor points</td>
+</tr>
+<tr>
+<td><code>GENERIC_ARMOR_TOUGHNESS</code></td>
+<td>0.0</td>
+<td>Armor toughness</td>
+</tr>
+<tr>
+<td><code>GENERIC_KNOCKBACK_RESISTANCE</code></td>
+<td>0.0</td>
+<td>Knockback resistance</td>
+</tr>
+<tr>
+<td><code>GENERIC_LUCK</code></td>
+<td>0.0</td>
+<td>Loot table luck</td>
+</tr>
+<tr>
+<td><code>GENERIC_FLYING_SPEED</code></td>
+<td>0.4</td>
+<td>Creative fly speed</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="gamemode">GameMode</h2>
+<pre><code class="language-python"><span class="kw">from</span> bridge <span class="kw">import</span> GameMode
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>SURVIVAL</code></td>
+<td>Normal survival</td>
+</tr>
+<tr>
+<td><code>CREATIVE</code></td>
+<td>Creative mode</td>
+</tr>
+<tr>
+<td><code>ADVENTURE</code></td>
+<td>Adventure mode</td>
+</tr>
+<tr>
+<td><code>SPECTATOR</code></td>
+<td>Spectator mode</td>
+</tr>
+</tbody>
+</table>
+<pre><code class="language-python"><span class="kw">await</span> player.set_game_mode(GameMode.CREATIVE)
+</code></pre>
+<hr />
+<h2 id="sound">Sound</h2>
+<pre><code class="language-python"><span class="kw">from</span> bridge <span class="kw">import</span> Sound
+</code></pre>
+<p>Minecraft sound effects. Examples:</p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ENTITY_EXPERIENCE_ORB_PICKUP</code></td>
+<td>XP orb</td>
+</tr>
+<tr>
+<td><code>BLOCK_NOTE_BLOCK_BASS</code></td>
+<td>Note block bass</td>
+</tr>
+<tr>
+<td><code>BLOCK_NOTE_BLOCK_PLING</code></td>
+<td>Note block pling</td>
+</tr>
+<tr>
+<td><code>ENTITY_PLAYER_LEVELUP</code></td>
+<td>Level up</td>
+</tr>
+<tr>
+<td><code>ITEM_TOTEM_USE</code></td>
+<td>Totem activation</td>
+</tr>
+<tr>
+<td><code>ENTITY_ENDER_DRAGON_GROWL</code></td>
+<td>Dragon growl</td>
+</tr>
+<tr>
+<td><code>UI_BUTTON_CLICK</code></td>
+<td>Button click</td>
+</tr>
+</tbody>
+</table>
+<pre><code class="language-python"><span class="kw">await</span> player.play_sound(Sound.ENTITY_EXPERIENCE_ORB_PICKUP)
+<span class="kw">await</span> world.play_sound(location, Sound.ENTITY_ENDER_DRAGON_GROWL, volume=<span class="nb">2.0</span>)
+</code></pre>
+<hr />
+<h2 id="particle">Particle</h2>
+<pre><code class="language-python"><span class="kw">from</span> bridge <span class="kw">import</span> Particle
+</code></pre>
+<p>Particle effects.</p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>FLAME</code></td>
+<td>Fire particles</td>
+</tr>
+<tr>
+<td><code>HEART</code></td>
+<td>Heart particles</td>
+</tr>
+<tr>
+<td><code>VILLAGER_HAPPY</code></td>
+<td>Green sparkles</td>
+</tr>
+<tr>
+<td><code>EXPLOSION_LARGE</code></td>
+<td>Large explosion</td>
+</tr>
+<tr>
+<td><code>REDSTONE</code></td>
+<td>Redstone dust</td>
+</tr>
+<tr>
+<td><code>SMOKE_NORMAL</code></td>
+<td>Normal smoke</td>
+</tr>
+<tr>
+<td><code>CRIT</code></td>
+<td>Critical hit sparkles</td>
+</tr>
+<tr>
+<td><code>SPELL_MOB</code></td>
+<td>Potion effect swirls</td>
+</tr>
+<tr>
+<td><code>END_ROD</code></td>
+<td>End rod particles</td>
+</tr>
+<tr>
+<td><code>TOTEM</code></td>
+<td>Totem of Undying particles</td>
+</tr>
+</tbody>
+</table>
+<pre><code class="language-python"><span class="kw">await</span> world.spawn_particle(Particle.FLAME, location, count=<span class="nb">50</span>)
+<span class="kw">await</span> world.particle_sphere(location, <span class="nb">3.0</span>, Particle.END_ROD)
+</code></pre>
+<hr />
+<h2 id="difficulty">Difficulty</h2>
+<pre><code class="language-python"><span class="kw">from</span> bridge <span class="kw">import</span> Difficulty
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>PEACEFUL</code></td>
+</tr>
+<tr>
+<td><code>EASY</code></td>
+</tr>
+<tr>
+<td><code>NORMAL</code></td>
+</tr>
+<tr>
+<td><code>HARD</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="biome">Biome</h2>
+<pre><code class="language-python"><span class="kw">from</span> bridge <span class="kw">import</span> Biome
+</code></pre>
+<p>World biomes. Examples: <code>PLAINS</code>, <code>FOREST</code>, <code>DESERT</code>, <code>OCEAN</code>, <code>MOUNTAINS</code>, <code>SWAMP</code>, <code>JUNGLE</code>, <code>TAIGA</code>, <code>SAVANNA</code>, <code>BADLANDS</code>, <code>THE_NETHER</code>, <code>THE_END</code>.</p>
+<pre><code class="language-python"><span class="kw">await</span> block.set_biome(Biome.DESERT)
+</code></pre>
+<hr />
+<h2 id="barcolor">BarColor</h2>
+<pre><code class="language-python"><span class="kw">from</span> bridge <span class="kw">import</span> BarColor
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>PINK</code></td>
+</tr>
+<tr>
+<td><code>BLUE</code></td>
+</tr>
+<tr>
+<td><code>RED</code></td>
+</tr>
+<tr>
+<td><code>GREEN</code></td>
+</tr>
+<tr>
+<td><code>YELLOW</code></td>
+</tr>
+<tr>
+<td><code>PURPLE</code></td>
+</tr>
+<tr>
+<td><code>WHITE</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="barstyle">BarStyle</h2>
+<pre><code class="language-python"><span class="kw">from</span> bridge <span class="kw">import</span> BarStyle
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>SOLID</code></td>
+<td>No segments</td>
+</tr>
+<tr>
+<td><code>SEGMENTED_6</code></td>
+<td>6 segments</td>
+</tr>
+<tr>
+<td><code>SEGMENTED_10</code></td>
+<td>10 segments</td>
+</tr>
+<tr>
+<td><code>SEGMENTED_12</code></td>
+<td>12 segments</td>
+</tr>
+<tr>
+<td><code>SEGMENTED_20</code></td>
+<td>20 segments</td>
+</tr>
+</tbody>
+</table>
+    </div>
+    <footer class="site-footer">
+      &copy; Omena0 2026 &middot; PyJavaBridge Documentation
+    </footer>
+  </main>
+
+  <!-- Back to top -->
+  <button class="back-to-top" aria-label="Back to top">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+      <path d="M18 15l-6-6-6 6"/>
+    </svg>
+  </button>
+
+  <script src="script.js"></script>
+</body>
+</html>

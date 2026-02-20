@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EnumValue — PyJavaBridge</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Header -->
+  <header class="site-header">
+    <button class="menu-toggle" aria-label="Toggle menu">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M3 12h18M3 6h18M3 18h18"/>
+      </svg>
+    </button>
+    <a href="index.html" class="header-brand">
+      <span class="logo">Py</span>
+      PyJavaBridge
+    </a>
+    <nav class="header-nav">
+      <a href="index.html">Docs</a>
+      <a href="examples.html">Examples</a>
+      <a href="https://github.com/Omena0/PyJavaBridge">GitHub</a>
+    </nav>
+  </header>
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+<div class="search-box">
+  <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+  <input type="text" id="sidebar-search" placeholder="Search docs…">
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading" data-section="on-this-page">On This Page</div>
+  <ul class="sidebar-links">
+    <li><a href="#constructor">Constructor</a></li>
+    <li><a href="#parameters" style="padding-left:40px;font-size:.8rem">Parameters</a></li>
+    <li><a href="#class-methods">Class Methods</a></li>
+    <li><a href="#from_name" style="padding-left:40px;font-size:.8rem">from_name</a></li>
+    <li><a href="#attributes">Attributes</a></li>
+    <li><a href="#type_1" style="padding-left:40px;font-size:.8rem">type</a></li>
+    <li><a href="#name_1" style="padding-left:40px;font-size:.8rem">name</a></li>
+    <li><a href="#attribute-access">Attribute Access</a></li>
+    <li><a href="#subclasses">Subclasses</a></li>
+  </ul>
+</div>
+
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="getting-started">Getting Started</div>
+  <ul class="sidebar-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="decorators.html">Decorators</a></li>
+    <li><a href="exceptions.html">Exceptions</a></li>
+    <li><a href="examples.html">Examples</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="core">Core</div>
+  <ul class="sidebar-links">
+    <li><a href="server.html">Server</a></li>
+    <li><a href="event.html">Event</a></li>
+    <li><a href="entity.html">Entity</a></li>
+    <li><a href="player.html">Player</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="world-space">World & Space</div>
+  <ul class="sidebar-links">
+    <li><a href="world.html">World</a></li>
+    <li><a href="location.html">Location</a></li>
+    <li><a href="block.html">Block</a></li>
+    <li><a href="chunk.html">Chunk</a></li>
+    <li><a href="vector.html">Vector</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="items-inventory">Items & Inventory</div>
+  <ul class="sidebar-links">
+    <li><a href="item.html">Item</a></li>
+    <li><a href="itembuilder.html">ItemBuilder</a></li>
+    <li><a href="inventory.html">Inventory</a></li>
+    <li><a href="menu.html">Menu</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="effects-attributes">Effects & Attributes</div>
+  <ul class="sidebar-links">
+    <li><a href="effect.html">Effect</a></li>
+    <li><a href="potion.html">Potion</a></li>
+    <li><a href="attribute.html">Attribute</a></li>
+    <li><a href="advancement.html">Advancement</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="scoreboards-ui">Scoreboards & UI</div>
+  <ul class="sidebar-links">
+    <li><a href="bossbar.html">BossBar</a></li>
+    <li><a href="scoreboard.html">Scoreboard</a></li>
+    <li><a href="objective.html">Objective</a></li>
+    <li><a href="team.html">Team</a></li>
+    <li><a href="sidebar.html">Sidebar</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="helpers">Helpers</div>
+  <ul class="sidebar-links">
+    <li><a href="config.html">Config</a></li>
+    <li><a href="cooldown.html">Cooldown</a></li>
+    <li><a href="hologram.html">Hologram</a></li>
+    <li><a href="enumvalue.html" class="active">EnumValue</a></li>
+    <li><a href="enums.html">Enums</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="display-entities">Display Entities</div>
+  <ul class="sidebar-links">
+    <li><a href="actionbardisplay.html">ActionBarDisplay</a></li>
+    <li><a href="bossbardisplay.html">BossBarDisplay</a></li>
+    <li><a href="blockdisplay.html">BlockDisplay</a></li>
+    <li><a href="itemdisplay.html">ItemDisplay</a></li>
+    <li><a href="imagedisplay.html">ImageDisplay</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="utilities">Utilities</div>
+  <ul class="sidebar-links">
+    <li><a href="raycast.html">Raycast</a></li>
+    <li><a href="chat.html">Chat</a></li>
+    <li><a href="reflect.html">Reflect</a></li>
+  </ul>
+</div>
+  </aside>
+  <div class="sidebar-overlay"></div>
+
+  <!-- Main -->
+  <main class="main">
+    <div class="content">
+      <p class="subtitle">Base class for all enum-like types</p>
+      <h1 id="enumvalue">EnumValue</h1>
+<p><code>EnumValue</code> is the base class for all Minecraft enum types exposed by the bridge: <code>Material</code>, <code>EntityType</code>, <code>Biome</code>, <code>EffectType</code>, <code>GameMode</code>, <code>Sound</code>, <code>Particle</code>, <code>Difficulty</code>, <code>BarColor</code>, <code>BarStyle</code>, and <code>AttributeType</code>.</p>
+<hr />
+<h2 id="constructor">Constructor</h2>
+<pre><code class="language-python">EnumValue(type: str, name: str)
+</code></pre>
+<p>Create an enum value with a specific type and name. You rarely need this directly — use the subclass attribute syntax instead.</p>
+<h3 id="parameters">Parameters</h3>
+<h4 id="type">type</h4>
+<ul>
+<li><strong>Type:</strong> <code>str</code></li>
+</ul>
+<p>The enum type name (e.g. <code>"Material"</code>, <code>"EntityType"</code>).</p>
+<h4 id="name">name</h4>
+<ul>
+<li><strong>Type:</strong> <code>str</code></li>
+</ul>
+<p>The enum value name (e.g. <code>"DIAMOND"</code>, <code>"ZOMBIE"</code>).</p>
+<hr />
+<h2 id="class-methods">Class Methods</h2>
+<h3 id="from_name">from_name</h3>
+<pre><code class="language-python"><span class="dc">@classmethod</span>
+EnumValue.from_name(name: str) -&gt; EnumValue
+</code></pre>
+<p>Create an enum value from a name string. The type is inferred from the subclass.</p>
+<pre><code class="language-python">mat = Material.from_name(<span class="st">&quot;DIAMOND&quot;</span>)
+</code></pre>
+<hr />
+<h2 id="attributes">Attributes</h2>
+<h3 id="type_1">type</h3>
+<ul>
+<li><strong>Type:</strong> <code>str</code></li>
+</ul>
+<p>The enum type name.</p>
+<pre><code class="language-python">m = Material.DIAMOND
+print(m.type)  <span class="cm"># &quot;Material&quot;</span>
+</code></pre>
+<h3 id="name_1">name</h3>
+<ul>
+<li><strong>Type:</strong> <code>str</code></li>
+</ul>
+<p>The enum value name.</p>
+<pre><code class="language-python">m = Material.DIAMOND
+print(m.name)  <span class="cm"># &quot;DIAMOND&quot;</span>
+</code></pre>
+<hr />
+<h2 id="attribute-access">Attribute Access</h2>
+<p>All <code>EnumValue</code> subclasses support attribute-style access to create values:</p>
+<pre><code class="language-python">Material.DIAMOND          <span class="cm"># EnumValue(&quot;Material&quot;, &quot;DIAMOND&quot;)</span>
+EntityType.ZOMBIE         <span class="cm"># EnumValue(&quot;EntityType&quot;, &quot;ZOMBIE&quot;)</span>
+GameMode.CREATIVE         <span class="cm"># EnumValue(&quot;GameMode&quot;, &quot;CREATIVE&quot;)</span>
+Sound.ENTITY_EXPERIENCE_ORB_PICKUP
+Particle.FLAME
+Difficulty.HARD
+BarColor.RED
+BarStyle.SEGMENTED_6
+AttributeType.GENERIC_MAX_HEALTH
+EffectType.POISON
+Biome.PLAINS
+</code></pre>
+<p>Name lookup is case-insensitive on the Java side, but by convention use <code>UPPER_SNAKE_CASE</code>.</p>
+<hr />
+<h2 id="subclasses">Subclasses</h2>
+<table>
+<thead>
+<tr>
+<th>Class</th>
+<th>Description</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Material</code></td>
+<td>Block/item materials</td>
+<td><code>Material.DIAMOND</code></td>
+</tr>
+<tr>
+<td><code>EntityType</code></td>
+<td>Entity types</td>
+<td><code>EntityType.ZOMBIE</code></td>
+</tr>
+<tr>
+<td><code>Biome</code></td>
+<td>World biomes</td>
+<td><code>Biome.PLAINS</code></td>
+</tr>
+<tr>
+<td><code>EffectType</code></td>
+<td>Potion effect types</td>
+<td><code>EffectType.POISON</code></td>
+</tr>
+<tr>
+<td><code>GameMode</code></td>
+<td>Player game modes</td>
+<td><code>GameMode.CREATIVE</code></td>
+</tr>
+<tr>
+<td><code>Sound</code></td>
+<td>Minecraft sounds</td>
+<td><code>Sound.ENTITY_EXPERIENCE_ORB_PICKUP</code></td>
+</tr>
+<tr>
+<td><code>Particle</code></td>
+<td>Particle types</td>
+<td><code>Particle.FLAME</code></td>
+</tr>
+<tr>
+<td><code>Difficulty</code></td>
+<td>World difficulties</td>
+<td><code>Difficulty.HARD</code></td>
+</tr>
+<tr>
+<td><code>BarColor</code></td>
+<td>Boss bar colors</td>
+<td><code>BarColor.RED</code></td>
+</tr>
+<tr>
+<td><code>BarStyle</code></td>
+<td>Boss bar styles</td>
+<td><code>BarStyle.SEGMENTED_6</code></td>
+</tr>
+<tr>
+<td><code>AttributeType</code></td>
+<td>Entity attribute types</td>
+<td><code>AttributeType.GENERIC_MAX_HEALTH</code></td>
+</tr>
+</tbody>
+</table>
+    </div>
+    <footer class="site-footer">
+      &copy; Omena0 2026 &middot; PyJavaBridge Documentation
+    </footer>
+  </main>
+
+  <!-- Back to top -->
+  <button class="back-to-top" aria-label="Back to top">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+      <path d="M18 15l-6-6-6 6"/>
+    </svg>
+  </button>
+
+  <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Entity — PyJavaBridge</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Header -->
+  <header class="site-header">
+    <button class="menu-toggle" aria-label="Toggle menu">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M3 12h18M3 6h18M3 18h18"/>
+      </svg>
+    </button>
+    <a href="index.html" class="header-brand">
+      <span class="logo">Py</span>
+      PyJavaBridge
+    </a>
+    <nav class="header-nav">
+      <a href="index.html">Docs</a>
+      <a href="examples.html">Examples</a>
+      <a href="https://github.com/Omena0/PyJavaBridge">GitHub</a>
+    </nav>
+  </header>
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+<div class="search-box">
+  <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+  <input type="text" id="sidebar-search" placeholder="Search docs…">
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading" data-section="on-this-page">On This Page</div>
+  <ul class="sidebar-links">
+    <li><a href="#constructor">Constructor</a></li>
+    <li><a href="#class-methods">Class Methods</a></li>
+    <li><a href="#spawn" style="padding-left:40px;font-size:.8rem">spawn</a></li>
+    <li><a href="#attributes">Attributes</a></li>
+    <li><a href="#uuid" style="padding-left:40px;font-size:.8rem">uuid</a></li>
+    <li><a href="#type" style="padding-left:40px;font-size:.8rem">type</a></li>
+    <li><a href="#location" style="padding-left:40px;font-size:.8rem">location</a></li>
+    <li><a href="#world" style="padding-left:40px;font-size:.8rem">world</a></li>
+    <li><a href="#velocity" style="padding-left:40px;font-size:.8rem">velocity</a></li>
+    <li><a href="#is_dead" style="padding-left:40px;font-size:.8rem">is_dead</a></li>
+    <li><a href="#is_alive" style="padding-left:40px;font-size:.8rem">is_alive</a></li>
+    <li><a href="#is_valid" style="padding-left:40px;font-size:.8rem">is_valid</a></li>
+    <li><a href="#fire_ticks" style="padding-left:40px;font-size:.8rem">fire_ticks</a></li>
+    <li><a href="#passengers" style="padding-left:40px;font-size:.8rem">passengers</a></li>
+    <li><a href="#custom_name" style="padding-left:40px;font-size:.8rem">custom_name</a></li>
+    <li><a href="#is_projectile" style="padding-left:40px;font-size:.8rem">is_projectile</a></li>
+    <li><a href="#shooter" style="padding-left:40px;font-size:.8rem">shooter</a></li>
+    <li><a href="#is_tamed" style="padding-left:40px;font-size:.8rem">is_tamed</a></li>
+    <li><a href="#owner" style="padding-left:40px;font-size:.8rem">owner</a></li>
+    <li><a href="#owner_uuid" style="padding-left:40px;font-size:.8rem">owner_uuid</a></li>
+    <li><a href="#owner_name" style="padding-left:40px;font-size:.8rem">owner_name</a></li>
+    <li><a href="#source" style="padding-left:40px;font-size:.8rem">source</a></li>
+    <li><a href="#methods">Methods</a></li>
+    <li><a href="#teleport" style="padding-left:40px;font-size:.8rem">teleport</a></li>
+    <li><a href="#remove" style="padding-left:40px;font-size:.8rem">remove</a></li>
+    <li><a href="#set_velocity" style="padding-left:40px;font-size:.8rem">set_velocity</a></li>
+    <li><a href="#set_fire_ticks" style="padding-left:40px;font-size:.8rem">set_fire_ticks</a></li>
+    <li><a href="#add_passenger" style="padding-left:40px;font-size:.8rem">add_passenger</a></li>
+    <li><a href="#remove_passenger" style="padding-left:40px;font-size:.8rem">remove_passenger</a></li>
+    <li><a href="#set_custom_name" style="padding-left:40px;font-size:.8rem">set_custom_name</a></li>
+    <li><a href="#set_custom_name_visible" style="padding-left:40px;font-size:.8rem">set_custom_name_visible</a></li>
+  </ul>
+</div>
+
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="getting-started">Getting Started</div>
+  <ul class="sidebar-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="decorators.html">Decorators</a></li>
+    <li><a href="exceptions.html">Exceptions</a></li>
+    <li><a href="examples.html">Examples</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="core">Core</div>
+  <ul class="sidebar-links">
+    <li><a href="server.html">Server</a></li>
+    <li><a href="event.html">Event</a></li>
+    <li><a href="entity.html" class="active">Entity</a></li>
+    <li><a href="player.html">Player</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="world-space">World & Space</div>
+  <ul class="sidebar-links">
+    <li><a href="world.html">World</a></li>
+    <li><a href="location.html">Location</a></li>
+    <li><a href="block.html">Block</a></li>
+    <li><a href="chunk.html">Chunk</a></li>
+    <li><a href="vector.html">Vector</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="items-inventory">Items & Inventory</div>
+  <ul class="sidebar-links">
+    <li><a href="item.html">Item</a></li>
+    <li><a href="itembuilder.html">ItemBuilder</a></li>
+    <li><a href="inventory.html">Inventory</a></li>
+    <li><a href="menu.html">Menu</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="effects-attributes">Effects & Attributes</div>
+  <ul class="sidebar-links">
+    <li><a href="effect.html">Effect</a></li>
+    <li><a href="potion.html">Potion</a></li>
+    <li><a href="attribute.html">Attribute</a></li>
+    <li><a href="advancement.html">Advancement</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="scoreboards-ui">Scoreboards & UI</div>
+  <ul class="sidebar-links">
+    <li><a href="bossbar.html">BossBar</a></li>
+    <li><a href="scoreboard.html">Scoreboard</a></li>
+    <li><a href="objective.html">Objective</a></li>
+    <li><a href="team.html">Team</a></li>
+    <li><a href="sidebar.html">Sidebar</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="helpers">Helpers</div>
+  <ul class="sidebar-links">
+    <li><a href="config.html">Config</a></li>
+    <li><a href="cooldown.html">Cooldown</a></li>
+    <li><a href="hologram.html">Hologram</a></li>
+    <li><a href="enumvalue.html">EnumValue</a></li>
+    <li><a href="enums.html">Enums</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="display-entities">Display Entities</div>
+  <ul class="sidebar-links">
+    <li><a href="actionbardisplay.html">ActionBarDisplay</a></li>
+    <li><a href="bossbardisplay.html">BossBarDisplay</a></li>
+    <li><a href="blockdisplay.html">BlockDisplay</a></li>
+    <li><a href="itemdisplay.html">ItemDisplay</a></li>
+    <li><a href="imagedisplay.html">ImageDisplay</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="utilities">Utilities</div>
+  <ul class="sidebar-links">
+    <li><a href="raycast.html">Raycast</a></li>
+    <li><a href="chat.html">Chat</a></li>
+    <li><a href="reflect.html">Reflect</a></li>
+  </ul>
+</div>
+  </aside>
+  <div class="sidebar-overlay"></div>
+
+  <!-- Main -->
+  <main class="main">
+    <div class="content">
+      <p class="subtitle">Base entity proxy</p>
+      <h1 id="entity">Entity</h1>
+<p><code>Entity</code> is the base class for all entities in the game — mobs, animals, projectiles, dropped items, etc. <a href="player.html"><code>Player</code></a> extends this class.</p>
+<hr />
+<h2 id="constructor">Constructor</h2>
+<pre><code class="language-python">Entity(uuid: str | <span class="kw">None</span> = <span class="kw">None</span>)
+</code></pre>
+<p>Resolve an existing entity by its UUID.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>uuid</code> (<code>str | None</code>) — The entity's UUID string.</li>
+</ul>
+<pre><code class="language-python">entity = Entity(<span class="st">&quot;550e8400-e29b-41d4-a716-446655440000&quot;</span>)
+</code></pre>
+<hr />
+<h2 id="class-methods">Class Methods</h2>
+<h3 id="spawn">spawn</h3>
+<pre><code class="language-python">entity = <span class="kw">await</span> Entity.spawn(entity_type, location, **kwargs)
+</code></pre>
+<p>Spawn a new entity at a location.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>entity_type</code> (<a href="enums.html"><code>EntityType</code></a> <code>| str</code>) — The type of entity to spawn.</li>
+<li><code>location</code> (<a href="location.html"><code>Location</code></a>) — Where to spawn the entity.</li>
+<li><code>**kwargs</code> — Additional spawn options.</li>
+<li><strong>Returns:</strong> <code>Awaitable[</code><a href="#"><code>Entity</code></a><code>]</code></li>
+</ul>
+<pre><code class="language-python">zombie = <span class="kw">await</span> Entity.spawn(EntityType.ZOMBIE, player.location)
+zombie = <span class="kw">await</span> Entity.spawn(<span class="st">&quot;ZOMBIE&quot;</span>, Location(<span class="nb">0</span>, <span class="nb">64</span>, <span class="nb">0</span>, <span class="st">&quot;world&quot;</span>))
+</code></pre>
+<hr />
+<h2 id="attributes">Attributes</h2>
+<h3 id="uuid">uuid</h3>
+<ul>
+<li><strong>Type:</strong> <code>str</code></li>
+</ul>
+<p>The entity's universally unique identifier.</p>
+<h3 id="type">type</h3>
+<ul>
+<li><strong>Type:</strong> <a href="enums.html"><code>EntityType</code></a></li>
+</ul>
+<p>The entity type (e.g. <code>EntityType.ZOMBIE</code>, <code>EntityType.ARROW</code>).</p>
+<h3 id="location">location</h3>
+<ul>
+<li><strong>Type:</strong> <a href="location.html"><code>Location</code></a></li>
+</ul>
+<p>The entity's current location. Re-fetched each access.</p>
+<h3 id="world">world</h3>
+<ul>
+<li><strong>Type:</strong> <a href="world.html"><code>World</code></a></li>
+</ul>
+<p>The world the entity is in.</p>
+<h3 id="velocity">velocity</h3>
+<ul>
+<li><strong>Type:</strong> <a href="vector.html"><code>Vector</code></a></li>
+</ul>
+<p>The entity's current velocity vector.</p>
+<h3 id="is_dead">is_dead</h3>
+<ul>
+<li><strong>Type:</strong> <code>bool</code></li>
+</ul>
+<p>Whether the entity is dead.</p>
+<h3 id="is_alive">is_alive</h3>
+<ul>
+<li><strong>Type:</strong> <code>bool</code></li>
+</ul>
+<p>Whether the entity is alive.</p>
+<h3 id="is_valid">is_valid</h3>
+<ul>
+<li><strong>Type:</strong> <code>bool</code></li>
+</ul>
+<p>Whether the entity handle is still valid. Becomes <code>False</code> when the entity is removed from the server. Always check this before interacting with an entity you've stored across ticks.</p>
+<h3 id="fire_ticks">fire_ticks</h3>
+<ul>
+<li><strong>Type:</strong> <code>int</code></li>
+</ul>
+<p>Remaining fire ticks. 0 means not on fire. Each tick at 20 TPS, so 100 = 5 seconds of fire.</p>
+<h3 id="passengers">passengers</h3>
+<ul>
+<li><strong>Type:</strong> <code>list[</code><a href="#"><code>Entity</code></a><code>]</code></li>
+</ul>
+<p>Entities riding on top of this entity.</p>
+<h3 id="custom_name">custom_name</h3>
+<ul>
+<li><strong>Type:</strong> <code>any</code></li>
+</ul>
+<p>The entity's custom name, or <code>None</code> if not set.</p>
+<h3 id="is_projectile">is_projectile</h3>
+<ul>
+<li><strong>Type:</strong> <code>bool</code></li>
+</ul>
+<p>Whether this entity is a projectile (arrow, snowball, trident, etc.).</p>
+<h3 id="shooter">shooter</h3>
+<ul>
+<li><strong>Type:</strong> <a href="#"><code>Entity</code></a> | <a href="player.html"><code>Player</code></a> | <a href="block.html"><code>Block</code></a> | <code>None</code></li>
+</ul>
+<p>For projectiles, the entity or block that launched it. <code>None</code> for non-projectiles.</p>
+<h3 id="is_tamed">is_tamed</h3>
+<ul>
+<li><strong>Type:</strong> <code>bool</code></li>
+</ul>
+<p>Whether this entity is a tameable animal that has been tamed.</p>
+<h3 id="owner">owner</h3>
+<ul>
+<li><strong>Type:</strong> <a href="player.html"><code>Player</code></a> | <code>None</code></li>
+</ul>
+<p>The player who owns this tamed entity, if the owner is online.</p>
+<h3 id="owner_uuid">owner_uuid</h3>
+<ul>
+<li><strong>Type:</strong> <code>str | None</code></li>
+</ul>
+<p>UUID of the taming player, even if they're offline.</p>
+<h3 id="owner_name">owner_name</h3>
+<ul>
+<li><strong>Type:</strong> <code>str | None</code></li>
+</ul>
+<p>Name of the taming player, if known.</p>
+<h3 id="source">source</h3>
+<ul>
+<li><strong>Type:</strong> <a href="#"><code>Entity</code></a> | <a href="player.html"><code>Player</code></a> | <code>None</code></li>
+</ul>
+<p>The entity that created this entity. For example, the player who lit a TNT block, or the witch that threw a potion.</p>
+<hr />
+<h2 id="methods">Methods</h2>
+<h3 id="teleport">teleport</h3>
+<pre><code class="language-python"><span class="kw">await</span> entity.teleport(location)
+</code></pre>
+<p>Teleport the entity to a new location.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>location</code> (<a href="location.html"><code>Location</code></a>) — Destination.</li>
+<li><strong>Returns:</strong> <code>Awaitable[None]</code></li>
+</ul>
+<pre><code class="language-python"><span class="kw">await</span> zombie.teleport(Location(<span class="nb">0</span>, <span class="nb">100</span>, <span class="nb">0</span>, <span class="st">&quot;world&quot;</span>))
+</code></pre>
+<h3 id="remove">remove</h3>
+<pre><code class="language-python"><span class="kw">await</span> entity.remove()
+</code></pre>
+<p>Remove the entity from the world permanently.</p>
+<ul>
+<li><strong>Returns:</strong> <code>Awaitable[None]</code></li>
+</ul>
+<h3 id="set_velocity">set_velocity</h3>
+<pre><code class="language-python"><span class="kw">await</span> entity.set_velocity(vector)
+</code></pre>
+<p>Set the entity's velocity. Useful for launching entities, knockback effects, etc.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>vector</code> (<a href="vector.html"><code>Vector</code></a>) — The velocity vector. Each component is in blocks/tick.</li>
+<li><strong>Returns:</strong> <code>Awaitable[None]</code></li>
+</ul>
+<pre><code class="language-python"><span class="cm"># Launch entity upward</span>
+<span class="kw">await</span> entity.set_velocity(Vector(<span class="nb">0</span>, <span class="nb">1.5</span>, <span class="nb">0</span>))
+</code></pre>
+<h3 id="set_fire_ticks">set_fire_ticks</h3>
+<pre><code class="language-python"><span class="kw">await</span> entity.set_fire_ticks(ticks)
+</code></pre>
+<p>Set the entity on fire for a duration.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>ticks</code> (<code>int</code>) — Duration in ticks (20 ticks = 1 second). Set to 0 to extinguish.</li>
+<li><strong>Returns:</strong> <code>Awaitable[None]</code></li>
+</ul>
+<pre><code class="language-python"><span class="kw">await</span> entity.set_fire_ticks(<span class="nb">100</span>)  <span class="cm"># 5 seconds of fire</span>
+<span class="kw">await</span> entity.set_fire_ticks(<span class="nb">0</span>)    <span class="cm"># Extinguish</span>
+</code></pre>
+<h3 id="add_passenger">add_passenger</h3>
+<pre><code class="language-python">success = <span class="kw">await</span> entity.add_passenger(entity)
+</code></pre>
+<p>Make another entity ride on top of this one.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>entity</code> (<a href="#"><code>Entity</code></a>) — The entity to add as a passenger.</li>
+<li><strong>Returns:</strong> <code>Awaitable[bool]</code> — <code>True</code> if the passenger was added successfully.</li>
+</ul>
+<h3 id="remove_passenger">remove_passenger</h3>
+<pre><code class="language-python">success = <span class="kw">await</span> entity.remove_passenger(entity)
+</code></pre>
+<p>Remove a riding entity.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>entity</code> (<a href="#"><code>Entity</code></a>) — The passenger to remove.</li>
+<li><strong>Returns:</strong> <code>Awaitable[bool]</code></li>
+</ul>
+<h3 id="set_custom_name">set_custom_name</h3>
+<pre><code class="language-python"><span class="kw">await</span> entity.set_custom_name(name)
+</code></pre>
+<p>Set the entity's custom name tag.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>name</code> (<code>str</code>) — The name to display. Supports <code>§</code> color codes.</li>
+<li><strong>Returns:</strong> <code>Awaitable[None]</code></li>
+</ul>
+<pre><code class="language-python"><span class="kw">await</span> zombie.set_custom_name(<span class="st">&quot;§cBoss Zombie&quot;</span>)
+</code></pre>
+<h3 id="set_custom_name_visible">set_custom_name_visible</h3>
+<pre><code class="language-python"><span class="kw">await</span> entity.set_custom_name_visible(value)
+</code></pre>
+<p>Show or hide the custom name tag. When <code>True</code>, the name is visible through walls and at a distance.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>value</code> (<code>bool</code>) — Whether the name should be visible.</li>
+<li><strong>Returns:</strong> <code>Awaitable[None]</code></li>
+</ul>
+    </div>
+    <footer class="site-footer">
+      &copy; Omena0 2026 &middot; PyJavaBridge Documentation
+    </footer>
+  </main>
+
+  <!-- Back to top -->
+  <button class="back-to-top" aria-label="Back to top">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+      <path d="M18 15l-6-6-6 6"/>
+    </svg>
+  </button>
+
+  <script src="script.js"></script>
+</body>
+</html>

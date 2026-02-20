@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PyJavaBridge — PyJavaBridge</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Header -->
+  <header class="site-header">
+    <button class="menu-toggle" aria-label="Toggle menu">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M3 12h18M3 6h18M3 18h18"/>
+      </svg>
+    </button>
+    <a href="index.html" class="header-brand">
+      <span class="logo">Py</span>
+      PyJavaBridge
+    </a>
+    <nav class="header-nav">
+      <a href="index.html">Docs</a>
+      <a href="examples.html">Examples</a>
+      <a href="https://github.com/Omena0/PyJavaBridge">GitHub</a>
+    </nav>
+  </header>
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+<div class="search-box">
+  <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+  <input type="text" id="sidebar-search" placeholder="Search docs…">
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading" data-section="on-this-page">On This Page</div>
+  <ul class="sidebar-links">
+    <li><a href="#quick-start">Quick Start</a></li>
+    <li><a href="#key-features">Key Features</a></li>
+    <li><a href="#pages">Pages</a></li>
+    <li><a href="#decorators-core" style="padding-left:40px;font-size:.8rem">Decorators &amp; Core</a></li>
+    <li><a href="#server-entities" style="padding-left:40px;font-size:.8rem">Server &amp; Entities</a></li>
+    <li><a href="#world-space" style="padding-left:40px;font-size:.8rem">World &amp; Space</a></li>
+    <li><a href="#items-inventory" style="padding-left:40px;font-size:.8rem">Items &amp; Inventory</a></li>
+    <li><a href="#effects-attributes" style="padding-left:40px;font-size:.8rem">Effects &amp; Attributes</a></li>
+    <li><a href="#scoreboards-ui" style="padding-left:40px;font-size:.8rem">Scoreboards &amp; UI</a></li>
+    <li><a href="#helpers" style="padding-left:40px;font-size:.8rem">Helpers</a></li>
+    <li><a href="#display-entities" style="padding-left:40px;font-size:.8rem">Display Entities</a></li>
+    <li><a href="#utilities" style="padding-left:40px;font-size:.8rem">Utilities</a></li>
+    <li><a href="#examples" style="padding-left:40px;font-size:.8rem">Examples</a></li>
+  </ul>
+</div>
+
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="getting-started">Getting Started</div>
+  <ul class="sidebar-links">
+    <li><a href="index.html" class="active">Home</a></li>
+    <li><a href="decorators.html">Decorators</a></li>
+    <li><a href="exceptions.html">Exceptions</a></li>
+    <li><a href="examples.html">Examples</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="core">Core</div>
+  <ul class="sidebar-links">
+    <li><a href="server.html">Server</a></li>
+    <li><a href="event.html">Event</a></li>
+    <li><a href="entity.html">Entity</a></li>
+    <li><a href="player.html">Player</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="world-space">World & Space</div>
+  <ul class="sidebar-links">
+    <li><a href="world.html">World</a></li>
+    <li><a href="location.html">Location</a></li>
+    <li><a href="block.html">Block</a></li>
+    <li><a href="chunk.html">Chunk</a></li>
+    <li><a href="vector.html">Vector</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="items-inventory">Items & Inventory</div>
+  <ul class="sidebar-links">
+    <li><a href="item.html">Item</a></li>
+    <li><a href="itembuilder.html">ItemBuilder</a></li>
+    <li><a href="inventory.html">Inventory</a></li>
+    <li><a href="menu.html">Menu</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="effects-attributes">Effects & Attributes</div>
+  <ul class="sidebar-links">
+    <li><a href="effect.html">Effect</a></li>
+    <li><a href="potion.html">Potion</a></li>
+    <li><a href="attribute.html">Attribute</a></li>
+    <li><a href="advancement.html">Advancement</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="scoreboards-ui">Scoreboards & UI</div>
+  <ul class="sidebar-links">
+    <li><a href="bossbar.html">BossBar</a></li>
+    <li><a href="scoreboard.html">Scoreboard</a></li>
+    <li><a href="objective.html">Objective</a></li>
+    <li><a href="team.html">Team</a></li>
+    <li><a href="sidebar.html">Sidebar</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="helpers">Helpers</div>
+  <ul class="sidebar-links">
+    <li><a href="config.html">Config</a></li>
+    <li><a href="cooldown.html">Cooldown</a></li>
+    <li><a href="hologram.html">Hologram</a></li>
+    <li><a href="enumvalue.html">EnumValue</a></li>
+    <li><a href="enums.html">Enums</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="display-entities">Display Entities</div>
+  <ul class="sidebar-links">
+    <li><a href="actionbardisplay.html">ActionBarDisplay</a></li>
+    <li><a href="bossbardisplay.html">BossBarDisplay</a></li>
+    <li><a href="blockdisplay.html">BlockDisplay</a></li>
+    <li><a href="itemdisplay.html">ItemDisplay</a></li>
+    <li><a href="imagedisplay.html">ImageDisplay</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="utilities">Utilities</div>
+  <ul class="sidebar-links">
+    <li><a href="raycast.html">Raycast</a></li>
+    <li><a href="chat.html">Chat</a></li>
+    <li><a href="reflect.html">Reflect</a></li>
+  </ul>
+</div>
+  </aside>
+  <div class="sidebar-overlay"></div>
+
+  <!-- Main -->
+  <main class="main">
+    <div class="content">
+      <p class="subtitle">Expose Bukkit APIs to Python scripts via easy-to-use wrappers</p>
+      <h1 id="pyjavabridge">PyJavaBridge</h1>
+<p>PyJavaBridge is a Minecraft server plugin that lets you write <strong>Python scripts</strong> that interact with the Bukkit/Spigot/Paper API through a high-level async bridge. Every API call is asynchronous under the hood — you write clean <code>async</code>/<code>await</code> Python and the bridge handles the Java ↔ Python communication transparently.</p>
+<h2 id="quick-start">Quick Start</h2>
+<pre><code class="language-python"><span class="kw">from</span> bridge <span class="kw">import</span> *
+
+<span class="dc">@command</span>(<span class="st">&quot;Say hello&quot;</span>)
+<span class="kw">async</span> <span class="kw">def</span> hello(event: Event):
+    <span class="kw">await</span> event.player.send_message(<span class="st">&quot;Hello from Python!&quot;</span>)
+</code></pre>
+<p>Drop your <code>.py</code> file into the server's <code>scripts/</code> folder and reload. The bridge discovers your <code>@command</code> and <code>@event</code> handlers automatically.</p>
+<h2 id="key-features">Key Features</h2>
+<ul>
+<li><strong>Full Bukkit API</strong> — Players, worlds, blocks, entities, inventories, scoreboards, boss bars, advancements, and more.</li>
+<li><strong>Async by default</strong> — All Java calls are awaitable. Use <code>async</code>/<code>await</code> naturally.</li>
+<li><strong>Decorator-driven</strong> — Register commands, events, and repeating tasks with simple decorators.</li>
+<li><strong>Helper classes</strong> — <code>ItemBuilder</code>, <code>Sidebar</code>, <code>Hologram</code>, <code>Menu</code>, <code>Cooldown</code>, <code>Config</code>, and display entities for common patterns.</li>
+<li><strong>Region utilities</strong> — Fill, replace, and shape operations on the world (spheres, cylinders, lines).</li>
+<li><strong>Particle shapes</strong> — Draw particle lines, spheres, cubes, and rings with one call.</li>
+<li><strong>Permission integration</strong> — LuckPerms-aware permission and group management.</li>
+<li><strong>Tab list control</strong> — Full control over player tab list headers, footers, and display names.</li>
+</ul>
+<h2 id="pages">Pages</h2>
+<h3 id="decorators-core">Decorators &amp; Core</h3>
+<table>
+<thead>
+<tr>
+<th>Page</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="decorators.html">Decorators</a></td>
+<td><code>@event</code>, <code>@command</code>, <code>@task</code></td>
+</tr>
+<tr>
+<td><a href="exceptions.html">Exceptions</a></td>
+<td><code>BridgeError</code>, <code>EntityGoneException</code></td>
+</tr>
+<tr>
+<td><a href="enumvalue.html">EnumValue</a></td>
+<td>Base class for all enum types</td>
+</tr>
+<tr>
+<td><a href="event.html">Event</a></td>
+<td>Event proxy and event types</td>
+</tr>
+</tbody>
+</table>
+<h3 id="server-entities">Server &amp; Entities</h3>
+<table>
+<thead>
+<tr>
+<th>Page</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="server.html">Server</a></td>
+<td>Global server API</td>
+</tr>
+<tr>
+<td><a href="entity.html">Entity</a></td>
+<td>Base entity proxy</td>
+</tr>
+<tr>
+<td><a href="player.html">Player</a></td>
+<td>Player API (extends Entity)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="world-space">World &amp; Space</h3>
+<table>
+<thead>
+<tr>
+<th>Page</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="world.html">World</a></td>
+<td>World API, region utilities, particle shapes, spawn helpers</td>
+</tr>
+<tr>
+<td><a href="location.html">Location</a></td>
+<td>3D position with world, yaw, and pitch</td>
+</tr>
+<tr>
+<td><a href="block.html">Block</a></td>
+<td>Block in the world</td>
+</tr>
+<tr>
+<td><a href="chunk.html">Chunk</a></td>
+<td>World chunk loading/unloading</td>
+</tr>
+<tr>
+<td><a href="vector.html">Vector</a></td>
+<td>3D vector</td>
+</tr>
+</tbody>
+</table>
+<h3 id="items-inventory">Items &amp; Inventory</h3>
+<table>
+<thead>
+<tr>
+<th>Page</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="item.html">Item</a></td>
+<td>ItemStack API</td>
+</tr>
+<tr>
+<td><a href="itembuilder.html">ItemBuilder</a></td>
+<td>Fluent item construction</td>
+</tr>
+<tr>
+<td><a href="inventory.html">Inventory</a></td>
+<td>Inventory management</td>
+</tr>
+<tr>
+<td><a href="enums.html#material">Material</a></td>
+<td>Material enum</td>
+</tr>
+</tbody>
+</table>
+<h3 id="effects-attributes">Effects &amp; Attributes</h3>
+<table>
+<thead>
+<tr>
+<th>Page</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="effect.html">Effect</a></td>
+<td>Potion effects</td>
+</tr>
+<tr>
+<td><a href="potion.html">Potion</a></td>
+<td>Legacy potion API</td>
+</tr>
+<tr>
+<td><a href="attribute.html">Attribute</a></td>
+<td>Entity attributes</td>
+</tr>
+</tbody>
+</table>
+<h3 id="scoreboards-ui">Scoreboards &amp; UI</h3>
+<table>
+<thead>
+<tr>
+<th>Page</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="bossbar.html">BossBar</a></td>
+<td>Boss bar API</td>
+</tr>
+<tr>
+<td><a href="scoreboard.html">Scoreboard</a></td>
+<td>Scoreboard API</td>
+</tr>
+<tr>
+<td><a href="team.html">Team</a></td>
+<td>Team API</td>
+</tr>
+<tr>
+<td><a href="objective.html">Objective</a></td>
+<td>Objective API</td>
+</tr>
+<tr>
+<td><a href="sidebar.html">Sidebar</a></td>
+<td>Sidebar helper</td>
+</tr>
+<tr>
+<td><a href="advancement.html">Advancement</a></td>
+<td>Advancement API</td>
+</tr>
+</tbody>
+</table>
+<h3 id="helpers">Helpers</h3>
+<table>
+<thead>
+<tr>
+<th>Page</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="config.html">Config</a></td>
+<td>YAML configuration files</td>
+</tr>
+<tr>
+<td><a href="cooldown.html">Cooldown</a></td>
+<td>Per-player cooldowns</td>
+</tr>
+<tr>
+<td><a href="hologram.html">Hologram</a></td>
+<td>Floating text entities</td>
+</tr>
+<tr>
+<td><a href="menu.html">Menu</a></td>
+<td>Chest GUI builder</td>
+</tr>
+<tr>
+<td><a href="actionbardisplay.html">ActionBarDisplay</a></td>
+<td>Persistent action bar messages</td>
+</tr>
+<tr>
+<td><a href="bossbardisplay.html">BossBarDisplay</a></td>
+<td>Boss bar wrapper with cooldown linking</td>
+</tr>
+</tbody>
+</table>
+<h3 id="display-entities">Display Entities</h3>
+<table>
+<thead>
+<tr>
+<th>Page</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="blockdisplay.html">BlockDisplay</a></td>
+<td>Block display entity</td>
+</tr>
+<tr>
+<td><a href="itemdisplay.html">ItemDisplay</a></td>
+<td>Item display entity</td>
+</tr>
+<tr>
+<td><a href="imagedisplay.html">ImageDisplay</a></td>
+<td>Pixel art display</td>
+</tr>
+</tbody>
+</table>
+<h3 id="utilities">Utilities</h3>
+<table>
+<thead>
+<tr>
+<th>Page</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="raycast.html">Raycast</a></td>
+<td>Ray tracing in the world</td>
+</tr>
+<tr>
+<td><a href="chat.html">Chat</a></td>
+<td>Chat broadcast helper</td>
+</tr>
+<tr>
+<td><a href="reflect.html">Reflect</a></td>
+<td>Java reflection access</td>
+</tr>
+<tr>
+<td><a href="enums.html">Enums</a></td>
+<td>All enum types</td>
+</tr>
+</tbody>
+</table>
+<h3 id="examples">Examples</h3>
+<table>
+<thead>
+<tr>
+<th>Page</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="examples.html">Examples</a></td>
+<td>Full script examples</td>
+</tr>
+</tbody>
+</table>
+    </div>
+    <footer class="site-footer">
+      &copy; Omena0 2026 &middot; PyJavaBridge Documentation
+    </footer>
+  </main>
+
+  <!-- Back to top -->
+  <button class="back-to-top" aria-label="Back to top">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+      <path d="M18 15l-6-6-6 6"/>
+    </svg>
+  </button>
+
+  <script src="script.js"></script>
+</body>
+</html>

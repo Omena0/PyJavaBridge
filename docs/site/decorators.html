@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Decorators — PyJavaBridge</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Header -->
+  <header class="site-header">
+    <button class="menu-toggle" aria-label="Toggle menu">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M3 12h18M3 6h18M3 18h18"/>
+      </svg>
+    </button>
+    <a href="index.html" class="header-brand">
+      <span class="logo">Py</span>
+      PyJavaBridge
+    </a>
+    <nav class="header-nav">
+      <a href="index.html">Docs</a>
+      <a href="examples.html">Examples</a>
+      <a href="https://github.com/Omena0/PyJavaBridge">GitHub</a>
+    </nav>
+  </header>
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+<div class="search-box">
+  <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+  <input type="text" id="sidebar-search" placeholder="Search docs…">
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading" data-section="on-this-page">On This Page</div>
+  <ul class="sidebar-links">
+    <li><a href="#event">@event</a></li>
+    <li><a href="#signature" style="padding-left:40px;font-size:.8rem">Signature</a></li>
+    <li><a href="#parameters" style="padding-left:40px;font-size:.8rem">Parameters</a></li>
+    <li><a href="#bare-decorator" style="padding-left:40px;font-size:.8rem">Bare decorator</a></li>
+    <li><a href="#command">@command</a></li>
+    <li><a href="#signature_1" style="padding-left:40px;font-size:.8rem">Signature</a></li>
+    <li><a href="#parameters_1" style="padding-left:40px;font-size:.8rem">Parameters</a></li>
+    <li><a href="#command-arguments" style="padding-left:40px;font-size:.8rem">Command arguments</a></li>
+    <li><a href="#task">@task</a></li>
+    <li><a href="#signature_2" style="padding-left:40px;font-size:.8rem">Signature</a></li>
+    <li><a href="#parameters_2" style="padding-left:40px;font-size:.8rem">Parameters</a></li>
+    <li><a href="#notes" style="padding-left:40px;font-size:.8rem">Notes</a></li>
+  </ul>
+</div>
+
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="getting-started">Getting Started</div>
+  <ul class="sidebar-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="decorators.html" class="active">Decorators</a></li>
+    <li><a href="exceptions.html">Exceptions</a></li>
+    <li><a href="examples.html">Examples</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="core">Core</div>
+  <ul class="sidebar-links">
+    <li><a href="server.html">Server</a></li>
+    <li><a href="event.html">Event</a></li>
+    <li><a href="entity.html">Entity</a></li>
+    <li><a href="player.html">Player</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="world-space">World & Space</div>
+  <ul class="sidebar-links">
+    <li><a href="world.html">World</a></li>
+    <li><a href="location.html">Location</a></li>
+    <li><a href="block.html">Block</a></li>
+    <li><a href="chunk.html">Chunk</a></li>
+    <li><a href="vector.html">Vector</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="items-inventory">Items & Inventory</div>
+  <ul class="sidebar-links">
+    <li><a href="item.html">Item</a></li>
+    <li><a href="itembuilder.html">ItemBuilder</a></li>
+    <li><a href="inventory.html">Inventory</a></li>
+    <li><a href="menu.html">Menu</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="effects-attributes">Effects & Attributes</div>
+  <ul class="sidebar-links">
+    <li><a href="effect.html">Effect</a></li>
+    <li><a href="potion.html">Potion</a></li>
+    <li><a href="attribute.html">Attribute</a></li>
+    <li><a href="advancement.html">Advancement</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="scoreboards-ui">Scoreboards & UI</div>
+  <ul class="sidebar-links">
+    <li><a href="bossbar.html">BossBar</a></li>
+    <li><a href="scoreboard.html">Scoreboard</a></li>
+    <li><a href="objective.html">Objective</a></li>
+    <li><a href="team.html">Team</a></li>
+    <li><a href="sidebar.html">Sidebar</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="helpers">Helpers</div>
+  <ul class="sidebar-links">
+    <li><a href="config.html">Config</a></li>
+    <li><a href="cooldown.html">Cooldown</a></li>
+    <li><a href="hologram.html">Hologram</a></li>
+    <li><a href="enumvalue.html">EnumValue</a></li>
+    <li><a href="enums.html">Enums</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="display-entities">Display Entities</div>
+  <ul class="sidebar-links">
+    <li><a href="actionbardisplay.html">ActionBarDisplay</a></li>
+    <li><a href="bossbardisplay.html">BossBarDisplay</a></li>
+    <li><a href="blockdisplay.html">BlockDisplay</a></li>
+    <li><a href="itemdisplay.html">ItemDisplay</a></li>
+    <li><a href="imagedisplay.html">ImageDisplay</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="utilities">Utilities</div>
+  <ul class="sidebar-links">
+    <li><a href="raycast.html">Raycast</a></li>
+    <li><a href="chat.html">Chat</a></li>
+    <li><a href="reflect.html">Reflect</a></li>
+  </ul>
+</div>
+  </aside>
+  <div class="sidebar-overlay"></div>
+
+  <!-- Main -->
+  <main class="main">
+    <div class="content">
+      <p class="subtitle">Register event handlers, commands, and repeating tasks</p>
+      <h1 id="decorators">Decorators</h1>
+<p>PyJavaBridge uses Python decorators to register event handlers, commands, and repeating tasks. Your decorated functions are discovered automatically when the script loads.</p>
+<hr />
+<h2 id="event">@event</h2>
+<pre><code class="language-python"><span class="dc">@event</span>
+<span class="kw">async</span> <span class="kw">def</span> player_join(e):
+    <span class="kw">await</span> e.player.send_message(<span class="st">&quot;Welcome!&quot;</span>)
+</code></pre>
+<p>Register a function as an event handler. The function name determines the event type — it is converted from <code>snake_case</code> to <code>PascalCase</code> and <code>Event</code> is appended. For example, <code>player_join</code> becomes <code>PlayerJoinEvent</code>.</p>
+<h3 id="signature">Signature</h3>
+<pre><code>@event(*, once_per_tick=False, priority=&quot;NORMAL&quot;, throttle_ms=0)
+</code></pre>
+<h3 id="parameters">Parameters</h3>
+<h4 id="once_per_tick">once_per_tick</h4>
+<ul>
+<li><strong>Type:</strong> <code>bool</code></li>
+<li><strong>Default:</strong> <code>False</code></li>
+</ul>
+<p>When <code>True</code>, the handler is called at most once per server tick, even if the event fires multiple times. Useful for high-frequency events like <code>player_move</code>.</p>
+<pre><code class="language-python"><span class="dc">@event</span>(once_per_tick=<span class="kw">True</span>)
+<span class="kw">async</span> <span class="kw">def</span> player_move(e):
+    <span class="cm"># Called at most once per tick per event, not every micro-movement</span>
+    <span class="kw">pass</span>
+</code></pre>
+<h4 id="priority">priority</h4>
+<ul>
+<li><strong>Type:</strong> <code>str</code></li>
+<li><strong>Default:</strong> <code>"NORMAL"</code></li>
+</ul>
+<p>The Bukkit event priority. Determines the order in which handlers run. Options (lowest runs first):</p>
+<table>
+<thead>
+<tr>
+<th>Priority</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>LOWEST</code></td>
+<td>Runs first. Use for early cancellation.</td>
+</tr>
+<tr>
+<td><code>LOW</code></td>
+<td>Runs before normal handlers.</td>
+</tr>
+<tr>
+<td><code>NORMAL</code></td>
+<td>Default priority.</td>
+</tr>
+<tr>
+<td><code>HIGH</code></td>
+<td>Runs after normal handlers.</td>
+</tr>
+<tr>
+<td><code>HIGHEST</code></td>
+<td>Runs last before monitor.</td>
+</tr>
+<tr>
+<td><code>MONITOR</code></td>
+<td>Read-only observation. Do not modify the event.</td>
+</tr>
+</tbody>
+</table>
+<pre><code class="language-python"><span class="dc">@event</span>(priority=<span class="st">&quot;HIGH&quot;</span>)
+<span class="kw">async</span> <span class="kw">def</span> block_break(e):
+    <span class="cm"># This runs after NORMAL-priority handlers</span>
+    <span class="kw">pass</span>
+</code></pre>
+<h4 id="throttle_ms">throttle_ms</h4>
+<ul>
+<li><strong>Type:</strong> <code>int</code></li>
+<li><strong>Default:</strong> <code>0</code></li>
+</ul>
+<p>Minimum milliseconds between handler invocations. If the event fires more frequently, extra invocations are silently dropped.</p>
+<pre><code class="language-python"><span class="dc">@event</span>(throttle_ms=<span class="nb">500</span>)
+<span class="kw">async</span> <span class="kw">def</span> player_interact(e):
+    <span class="cm"># At most once every 500ms, prevents spam-clicking abuse</span>
+    <span class="kw">pass</span>
+</code></pre>
+<h3 id="bare-decorator">Bare decorator</h3>
+<p>You can use <code>@event</code> without parentheses for the default settings:</p>
+<pre><code class="language-python"><span class="dc">@event</span>
+<span class="kw">async</span> <span class="kw">def</span> player_quit(e):
+    <span class="kw">await</span> server.broadcast(<span class="st">f&quot;{e.player.name} left!&quot;</span>)
+</code></pre>
+<hr />
+<h2 id="command">@command</h2>
+<pre><code class="language-python"><span class="dc">@command</span>(<span class="st">&quot;Greet a player&quot;</span>, permission=<span class="st">&quot;myplugin.greet&quot;</span>)
+<span class="kw">async</span> <span class="kw">def</span> greet(e):
+    <span class="kw">await</span> e.player.send_message(<span class="st">&quot;Hello!&quot;</span>)
+</code></pre>
+<p>Register a function as a script command. The command is automatically available as <code>/functionname</code> (or as specified via the <code>name</code> parameter). Command arguments are parsed from the function's additional parameters after <code>event</code>.</p>
+<h3 id="signature_1">Signature</h3>
+<pre><code>@command(description=None, *, name=None, permission=None)
+</code></pre>
+<h3 id="parameters_1">Parameters</h3>
+<h4 id="description">description</h4>
+<ul>
+<li><strong>Type:</strong> <code>str | None</code></li>
+<li><strong>Default:</strong> <code>None</code></li>
+</ul>
+<p>A human-readable description of the command. This is the first positional argument.</p>
+<pre><code class="language-python"><span class="dc">@command</span>(<span class="st">&quot;Teleport to spawn&quot;</span>)
+<span class="kw">async</span> <span class="kw">def</span> spawn(e):
+    ...
+</code></pre>
+<h4 id="name">name</h4>
+<ul>
+<li><strong>Type:</strong> <code>str | None</code></li>
+<li><strong>Default:</strong> <code>None</code> (uses function name)</li>
+</ul>
+<p>Override the command name. By default the function name is used.</p>
+<pre><code class="language-python"><span class="dc">@command</span>(<span class="st">&quot;Teleport home&quot;</span>, name=<span class="st">&quot;home&quot;</span>)
+<span class="kw">async</span> <span class="kw">def</span> teleport_home(e):
+    <span class="cm"># Registered as /home, not /teleport_home</span>
+    ...
+</code></pre>
+<h4 id="permission">permission</h4>
+<ul>
+<li><strong>Type:</strong> <code>str | None</code></li>
+<li><strong>Default:</strong> <code>None</code></li>
+</ul>
+<p>Permission node required to use the command. Players without this permission cannot execute it.</p>
+<pre><code class="language-python"><span class="dc">@command</span>(<span class="st">&quot;Ban a player&quot;</span>, permission=<span class="st">&quot;admin.ban&quot;</span>)
+<span class="kw">async</span> <span class="kw">def</span> ban(e, target: str):
+    ...
+</code></pre>
+<h3 id="command-arguments">Command arguments</h3>
+<p>Extra function parameters after the event become command arguments. They are parsed positionally from the player's input:</p>
+<pre><code class="language-python"><span class="dc">@command</span>(<span class="st">&quot;Give items&quot;</span>)
+<span class="kw">async</span> <span class="kw">def</span> give(e, material: str, amount: str = <span class="st">&quot;1&quot;</span>):
+    <span class="cm"># /give diamond 64</span>
+    <span class="cm"># material = &quot;diamond&quot;, amount = &quot;64&quot;</span>
+    <span class="kw">await</span> Item.give(e.player, material, int(amount))
+</code></pre>
+<p>All arguments are passed as strings. You handle type conversion yourself.</p>
+<hr />
+<h2 id="task">@task</h2>
+<pre><code class="language-python"><span class="dc">@task</span>(interval=<span class="nb">20</span>, delay=<span class="nb">0</span>)
+<span class="kw">async</span> <span class="kw">def</span> tick_loop():
+    ...
+</code></pre>
+<p>Register a repeating async task. The function is called repeatedly at the specified interval after an optional initial delay.</p>
+<h3 id="signature_2">Signature</h3>
+<pre><code>@task(*, interval=20, delay=0)
+</code></pre>
+<h3 id="parameters_2">Parameters</h3>
+<h4 id="interval">interval</h4>
+<ul>
+<li><strong>Type:</strong> <code>int</code></li>
+<li><strong>Default:</strong> <code>20</code></li>
+</ul>
+<p>Ticks between invocations. Minecraft runs at 20 ticks per second, so <code>interval=20</code> means once per second, <code>interval=1</code> means every tick.</p>
+<h4 id="delay">delay</h4>
+<ul>
+<li><strong>Type:</strong> <code>int</code></li>
+<li><strong>Default:</strong> <code>0</code></li>
+</ul>
+<p>Initial delay in ticks before the first invocation. Use this to wait for the server to fully start.</p>
+<pre><code class="language-python"><span class="dc">@task</span>(interval=<span class="nb">20</span>*<span class="nb">60</span>, delay=<span class="nb">20</span>*<span class="nb">5</span>)
+<span class="kw">async</span> <span class="kw">def</span> auto_save():
+    <span class="cm"># Runs every 60 seconds, starting 5 seconds after script load</span>
+    <span class="kw">await</span> server.execute(<span class="st">&quot;save-all&quot;</span>)
+</code></pre>
+<h3 id="notes">Notes</h3>
+<ul>
+<li>Task functions take <strong>no arguments</strong> (unlike event/command handlers).</li>
+<li>The task is cancelled automatically when the script is unloaded.</li>
+<li>If the function is still running when the next invocation is due, the next invocation is skipped.</li>
+</ul>
+    </div>
+    <footer class="site-footer">
+      &copy; Omena0 2026 &middot; PyJavaBridge Documentation
+    </footer>
+  </main>
+
+  <!-- Back to top -->
+  <button class="back-to-top" aria-label="Back to top">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+      <path d="M18 15l-6-6-6 6"/>
+    </svg>
+  </button>
+
+  <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Raycast — PyJavaBridge</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Header -->
+  <header class="site-header">
+    <button class="menu-toggle" aria-label="Toggle menu">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M3 12h18M3 6h18M3 18h18"/>
+      </svg>
+    </button>
+    <a href="index.html" class="header-brand">
+      <span class="logo">Py</span>
+      PyJavaBridge
+    </a>
+    <nav class="header-nav">
+      <a href="index.html">Docs</a>
+      <a href="examples.html">Examples</a>
+      <a href="https://github.com/Omena0/PyJavaBridge">GitHub</a>
+    </nav>
+  </header>
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+<div class="search-box">
+  <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+  <input type="text" id="sidebar-search" placeholder="Search docs…">
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading" data-section="on-this-page">On This Page</div>
+  <ul class="sidebar-links">
+    <li><a href="#function-signature">Function Signature</a></li>
+    <li><a href="#attributes">Attributes</a></li>
+    <li><a href="#x" style="padding-left:40px;font-size:.8rem">x</a></li>
+    <li><a href="#y" style="padding-left:40px;font-size:.8rem">y</a></li>
+    <li><a href="#z" style="padding-left:40px;font-size:.8rem">z</a></li>
+    <li><a href="#entity" style="padding-left:40px;font-size:.8rem">entity</a></li>
+    <li><a href="#block" style="padding-left:40px;font-size:.8rem">block</a></li>
+    <li><a href="#start_x" style="padding-left:40px;font-size:.8rem">start_x</a></li>
+    <li><a href="#start_y" style="padding-left:40px;font-size:.8rem">start_y</a></li>
+    <li><a href="#start_z" style="padding-left:40px;font-size:.8rem">start_z</a></li>
+    <li><a href="#yaw" style="padding-left:40px;font-size:.8rem">yaw</a></li>
+    <li><a href="#pitch" style="padding-left:40px;font-size:.8rem">pitch</a></li>
+    <li><a href="#distance" style="padding-left:40px;font-size:.8rem">distance</a></li>
+    <li><a href="#hit_face" style="padding-left:40px;font-size:.8rem">hit_face</a></li>
+    <li><a href="#example-target-selector">Example: Target selector</a></li>
+    <li><a href="#example-build-tool">Example: Build tool</a></li>
+    <li><a href="#example-line-of-sight-check">Example: Line of sight check</a></li>
+  </ul>
+</div>
+
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="getting-started">Getting Started</div>
+  <ul class="sidebar-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="decorators.html">Decorators</a></li>
+    <li><a href="exceptions.html">Exceptions</a></li>
+    <li><a href="examples.html">Examples</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="core">Core</div>
+  <ul class="sidebar-links">
+    <li><a href="server.html">Server</a></li>
+    <li><a href="event.html">Event</a></li>
+    <li><a href="entity.html">Entity</a></li>
+    <li><a href="player.html">Player</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="world-space">World & Space</div>
+  <ul class="sidebar-links">
+    <li><a href="world.html">World</a></li>
+    <li><a href="location.html">Location</a></li>
+    <li><a href="block.html">Block</a></li>
+    <li><a href="chunk.html">Chunk</a></li>
+    <li><a href="vector.html">Vector</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="items-inventory">Items & Inventory</div>
+  <ul class="sidebar-links">
+    <li><a href="item.html">Item</a></li>
+    <li><a href="itembuilder.html">ItemBuilder</a></li>
+    <li><a href="inventory.html">Inventory</a></li>
+    <li><a href="menu.html">Menu</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="effects-attributes">Effects & Attributes</div>
+  <ul class="sidebar-links">
+    <li><a href="effect.html">Effect</a></li>
+    <li><a href="potion.html">Potion</a></li>
+    <li><a href="attribute.html">Attribute</a></li>
+    <li><a href="advancement.html">Advancement</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="scoreboards-ui">Scoreboards & UI</div>
+  <ul class="sidebar-links">
+    <li><a href="bossbar.html">BossBar</a></li>
+    <li><a href="scoreboard.html">Scoreboard</a></li>
+    <li><a href="objective.html">Objective</a></li>
+    <li><a href="team.html">Team</a></li>
+    <li><a href="sidebar.html">Sidebar</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="helpers">Helpers</div>
+  <ul class="sidebar-links">
+    <li><a href="config.html">Config</a></li>
+    <li><a href="cooldown.html">Cooldown</a></li>
+    <li><a href="hologram.html">Hologram</a></li>
+    <li><a href="enumvalue.html">EnumValue</a></li>
+    <li><a href="enums.html">Enums</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="display-entities">Display Entities</div>
+  <ul class="sidebar-links">
+    <li><a href="actionbardisplay.html">ActionBarDisplay</a></li>
+    <li><a href="bossbardisplay.html">BossBarDisplay</a></li>
+    <li><a href="blockdisplay.html">BlockDisplay</a></li>
+    <li><a href="itemdisplay.html">ItemDisplay</a></li>
+    <li><a href="imagedisplay.html">ImageDisplay</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="utilities">Utilities</div>
+  <ul class="sidebar-links">
+    <li><a href="raycast.html" class="active">Raycast</a></li>
+    <li><a href="chat.html">Chat</a></li>
+    <li><a href="reflect.html">Reflect</a></li>
+  </ul>
+</div>
+  </aside>
+  <div class="sidebar-overlay"></div>
+
+  <!-- Main -->
+  <main class="main">
+    <div class="content">
+      <p class="subtitle">Ray tracing function</p>
+      <h1 id="raycast">raycast</h1>
+<p>The <code>raycast</code> function traces a ray through the world, detecting entities and blocks along the path. Useful for line-of-sight checks, targeting systems, and custom projectiles.</p>
+<hr />
+<h2 id="function-signature">Function Signature</h2>
+<pre><code class="language-python">result = <span class="kw">await</span> raycast(
+    world,
+    start,
+    direction,
+    max_distance=<span class="nb">64.0</span>,
+    ray_size=<span class="nb">0.2</span>,
+    include_entities=<span class="kw">True</span>,
+    include_blocks=<span class="kw">True</span>,
+    ignore_passable=<span class="kw">True</span>
+)
+</code></pre>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>world</code> (<a href="world.html"><code>World</code></a> <code>| str</code>) — The world to raycast in.</li>
+<li><code>start</code> (<a href="vector.html"><code>Vector</code></a> <code>| tuple[float,float,float]</code>) — Ray origin (x, y, z).</li>
+<li><code>direction</code> (<code>tuple[float, float]</code>) — Direction as <code>(yaw, pitch)</code> in degrees.</li>
+<li><code>max_distance</code> (<code>float</code>) — Maximum ray distance in blocks. Default 64.0.</li>
+<li><code>ray_size</code> (<code>float</code>) — Ray thickness for entity detection. Default 0.2.</li>
+<li><code>include_entities</code> (<code>bool</code>) — Whether to detect entities. Default <code>True</code>.</li>
+<li><code>include_blocks</code> (<code>bool</code>) — Whether to detect blocks. Default <code>True</code>.</li>
+<li><code>ignore_passable</code> (<code>bool</code>) — Whether to ignore passable blocks (grass, flowers, etc.). Default <code>True</code>.</li>
+<li><strong>Returns:</strong> <code>Awaitable[</code><a href="#raycastresult"><code>RaycastResult</code></a><code>| None]</code> — Hit result, or <code>None</code> if nothing was hit.</li>
+</ul>
+<pre><code class="language-python"><span class="kw">from</span> bridge <span class="kw">import</span> *
+
+<span class="cm"># Raycast from a player's eye position in their look direction</span>
+result = <span class="kw">await</span> raycast(
+    player.world,
+    (player.location.x, player.location.y + <span class="nb">1.62</span>, player.location.z),
+    (player.location.yaw, player.location.pitch),
+    max_distance=<span class="nb">50.0</span>
+)
+
+<span class="kw">if</span> result:
+    <span class="kw">if</span> result.entity:
+        <span class="kw">await</span> player.send_message(<span class="st">f&quot;§aLooking at: {result.entity.type.name}&quot;</span>)
+    <span class="kw">elif</span> result.block:
+        <span class="kw">await</span> player.send_message(<span class="st">f&quot;§aLooking at block: {result.block.type.name}&quot;</span>)
+</code></pre>
+<hr />
+<h1 id="raycastresult">RaycastResult</h1>
+<p>Returned by <code>raycast()</code> when a hit occurs.</p>
+<h2 id="attributes">Attributes</h2>
+<h3 id="x">x</h3>
+<ul>
+<li><strong>Type:</strong> <code>float</code></li>
+</ul>
+<p>X coordinate of the hit point.</p>
+<h3 id="y">y</h3>
+<ul>
+<li><strong>Type:</strong> <code>float</code></li>
+</ul>
+<p>Y coordinate of the hit point.</p>
+<h3 id="z">z</h3>
+<ul>
+<li><strong>Type:</strong> <code>float</code></li>
+</ul>
+<p>Z coordinate of the hit point.</p>
+<h3 id="entity">entity</h3>
+<ul>
+<li><strong>Type:</strong> <a href="entity.html"><code>Entity</code></a> <code>| None</code></li>
+</ul>
+<p>The entity that was hit, or <code>None</code> if a block was hit.</p>
+<h3 id="block">block</h3>
+<ul>
+<li><strong>Type:</strong> <a href="block.html"><code>Block</code></a> <code>| None</code></li>
+</ul>
+<p>The block that was hit, or <code>None</code> if an entity was hit.</p>
+<h3 id="start_x">start_x</h3>
+<ul>
+<li><strong>Type:</strong> <code>float</code></li>
+</ul>
+<p>X coordinate of the ray origin.</p>
+<h3 id="start_y">start_y</h3>
+<ul>
+<li><strong>Type:</strong> <code>float</code></li>
+</ul>
+<p>Y coordinate of the ray origin.</p>
+<h3 id="start_z">start_z</h3>
+<ul>
+<li><strong>Type:</strong> <code>float</code></li>
+</ul>
+<p>Z coordinate of the ray origin.</p>
+<h3 id="yaw">yaw</h3>
+<ul>
+<li><strong>Type:</strong> <code>float</code></li>
+</ul>
+<p>Yaw direction of the ray.</p>
+<h3 id="pitch">pitch</h3>
+<ul>
+<li><strong>Type:</strong> <code>float</code></li>
+</ul>
+<p>Pitch direction of the ray.</p>
+<h3 id="distance">distance</h3>
+<ul>
+<li><strong>Type:</strong> <code>float</code></li>
+</ul>
+<p>Distance from the ray origin to the hit point.</p>
+<h3 id="hit_face">hit_face</h3>
+<ul>
+<li><strong>Type:</strong> <code>str | None</code></li>
+</ul>
+<p>The face of the block that was hit (e.g. <code>"NORTH"</code>, <code>"UP"</code>), or <code>None</code> for entity hits.</p>
+<hr />
+<h2 id="example-target-selector">Example: Target selector</h2>
+<pre><code class="language-python"><span class="kw">from</span> bridge <span class="kw">import</span> *
+
+<span class="dc">@command</span>(<span class="st">&quot;Smite what you're looking at&quot;</span>)
+<span class="kw">async</span> <span class="kw">def</span> smite(player: Player, args: list[str]):
+    loc = player.location
+    result = <span class="kw">await</span> raycast(
+        player.world,
+        (loc.x, loc.y + <span class="nb">1.62</span>, loc.z),
+        (loc.yaw, loc.pitch),
+        max_distance=<span class="nb">100.0</span>,
+        include_entities=<span class="kw">True</span>,
+        include_blocks=<span class="kw">False</span>
+    )
+
+    <span class="kw">if</span> result <span class="kw">and</span> result.entity:
+        hit_loc = Location(result.x, result.y, result.z, player.world.name)
+        <span class="kw">await</span> player.world.strike_lightning(hit_loc)
+        <span class="kw">await</span> player.send_message(<span class="st">f&quot;§e⚡ Smited {result.entity.type.name}!&quot;</span>)
+    <span class="kw">else</span>:
+        <span class="kw">await</span> player.send_message(<span class="st">&quot;§cNo entity in sight!&quot;</span>)
+</code></pre>
+<h2 id="example-build-tool">Example: Build tool</h2>
+<pre><code class="language-python"><span class="kw">from</span> bridge <span class="kw">import</span> *
+
+<span class="dc">@command</span>(<span class="st">&quot;Place a block where you look&quot;</span>)
+<span class="kw">async</span> <span class="kw">def</span> place(player: Player, args: list[str]):
+    material = args[<span class="nb">0</span>] <span class="kw">if</span> args <span class="kw">else</span> <span class="st">&quot;STONE&quot;</span>
+    loc = player.location
+    result = <span class="kw">await</span> raycast(
+        player.world,
+        (loc.x, loc.y + <span class="nb">1.62</span>, loc.z),
+        (loc.yaw, loc.pitch),
+        max_distance=<span class="nb">50.0</span>,
+        include_entities=<span class="kw">False</span>,
+        include_blocks=<span class="kw">True</span>
+    )
+
+    <span class="kw">if</span> result <span class="kw">and</span> result.block:
+        <span class="cm"># Place block on the hit face</span>
+        bx, by, bz = int(result.x), int(result.y), int(result.z)
+        <span class="kw">if</span> result.hit_face == <span class="st">&quot;UP&quot;</span>: by += <span class="nb">1</span>
+        <span class="kw">elif</span> result.hit_face == <span class="st">&quot;DOWN&quot;</span>: by -= <span class="nb">1</span>
+        <span class="kw">elif</span> result.hit_face == <span class="st">&quot;NORTH&quot;</span>: bz -= <span class="nb">1</span>
+        <span class="kw">elif</span> result.hit_face == <span class="st">&quot;SOUTH&quot;</span>: bz += <span class="nb">1</span>
+        <span class="kw">elif</span> result.hit_face == <span class="st">&quot;EAST&quot;</span>: bx += <span class="nb">1</span>
+        <span class="kw">elif</span> result.hit_face == <span class="st">&quot;WEST&quot;</span>: bx -= <span class="nb">1</span>
+
+        <span class="kw">await</span> player.world.set_block(bx, by, bz, material)
+        <span class="kw">await</span> player.send_message(<span class="st">f&quot;§aPlaced {material}!&quot;</span>)
+    <span class="kw">else</span>:
+        <span class="kw">await</span> player.send_message(<span class="st">&quot;§cNo block in range!&quot;</span>)
+</code></pre>
+<h2 id="example-line-of-sight-check">Example: Line of sight check</h2>
+<pre><code class="language-python"><span class="kw">from</span> bridge <span class="kw">import</span> *
+
+<span class="kw">async</span> <span class="kw">def</span> can_see(player, target_location):
+    <span class="st">&quot;&quot;&quot;Check if a player has line of sight to a location.&quot;&quot;&quot;</span>
+    loc = player.location
+    <span class="cm"># Calculate direction (simplified — yaw/pitch calculation)</span>
+    result = <span class="kw">await</span> raycast(
+        player.world,
+        (loc.x, loc.y + <span class="nb">1.62</span>, loc.z),
+        (loc.yaw, loc.pitch),
+        max_distance=<span class="nb">64.0</span>,
+        include_entities=<span class="kw">False</span>,
+        include_blocks=<span class="kw">True</span>,
+        ignore_passable=<span class="kw">True</span>
+    )
+
+    <span class="kw">if</span> result <span class="kw">is</span> <span class="kw">None</span>:
+        <span class="kw">return</span> <span class="kw">True</span>  <span class="cm"># Nothing blocking</span>
+    <span class="kw">return</span> result.distance &gt; loc.distance(target_location)
+</code></pre>
+    </div>
+    <footer class="site-footer">
+      &copy; Omena0 2026 &middot; PyJavaBridge Documentation
+    </footer>
+  </main>
+
+  <!-- Back to top -->
+  <button class="back-to-top" aria-label="Back to top">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+      <path d="M18 15l-6-6-6 6"/>
+    </svg>
+  </button>
+
+  <script src="script.js"></script>
+</body>
+</html>

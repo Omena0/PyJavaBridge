@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Config — PyJavaBridge</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Header -->
+  <header class="site-header">
+    <button class="menu-toggle" aria-label="Toggle menu">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M3 12h18M3 6h18M3 18h18"/>
+      </svg>
+    </button>
+    <a href="index.html" class="header-brand">
+      <span class="logo">Py</span>
+      PyJavaBridge
+    </a>
+    <nav class="header-nav">
+      <a href="index.html">Docs</a>
+      <a href="examples.html">Examples</a>
+      <a href="https://github.com/Omena0/PyJavaBridge">GitHub</a>
+    </nav>
+  </header>
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+<div class="search-box">
+  <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+  <input type="text" id="sidebar-search" placeholder="Search docs…">
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading" data-section="on-this-page">On This Page</div>
+  <ul class="sidebar-links">
+    <li><a href="#constructor">Constructor</a></li>
+    <li><a href="#attributes">Attributes</a></li>
+    <li><a href="#data" style="padding-left:40px;font-size:.8rem">data</a></li>
+    <li><a href="#path" style="padding-left:40px;font-size:.8rem">path</a></li>
+    <li><a href="#methods">Methods</a></li>
+    <li><a href="#get" style="padding-left:40px;font-size:.8rem">get</a></li>
+    <li><a href="#get_int" style="padding-left:40px;font-size:.8rem">get_int</a></li>
+    <li><a href="#get_float" style="padding-left:40px;font-size:.8rem">get_float</a></li>
+    <li><a href="#get_bool" style="padding-left:40px;font-size:.8rem">get_bool</a></li>
+    <li><a href="#get_list" style="padding-left:40px;font-size:.8rem">get_list</a></li>
+    <li><a href="#set" style="padding-left:40px;font-size:.8rem">set</a></li>
+    <li><a href="#delete" style="padding-left:40px;font-size:.8rem">delete</a></li>
+    <li><a href="#save" style="padding-left:40px;font-size:.8rem">save</a></li>
+    <li><a href="#reload" style="padding-left:40px;font-size:.8rem">reload</a></li>
+    <li><a href="#dict-style-access">Dict-style Access</a></li>
+    <li><a href="#example-ban-system-config">Example: Ban system config</a></li>
+  </ul>
+</div>
+
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="getting-started">Getting Started</div>
+  <ul class="sidebar-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="decorators.html">Decorators</a></li>
+    <li><a href="exceptions.html">Exceptions</a></li>
+    <li><a href="examples.html">Examples</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="core">Core</div>
+  <ul class="sidebar-links">
+    <li><a href="server.html">Server</a></li>
+    <li><a href="event.html">Event</a></li>
+    <li><a href="entity.html">Entity</a></li>
+    <li><a href="player.html">Player</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="world-space">World & Space</div>
+  <ul class="sidebar-links">
+    <li><a href="world.html">World</a></li>
+    <li><a href="location.html">Location</a></li>
+    <li><a href="block.html">Block</a></li>
+    <li><a href="chunk.html">Chunk</a></li>
+    <li><a href="vector.html">Vector</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="items-inventory">Items & Inventory</div>
+  <ul class="sidebar-links">
+    <li><a href="item.html">Item</a></li>
+    <li><a href="itembuilder.html">ItemBuilder</a></li>
+    <li><a href="inventory.html">Inventory</a></li>
+    <li><a href="menu.html">Menu</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="effects-attributes">Effects & Attributes</div>
+  <ul class="sidebar-links">
+    <li><a href="effect.html">Effect</a></li>
+    <li><a href="potion.html">Potion</a></li>
+    <li><a href="attribute.html">Attribute</a></li>
+    <li><a href="advancement.html">Advancement</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="scoreboards-ui">Scoreboards & UI</div>
+  <ul class="sidebar-links">
+    <li><a href="bossbar.html">BossBar</a></li>
+    <li><a href="scoreboard.html">Scoreboard</a></li>
+    <li><a href="objective.html">Objective</a></li>
+    <li><a href="team.html">Team</a></li>
+    <li><a href="sidebar.html">Sidebar</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="helpers">Helpers</div>
+  <ul class="sidebar-links">
+    <li><a href="config.html" class="active">Config</a></li>
+    <li><a href="cooldown.html">Cooldown</a></li>
+    <li><a href="hologram.html">Hologram</a></li>
+    <li><a href="enumvalue.html">EnumValue</a></li>
+    <li><a href="enums.html">Enums</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="display-entities">Display Entities</div>
+  <ul class="sidebar-links">
+    <li><a href="actionbardisplay.html">ActionBarDisplay</a></li>
+    <li><a href="bossbardisplay.html">BossBarDisplay</a></li>
+    <li><a href="blockdisplay.html">BlockDisplay</a></li>
+    <li><a href="itemdisplay.html">ItemDisplay</a></li>
+    <li><a href="imagedisplay.html">ImageDisplay</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="utilities">Utilities</div>
+  <ul class="sidebar-links">
+    <li><a href="raycast.html">Raycast</a></li>
+    <li><a href="chat.html">Chat</a></li>
+    <li><a href="reflect.html">Reflect</a></li>
+  </ul>
+</div>
+  </aside>
+  <div class="sidebar-overlay"></div>
+
+  <!-- Main -->
+  <main class="main">
+    <div class="content">
+      <p class="subtitle">YAML configuration files</p>
+      <h1 id="config">Config</h1>
+<p><code>Config</code> provides a simple interface for reading and writing YAML configuration files. Config files are stored in the plugin's data folder and persist across server restarts.</p>
+<hr />
+<h2 id="constructor">Constructor</h2>
+<pre><code class="language-python">Config(name=<span class="kw">None</span>, defaults=<span class="kw">None</span>)
+</code></pre>
+<p>Load or create a configuration file.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>name</code> (<code>str | None</code>) — File name (without <code>.yml</code> extension). If <code>None</code>, uses the default <code>config.yml</code>.</li>
+<li><code>defaults</code> (<code>dict[str, Any] | None</code>) — Default values to merge into the config if they don't already exist.</li>
+</ul>
+<pre><code class="language-python"><span class="cm"># Default config.yml</span>
+config = Config()
+
+<span class="cm"># Named config</span>
+bans = Config(<span class="st">&quot;bans&quot;</span>)
+
+<span class="cm"># With defaults</span>
+settings = Config(<span class="st">&quot;settings&quot;</span>, defaults={
+    <span class="st">&quot;spawn_protection_radius&quot;</span>: <span class="nb">16</span>,
+    <span class="st">&quot;max_homes&quot;</span>: <span class="nb">3</span>,
+    <span class="st">&quot;welcome_message&quot;</span>: <span class="st">&quot;§aWelcome to the server!&quot;</span>
+})
+</code></pre>
+<hr />
+<h2 id="attributes">Attributes</h2>
+<h3 id="data">data</h3>
+<ul>
+<li><strong>Type:</strong> <code>dict[str, Any]</code></li>
+</ul>
+<p>The entire config as a dictionary.</p>
+<h3 id="path">path</h3>
+<ul>
+<li><strong>Type:</strong> <code>str</code></li>
+</ul>
+<p>Absolute file path to the YAML file.</p>
+<hr />
+<h2 id="methods">Methods</h2>
+<h3 id="get">get</h3>
+<pre><code class="language-python">value = config.get(path, default=<span class="kw">None</span>)
+</code></pre>
+<p>Get a value by dot-separated path.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>path</code> (<code>str</code>) — Dot-separated key path (e.g. <code>"database.host"</code>).</li>
+<li><code>default</code> (<code>Any</code>) — Fallback if the key doesn't exist. Default <code>None</code>.</li>
+<li><strong>Returns:</strong> <code>Any</code></li>
+</ul>
+<pre><code class="language-python">radius = config.get(<span class="st">&quot;spawn_protection_radius&quot;</span>, <span class="nb">16</span>)
+db_host = config.get(<span class="st">&quot;database.host&quot;</span>, <span class="st">&quot;localhost&quot;</span>)
+</code></pre>
+<h3 id="get_int">get_int</h3>
+<pre><code class="language-python">value = config.get_int(path, default=<span class="nb">0</span>)
+</code></pre>
+<p>Get a value as an integer.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>path</code> (<code>str</code>) — Dot-separated key path.</li>
+<li><code>default</code> (<code>int</code>) — Fallback. Default 0.</li>
+<li><strong>Returns:</strong> <code>int</code></li>
+</ul>
+<h3 id="get_float">get_float</h3>
+<pre><code class="language-python">value = config.get_float(path, default=<span class="nb">0.0</span>)
+</code></pre>
+<p>Get a value as a float.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>path</code> (<code>str</code>) — Dot-separated key path.</li>
+<li><code>default</code> (<code>float</code>) — Fallback. Default 0.0.</li>
+<li><strong>Returns:</strong> <code>float</code></li>
+</ul>
+<h3 id="get_bool">get_bool</h3>
+<pre><code class="language-python">value = config.get_bool(path, default=<span class="kw">False</span>)
+</code></pre>
+<p>Get a value as a boolean.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>path</code> (<code>str</code>) — Dot-separated key path.</li>
+<li><code>default</code> (<code>bool</code>) — Fallback. Default <code>False</code>.</li>
+<li><strong>Returns:</strong> <code>bool</code></li>
+</ul>
+<h3 id="get_list">get_list</h3>
+<pre><code class="language-python">value = config.get_list(path, default=<span class="kw">None</span>)
+</code></pre>
+<p>Get a value as a list.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>path</code> (<code>str</code>) — Dot-separated key path.</li>
+<li><code>default</code> (<code>list[Any] | None</code>) — Fallback. Default <code>None</code>.</li>
+<li><strong>Returns:</strong> <code>list[Any]</code></li>
+</ul>
+<h3 id="set">set</h3>
+<pre><code class="language-python">config.set(path, value)
+</code></pre>
+<p>Set a value by dot-separated path. Creates intermediate keys as needed.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>path</code> (<code>str</code>) — Dot-separated key path.</li>
+<li><code>value</code> (<code>Any</code>) — Value to set.</li>
+</ul>
+<pre><code class="language-python">config.set(<span class="st">&quot;database.host&quot;</span>, <span class="st">&quot;localhost&quot;</span>)
+config.set(<span class="st">&quot;database.port&quot;</span>, <span class="nb">3306</span>)
+</code></pre>
+<h3 id="delete">delete</h3>
+<pre><code class="language-python">result = config.delete(path)
+</code></pre>
+<p>Delete a key.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>path</code> (<code>str</code>) — Dot-separated key path.</li>
+<li><strong>Returns:</strong> <code>bool</code> — <code>True</code> if the key existed and was deleted.</li>
+</ul>
+<h3 id="save">save</h3>
+<pre><code class="language-python">config.save()
+</code></pre>
+<p>Write changes to disk. This is synchronous.</p>
+<pre><code class="language-python">config.set(<span class="st">&quot;last_restart&quot;</span>, <span class="st">&quot;2024-01-15&quot;</span>)
+config.save()
+</code></pre>
+<h3 id="reload">reload</h3>
+<pre><code class="language-python">config.reload()
+</code></pre>
+<p>Reload the config from disk, discarding unsaved changes. This is synchronous.</p>
+<hr />
+<h2 id="dict-style-access">Dict-style Access</h2>
+<p>Config supports <code>[]</code> notation and <code>in</code> checks:</p>
+<pre><code class="language-python"><span class="cm"># These are equivalent</span>
+value = config[<span class="st">&quot;key&quot;</span>]
+value = config.get(<span class="st">&quot;key&quot;</span>)
+
+<span class="cm"># Set values</span>
+config[<span class="st">&quot;key&quot;</span>] = <span class="st">&quot;value&quot;</span>
+config.set(<span class="st">&quot;key&quot;</span>, <span class="st">&quot;value&quot;</span>)
+
+<span class="cm"># Check existence</span>
+<span class="kw">if</span> <span class="st">&quot;key&quot;</span> <span class="kw">in</span> config:
+    print(<span class="st">&quot;Key exists!&quot;</span>)
+</code></pre>
+<hr />
+<h2 id="example-ban-system-config">Example: Ban system config</h2>
+<pre><code class="language-python"><span class="kw">from</span> bridge <span class="kw">import</span> *
+
+bans = Config(<span class="st">&quot;bans&quot;</span>, defaults={<span class="st">&quot;banned_players&quot;</span>: {}})
+
+<span class="dc">@command</span>(<span class="st">&quot;Ban a player&quot;</span>)
+<span class="kw">async</span> <span class="kw">def</span> ban(player: Player, args: list[str]):
+    <span class="kw">if</span> <span class="kw">not</span> args:
+        <span class="kw">await</span> player.send_message(<span class="st">&quot;§cUsage: /ban &lt;player&gt; [reason]&quot;</span>)
+        <span class="kw">return</span>
+
+    target = args[<span class="nb">0</span>]
+    reason = <span class="st">&quot; &quot;</span>.join(args[<span class="nb">1</span>:]) <span class="kw">or</span> <span class="st">&quot;No reason given&quot;</span>
+
+    bans.set(<span class="st">f&quot;banned_players.{target}&quot;</span>, {
+        <span class="st">&quot;reason&quot;</span>: reason,
+        <span class="st">&quot;banned_by&quot;</span>: player.name,
+    })
+    bans.save()
+    <span class="kw">await</span> player.send_message(<span class="st">f&quot;§aBanned {target}: {reason}&quot;</span>)
+
+<span class="dc">@event</span>
+<span class="kw">async</span> <span class="kw">def</span> player_login(e: Event):
+    ban_info = bans.get(<span class="st">f&quot;banned_players.{e.player.name}&quot;</span>)
+    <span class="kw">if</span> ban_info:
+        <span class="kw">await</span> e.player.kick(<span class="st">f&quot;§cBanned: {ban_info['reason']}&quot;</span>)
+</code></pre>
+    </div>
+    <footer class="site-footer">
+      &copy; Omena0 2026 &middot; PyJavaBridge Documentation
+    </footer>
+  </main>
+
+  <!-- Back to top -->
+  <button class="back-to-top" aria-label="Back to top">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+      <path d="M18 15l-6-6-6 6"/>
+    </svg>
+  </button>
+
+  <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Exceptions — PyJavaBridge</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Header -->
+  <header class="site-header">
+    <button class="menu-toggle" aria-label="Toggle menu">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M3 12h18M3 6h18M3 18h18"/>
+      </svg>
+    </button>
+    <a href="index.html" class="header-brand">
+      <span class="logo">Py</span>
+      PyJavaBridge
+    </a>
+    <nav class="header-nav">
+      <a href="index.html">Docs</a>
+      <a href="examples.html">Examples</a>
+      <a href="https://github.com/Omena0/PyJavaBridge">GitHub</a>
+    </nav>
+  </header>
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+<div class="search-box">
+  <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+  <input type="text" id="sidebar-search" placeholder="Search docs…">
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading" data-section="on-this-page">On This Page</div>
+  <ul class="sidebar-links">
+    <li><a href="#bridgeerror">BridgeError</a></li>
+    <li><a href="#entitygoneexception">EntityGoneException</a></li>
+    <li><a href="#when-to-expect-it" style="padding-left:40px;font-size:.8rem">When to expect it</a></li>
+    <li><a href="#best-practice" style="padding-left:40px;font-size:.8rem">Best practice</a></li>
+  </ul>
+</div>
+
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="getting-started">Getting Started</div>
+  <ul class="sidebar-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="decorators.html">Decorators</a></li>
+    <li><a href="exceptions.html" class="active">Exceptions</a></li>
+    <li><a href="examples.html">Examples</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="core">Core</div>
+  <ul class="sidebar-links">
+    <li><a href="server.html">Server</a></li>
+    <li><a href="event.html">Event</a></li>
+    <li><a href="entity.html">Entity</a></li>
+    <li><a href="player.html">Player</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="world-space">World & Space</div>
+  <ul class="sidebar-links">
+    <li><a href="world.html">World</a></li>
+    <li><a href="location.html">Location</a></li>
+    <li><a href="block.html">Block</a></li>
+    <li><a href="chunk.html">Chunk</a></li>
+    <li><a href="vector.html">Vector</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="items-inventory">Items & Inventory</div>
+  <ul class="sidebar-links">
+    <li><a href="item.html">Item</a></li>
+    <li><a href="itembuilder.html">ItemBuilder</a></li>
+    <li><a href="inventory.html">Inventory</a></li>
+    <li><a href="menu.html">Menu</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="effects-attributes">Effects & Attributes</div>
+  <ul class="sidebar-links">
+    <li><a href="effect.html">Effect</a></li>
+    <li><a href="potion.html">Potion</a></li>
+    <li><a href="attribute.html">Attribute</a></li>
+    <li><a href="advancement.html">Advancement</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="scoreboards-ui">Scoreboards & UI</div>
+  <ul class="sidebar-links">
+    <li><a href="bossbar.html">BossBar</a></li>
+    <li><a href="scoreboard.html">Scoreboard</a></li>
+    <li><a href="objective.html">Objective</a></li>
+    <li><a href="team.html">Team</a></li>
+    <li><a href="sidebar.html">Sidebar</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="helpers">Helpers</div>
+  <ul class="sidebar-links">
+    <li><a href="config.html">Config</a></li>
+    <li><a href="cooldown.html">Cooldown</a></li>
+    <li><a href="hologram.html">Hologram</a></li>
+    <li><a href="enumvalue.html">EnumValue</a></li>
+    <li><a href="enums.html">Enums</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="display-entities">Display Entities</div>
+  <ul class="sidebar-links">
+    <li><a href="actionbardisplay.html">ActionBarDisplay</a></li>
+    <li><a href="bossbardisplay.html">BossBarDisplay</a></li>
+    <li><a href="blockdisplay.html">BlockDisplay</a></li>
+    <li><a href="itemdisplay.html">ItemDisplay</a></li>
+    <li><a href="imagedisplay.html">ImageDisplay</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="utilities">Utilities</div>
+  <ul class="sidebar-links">
+    <li><a href="raycast.html">Raycast</a></li>
+    <li><a href="chat.html">Chat</a></li>
+    <li><a href="reflect.html">Reflect</a></li>
+  </ul>
+</div>
+  </aside>
+  <div class="sidebar-overlay"></div>
+
+  <!-- Main -->
+  <main class="main">
+    <div class="content">
+      <p class="subtitle">Error types raised by the bridge</p>
+      <h1 id="exceptions">Exceptions</h1>
+<p>The bridge defines a small exception hierarchy for errors that originate from the Java side.</p>
+<hr />
+<h2 id="bridgeerror">BridgeError</h2>
+<pre><code class="language-python"><span class="kw">class</span> BridgeError(Exception)
+</code></pre>
+<p>Base exception for all bridge-related errors. Catch this to handle any error that comes from the Java ↔ Python communication layer.</p>
+<pre><code class="language-python"><span class="kw">try</span>:
+    <span class="kw">await</span> entity.teleport(location)
+<span class="kw">except</span> BridgeError <span class="kw">as</span> e:
+    print(<span class="st">f&quot;Bridge call failed: {e}&quot;</span>)
+</code></pre>
+<hr />
+<h2 id="entitygoneexception">EntityGoneException</h2>
+<pre><code class="language-python"><span class="kw">class</span> EntityGoneException(BridgeError)
+</code></pre>
+<p>Raised when you try to interact with an entity that no longer exists on the server. This happens when:</p>
+<ul>
+<li>The entity was killed or removed between when you got the reference and when you used it.</li>
+<li>The entity's chunk was unloaded.</li>
+<li>The entity despawned naturally.</li>
+</ul>
+<pre><code class="language-python"><span class="kw">from</span> bridge <span class="kw">import</span> *
+
+<span class="dc">@event</span>
+<span class="kw">async</span> <span class="kw">def</span> entity_damage(e):
+    <span class="kw">await</span> server.wait(<span class="nb">20</span>)  <span class="cm"># Wait 1 second</span>
+    <span class="kw">try</span>:
+        <span class="kw">await</span> e.entity.set_fire_ticks(<span class="nb">100</span>)
+    <span class="kw">except</span> EntityGoneException:
+        <span class="cm"># Entity died or despawned during the wait</span>
+        <span class="kw">pass</span>
+</code></pre>
+<h3 id="when-to-expect-it">When to expect it</h3>
+<p>Any awaitable method on <code>Entity</code> or <code>Player</code> can raise <code>EntityGoneException</code> if the underlying Java entity has been garbage collected. This is especially common when:</p>
+<ul>
+<li>You store entity references across ticks</li>
+<li>You use <code>server.wait()</code> between getting a reference and using it</li>
+<li>You handle events where the entity might die (e.g. <code>entity_damage</code>)</li>
+</ul>
+<h3 id="best-practice">Best practice</h3>
+<p>If you need to use an entity reference after a delay, check <code>is_valid</code> first or wrap the call in a try/except:</p>
+<pre><code class="language-python"><span class="kw">if</span> entity.is_valid:
+    <span class="kw">await</span> entity.teleport(location)
+</code></pre>
+    </div>
+    <footer class="site-footer">
+      &copy; Omena0 2026 &middot; PyJavaBridge Documentation
+    </footer>
+  </main>
+
+  <!-- Back to top -->
+  <button class="back-to-top" aria-label="Back to top">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+      <path d="M18 15l-6-6-6 6"/>
+    </svg>
+  </button>
+
+  <script src="script.js"></script>
+</body>
+</html>
