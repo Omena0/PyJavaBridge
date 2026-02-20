@@ -271,8 +271,8 @@ TEMPLATE = """\
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{title} — PyJavaBridge</title>
-  <meta property="og:title" content="{title} — PyJavaBridge">
+  <title>{page_title} — PyJavaBridge</title>
+  <meta property="og:title" content="{og_title} — PyJavaBridge">
   <meta property="og:description" content="{og_description}">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="PyJavaBridge Docs">
@@ -347,6 +347,8 @@ def build_page(slug):
     meta, body_md = parse_frontmatter(raw)
     title = meta.get("title", slug.capitalize())
     subtitle = meta.get("subtitle", "")
+    page_title = meta.get("page_title", title)
+    og_title = meta.get("og_title", title)
 
     # Convert markdown to HTML
     body_html, toc_tokens = convert_markdown(body_md)
@@ -368,6 +370,8 @@ def build_page(slug):
     # Render template
     out_html = TEMPLATE.format(
         title=title,
+        page_title=page_title,
+        og_title=og_title,
         og_description=og_description,
         subtitle_html=subtitle_html,
         body=body_html,

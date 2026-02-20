@@ -1,5 +1,7 @@
 ---
 title: PyJavaBridge
+page_title: QuickStart
+og_title: Home
 subtitle: Expose Bukkit APIs to Python scripts via easy-to-use wrappers
 ---
 
