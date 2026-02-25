@@ -43,7 +43,7 @@ from bridge import *
 
 @event
 async def entity_damage(e):
-    await server.wait(20)  # Wait 1 second
+    await server.after(20)  # Wait 1 second
     try:
         await e.entity.set_fire_ticks(100)
     except EntityGoneException:
@@ -56,7 +56,7 @@ async def entity_damage(e):
 Any awaitable method on `Entity` or `Player` can raise `EntityGoneException` if the underlying Java entity has been garbage collected. This is especially common when:
 
 - You store entity references across ticks
-- You use `server.wait()` between getting a reference and using it
+- You use `server.after()` between getting a reference and using it
 - You handle events where the entity might die (e.g. `entity_damage`)
 
 ### Best practice

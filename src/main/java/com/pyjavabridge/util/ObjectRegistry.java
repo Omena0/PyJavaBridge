@@ -33,9 +33,9 @@ public class ObjectRegistry {
     }
 
     public void release(int id) {
-        Object removed = objects.remove(id);
-        if (removed != null) {
-            synchronized (reverseLock) {
+        synchronized (reverseLock) {
+            Object removed = objects.remove(id);
+            if (removed != null) {
                 reverseMap.remove(removed);
             }
         }

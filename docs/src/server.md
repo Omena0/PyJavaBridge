@@ -98,7 +98,7 @@ The Bukkit plugin manager. Primarily useful for advanced reflection use cases.
 
 - **Type:** `any`
 
-The Bukkit scheduler. Rarely needed — use `server.wait()` and `@task` instead.
+The Bukkit scheduler. Rarely needed — use `server.after()` and `@task` instead.
 
 ### scoreboard_manager
 
@@ -189,10 +189,10 @@ Get an advancement by its namespaced key.
   - `key` (`str`) — The advancement key (e.g. `"minecraft:story/mine_diamond"`).
 - **Returns:** `Awaitable[`[`Advancement`](advancement.md)`]`
 
-### wait
+### after
 
 ```python
-await server.wait(ticks: int = 1, after: callable | None = None)
+await server.after(ticks: int = 1, after: callable | None = None)
 ```
 
 Pause execution for a number of ticks. Optionally run a callback after the wait.
@@ -203,11 +203,11 @@ Pause execution for a number of ticks. Optionally run a callback after the wait.
 - **Returns:** `Awaitable[None]`
 
 ```python
-await server.wait(20)  # Wait 1 second
-await server.wait(60)  # Wait 3 seconds
+await server.after(20)  # Wait 1 second
+await server.after(60)  # Wait 3 seconds
 
 # With callback
-await server.wait(20, after=lambda: print("Done waiting!"))
+await server.after(20, after=lambda: print("Done waiting!"))
 ```
 
 ### frame

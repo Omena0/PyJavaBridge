@@ -11,13 +11,15 @@ Feature update
 
 - Optimized for single request latency
 - Use batching to speed up multiple requests
+- Now uses orjson for faster parsing
+- Automatic handle management
 
 #### New APIs
 
 - Tab list API on Player
-- Region utils on World
+- Region utils on World: .set_block, .fill, .replace, .fill_sphere, .fill_cylinder, .fill_line
 - Particle shapes on World
-- Entity spawn helpers on World
+- Entity spawn helpers on World: spawn_at_player, spawn_projectile, spawn_with_nbt.
 - Support for command execution on Server
 - world.entities property
 - RaycastResult.distance and .hit_face
@@ -25,7 +27,7 @@ Feature update
 #### New helpers
 
 - Sidebar: Scoreboard helper
-- Config: YAML config helper
+- Config: TOML config helper
 - Cooldown: Automatically manage cooldowns
 - Hologram: Show floating text
 - Menu / MenuItem: Create easy chest GUIs
@@ -35,6 +37,7 @@ Feature update
 - ItemDisplay: Show floating items
 - ImageDisplay: Show images in the world
 - ItemBuilder: Easily create items
+- Shutdown event
 
 #### API improvements
 
@@ -45,11 +48,14 @@ Feature update
 - Added command description parameter
 - Location: .add, .clone, .distance, .distance_squared are now sync
 - Scoreboard, Team, Objective, and BossBar creation methods are now sync
+- Config: Added support for multiple formats, toml (default), json, and properties.
+- Commands can be now executes as console
 
 #### Cleanup
 
 - Entity class moved before Player
 - Moved most of the code from a single file to multiple
+- Improved typing across python bridge
 
 #### Misc
 

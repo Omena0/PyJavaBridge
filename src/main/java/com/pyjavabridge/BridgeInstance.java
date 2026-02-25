@@ -62,7 +62,9 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
+import org.bukkit.event.Listener;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.player.PlayerQuitEvent;
 
 public class BridgeInstance {
     private final PyJavaBridgePlugin plugin;
@@ -89,10 +91,10 @@ public class BridgeInstance {
     private final ReflectFacade reflectFacade = new ReflectFacade();
     private final RegionFacade regionFacade = new RegionFacade();
     private final ParticleFacade particleFacade = new ParticleFacade();
-    private PermissionsFacade permissionsFacade;
-    private MetricsFacade metricsFacade;
-    private RefFacade refFacade;
-    private CommandsFacade commandsFacade;
+    private final PermissionsFacade permissionsFacade;
+    private final MetricsFacade metricsFacade;
+    private final RefFacade refFacade;
+    private final CommandsFacade commandsFacade;
 
     private ServerSocket serverSocket;
     private Socket socket;
@@ -117,6 +119,19 @@ public class BridgeInstance {
         this.metricsFacade = new MetricsFacade(plugin);
         this.refFacade = new RefFacade(this);
         this.commandsFacade = new CommandsFacade(plugin, this);
+
+        Bukkit.getPluginManager().registerEvents(new Listener() {
+            @EventHandler
+            public void onPlayerQuit(PlayerQuitEvent event) {
+                PermissionAttachment attachment = permissionAttachments.remove(event.getPlayer().getUniqueId());
+                if (attachment != null) {
+                    try {
+                        event.getPlayer().removeAttachment(attachment);
+                    } catch (Exception ignored) {
+                    }
+                }
+            }
+        }, plugin);
     }
 
     public boolean isRunning() {
@@ -203,6 +218,8 @@ public class BridgeInstance {
         try {
             serverSocket.setSoTimeout(30_000);
             socket = serverSocket.accept();
+            closeQuietly(serverSocket);
+            serverSocket = null;
             plugin.getLogger().info("[" + name + "] Python connected");
 
             reader = new DataInputStream(socket.getInputStream());
@@ -239,8 +256,14 @@ public class BridgeInstance {
                 }
                 byte[] payload = new byte[length];
                 reader.readFully(payload);
-                JsonObject message = JsonParser.parseString(new String(payload, StandardCharsets.UTF_8))
-                        .getAsJsonObject();
+                JsonObject message;
+                try {
+                    message = JsonParser.parseString(new String(payload, StandardCharsets.UTF_8))
+                            .getAsJsonObject();
+                } catch (Exception e) {
+                    plugin.getLogger().severe("[" + name + "] Failed to parse message: " + e.getMessage());
+                    continue;
+                }
                 handleMessage(message);
             }
 

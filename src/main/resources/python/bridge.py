@@ -26,7 +26,7 @@ try:
     def _json_loads(data: Any) -> Any:
         return _orjson.loads(data)
 
-except Exception:
+except (ImportError, ModuleNotFoundError):
 
     def _json_dumps(obj: Any) -> bytes:
         return json.dumps(obj, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
@@ -193,6 +193,8 @@ class ProxyBase:
                 pass
 
     def _call(self, method: str, *args: Any, **kwargs: Any) -> "BridgeCall":
+        if _connection is None:
+            raise BridgeError("Bridge not connected")
         if self._handle is None and self._target == "ref":
             if kwargs:
                 return _connection.call(method="call", args=[self._ref_type, self._ref_id, method, list(args), kwargs], target="ref")
@@ -200,6 +202,8 @@ class ProxyBase:
         return _connection.call(method=method, args=list(args), handle=self._handle, target=self._target, **kwargs)
 
     def _call_sync(self, method: str, *args: Any, **kwargs: Any) -> Any:
+        if _connection is None:
+            raise BridgeError("Bridge not connected")
         if self._handle is None and self._target == "ref":
             if kwargs:
                 return _connection.call_sync(method="call", args=[self._ref_type, self._ref_id, method, list(args), kwargs], target="ref")
@@ -293,7 +297,7 @@ class Server(ProxyBase):
         """Get the server scheduler."""
         return self._call_sync("getScheduler")
 
-    async def wait(self, ticks: int = 1, after: Optional[Callable[[], Any]] = None):
+    async def after(self, ticks: int = 1, after: Optional[Callable[[], Any]] = None):
         """Wait for ticks and optionally run a callback."""
         await _connection.wait(ticks)
 
@@ -732,8 +736,6 @@ class Player(Entity):
             return None
 
         except Exception as exc:
-            import traceback
-            traceback.print_exc()
             raise BridgeError(f"Failed to synchronously resolve uuid: {exc}") from exc
 
     @property
@@ -1305,7 +1307,7 @@ class Inventory(ProxyBase):
 
     def remove_item(self, item: "Item"):
         """Remove an item from the inventory."""
-        if self._handle is None:
+        if self._handle is None and self._target != "ref":
             contents = list(self.fields.get("contents") or [])
             for idx, slot in enumerate(contents):
                 if slot == item:
@@ -1636,9 +1638,9 @@ class ItemBuilder:
     def from_item(cls, item: "Item") -> "ItemBuilder":
         """Create a builder from an existing Item, copying its fields."""
         builder = cls(item.type)
-        builder._amount = item.amount or 1
-        builder._name = item.name if hasattr(item, "fields") and "name" in item.fields else None
-        builder._lore = list(item.lore or []) if hasattr(item, "fields") and "lore" in item.fields else []
+        builder._amount = item.fields.get("amount", 1) if hasattr(item, "fields") else 1
+        builder._name = item.fields.get("name") if hasattr(item, "fields") else None
+        builder._lore = list(item.fields.get("lore") or []) if hasattr(item, "fields") else []
         if hasattr(item, "fields"):
             builder._custom_model_data = item.fields.get("customModelData")
             builder._attributes = list(item.fields.get("attributes") or [])
@@ -2621,14 +2623,17 @@ class Config:
 
     def save(self):
         """Save current config to disk."""
-        with open(self._path, "w", encoding="utf-8") as f:
-            if self._format == "toml":
-                f.write(_toml_dumps(self._data))
-            elif self._format == "json":
-                json.dump(self._data, f, indent=2, ensure_ascii=False)
-                f.write("\n")
-            elif self._format == "properties":
-                f.write(_properties_dumps(self._data))
+        try:
+            with open(self._path, "w", encoding="utf-8") as f:
+                if self._format == "toml":
+                    f.write(_toml_dumps(self._data))
+                elif self._format == "json":
+                    json.dump(self._data, f, indent=2, ensure_ascii=False)
+                    f.write("\n")
+                elif self._format == "properties":
+                    f.write(_properties_dumps(self._data))
+        except OSError as e:
+            raise BridgeError(f"Failed to save config to {self._path}: {e}") from e
 
     def get(self, path: str, default: Any = None) -> Any:
         """Get a value by dot-path (e.g. 'database.host')."""
@@ -2776,7 +2781,10 @@ class Cooldown:
                                 await result
                         except Exception:
                             pass
-                await server.wait(10)  # check every 10 ticks (0.5s)
+                try:
+                    await server.after(1)  # check every tick
+                except BridgeError:
+                    break
 
         _connection.on("server_boot", lambda _: asyncio.ensure_future(_check_expiry()))
 
@@ -2946,7 +2954,10 @@ class ActionBarDisplay:
                             p.send_action_bar(text)
                         except Exception:
                             pass
-                await server.wait(40)  # refresh every 2 seconds
+                try:
+                    await server.after(40)  # refresh every 2 seconds
+                except BridgeError:
+                    break
 
         _connection.on("server_boot", lambda _: asyncio.ensure_future(_refresh()))
 
@@ -3063,7 +3074,10 @@ class BossBarDisplay:
                 self._update_progress()
                 if remaining <= 0:
                     break
-                await server.wait(2)  # update ~10x per second
+                try:
+                    await server.after(2)  # update ~10x per second
+                except BridgeError:
+                    break
 
         asyncio.ensure_future(_update())
 
@@ -3397,12 +3411,14 @@ class MenuItem:
 # Global menu tracking
 _open_menus: Dict[str, "Menu"] = {}
 _menu_events_registered = False
+_menu_events_lock = threading.Lock()
 
 def _register_menu_events():
     global _menu_events_registered
-    if _menu_events_registered:
-        return
-    _menu_events_registered = True
+    with _menu_events_lock:
+        if _menu_events_registered:
+            return
+        _menu_events_registered = True
 
     async def _on_inventory_click(event: Event):
         player = event.fields.get("player")
@@ -3504,7 +3520,7 @@ async def raycast(
         hit_face=getter("hit_face"),
     )
 
-_connection: Optional[BridgeConnection] = None
+_connection: BridgeConnection = None  # type: ignore[assignment]  # Set during _bootstrap()
 _player_uuid_cache: Dict[str, str] = {}
 
 # Utils
@@ -3733,8 +3749,13 @@ def _properties_load(path: str) -> Dict[str, Any]:
             if not line or line.startswith("#") or line.startswith("!"):
                 continue
             sep = -1
+            escaped = False
             for i, ch in enumerate(line):
-                if ch == "\\" :
+                if escaped:
+                    escaped = False
+                    continue
+                if ch == "\\":
+                    escaped = True
                     continue
                 if ch in ("=", ":"):
                     sep = i
@@ -3860,7 +3881,7 @@ def task(func: Optional[Callable[[], Any]] = None, *, interval: int = 20, delay:
     Register a repeating async task.
 
     The decorated function is called repeatedly with a fixed tick interval.
-    Use server.wait() internally for tick-accurate delays.
+    Use server.after() internally for tick-accurate delays.
 
     Args:
         interval: Ticks between each call (default 20 = 1 second).
@@ -3880,7 +3901,7 @@ def task(func: Optional[Callable[[], Any]] = None, *, interval: int = 20, delay:
         async def _loop():
             try:
                 if delay > 0:
-                    await server.wait(delay)
+                    await server.after(delay)
                 while _connection is not None and _connection._thread.is_alive():
                     try:
                         result = handler()
@@ -3888,7 +3909,7 @@ def task(func: Optional[Callable[[], Any]] = None, *, interval: int = 20, delay:
                             await result
                     except Exception as e:
                         print(f"[PyJavaBridge] Task {handler.__name__} error: {e}")
-                    await server.wait(interval)
+                    await server.after(interval)
             except Exception:
                 pass
 
@@ -4049,9 +4070,15 @@ reflect = ReflectFacade(target="reflect")
 
 def _bootstrap(script_path: str): # type: ignore
     global _connection
-    port = int(os.environ.get("PYJAVABRIDGE_PORT", "0"))
+    port_str = os.environ.get("PYJAVABRIDGE_PORT", "0")
+    try:
+        port = int(port_str)
+    except ValueError:
+        raise RuntimeError(f"PYJAVABRIDGE_PORT must be a valid integer, got: {port_str!r}")
     if port == 0:
         raise RuntimeError("PYJAVABRIDGE_PORT is not set")
+    if not os.path.isfile(script_path):
+        raise RuntimeError(f"Script not found: {script_path}")
     _connection = BridgeConnection("127.0.0.1", port)
     try:
         loop = asyncio.get_event_loop()
@@ -4062,6 +4089,7 @@ def _bootstrap(script_path: str): # type: ignore
     namespace = {
         "__file__": script_path,
         "__name__": "__main__",
+        "__builtins__": __builtins__,
     }
     runpy.run_path(script_path, init_globals=namespace)
     _connection.send({"type": "ready"})

@@ -10,7 +10,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class RegionFacade {
-    private static final long MAX_VOLUME = 2048L * 2048L * 2048L;
+    private static final long MAX_VOLUME = 1_000_000L;
 
     private Material resolveMat(Object obj) {
         if (obj instanceof Material m) return m;
@@ -40,13 +40,35 @@ public class RegionFacade {
         int minZ = Math.min(z1, z2), maxZ = Math.max(z1, z2);
         long volume = (long)(maxX - minX + 1) * (maxY - minY + 1) * (maxZ - minZ + 1);
         checkVolume(volume);
+        return fillChunkBatched(world, minX, minY, minZ, maxX, maxY, maxZ, mat, applyPhysics);
+    }
+
+    private int fillChunkBatched(World world, int minX, int minY, int minZ, int maxX, int maxY, int maxZ, Material mat, boolean applyPhysics) {
         int count = 0;
-        for (int x = minX; x <= maxX; x++)
-            for (int y = minY; y <= maxY; y++)
-                for (int z = minZ; z <= maxZ; z++) {
-                    world.getBlockAt(x, y, z).setType(mat, applyPhysics);
-                    count++;
+        int chunkMinX = minX >> 4;
+        int chunkMaxX = maxX >> 4;
+        int chunkMinZ = minZ >> 4;
+        int chunkMaxZ = maxZ >> 4;
+
+        for (int cx = chunkMinX; cx <= chunkMaxX; cx++) {
+            for (int cz = chunkMinZ; cz <= chunkMaxZ; cz++) {
+                int startX = Math.max(minX, cx << 4);
+                int endX = Math.min(maxX, (cx << 4) + 15);
+                int startZ = Math.max(minZ, cz << 4);
+                int endZ = Math.min(maxZ, (cz << 4) + 15);
+
+                if (!world.isChunkLoaded(cx, cz)) {
+                    world.getChunkAt(cx, cz);
                 }
+
+                for (int x = startX; x <= endX; x++)
+                    for (int y = minY; y <= maxY; y++)
+                        for (int z = startZ; z <= endZ; z++) {
+                            world.getBlockAt(x, y, z).setType(mat, applyPhysics);
+                            count++;
+                        }
+            }
+        }
         return count;
     }
 
@@ -59,16 +81,38 @@ public class RegionFacade {
         int minZ = Math.min(z1, z2), maxZ = Math.max(z1, z2);
         long volume = (long)(maxX - minX + 1) * (maxY - minY + 1) * (maxZ - minZ + 1);
         checkVolume(volume);
+        return replaceChunkBatched(world, minX, minY, minZ, maxX, maxY, maxZ, from, to);
+    }
+
+    private int replaceChunkBatched(World world, int minX, int minY, int minZ, int maxX, int maxY, int maxZ, Material from, Material to) {
         int count = 0;
-        for (int x = minX; x <= maxX; x++)
-            for (int y = minY; y <= maxY; y++)
-                for (int z = minZ; z <= maxZ; z++) {
-                    Block b = world.getBlockAt(x, y, z);
-                    if (b.getType() == from) {
-                        b.setType(to, false);
-                        count++;
-                    }
+        int chunkMinX = minX >> 4;
+        int chunkMaxX = maxX >> 4;
+        int chunkMinZ = minZ >> 4;
+        int chunkMaxZ = maxZ >> 4;
+
+        for (int cx = chunkMinX; cx <= chunkMaxX; cx++) {
+            for (int cz = chunkMinZ; cz <= chunkMaxZ; cz++) {
+                int startX = Math.max(minX, cx << 4);
+                int endX = Math.min(maxX, (cx << 4) + 15);
+                int startZ = Math.max(minZ, cz << 4);
+                int endZ = Math.min(maxZ, (cz << 4) + 15);
+
+                if (!world.isChunkLoaded(cx, cz)) {
+                    world.getChunkAt(cx, cz);
                 }
+
+                for (int x = startX; x <= endX; x++)
+                    for (int y = minY; y <= maxY; y++)
+                        for (int z = startZ; z <= endZ; z++) {
+                            Block b = world.getBlockAt(x, y, z);
+                            if (b.getType() == from) {
+                                b.setType(to, false);
+                                count++;
+                            }
+                        }
+            }
+        }
         return count;
     }
 

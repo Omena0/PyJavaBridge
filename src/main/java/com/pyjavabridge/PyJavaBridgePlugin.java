@@ -234,8 +234,9 @@ public class PyJavaBridgePlugin extends JavaPlugin {
         }
         watchEnabled = true;
         fileWatcherThread = new Thread(() -> {
+            java.nio.file.WatchService watcher = null;
             try {
-                java.nio.file.WatchService watcher = java.nio.file.FileSystems.getDefault().newWatchService();
+                watcher = java.nio.file.FileSystems.getDefault().newWatchService();
                 scriptsDir.register(watcher,
                         java.nio.file.StandardWatchEventKinds.ENTRY_MODIFY,
                         java.nio.file.StandardWatchEventKinds.ENTRY_CREATE);
@@ -265,10 +266,16 @@ public class PyJavaBridgePlugin extends JavaPlugin {
                         }
                     }
                 }
-                watcher.close();
             } catch (Exception e) {
                 if (watchEnabled) {
                     getLogger().warning("File watcher error: " + e.getMessage());
+                }
+            } finally {
+                if (watcher != null) {
+                    try {
+                        watcher.close();
+                    } catch (Exception ignored) {
+                    }
                 }
             }
         }, "PyJavaBridge-FileWatcher");

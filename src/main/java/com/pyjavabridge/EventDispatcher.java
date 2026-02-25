@@ -122,32 +122,35 @@ public class EventDispatcher {
         }
         PendingEvent pending = pendingEvents.get(eventId);
         if (pending != null) {
-            long deadline = System.currentTimeMillis() + timeoutMs;
             try {
-                while (System.currentTimeMillis() < deadline && pending.latch.getCount() > 0) {
-                    plugin.drainMainThreadQueue();
-                    pending.latch.await(5, java.util.concurrent.TimeUnit.MILLISECONDS);
+                long deadline = System.currentTimeMillis() + timeoutMs;
+                try {
+                    while (System.currentTimeMillis() < deadline && pending.latch.getCount() > 0) {
+                        plugin.drainMainThreadQueue();
+                        pending.latch.await(5, java.util.concurrent.TimeUnit.MILLISECONDS);
+                    }
+                } catch (InterruptedException ignored) {
+                    Thread.currentThread().interrupt();
                 }
-            } catch (InterruptedException ignored) {
-                Thread.currentThread().interrupt();
+                boolean cancelRequested = pending.cancelRequested.get();
+                if (pending.chatOverride != null && isChatEvent(pending.event)) {
+                    pending.cancellable.setCancelled(true);
+                    String message = pending.chatOverride;
+                    Bukkit.getScheduler().runTask(plugin,
+                            () -> Bukkit.getServer().broadcast(net.kyori.adventure.text.Component.text(message)));
+                }
+                if (pending.damageOverride != null && pending.event instanceof EntityDamageEvent damageEvent) {
+                    damageEvent.setDamage(pending.damageOverride);
+                }
+                if (cancelRequested && cancelMode == CancelMode.EVENT) {
+                    pending.cancellable.setCancelled(true);
+                }
+                if (pending.latch.getCount() > 0 && timeoutMs >= 100) {
+                    plugin.getLogger().warning("[" + name + "] Event handler timed out for " + eventName);
+                }
+            } finally {
+                pendingEvents.remove(eventId);
             }
-            boolean cancelRequested = pending.cancelRequested.get();
-            if (pending.chatOverride != null && isChatEvent(pending.event)) {
-                pending.cancellable.setCancelled(true);
-                String message = pending.chatOverride;
-                Bukkit.getScheduler().runTask(plugin,
-                        () -> Bukkit.getServer().broadcast(net.kyori.adventure.text.Component.text(message)));
-            }
-            if (pending.damageOverride != null && pending.event instanceof EntityDamageEvent damageEvent) {
-                damageEvent.setDamage(pending.damageOverride);
-            }
-            if (cancelRequested && cancelMode == CancelMode.EVENT) {
-                pending.cancellable.setCancelled(true);
-            }
-            if (pending.latch.getCount() > 0 && timeoutMs >= 100) {
-                plugin.getLogger().warning("[" + name + "] Event handler timed out for " + eventName);
-            }
-            pendingEvents.remove(eventId);
         }
         return cancellable && ((org.bukkit.event.Cancellable) event).isCancelled();
     }

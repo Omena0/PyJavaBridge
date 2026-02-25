@@ -18,6 +18,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class PlayerUuidResolver {
+    private static final int MAX_CACHE_SIZE = 1000;
     private final Map<String, UUID> playerUuidCache = new ConcurrentHashMap<>();
 
     public UUID resolvePlayerUuidByName(String name) {
@@ -31,7 +32,7 @@ public class PlayerUuidResolver {
         }
         UUID cachedFile = resolvePlayerUuidFromUserCache(name);
         if (cachedFile != null) {
-            playerUuidCache.put(key, cachedFile);
+            cacheUuid(key, cachedFile);
             return cachedFile;
         }
         try {
@@ -39,7 +40,7 @@ public class PlayerUuidResolver {
             if (offline.isOnline() || offline.hasPlayedBefore()) {
                 UUID uuid = offline.getUniqueId();
                 if (uuid != null) {
-                    playerUuidCache.put(key, uuid);
+                    cacheUuid(key, uuid);
                     return uuid;
                 }
             }
@@ -70,7 +71,7 @@ public class PlayerUuidResolver {
             String formatted = raw.substring(0, 8) + "-" + raw.substring(8, 12) + "-" + raw.substring(12, 16)
                     + "-" + raw.substring(16, 20) + "-" + raw.substring(20);
             UUID uuid = UUID.fromString(formatted);
-            playerUuidCache.put(key, uuid);
+            cacheUuid(key, uuid);
             return uuid;
         } catch (Exception ignored) {
         }
@@ -78,13 +79,20 @@ public class PlayerUuidResolver {
             try {
                 UUID offline = UUID.nameUUIDFromBytes(("OfflinePlayer:" + name).getBytes(StandardCharsets.UTF_8));
                 if (offline != null) {
-                    playerUuidCache.put(key, offline);
+                    cacheUuid(key, offline);
                     return offline;
                 }
             } catch (Exception ignored) {
             }
         }
         return null;
+    }
+
+    private void cacheUuid(String key, UUID uuid) {
+        if (playerUuidCache.size() >= MAX_CACHE_SIZE) {
+            playerUuidCache.clear();
+        }
+        playerUuidCache.put(key, uuid);
     }
 
     private UUID resolvePlayerUuidFromUserCache(String name) {

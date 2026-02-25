@@ -65,7 +65,7 @@
     <li><a href="#world" style="padding-left:40px;font-size:.8rem">world</a></li>
     <li><a href="#create_boss_bar" style="padding-left:40px;font-size:.8rem">create_boss_bar</a></li>
     <li><a href="#get_advancement" style="padding-left:40px;font-size:.8rem">get_advancement</a></li>
-    <li><a href="#wait" style="padding-left:40px;font-size:.8rem">wait</a></li>
+    <li><a href="#after" style="padding-left:40px;font-size:.8rem">after</a></li>
     <li><a href="#frame" style="padding-left:40px;font-size:.8rem">frame</a></li>
     <li><a href="#atomic" style="padding-left:40px;font-size:.8rem">atomic</a></li>
     <li><a href="#flush" style="padding-left:40px;font-size:.8rem">flush</a></li>
@@ -238,7 +238,7 @@ players = server.players
 <ul>
 <li><strong>Type:</strong> <code>any</code></li>
 </ul>
-<p>The Bukkit scheduler. Rarely needed — use <code>server.wait()</code> and <code>@task</code> instead.</p>
+<p>The Bukkit scheduler. Rarely needed — use <code>server.after()</code> and <code>@task</code> instead.</p>
 <h3 id="scoreboard_manager">scoreboard_manager</h3>
 <ul>
 <li><strong>Type:</strong> <code>any</code></li>
@@ -302,8 +302,8 @@ players = server.players
 <li><code>key</code> (<code>str</code>) — The advancement key (e.g. <code>"minecraft:story/mine_diamond"</code>).</li>
 <li><strong>Returns:</strong> <code>Awaitable[</code><a href="advancement.html"><code>Advancement</code></a><code>]</code></li>
 </ul>
-<h3 id="wait">wait</h3>
-<pre><code class="language-python"><span class="kw">await</span> server.wait(ticks: int = <span class="nb">1</span>, after: callable | <span class="kw">None</span> = <span class="kw">None</span>)
+<h3 id="after">after</h3>
+<pre><code class="language-python"><span class="kw">await</span> server.after(ticks: int = <span class="nb">1</span>, after: callable | <span class="kw">None</span> = <span class="kw">None</span>)
 </code></pre>
 <p>Pause execution for a number of ticks. Optionally run a callback after the wait.</p>
 <ul>
@@ -312,11 +312,11 @@ players = server.players
 <li><code>after</code> (<code>callable | None</code>) — Optional callback to run after the wait completes.</li>
 <li><strong>Returns:</strong> <code>Awaitable[None]</code></li>
 </ul>
-<pre><code class="language-python"><span class="kw">await</span> server.wait(<span class="nb">20</span>)  <span class="cm"># Wait 1 second</span>
-<span class="kw">await</span> server.wait(<span class="nb">60</span>)  <span class="cm"># Wait 3 seconds</span>
+<pre><code class="language-python"><span class="kw">await</span> server.after(<span class="nb">20</span>)  <span class="cm"># Wait 1 second</span>
+<span class="kw">await</span> server.after(<span class="nb">60</span>)  <span class="cm"># Wait 3 seconds</span>
 
 <span class="cm"># With callback</span>
-<span class="kw">await</span> server.wait(<span class="nb">20</span>, after=<span class="kw">lambda</span>: print(<span class="st">&quot;Done waiting!&quot;</span>))
+<span class="kw">await</span> server.after(<span class="nb">20</span>, after=<span class="kw">lambda</span>: print(<span class="st">&quot;Done waiting!&quot;</span>))
 </code></pre>
 <h3 id="frame">frame</h3>
 <pre><code class="language-python"><span class="kw">async</span> <span class="kw">with</span> server.frame():

@@ -168,7 +168,7 @@
 
 <span class="dc">@event</span>
 <span class="kw">async</span> <span class="kw">def</span> entity_damage(e):
-    <span class="kw">await</span> server.wait(<span class="nb">20</span>)  <span class="cm"># Wait 1 second</span>
+    <span class="kw">await</span> server.after(<span class="nb">20</span>)  <span class="cm"># Wait 1 second</span>
     <span class="kw">try</span>:
         <span class="kw">await</span> e.entity.set_fire_ticks(<span class="nb">100</span>)
     <span class="kw">except</span> EntityGoneException:
@@ -179,7 +179,7 @@
 <p>Any awaitable method on <code>Entity</code> or <code>Player</code> can raise <code>EntityGoneException</code> if the underlying Java entity has been garbage collected. This is especially common when:</p>
 <ul>
 <li>You store entity references across ticks</li>
-<li>You use <code>server.wait()</code> between getting a reference and using it</li>
+<li>You use <code>server.after()</code> between getting a reference and using it</li>
 <li>You handle events where the entity might die (e.g. <code>entity_damage</code>)</li>
 </ul>
 <h3 id="best-practice">Best practice</h3>

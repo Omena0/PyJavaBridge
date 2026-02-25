@@ -82,6 +82,8 @@ public class EntitySpawner {
         return spawned;
     }
 
+    private static final int MAX_IMAGE_PIXELS = 10_000;
+
     @SuppressWarnings("unchecked")
     public List<Entity> spawnImagePixels(World worldTarget, Object locationObj, Object pixelsObj) throws Exception {
         Location baseLocation = resolveSpawnLocation(worldTarget, locationObj, Collections.emptyMap());
@@ -91,6 +93,11 @@ public class EntitySpawner {
 
         if (!(pixelsObj instanceof List<?> pixelEntries)) {
             throw new IllegalArgumentException("spawnImagePixels requires a list payload");
+        }
+
+        if (pixelEntries.size() > MAX_IMAGE_PIXELS) {
+            throw new IllegalArgumentException("spawnImagePixels pixel count " + pixelEntries.size()
+                    + " exceeds maximum of " + MAX_IMAGE_PIXELS);
         }
 
         List<Entity> spawned = new ArrayList<>();
