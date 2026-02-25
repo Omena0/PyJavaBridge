@@ -382,6 +382,17 @@ public class EntitySpawner {
     }
 
     private static Entity spawnNonLivingEntity(World world, Location location, EntityType entityType) throws Exception {
+        // Use Bukkit API — works on all Paper 1.21+ versions without NMS
+        try {
+            return world.spawnEntity(location, entityType);
+        } catch (Exception ignored) {
+        }
+
+        // NMS fallback with multi-version support
+        return spawnNonLivingNms(world, location, entityType);
+    }
+
+    private static Entity spawnNonLivingNms(World world, Location location, EntityType entityType) throws Exception {
         Object craftWorld = world;
         Class<?> craftWorldClass = craftWorld.getClass();
 
@@ -400,7 +411,8 @@ public class EntitySpawner {
         Method containing = blockPosClass.getMethod("containing", double.class, double.class, double.class);
         Object blockPos = containing.invoke(null, location.getX(), location.getY(), location.getZ());
 
-        Class<?> spawnReasonClass = Class.forName("net.minecraft.world.entity.EntitySpawnReason");
+        // EntitySpawnReason (1.21.2+) or MobSpawnType (1.21-1.21.1)
+        Class<?> spawnReasonClass = resolveSpawnReasonClass();
         @SuppressWarnings({ "rawtypes", "unchecked" })
         Object spawnReason = Enum.valueOf((Class) spawnReasonClass, "COMMAND");
 
@@ -438,5 +450,25 @@ public class EntitySpawner {
         Object bukkitEntity = getBukkitEntity.invoke(nmsEntity);
 
         return bukkitEntity instanceof Entity entity ? entity : null;
+    }
+
+    private static volatile Class<?> cachedSpawnReasonClass;
+
+    private static Class<?> resolveSpawnReasonClass() throws ClassNotFoundException {
+        Class<?> cached = cachedSpawnReasonClass;
+        if (cached != null) return cached;
+
+        // 1.21.2+ name
+        try {
+            cached = Class.forName("net.minecraft.world.entity.EntitySpawnReason");
+            cachedSpawnReasonClass = cached;
+            return cached;
+        } catch (ClassNotFoundException ignored) {
+        }
+
+        // 1.21-1.21.1 name
+        cached = Class.forName("net.minecraft.world.entity.MobSpawnType");
+        cachedSpawnReasonClass = cached;
+        return cached;
     }
 }

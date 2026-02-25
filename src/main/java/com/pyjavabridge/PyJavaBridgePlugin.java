@@ -27,8 +27,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class PyJavaBridgePlugin extends JavaPlugin {
     private final ConcurrentLinkedQueue<Runnable> mainThreadQueue = new ConcurrentLinkedQueue<>();
@@ -404,16 +402,45 @@ public class PyJavaBridgePlugin extends JavaPlugin {
             return "";
         }
         try {
-            String content = Files.readString(scriptPath, StandardCharsets.UTF_8);
-            Pattern pattern = Pattern.compile("\\A\\s*(?:#.*\\R|\\s*\\R)*\\s*(?:\"\"\"(.*?)\"\"\"|'''(.*?)''')",
-                    Pattern.DOTALL);
-            Matcher matcher = pattern.matcher(content);
-            if (matcher.find()) {
-                String doc = matcher.group(1) != null ? matcher.group(1) : matcher.group(2);
-                if (doc != null) {
-                    String cleaned = doc.strip().replaceAll("\\R+", " ");
-                    return cleaned;
+            List<String> lines = Files.readAllLines(scriptPath, StandardCharsets.UTF_8);
+            int i = 0;
+            // Skip blank lines and comment lines
+            while (i < lines.size()) {
+                String trimmed = lines.get(i).trim();
+                if (trimmed.isEmpty() || trimmed.startsWith("#")) {
+                    i++;
+                } else {
+                    break;
                 }
+            }
+            if (i >= lines.size()) {
+                return "";
+            }
+            String line = lines.get(i).trim();
+            String delimiter = null;
+            if (line.startsWith("\"\"\"")) {
+                delimiter = "\"\"\"";
+            } else if (line.startsWith("'''")) {
+                delimiter = "'''";
+            }
+            if (delimiter == null) {
+                return "";
+            }
+            String after = line.substring(delimiter.length());
+            // Single-line docstring: """text"""
+            if (after.endsWith(delimiter) && after.length() >= delimiter.length()) {
+                return after.substring(0, after.length() - delimiter.length()).strip();
+            }
+            // Multi-line docstring
+            StringBuilder sb = new StringBuilder(after);
+            for (int j = i + 1; j < lines.size(); j++) {
+                String l = lines.get(j);
+                int end = l.indexOf(delimiter);
+                if (end >= 0) {
+                    sb.append(' ').append(l, 0, end);
+                    return sb.toString().strip().replaceAll("\\s+", " ");
+                }
+                sb.append(' ').append(l.trim());
             }
         } catch (IOException e) {
             getLogger().fine("Could not read script description: " + e.getMessage());
