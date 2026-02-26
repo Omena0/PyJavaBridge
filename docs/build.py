@@ -74,13 +74,13 @@ SIDEBAR = [
     ("Helpers", [
         ("config", "Config"),
         ("cooldown", "Cooldown"),
-        ("hologram", "Hologram"),
-        ("enumvalue", "EnumValue"),
-        ("enums", "Enums"),
-    ]),
-    ("Display Entities", [
         ("actionbardisplay", "ActionBarDisplay"),
         ("bossbardisplay", "BossBarDisplay"),
+        ("enums", "Enums"),
+        ("enumvalue", "EnumValue"),
+    ]),
+    ("Display Entities", [
+        ("hologram", "Hologram"),
         ("blockdisplay", "BlockDisplay"),
         ("itemdisplay", "ItemDisplay"),
         ("imagedisplay", "ImageDisplay"),
