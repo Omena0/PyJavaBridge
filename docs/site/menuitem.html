@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Scoreboard — PyJavaBridge</title>
-  <meta property="og:title" content="Scoreboard — PyJavaBridge">
-  <meta property="og:description" content="Scoreboard management">
+  <title>MenuItem — PyJavaBridge</title>
+  <meta property="og:title" content="MenuItem — PyJavaBridge">
+  <meta property="og:description" content="Clickable item for Menu slots">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="PyJavaBridge Docs">
   <meta name="theme-color" content="#6366f1">
@@ -44,24 +44,14 @@
 <div class="sidebar-section">
   <div class="sidebar-heading" data-section="on-this-page">On This Page</div>
   <ul class="sidebar-links">
-    <li><a href="#class-methods">Class Methods</a></li>
-    <li><ul class="toc-sub" data-parent="class-methods">
-      <li><a href="#create">create</a></li>
-    </ul></li>
+    <li><a href="#constructor">Constructor</a></li>
     <li><a href="#attributes">Attributes</a></li>
     <li><ul class="toc-sub" data-parent="attributes">
-      <li><a href="#objectives">objectives</a></li>
-      <li><a href="#teams">teams</a></li>
+      <li><a href="#item">item</a></li>
+      <li><a href="#on_click">on_click</a></li>
     </ul></li>
-    <li><a href="#methods">Methods</a></li>
-    <li><ul class="toc-sub" data-parent="methods">
-      <li><a href="#register_objective">register_objective</a></li>
-      <li><a href="#get_objective">get_objective</a></li>
-      <li><a href="#register_team">register_team</a></li>
-      <li><a href="#get_team">get_team</a></li>
-      <li><a href="#clear_slot">clear_slot</a></li>
-    </ul></li>
-    <li><a href="#example-kill-counter-sidebar">Example: Kill counter sidebar</a></li>
+    <li><a href="#example-shop-menu">Example: Shop menu</a></li>
+    <li><a href="#example-confirmation-dialog">Example: Confirmation dialog</a></li>
   </ul>
 </div>
 
@@ -114,12 +104,12 @@
   <div class="sidebar-heading collapsed" data-section="scoreboards-ui">Scoreboards & UI</div>
   <ul class="sidebar-links">
     <li><a href="menu.html">Menu</a></li>
-    <li><a href="menuitem.html">MenuItem</a></li>
+    <li><a href="menuitem.html" class="active">MenuItem</a></li>
     <li><a href="sidebar.html">Sidebar</a></li>
     <li><a href="actionbardisplay.html">ActionBarDisplay</a></li>
     <li><a href="bossbardisplay.html">BossBarDisplay</a></li>
     <li><a href="bossbar.html">BossBar</a></li>
-    <li><a href="scoreboard.html" class="active">Scoreboard</a></li>
+    <li><a href="scoreboard.html">Scoreboard</a></li>
     <li><a href="objective.html">Objective</a></li>
     <li><a href="team.html">Team</a></li>
   </ul>
@@ -168,108 +158,104 @@
   <!-- Main -->
   <main class="main">
     <div class="content">
-      <p class="subtitle">Scoreboard management</p>
-      <h1 id="scoreboard">Scoreboard</h1>
-<p>A <code>Scoreboard</code> manages objectives and teams. Each player can see one scoreboard at a time — assign a custom scoreboard to show custom sidebar content, name tags, or tab list formatting.</p>
-<hr />
-<h2 id="class-methods">Class Methods</h2>
-<h3 id="create">create</h3>
-<pre><code class="language-python">board = Scoreboard.create()
+      <p class="subtitle">Clickable item for Menu slots</p>
+      <h1 id="menuitem">MenuItem</h1>
+<p>A <code>MenuItem</code> wraps an <a href="item.html"><code>Item</code></a> with an optional click callback.</p>
+<h2 id="constructor">Constructor</h2>
+<pre><code class="language-python">MenuItem(item, on_click=<span class="kw">None</span>)
 </code></pre>
-<p>Create a new empty scoreboard. This is synchronous.</p>
 <ul>
-<li><strong>Returns:</strong> <a href="#"><code>Scoreboard</code></a></li>
+<li><strong>Parameters:</strong></li>
+<li><code>item</code> (<a href="item.html"><code>Item</code></a> <code>| str</code>) — The display item. If a string, creates an <code>Item</code> with that material.</li>
+<li><code>on_click</code> (<code>Callable[[</code><a href="player.html"><code>Player</code></a><code>,</code><a href="event.html"><code>Event</code></a><code>], Any] | None</code>) — Click callback. Receives the clicking player and the click event. Default <code>None</code>.</li>
 </ul>
-<pre><code class="language-python">board = Scoreboard.create()
-<span class="kw">await</span> player.set_scoreboard(board)
+<pre><code class="language-python"><span class="cm"># Simple display item</span>
+MenuItem(Item(<span class="st">&quot;DIAMOND&quot;</span>, name=<span class="st">&quot;§bShiny&quot;</span>))
+
+<span class="cm"># With click handler</span>
+MenuItem(
+    Item(<span class="st">&quot;GOLDEN_APPLE&quot;</span>, name=<span class="st">&quot;§6Buy Apple §7- §a$50&quot;</span>),
+    on_click=<span class="kw">lambda</span> player, event: player.send_message(<span class="st">&quot;§aPurchased!&quot;</span>)
+)
 </code></pre>
-<hr />
 <h2 id="attributes">Attributes</h2>
-<h3 id="objectives">objectives</h3>
+<h3 id="item">item</h3>
 <ul>
-<li><strong>Type:</strong> <code>list[</code><a href="objective.html"><code>Objective</code></a><code>]</code></li>
+<li><strong>Type:</strong> <a href="item.html"><code>Item</code></a></li>
 </ul>
-<p>All objectives registered on this scoreboard.</p>
-<h3 id="teams">teams</h3>
+<p>The display item.</p>
+<h3 id="on_click">on_click</h3>
 <ul>
-<li><strong>Type:</strong> <code>list[</code><a href="team.html"><code>Team</code></a><code>]</code></li>
+<li><strong>Type:</strong> <code>Callable[[</code><a href="player.html"><code>Player</code></a><code>,</code><a href="event.html"><code>Event</code></a><code>], Any] | None</code></li>
 </ul>
-<p>All teams registered on this scoreboard.</p>
+<p>Click callback.</p>
 <hr />
-<h2 id="methods">Methods</h2>
-<h3 id="register_objective">register_objective</h3>
-<pre><code class="language-python">objective = board.register_objective(name, criteria, display_name=<span class="st">&quot;&quot;</span>)
-</code></pre>
-<p>Register a new objective. This is synchronous.</p>
-<ul>
-<li><strong>Parameters:</strong></li>
-<li><code>name</code> (<code>str</code>) — Internal name (unique per scoreboard).</li>
-<li><code>criteria</code> (<code>str</code>) — Criteria type (e.g. <code>"dummy"</code>, <code>"health"</code>, <code>"playerKillCount"</code>).</li>
-<li><code>display_name</code> (<code>str</code>) — Display name shown in the sidebar/tab. Default <code>""</code>.</li>
-<li><strong>Returns:</strong> <a href="objective.html"><code>Objective</code></a></li>
-</ul>
-<pre><code class="language-python">obj = board.register_objective(<span class="st">&quot;kills&quot;</span>, <span class="st">&quot;dummy&quot;</span>, <span class="st">&quot;§c§lKill Count&quot;</span>)
-</code></pre>
-<h3 id="get_objective">get_objective</h3>
-<pre><code class="language-python">objective = board.get_objective(name)
-</code></pre>
-<p>Get an existing objective by name.</p>
-<ul>
-<li><strong>Parameters:</strong></li>
-<li><code>name</code> (<code>str</code>) — Internal objective name.</li>
-<li><strong>Returns:</strong> <a href="objective.html"><code>Objective</code></a></li>
-</ul>
-<h3 id="register_team">register_team</h3>
-<pre><code class="language-python">team = board.register_team(name)
-</code></pre>
-<p>Register a new team. This is synchronous.</p>
-<ul>
-<li><strong>Parameters:</strong></li>
-<li><code>name</code> (<code>str</code>) — Internal name (unique per scoreboard).</li>
-<li><strong>Returns:</strong> <a href="team.html"><code>Team</code></a></li>
-</ul>
-<pre><code class="language-python">red_team = board.register_team(<span class="st">&quot;red&quot;</span>)
-<span class="kw">await</span> red_team.set_prefix(<span class="st">&quot;§c[RED] &quot;</span>)
-<span class="kw">await</span> red_team.set_color(<span class="st">&quot;RED&quot;</span>)
-</code></pre>
-<h3 id="get_team">get_team</h3>
-<pre><code class="language-python">team = board.get_team(name)
-</code></pre>
-<p>Get an existing team by name.</p>
-<ul>
-<li><strong>Parameters:</strong></li>
-<li><code>name</code> (<code>str</code>) — Internal team name.</li>
-<li><strong>Returns:</strong> <a href="team.html"><code>Team</code></a></li>
-</ul>
-<h3 id="clear_slot">clear_slot</h3>
-<pre><code class="language-python"><span class="kw">await</span> board.clear_slot(slot)
-</code></pre>
-<p>Clear the display in a specific slot.</p>
-<ul>
-<li><strong>Parameters:</strong></li>
-<li><code>slot</code> (<code>Any</code>) — Display slot to clear.</li>
-<li><strong>Returns:</strong> <code>Awaitable[None]</code></li>
-</ul>
-<hr />
-<h2 id="example-kill-counter-sidebar">Example: Kill counter sidebar</h2>
+<h2 id="example-shop-menu">Example: Shop menu</h2>
 <pre><code class="language-python"><span class="kw">from</span> bridge <span class="kw">import</span> *
 
-board = Scoreboard.create()
-obj = board.register_objective(<span class="st">&quot;kills&quot;</span>, <span class="st">&quot;dummy&quot;</span>, <span class="st">&quot;§6§lKill Count&quot;</span>)
-<span class="kw">await</span> obj.set_display_slot(<span class="st">&quot;SIDEBAR&quot;</span>)
+<span class="kw">async</span> <span class="kw">def</span> buy_sword(player, event):
+    <span class="kw">await</span> Item.give(player, <span class="st">&quot;DIAMOND_SWORD&quot;</span>)
+    <span class="kw">await</span> player.send_message(<span class="st">&quot;§aYou bought a Diamond Sword!&quot;</span>)
 
-<span class="dc">@event</span>
-<span class="kw">async</span> <span class="kw">def</span> player_join(e: Event):
-    <span class="kw">await</span> e.player.set_scoreboard(board)
+<span class="kw">async</span> <span class="kw">def</span> buy_armor(player, event):
+    <span class="kw">await</span> Item.give(player, <span class="st">&quot;DIAMOND_CHESTPLATE&quot;</span>)
+    <span class="kw">await</span> player.send_message(<span class="st">&quot;§aYou bought Diamond Armor!&quot;</span>)
 
-<span class="dc">@event</span>
-<span class="kw">async</span> <span class="kw">def</span> entity_death(e: Event):
-    killer = e.damager
-    <span class="kw">if</span> killer <span class="kw">and</span> hasattr(killer, 'name'):
-        score = obj.get_score(killer.name)
-        <span class="cm"># Score tracking happens automatically via the scoreboard API</span>
+<span class="dc">@command</span>(<span class="st">&quot;Open the shop&quot;</span>)
+<span class="kw">async</span> <span class="kw">def</span> shop(player: Player, args: list[str]):
+    menu = Menu(<span class="st">&quot;§6§lItem Shop&quot;</span>, rows=<span class="nb">3</span>)
+    menu.fill_border(Item(<span class="st">&quot;BLACK_STAINED_GLASS_PANE&quot;</span>, name=<span class="st">&quot; &quot;</span>))
+
+    menu[<span class="nb">10</span>] = MenuItem(
+        Item(<span class="st">&quot;DIAMOND_SWORD&quot;</span>, name=<span class="st">&quot;§bDiamond Sword&quot;</span>, lore=[<span class="st">&quot;§7Price: §a$100&quot;</span>]),
+        on_click=buy_sword
+    )
+    menu[<span class="nb">12</span>] = MenuItem(
+        Item(<span class="st">&quot;DIAMOND_CHESTPLATE&quot;</span>, name=<span class="st">&quot;§bDiamond Armor&quot;</span>, lore=[<span class="st">&quot;§7Price: §a$500&quot;</span>]),
+        on_click=buy_armor
+    )
+    menu[<span class="nb">14</span>] = MenuItem(
+        Item(<span class="st">&quot;GOLDEN_APPLE&quot;</span>, name=<span class="st">&quot;§6Golden Apple&quot;</span>, lore=[<span class="st">&quot;§7Price: §a$50&quot;</span>]),
+        on_click=<span class="kw">lambda</span> p, e: Item.give(p, <span class="st">&quot;GOLDEN_APPLE&quot;</span>)
+    )
+    menu[<span class="nb">16</span>] = MenuItem(
+        Item(<span class="st">&quot;BARRIER&quot;</span>, name=<span class="st">&quot;§cClose&quot;</span>),
+        on_click=<span class="kw">lambda</span> p, e: p.inventory.close()
+    )
+
+    menu.open(player)
 </code></pre>
-<div class="callout callout-info"><p><strong>See also:</strong> <a href="sidebar.html"><code>Sidebar</code></a> for a simpler high-level sidebar helper.</p></div>
+<h2 id="example-confirmation-dialog">Example: Confirmation dialog</h2>
+<pre><code class="language-python"><span class="kw">from</span> bridge <span class="kw">import</span> *
+
+<span class="kw">def</span> confirm_menu(title, on_confirm, on_cancel):
+    menu = Menu(title, rows=<span class="nb">3</span>)
+    menu.fill_border(Item(<span class="st">&quot;GRAY_STAINED_GLASS_PANE&quot;</span>, name=<span class="st">&quot; &quot;</span>))
+
+    menu[<span class="nb">11</span>] = MenuItem(
+        Item(<span class="st">&quot;LIME_WOOL&quot;</span>, name=<span class="st">&quot;§a§lConfirm&quot;</span>),
+        on_click=on_confirm
+    )
+    menu[<span class="nb">15</span>] = MenuItem(
+        Item(<span class="st">&quot;RED_WOOL&quot;</span>, name=<span class="st">&quot;§c§lCancel&quot;</span>),
+        on_click=on_cancel
+    )
+    <span class="kw">return</span> menu
+
+<span class="dc">@command</span>(<span class="st">&quot;Delete your home&quot;</span>)
+<span class="kw">async</span> <span class="kw">def</span> delhome(player: Player, args: list[str]):
+    <span class="kw">async</span> <span class="kw">def</span> confirm(p, e):
+        <span class="kw">await</span> p.send_message(<span class="st">&quot;§aHome deleted!&quot;</span>)
+        <span class="kw">await</span> p.inventory.close()
+
+    <span class="kw">async</span> <span class="kw">def</span> cancel(p, e):
+        <span class="kw">await</span> p.send_message(<span class="st">&quot;§cCancelled.&quot;</span>)
+        <span class="kw">await</span> p.inventory.close()
+
+    menu = confirm_menu(<span class="st">&quot;§c§lDelete Home?&quot;</span>, confirm, cancel)
+    menu.open(player)
+</code></pre>
+<div class="callout callout-info"><p><strong>Tip:</strong> For lower-level inventory control without click handlers, see <a href="inventory.html"><code>Inventory</code></a>.</p></div>
     </div>
     <footer class="site-footer">
       &copy; Omena0 2026 &middot; PyJavaBridge Documentation

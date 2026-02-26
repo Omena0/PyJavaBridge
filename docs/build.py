@@ -65,6 +65,7 @@ SIDEBAR = [
     ]),
     ("Scoreboards & UI", [
         ("menu", "Menu"),
+        ("menuitem", "MenuItem"),
         ("sidebar", "Sidebar"),
         ("actionbardisplay", "ActionBarDisplay"),
         ("bossbardisplay", "BossBarDisplay"),

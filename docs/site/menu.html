@@ -61,14 +61,6 @@
       <li><a href="#fill_border">fill_border</a></li>
       <li><a href="#open">open</a></li>
     </ul></li>
-    <li><a href="#constructor_1">Constructor</a></li>
-    <li><a href="#attributes_1">Attributes</a></li>
-    <li><ul class="toc-sub" data-parent="attributes_1">
-      <li><a href="#item">item</a></li>
-      <li><a href="#on_click">on_click</a></li>
-    </ul></li>
-    <li><a href="#example-shop-menu">Example: Shop menu</a></li>
-    <li><a href="#example-confirmation-dialog">Example: Confirmation dialog</a></li>
   </ul>
 </div>
 
@@ -121,6 +113,7 @@
   <div class="sidebar-heading collapsed" data-section="scoreboards-ui">Scoreboards & UI</div>
   <ul class="sidebar-links">
     <li><a href="menu.html" class="active">Menu</a></li>
+    <li><a href="menuitem.html">MenuItem</a></li>
     <li><a href="sidebar.html">Sidebar</a></li>
     <li><a href="actionbardisplay.html">ActionBarDisplay</a></li>
     <li><a href="bossbardisplay.html">BossBarDisplay</a></li>
@@ -176,7 +169,7 @@
     <div class="content">
       <p class="subtitle">GUI menu system</p>
       <h1 id="menu">Menu</h1>
-<p><code>Menu</code> is a high-level inventory GUI system with click handlers. It wraps <a href="inventory.html"><code>Inventory</code></a> with per-slot click callbacks using <a href="#menuitem"><code>MenuItem</code></a>.</p>
+<p><code>Menu</code> is a high-level inventory GUI system with click handlers. It wraps <a href="inventory.html"><code>Inventory</code></a> with per-slot click callbacks using <a href="menuitem.html"><code>MenuItem</code></a>.</p>
 <hr />
 <h2 id="constructor">Constructor</h2>
 <pre><code class="language-python">Menu(title=<span class="st">&quot;&quot;</span>, rows=<span class="nb">3</span>)
@@ -210,13 +203,13 @@
 <ul>
 <li><strong>Parameters:</strong></li>
 <li><code>slot</code> (<code>int</code>) — Slot index (0-based, left-to-right, top-to-bottom).</li>
-<li><code>menu_item</code> (<a href="#menuitem"><code>MenuItem</code></a>) — Item with click handler.</li>
+<li><code>menu_item</code> (<a href="menuitem.html"><code>MenuItem</code></a>) — Item with click handler.</li>
 </ul>
 <h3 id="get-a-slot">Get a slot</h3>
 <pre><code class="language-python">item = menu[slot]
 </code></pre>
 <ul>
-<li><strong>Returns:</strong> <a href="#menuitem"><code>MenuItem</code></a> <code>| None</code></li>
+<li><strong>Returns:</strong> <a href="menuitem.html"><code>MenuItem</code></a> <code>| None</code></li>
 </ul>
 <h3 id="delete-a-slot">Delete a slot</h3>
 <pre><code class="language-python"><span class="kw">del</span> menu[slot]
@@ -242,104 +235,7 @@ shop.fill_border(Item(<span class="st">&quot;GRAY_STAINED_GLASS_PANE&quot;</span
 <li><strong>Parameters:</strong></li>
 <li><code>player</code> (<a href="player.html"><code>Player</code></a>) — Player to show the menu to.</li>
 </ul>
-<hr />
-<h1 id="menuitem">MenuItem</h1>
-<p>A <code>MenuItem</code> wraps an <a href="item.html"><code>Item</code></a> with an optional click callback.</p>
-<h2 id="constructor_1">Constructor</h2>
-<pre><code class="language-python">MenuItem(item, on_click=<span class="kw">None</span>)
-</code></pre>
-<ul>
-<li><strong>Parameters:</strong></li>
-<li><code>item</code> (<a href="item.html"><code>Item</code></a> <code>| str</code>) — The display item. If a string, creates an <code>Item</code> with that material.</li>
-<li><code>on_click</code> (<code>Callable[[</code><a href="player.html"><code>Player</code></a><code>,</code><a href="event.html"><code>Event</code></a><code>], Any] | None</code>) — Click callback. Receives the clicking player and the click event. Default <code>None</code>.</li>
-</ul>
-<pre><code class="language-python"><span class="cm"># Simple display item</span>
-MenuItem(Item(<span class="st">&quot;DIAMOND&quot;</span>, name=<span class="st">&quot;§bShiny&quot;</span>))
-
-<span class="cm"># With click handler</span>
-MenuItem(
-    Item(<span class="st">&quot;GOLDEN_APPLE&quot;</span>, name=<span class="st">&quot;§6Buy Apple §7- §a$50&quot;</span>),
-    on_click=<span class="kw">lambda</span> player, event: player.send_message(<span class="st">&quot;§aPurchased!&quot;</span>)
-)
-</code></pre>
-<h2 id="attributes_1">Attributes</h2>
-<h3 id="item">item</h3>
-<ul>
-<li><strong>Type:</strong> <a href="item.html"><code>Item</code></a></li>
-</ul>
-<p>The display item.</p>
-<h3 id="on_click">on_click</h3>
-<ul>
-<li><strong>Type:</strong> <code>Callable[[</code><a href="player.html"><code>Player</code></a><code>,</code><a href="event.html"><code>Event</code></a><code>], Any] | None</code></li>
-</ul>
-<p>Click callback.</p>
-<hr />
-<h2 id="example-shop-menu">Example: Shop menu</h2>
-<pre><code class="language-python"><span class="kw">from</span> bridge <span class="kw">import</span> *
-
-<span class="kw">async</span> <span class="kw">def</span> buy_sword(player, event):
-    <span class="kw">await</span> Item.give(player, <span class="st">&quot;DIAMOND_SWORD&quot;</span>)
-    <span class="kw">await</span> player.send_message(<span class="st">&quot;§aYou bought a Diamond Sword!&quot;</span>)
-
-<span class="kw">async</span> <span class="kw">def</span> buy_armor(player, event):
-    <span class="kw">await</span> Item.give(player, <span class="st">&quot;DIAMOND_CHESTPLATE&quot;</span>)
-    <span class="kw">await</span> player.send_message(<span class="st">&quot;§aYou bought Diamond Armor!&quot;</span>)
-
-<span class="dc">@command</span>(<span class="st">&quot;Open the shop&quot;</span>)
-<span class="kw">async</span> <span class="kw">def</span> shop(player: Player, args: list[str]):
-    menu = Menu(<span class="st">&quot;§6§lItem Shop&quot;</span>, rows=<span class="nb">3</span>)
-    menu.fill_border(Item(<span class="st">&quot;BLACK_STAINED_GLASS_PANE&quot;</span>, name=<span class="st">&quot; &quot;</span>))
-
-    menu[<span class="nb">10</span>] = MenuItem(
-        Item(<span class="st">&quot;DIAMOND_SWORD&quot;</span>, name=<span class="st">&quot;§bDiamond Sword&quot;</span>, lore=[<span class="st">&quot;§7Price: §a$100&quot;</span>]),
-        on_click=buy_sword
-    )
-    menu[<span class="nb">12</span>] = MenuItem(
-        Item(<span class="st">&quot;DIAMOND_CHESTPLATE&quot;</span>, name=<span class="st">&quot;§bDiamond Armor&quot;</span>, lore=[<span class="st">&quot;§7Price: §a$500&quot;</span>]),
-        on_click=buy_armor
-    )
-    menu[<span class="nb">14</span>] = MenuItem(
-        Item(<span class="st">&quot;GOLDEN_APPLE&quot;</span>, name=<span class="st">&quot;§6Golden Apple&quot;</span>, lore=[<span class="st">&quot;§7Price: §a$50&quot;</span>]),
-        on_click=<span class="kw">lambda</span> p, e: Item.give(p, <span class="st">&quot;GOLDEN_APPLE&quot;</span>)
-    )
-    menu[<span class="nb">16</span>] = MenuItem(
-        Item(<span class="st">&quot;BARRIER&quot;</span>, name=<span class="st">&quot;§cClose&quot;</span>),
-        on_click=<span class="kw">lambda</span> p, e: p.inventory.close()
-    )
-
-    menu.open(player)
-</code></pre>
-<h2 id="example-confirmation-dialog">Example: Confirmation dialog</h2>
-<pre><code class="language-python"><span class="kw">from</span> bridge <span class="kw">import</span> *
-
-<span class="kw">def</span> confirm_menu(title, on_confirm, on_cancel):
-    menu = Menu(title, rows=<span class="nb">3</span>)
-    menu.fill_border(Item(<span class="st">&quot;GRAY_STAINED_GLASS_PANE&quot;</span>, name=<span class="st">&quot; &quot;</span>))
-
-    menu[<span class="nb">11</span>] = MenuItem(
-        Item(<span class="st">&quot;LIME_WOOL&quot;</span>, name=<span class="st">&quot;§a§lConfirm&quot;</span>),
-        on_click=on_confirm
-    )
-    menu[<span class="nb">15</span>] = MenuItem(
-        Item(<span class="st">&quot;RED_WOOL&quot;</span>, name=<span class="st">&quot;§c§lCancel&quot;</span>),
-        on_click=on_cancel
-    )
-    <span class="kw">return</span> menu
-
-<span class="dc">@command</span>(<span class="st">&quot;Delete your home&quot;</span>)
-<span class="kw">async</span> <span class="kw">def</span> delhome(player: Player, args: list[str]):
-    <span class="kw">async</span> <span class="kw">def</span> confirm(p, e):
-        <span class="kw">await</span> p.send_message(<span class="st">&quot;§aHome deleted!&quot;</span>)
-        <span class="kw">await</span> p.inventory.close()
-
-    <span class="kw">async</span> <span class="kw">def</span> cancel(p, e):
-        <span class="kw">await</span> p.send_message(<span class="st">&quot;§cCancelled.&quot;</span>)
-        <span class="kw">await</span> p.inventory.close()
-
-    menu = confirm_menu(<span class="st">&quot;§c§lDelete Home?&quot;</span>, confirm, cancel)
-    menu.open(player)
-</code></pre>
-<div class="callout callout-info"><p><strong>Tip:</strong> For lower-level inventory control without click handlers, see <a href="inventory.html"><code>Inventory</code></a>.</p></div>
+<div class="callout callout-info"><p><strong>Tip:</strong> See <a href="menuitem.html"><code>MenuItem</code></a> for click handler details and examples.</p></div>
     </div>
     <footer class="site-footer">
       &copy; Omena0 2026 &middot; PyJavaBridge Documentation
