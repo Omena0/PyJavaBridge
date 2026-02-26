@@ -135,6 +135,17 @@
     <li><a href="reflect.html">Reflect</a></li>
   </ul>
 </div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="internals">Internals</div>
+  <ul class="sidebar-links">
+    <li><a href="bridge.html">Bridge</a></li>
+    <li><a href="events_internal.html">Events</a></li>
+    <li><a href="execution.html">Execution</a></li>
+    <li><a href="serialization.html">Serialization</a></li>
+    <li><a href="lifecycle.html">Lifecycle</a></li>
+    <li><a href="debugging.html">Debugging</a></li>
+  </ul>
+</div>
   </aside>
   <div class="sidebar-overlay"></div>
 
@@ -208,13 +219,15 @@
 
     Player(p).inventory.open(event.player)
 </code></pre>
-<p><strong>Concepts demonstrated:</strong>
-- <a href="decorators.html"><code>@command</code></a> with and without arguments
-- <a href="raycast.html"><code>raycast()</code></a> for finding ground level
-- <a href="inventory.html"><code>Inventory</code></a> with custom contents
-- <a href="decorators.html"><code>@event</code></a> for <code>inventory_click</code> and <code>inventory_drag</code>
-- <a href="event.html#cancel"><code>Event.cancel()</code></a> to prevent default behavior
-- <a href="player.html"><code>Player</code></a> messaging, sounds, and teleportation</p>
+<p><strong>Concepts demonstrated:</strong></p>
+<ul>
+<li><a href="decorators.html"><code>@command</code></a> with and without arguments</li>
+<li><a href="raycast.html"><code>raycast()</code></a> for finding ground level</li>
+<li><a href="inventory.html"><code>Inventory</code></a> with custom contents</li>
+<li><a href="decorators.html"><code>@event</code></a> for <code>inventory_click</code> and <code>inventory_drag</code></li>
+<li><a href="event.html#cancel"><code>Event.cancel()</code></a> to prevent default behavior</li>
+<li><a href="player.html"><code>Player</code></a> messaging, sounds, and teleportation</li>
+</ul>
 <hr />
 <h2 id="spawn-protection">Spawn Protection</h2>
 <p>A script that prevents building near spawn using block events.</p>
@@ -241,12 +254,14 @@
     <span class="kw">if</span> (abs(event.block.x) + abs(event.block.z)) &lt; <span class="nb">15</span>:
         event.cancel()
 </code></pre>
-<p><strong>Concepts demonstrated:</strong>
-- <a href="decorators.html"><code>@event</code></a> for <code>block_break</code>, <code>block_place</code>, <code>block_explode</code>, and <code>load</code>
-- <a href="event.html#cancel"><code>Event.cancel()</code></a> to prevent block modification
-- <a href="event.html#block"><code>Event.block</code></a> to access block coordinates
-- <a href="server.html#broadcast"><code>server.broadcast()</code></a> for server-wide messages
-- Diamond (taxicab) distance check for a protection zone</p>
+<p><strong>Concepts demonstrated:</strong></p>
+<ul>
+<li><a href="decorators.html"><code>@event</code></a> for <code>block_break</code>, <code>block_place</code>, <code>block_explode</code>, and <code>load</code></li>
+<li><a href="event.html#cancel"><code>Event.cancel()</code></a> to prevent block modification</li>
+<li><a href="event.html#block"><code>Event.block</code></a> to access block coordinates</li>
+<li><a href="server.html#broadcast"><code>server.broadcast()</code></a> for server-wide messages</li>
+<li>Diamond (taxicab) distance check for a protection zone</li>
+</ul>
 <hr />
 <h2 id="temporary-ban-system">Temporary Ban System</h2>
 <p>A full ban system with configurable durations and persistence.</p>
@@ -355,15 +370,17 @@ bans = {}
         <span class="st">f&quot;\nReason: {reason}&quot;</span>
     )
 </code></pre>
-<p><strong>Concepts demonstrated:</strong>
-- <a href="decorators.html"><code>@command</code></a> with multiple optional arguments
-- <a href="player.html"><code>Player</code></a> creation by name for offline lookups
-- <a href="player.html#kick"><code>Player.kick()</code></a> with a formatted reason
-- <a href="player.html#is_op"><code>Player.is_op</code></a> for permission checking
-- <a href="decorators.html"><code>@event</code></a> for <code>player_join</code> to enforce bans on login
-- Python standard library usage (<code>re</code>, <code>time</code>)
-- Third-party library usage (<code>humanfriendly</code>)
-- State management with a global dictionary</p>
+<p><strong>Concepts demonstrated:</strong></p>
+<ul>
+<li><a href="decorators.html"><code>@command</code></a> with multiple optional arguments</li>
+<li><a href="player.html"><code>Player</code></a> creation by name for offline lookups</li>
+<li><a href="player.html#kick"><code>Player.kick()</code></a> with a formatted reason</li>
+<li><a href="player.html#is_op"><code>Player.is_op</code></a> for permission checking</li>
+<li><a href="decorators.html"><code>@event</code></a> for <code>player_join</code> to enforce bans on login</li>
+<li>Python standard library usage (<code>re</code>, <code>time</code>)</li>
+<li>Third-party library usage (<code>humanfriendly</code>)</li>
+<li>State management with a global dictionary</li>
+</ul>
 <hr />
 <h2 id="tips-for-writing-scripts">Tips for Writing Scripts</h2>
 <ol>

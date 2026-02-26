@@ -37,7 +37,7 @@ Drop your `.py` file into the server's `scripts/` folder and reload. The bridge 
 ### Decorators & Core
 
 | Page | Description |
-|------|-------------|
+| ---- | ----------- |
 | [Decorators](decorators.md) | `@event`, `@command`, `@task` |
 | [Exceptions](exceptions.md) | `BridgeError`, `EntityGoneException` |
 | [EnumValue](enumvalue.md) | Base class for all enum types |
@@ -46,7 +46,7 @@ Drop your `.py` file into the server's `scripts/` folder and reload. The bridge 
 ### Server & Entities
 
 | Page | Description |
-|------|-------------|
+| ---- | ----------- |
 | [Server](server.md) | Global server API |
 | [Entity](entity.md) | Base entity proxy |
 | [Player](player.md) | Player API (extends Entity) |
@@ -54,7 +54,7 @@ Drop your `.py` file into the server's `scripts/` folder and reload. The bridge 
 ### World & Space
 
 | Page | Description |
-|------|-------------|
+| ---- | ----------- |
 | [World](world.md) | World API, region utilities, particle shapes, spawn helpers |
 | [Location](location.md) | 3D position with world, yaw, and pitch |
 | [Block](block.md) | Block in the world |
@@ -64,7 +64,7 @@ Drop your `.py` file into the server's `scripts/` folder and reload. The bridge 
 ### Items & Inventory
 
 | Page | Description |
-|------|-------------|
+| ---- | ----------- |
 | [Item](item.md) | ItemStack API |
 | [ItemBuilder](itembuilder.md) | Fluent item construction |
 | [Inventory](inventory.md) | Inventory management |
@@ -73,7 +73,7 @@ Drop your `.py` file into the server's `scripts/` folder and reload. The bridge 
 ### Effects & Attributes
 
 | Page | Description |
-|------|-------------|
+| ---- | ----------- |
 | [Effect](effect.md) | Potion effects |
 | [Potion](potion.md) | Legacy potion API |
 | [Attribute](attribute.md) | Entity attributes |
@@ -81,7 +81,7 @@ Drop your `.py` file into the server's `scripts/` folder and reload. The bridge 
 ### Scoreboards & UI
 
 | Page | Description |
-|------|-------------|
+| ---- | ----------- |
 | [BossBar](bossbar.md) | Boss bar API |
 | [Scoreboard](scoreboard.md) | Scoreboard API |
 | [Team](team.md) | Team API |
@@ -92,7 +92,7 @@ Drop your `.py` file into the server's `scripts/` folder and reload. The bridge 
 ### Helpers
 
 | Page | Description |
-|------|-------------|
+| ---- | ----------- |
 | [Config](config.md) | Configuration files (TOML, JSON, properties) |
 | [Cooldown](cooldown.md) | Per-player cooldowns |
 | [Hologram](hologram.md) | Floating text entities |
@@ -103,7 +103,7 @@ Drop your `.py` file into the server's `scripts/` folder and reload. The bridge 
 ### Display Entities
 
 | Page | Description |
-|------|-------------|
+| ---- | ----------- |
 | [BlockDisplay](blockdisplay.md) | Block display entity |
 | [ItemDisplay](itemdisplay.md) | Item display entity |
 | [ImageDisplay](imagedisplay.md) | Pixel art display |
@@ -111,7 +111,7 @@ Drop your `.py` file into the server's `scripts/` folder and reload. The bridge 
 ### Utilities
 
 | Page | Description |
-|------|-------------|
+| ---- | ----------- |
 | [Raycast](raycast.md) | Ray tracing in the world |
 | [Chat](chat.md) | Chat broadcast helper |
 | [Reflect](reflect.md) | Java reflection access |
@@ -120,5 +120,5 @@ Drop your `.py` file into the server's `scripts/` folder and reload. The bridge 
 ### Examples
 
 | Page | Description |
-|------|-------------|
+| ---- | ----------- |
 | [Examples](examples.md) | Full script examples |

@@ -153,7 +153,7 @@ Returning `None` (or not returning) leaves the chat message unchanged.
 Events are resolved from handler function names: `snake_case` → `PascalCase` + `Event`.
 
 | Function name | Bukkit event |
-|---------------|-------------|
+| ------------- | ------------ |
 | `player_join` | `PlayerJoinEvent` |
 | `player_quit` | `PlayerQuitEvent` |
 | `player_chat` | `AsyncPlayerChatEvent` |

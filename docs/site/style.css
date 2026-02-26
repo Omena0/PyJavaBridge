@@ -181,6 +181,40 @@ body {
   font-weight: 600;
 }
 
+/* Collapsible H3 sub-links in TOC */
+.toc-sub {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  overflow: hidden;
+  max-height: 0;
+  opacity: 0;
+  transition: max-height .25s ease, opacity .2s ease;
+}
+.toc-sub.expanded {
+  opacity: 1;
+}
+.toc-sub a {
+  display: block;
+  padding: 4px 20px 4px 40px;
+  color: var(--sidebar-text);
+  text-decoration: none;
+  font-size: .8rem;
+  border-left: 2px solid transparent;
+  transition: .15s;
+}
+.toc-sub a:hover {
+  color: #fff;
+  background: var(--sidebar-hover);
+  border-left-color: rgba(99,102,241,.4);
+}
+.toc-sub a.active {
+  color: var(--sidebar-accent);
+  background: var(--sidebar-active);
+  border-left-color: var(--sidebar-accent);
+  font-weight: 600;
+}
+
 .sidebar-overlay {
   display: none;
   position: fixed; inset: 0;

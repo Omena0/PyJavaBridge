@@ -45,17 +45,23 @@
   <div class="sidebar-heading" data-section="on-this-page">On This Page</div>
   <ul class="sidebar-links">
     <li><a href="#event">@event</a></li>
-    <li><a href="#signature" style="padding-left:40px;font-size:.8rem">Signature</a></li>
-    <li><a href="#parameters" style="padding-left:40px;font-size:.8rem">Parameters</a></li>
-    <li><a href="#bare-decorator" style="padding-left:40px;font-size:.8rem">Bare decorator</a></li>
+    <li><ul class="toc-sub" data-parent="event">
+      <li><a href="#signature">Signature</a></li>
+      <li><a href="#parameters">Parameters</a></li>
+      <li><a href="#bare-decorator">Bare decorator</a></li>
+    </ul></li>
     <li><a href="#command">@command</a></li>
-    <li><a href="#signature_1" style="padding-left:40px;font-size:.8rem">Signature</a></li>
-    <li><a href="#parameters_1" style="padding-left:40px;font-size:.8rem">Parameters</a></li>
-    <li><a href="#command-arguments" style="padding-left:40px;font-size:.8rem">Command arguments</a></li>
+    <li><ul class="toc-sub" data-parent="command">
+      <li><a href="#signature_1">Signature</a></li>
+      <li><a href="#parameters_1">Parameters</a></li>
+      <li><a href="#command-arguments">Command arguments</a></li>
+    </ul></li>
     <li><a href="#task">@task</a></li>
-    <li><a href="#signature_2" style="padding-left:40px;font-size:.8rem">Signature</a></li>
-    <li><a href="#parameters_2" style="padding-left:40px;font-size:.8rem">Parameters</a></li>
-    <li><a href="#notes" style="padding-left:40px;font-size:.8rem">Notes</a></li>
+    <li><ul class="toc-sub" data-parent="task">
+      <li><a href="#signature_2">Signature</a></li>
+      <li><a href="#parameters_2">Parameters</a></li>
+      <li><a href="#notes">Notes</a></li>
+    </ul></li>
   </ul>
 </div>
 
@@ -143,6 +149,17 @@
     <li><a href="reflect.html">Reflect</a></li>
   </ul>
 </div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="internals">Internals</div>
+  <ul class="sidebar-links">
+    <li><a href="bridge.html">Bridge</a></li>
+    <li><a href="events_internal.html">Events</a></li>
+    <li><a href="execution.html">Execution</a></li>
+    <li><a href="serialization.html">Serialization</a></li>
+    <li><a href="lifecycle.html">Lifecycle</a></li>
+    <li><a href="debugging.html">Debugging</a></li>
+  </ul>
+</div>
   </aside>
   <div class="sidebar-overlay"></div>
 
@@ -160,7 +177,7 @@
 </code></pre>
 <p>Register a function as an event handler. The function name determines the event type — it is converted from <code>snake_case</code> to <code>PascalCase</code> and <code>Event</code> is appended. For example, <code>player_join</code> becomes <code>PlayerJoinEvent</code>.</p>
 <h3 id="signature">Signature</h3>
-<pre><code>@event(*, once_per_tick=False, priority=&quot;NORMAL&quot;, throttle_ms=0)
+<pre><code class="language-py"><span class="dc">@event</span>(*, once_per_tick=<span class="kw">False</span>, priority=<span class="st">&quot;NORMAL&quot;</span>, throttle_ms=<span class="nb">0</span>)
 </code></pre>
 <h3 id="parameters">Parameters</h3>
 <h4 id="once_per_tick">once_per_tick</h4>
@@ -244,7 +261,7 @@
 </code></pre>
 <p>Register a function as a script command. The command is automatically available as <code>/functionname</code> (or as specified via the <code>name</code> parameter). Command arguments are parsed from the function's additional parameters after <code>event</code>.</p>
 <h3 id="signature_1">Signature</h3>
-<pre><code>@command(description=None, *, name=None, permission=None)
+<pre><code class="language-py"><span class="dc">@command</span>(description=<span class="kw">None</span>, *, name=<span class="kw">None</span>, permission=<span class="kw">None</span>)
 </code></pre>
 <h3 id="parameters_1">Parameters</h3>
 <h4 id="description">description</h4>
@@ -295,7 +312,7 @@
 </code></pre>
 <p>Register a repeating async task. The function is called repeatedly at the specified interval after an optional initial delay.</p>
 <h3 id="signature_2">Signature</h3>
-<pre><code>@task(*, interval=20, delay=0)
+<pre><code class="language-py"><span class="dc">@task</span>(*, interval=<span class="nb">20</span>, delay=<span class="nb">0</span>)
 </code></pre>
 <h3 id="parameters_2">Parameters</h3>
 <h4 id="interval">interval</h4>

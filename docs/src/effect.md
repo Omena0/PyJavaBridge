@@ -163,7 +163,7 @@ for effect in player.effects:
 ## Duration Reference
 
 | Duration | Ticks |
-|----------|-------|
+| -------- | ----- |
 | 1 second | 20 |
 | 5 seconds | 100 |
 | 30 seconds | 600 |

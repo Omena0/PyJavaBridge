@@ -23,7 +23,7 @@ Create and spawn a block display entity.
   - `billboard` (`str`) — Billboard mode. Default `"FIXED"`.
 
 | Billboard | Description |
-|-----------|-------------|
+| --------- | ----------- |
 | `"FIXED"` | No rotation (default for blocks) |
 | `"CENTER"` | Always faces the player |
 | `"HORIZONTAL"` | Only rotates horizontally |

@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Execution — PyJavaBridge</title>
+  <meta property="og:title" content="Execution — PyJavaBridge">
+  <meta property="og:description" content="Call dispatch, threading, timing, and batching">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="PyJavaBridge Docs">
+  <meta name="theme-color" content="#6366f1">
+  <meta name="color-scheme" content="dark">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Header -->
+  <header class="site-header">
+    <button class="menu-toggle" aria-label="Toggle menu">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M3 12h18M3 6h18M3 18h18"/>
+      </svg>
+    </button>
+    <a href="index.html" class="header-brand">
+      <span class="logo">Py</span>
+      PyJavaBridge
+    </a>
+    <nav class="header-nav">
+      <a href="index.html">Docs</a>
+      <a href="examples.html">Examples</a>
+      <a href="https://github.com/Omena0/PyJavaBridge">GitHub</a>
+    </nav>
+  </header>
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+<div class="search-box">
+  <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+  <input type="text" id="sidebar-search" placeholder="Search docs…">
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading" data-section="on-this-page">On This Page</div>
+  <ul class="sidebar-links">
+    <li><a href="#call-flow">Call Flow</a></li>
+    <li><ul class="toc-sub" data-parent="call-flow">
+      <li><a href="#1-python-sends-the-call">1. Python sends the call</a></li>
+      <li><a href="#2-java-bridge-thread-reads-the-message">2. Java bridge thread reads the message</a></li>
+      <li><a href="#3-thread-safety-check">3. Thread safety check</a></li>
+      <li><a href="#4-method-resolution">4. Method resolution</a></li>
+      <li><a href="#5-python-receives-the-response">5. Python receives the response</a></li>
+    </ul></li>
+    <li><a href="#threading-model">Threading Model</a></li>
+    <li><ul class="toc-sub" data-parent="threading-model">
+      <li><a href="#bridge-thread-per-script">Bridge thread (per script)</a></li>
+      <li><a href="#main-server-thread">Main server thread</a></li>
+      <li><a href="#sub-tick-scheduling">Sub-tick scheduling</a></li>
+      <li><a href="#spin-wait-drain">Spin-wait drain</a></li>
+    </ul></li>
+    <li><a href="#thread-safe-allowlist">Thread-Safe Allowlist</a></li>
+    <li><a href="#timing">Timing</a></li>
+    <li><ul class="toc-sub" data-parent="timing">
+      <li><a href="#thread-safe-calls">Thread-safe calls</a></li>
+      <li><a href="#non-thread-safe-calls-first-in-chain">Non-thread-safe calls (first in chain)</a></li>
+      <li><a href="#non-thread-safe-calls-chained">Non-thread-safe calls (chained)</a></li>
+      <li><a href="#example-timing-scenario">Example timing scenario</a></li>
+      <li><a href="#why-the-first-call-is-slower">Why the first call is slower</a></li>
+    </ul></li>
+    <li><a href="#sync-vs-async-calls">Sync vs Async Calls</a></li>
+    <li><ul class="toc-sub" data-parent="sync-vs-async-calls">
+      <li><a href="#async-default">Async (default)</a></li>
+      <li><a href="#sync-internal-use">Sync (internal use)</a></li>
+    </ul></li>
+    <li><a href="#batching">Batching</a></li>
+    <li><ul class="toc-sub" data-parent="batching">
+      <li><a href="#serverframe-non-atomic-batch">server.frame() — Non-atomic batch</a></li>
+      <li><a href="#serveratomic-atomic-batch-best-effort">server.atomic() — Atomic batch (best-effort)</a></li>
+      <li><a href="#nesting">Nesting</a></li>
+      <li><a href="#batch-thread-safety">Batch thread safety</a></li>
+      <li><a href="#when-to-use-batching">When to use batching</a></li>
+    </ul></li>
+    <li><a href="#wait-mechanism">Wait Mechanism</a></li>
+  </ul>
+</div>
+
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="getting-started">Getting Started</div>
+  <ul class="sidebar-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="decorators.html">Decorators</a></li>
+    <li><a href="exceptions.html">Exceptions</a></li>
+    <li><a href="examples.html">Examples</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="core">Core</div>
+  <ul class="sidebar-links">
+    <li><a href="server.html">Server</a></li>
+    <li><a href="event.html">Event</a></li>
+    <li><a href="entity.html">Entity</a></li>
+    <li><a href="player.html">Player</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="world-space">World & Space</div>
+  <ul class="sidebar-links">
+    <li><a href="world.html">World</a></li>
+    <li><a href="location.html">Location</a></li>
+    <li><a href="block.html">Block</a></li>
+    <li><a href="chunk.html">Chunk</a></li>
+    <li><a href="vector.html">Vector</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="items-inventory">Items & Inventory</div>
+  <ul class="sidebar-links">
+    <li><a href="item.html">Item</a></li>
+    <li><a href="itembuilder.html">ItemBuilder</a></li>
+    <li><a href="inventory.html">Inventory</a></li>
+    <li><a href="menu.html">Menu</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="effects-attributes">Effects & Attributes</div>
+  <ul class="sidebar-links">
+    <li><a href="effect.html">Effect</a></li>
+    <li><a href="potion.html">Potion</a></li>
+    <li><a href="attribute.html">Attribute</a></li>
+    <li><a href="advancement.html">Advancement</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="scoreboards-ui">Scoreboards & UI</div>
+  <ul class="sidebar-links">
+    <li><a href="bossbar.html">BossBar</a></li>
+    <li><a href="scoreboard.html">Scoreboard</a></li>
+    <li><a href="objective.html">Objective</a></li>
+    <li><a href="team.html">Team</a></li>
+    <li><a href="sidebar.html">Sidebar</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="helpers">Helpers</div>
+  <ul class="sidebar-links">
+    <li><a href="config.html">Config</a></li>
+    <li><a href="cooldown.html">Cooldown</a></li>
+    <li><a href="hologram.html">Hologram</a></li>
+    <li><a href="enumvalue.html">EnumValue</a></li>
+    <li><a href="enums.html">Enums</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="display-entities">Display Entities</div>
+  <ul class="sidebar-links">
+    <li><a href="actionbardisplay.html">ActionBarDisplay</a></li>
+    <li><a href="bossbardisplay.html">BossBarDisplay</a></li>
+    <li><a href="blockdisplay.html">BlockDisplay</a></li>
+    <li><a href="itemdisplay.html">ItemDisplay</a></li>
+    <li><a href="imagedisplay.html">ImageDisplay</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="utilities">Utilities</div>
+  <ul class="sidebar-links">
+    <li><a href="raycast.html">Raycast</a></li>
+    <li><a href="chat.html">Chat</a></li>
+    <li><a href="reflect.html">Reflect</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="internals">Internals</div>
+  <ul class="sidebar-links">
+    <li><a href="bridge.html">Bridge</a></li>
+    <li><a href="events_internal.html">Events</a></li>
+    <li><a href="execution.html" class="active">Execution</a></li>
+    <li><a href="serialization.html">Serialization</a></li>
+    <li><a href="lifecycle.html">Lifecycle</a></li>
+    <li><a href="debugging.html">Debugging</a></li>
+  </ul>
+</div>
+  </aside>
+  <div class="sidebar-overlay"></div>
+
+  <!-- Main -->
+  <main class="main">
+    <div class="content">
+      <p class="subtitle">Call dispatch, threading, timing, and batching</p>
+      <h1 id="execution">Execution</h1>
+<p>How method calls travel from Python to Java, get executed, and return results. Covers threading, the thread-safety allowlist, timing characteristics, and call batching.</p>
+<hr />
+<h2 id="call-flow">Call Flow</h2>
+<p>When Python calls a Java method (e.g. <code>player.get_health()</code>):</p>
+<h3 id="1-python-sends-the-call">1. Python sends the call</h3>
+<pre><code class="language-python"><span class="cm"># Inside BridgeConnection.call()</span>
+message = {<span class="st">&quot;type&quot;</span>: <span class="st">&quot;call&quot;</span>, <span class="st">&quot;id&quot;</span>: <span class="nb">1</span>, <span class="st">&quot;method&quot;</span>: <span class="st">&quot;getHealth&quot;</span>, <span class="st">&quot;handle&quot;</span>: <span class="nb">42</span>, <span class="st">&quot;args_list&quot;</span>: []}
+<span class="cm"># If inside a batch context: queued to _batch_messages</span>
+<span class="cm"># Otherwise: sent immediately over stdout</span>
+</code></pre>
+<p>The <code>BridgeCall</code> wrapper (an <code>asyncio.Future</code>) is returned so the caller can <code>await</code> the result.</p>
+<h3 id="2-java-bridge-thread-reads-the-message">2. Java bridge thread reads the message</h3>
+<p>The bridge thread (one per script) reads from Python's stdout in a blocking loop. Each message is parsed and passed to <code>handleMessage()</code>, which routes by type.</p>
+<h3 id="3-thread-safety-check">3. Thread safety check</h3>
+<pre><code class="language-diagram">isCallThreadSafe(message)?
+├── YES → Execute immediately on bridge thread
+│         Response sent directly (sub-millisecond)
+└── NO  → Queue to main thread via MinecraftServer.execute()
+          Response sent after main thread processes it
+</code></pre>
+<h3 id="4-method-resolution">4. Method resolution</h3>
+<p>Java resolves the call through a dispatch chain:</p>
+<ol>
+<li><strong>Type-specific handlers</strong> — checked first. <code>Player</code>, <code>World</code>, <code>Server</code>, <code>ItemStack</code>, <code>Inventory</code>, <code>Block</code>, <code>Display</code> each have custom method handling for common operations (e.g. <code>playSound</code>, <code>teleport</code>, <code>spawnEntity</code>)</li>
+<li><strong>Special methods</strong> — <code>get_attr</code> (field access), <code>set_attr</code> (field set), <code>close</code> (no-op cleanup)</li>
+<li><strong>Reflective fallback</strong> — if no handler matched, Java reflection finds a matching method by name and parameter count, with automatic argument type coercion</li>
+</ol>
+<h3 id="5-python-receives-the-response">5. Python receives the response</h3>
+<p>The reader thread reads the response from stdin:</p>
+<ul>
+<li><strong>Async path</strong>: <code>return</code>/<code>error</code> messages matching a pending <code>asyncio.Future</code> → resolved via <code>call_soon_threadsafe()</code> on the event loop</li>
+<li><strong>Sync path</strong>: messages matching a <code>_pending_sync</code> ID → <code>threading.Event</code> set directly on the reader thread (no event loop delay)</li>
+</ul>
+<hr />
+<h2 id="threading-model">Threading Model</h2>
+<h3 id="bridge-thread-per-script">Bridge thread (per script)</h3>
+<p>Each script gets a dedicated Java thread that:</p>
+<ul>
+<li>Reads messages from Python's stdout</li>
+<li>Executes thread-safe calls inline</li>
+<li>Writes responses to Python's stdin</li>
+</ul>
+<p>Thread-safe calls never leave this thread, which is why they're sub-millisecond.</p>
+<h3 id="main-server-thread">Main server thread</h3>
+<p>The Bukkit main thread runs the game loop at 20 TPS (50ms per tick). Non-thread-safe calls must execute here because most Bukkit API methods are not thread-safe.</p>
+<h3 id="sub-tick-scheduling">Sub-tick scheduling</h3>
+<p>Non-thread-safe calls are dispatched via <code>MinecraftServer.execute()</code> (resolved at startup via reflection). This adds the task to Minecraft's internal <code>processQueue</code>, which is checked during the server's idle sleep between ticks. The server wakes up via <code>LockSupport.unpark()</code> to process the task immediately.</p>
+<p>If <code>MinecraftServer.execute()</code> is unavailable (non-Paper server or reflection fails), calls fall back to a <code>ConcurrentLinkedQueue</code> drained once per tick by a <code>runTaskTimer</code>.</p>
+<h3 id="spin-wait-drain">Spin-wait drain</h3>
+<p>After executing a main-thread task, the drain loop spins for up to <strong>5ms</strong> checking for follow-up calls. This catches chained sequential calls (Python sends the next call immediately after receiving a response).</p>
+<p>Constants:</p>
+<ul>
+<li><strong>SPIN_WAIT_NS</strong> = 5,000,000 (5ms per-task spin window)</li>
+<li><strong>MAX_SPIN_NS</strong> = 20,000,000 (20ms hard cap per drain cycle)</li>
+</ul>
+<p>After processing a task, the spin deadline resets. But total spin time per drain cycle is capped at 20ms to prevent starvation under continuous load.</p>
+<hr />
+<h2 id="thread-safe-allowlist">Thread-Safe Allowlist</h2>
+<p>These calls execute immediately on the bridge thread with no tick wait:</p>
+<table>
+<thead>
+<tr>
+<th>Target / Type</th>
+<th>Safe Methods</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>metrics</code> facade</td>
+<td>ALL methods (reads atomic/volatile values)</td>
+</tr>
+<tr>
+<td><code>reflect</code> facade</td>
+<td>ALL methods (<code>Class.forName()</code> is thread-safe)</td>
+</tr>
+<tr>
+<td><code>server</code> facade</td>
+<td><code>getName</code>, <code>getVersion</code>, <code>getBukkitVersion</code>, <code>getMaxPlayers</code></td>
+</tr>
+<tr>
+<td><code>OfflinePlayer</code> / <code>Player</code></td>
+<td><code>getUniqueId</code>, <code>getName</code>, <code>hasPermission</code>, <code>isPermissionSet</code>, <code>isWhitelisted</code>, <code>isBanned</code></td>
+</tr>
+<tr>
+<td><code>Metadatable</code> objects</td>
+<td><code>hasMetadata</code>, <code>getMetadata</code></td>
+</tr>
+<tr>
+<td><code>Entity</code> (non-Player)</td>
+<td><code>getUniqueId</code></td>
+</tr>
+<tr>
+<td>Object handle releases</td>
+<td>Always (backed by <code>ConcurrentHashMap</code>)</td>
+</tr>
+</tbody>
+</table>
+<p>Everything else runs on the main server thread. The allowlist is intentionally conservative — calling a non-thread-safe method from the wrong thread can cause data corruption or crashes.</p>
+<hr />
+<h2 id="timing">Timing</h2>
+<h3 id="thread-safe-calls">Thread-safe calls</h3>
+<p>Executed inline on the bridge thread. Typical latency: <strong>&lt; 1ms</strong>.</p>
+<h3 id="non-thread-safe-calls-first-in-chain">Non-thread-safe calls (first in chain)</h3>
+<p>Must wait for the main thread. With <code>MinecraftServer.execute()</code>, typically <strong>1–10ms</strong>. Without it (fallback queue), up to <strong>~50ms</strong> (one full tick).</p>
+<h3 id="non-thread-safe-calls-chained">Non-thread-safe calls (chained)</h3>
+<p>The spin-wait catches follow-up calls within <strong>1–3ms</strong> each.</p>
+<h3 id="example-timing-scenario">Example timing scenario</h3>
+<pre><code class="language-python">name = <span class="kw">await</span> server.name           <span class="cm"># Thread-safe → ~0.5ms</span>
+health = <span class="kw">await</span> player.get_health() <span class="cm"># Main thread → 1-10ms (first call)</span>
+<span class="kw">await</span> player.set_health(<span class="nb">20</span>)        <span class="cm"># Main thread → 1-3ms (chained, caught by spin-wait)</span>
+<span class="kw">await</span> player.send_message(<span class="st">&quot;Hi&quot;</span>)    <span class="cm"># Main thread → 1-3ms (chained)</span>
+</code></pre>
+<p>Without chaining awareness, each main-thread call would wait up to 50ms. The spin-wait reduces this to under 3ms for follow-up calls.</p>
+<h3 id="why-the-first-call-is-slower">Why the first call is slower</h3>
+<p>The main thread runs a game loop: process tick → sleep until next tick. When a call arrives mid-sleep, <code>MinecraftServer.execute()</code> wakes the thread, but it still needs to context-switch and begin processing. The first call pays this wake-up cost. Subsequent calls arrive while the thread is already running, so they're processed immediately.</p>
+<hr />
+<h2 id="sync-vs-async-calls">Sync vs Async Calls</h2>
+<h3 id="async-default">Async (default)</h3>
+<pre><code class="language-python">name = <span class="kw">await</span> player.get_name()  <span class="cm"># Returns BridgeCall wrapping asyncio.Future</span>
+</code></pre>
+<ul>
+<li>Response dispatched via <code>call_soon_threadsafe()</code> to the event loop</li>
+<li>Does not block the event loop while waiting</li>
+<li>Preferred for all user code</li>
+</ul>
+<h3 id="sync-internal-use">Sync (internal use)</h3>
+<pre><code class="language-python">name = player.name  <span class="cm"># Property access calls call_sync() internally</span>
+</code></pre>
+<ul>
+<li>Uses <code>threading.Event</code> — reader thread sets it directly</li>
+<li><strong>Blocks the calling thread</strong> until response arrives</li>
+<li>Used for <code>__getattr__</code>, <code>__str__</code>, <code>__repr__</code>, <code>__len__</code>, <code>__iter__</code></li>
+<li>Can cause deadlocks if the event loop is blocked waiting for itself</li>
+</ul>
+<p><strong>Rule of thumb:</strong> Use <code>await</code> methods in async code. Property access (sync) is fine in top-level code or synchronous contexts.</p>
+<hr />
+<h2 id="batching">Batching</h2>
+<p>Batching groups multiple calls into a single wire message, reducing round-trip overhead. Instead of send-wait-send-wait, all calls are collected and sent together.</p>
+<h3 id="serverframe-non-atomic-batch"><code>server.frame()</code> — Non-atomic batch</h3>
+<p>Each call is independent. If one fails, the rest still execute.</p>
+<pre><code class="language-python"><span class="kw">async</span> <span class="kw">with</span> server.frame():
+    name = <span class="kw">await</span> player.get_name()        <span class="cm"># Queued</span>
+    health = <span class="kw">await</span> player.get_health()    <span class="cm"># Queued</span>
+    world = <span class="kw">await</span> player.get_world()      <span class="cm"># Queued</span>
+<span class="cm"># All 3 sent as one call_batch, results awaited together</span>
+</code></pre>
+<p><strong>Wire message:</strong></p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;call_batch&quot;,
+  &quot;atomic&quot;: false,
+  &quot;messages&quot;: [
+    {&quot;type&quot;: &quot;call&quot;, &quot;id&quot;: 1, &quot;method&quot;: &quot;getName&quot;, &quot;handle&quot;: 42, &quot;args_list&quot;: []},
+    {&quot;type&quot;: &quot;call&quot;, &quot;id&quot;: 2, &quot;method&quot;: &quot;getHealth&quot;, &quot;handle&quot;: 42, &quot;args_list&quot;: []},
+    {&quot;type&quot;: &quot;call&quot;, &quot;id&quot;: 3, &quot;method&quot;: &quot;getWorld&quot;, &quot;handle&quot;: 42, &quot;args_list&quot;: []}
+  ]
+}
+</code></pre>
+<p>Each call gets its own <code>return</code> response (3 separate messages back).</p>
+<h3 id="serveratomic-atomic-batch-best-effort"><code>server.atomic()</code> — Atomic batch (best-effort)</h3>
+<p>If any call fails, all subsequent calls are <strong>skipped</strong> (not rolled back — already-executed calls are not undone).</p>
+<pre><code class="language-python"><span class="kw">async</span> <span class="kw">with</span> server.atomic():
+    inv = <span class="kw">await</span> player.get_inventory()
+    <span class="kw">await</span> inv.clear()
+    <span class="kw">for</span> item <span class="kw">in</span> items:
+        <span class="kw">await</span> inv.add_item(item)
+<span class="cm"># If any add_item fails, the rest are skipped</span>
+</code></pre>
+<p><strong>On failure:</strong> The failed call gets a normal <code>error</code> response. All remaining calls get an error with code <code>ATOMIC_ABORT</code>:</p>
+<pre><code class="language-json">{&quot;type&quot;: &quot;error&quot;, &quot;id&quot;: 5, &quot;message&quot;: &quot;Atomic batch aborted&quot;, &quot;code&quot;: &quot;ATOMIC_ABORT&quot;}
+</code></pre>
+<h3 id="nesting">Nesting</h3>
+<p>Batches can nest. The outermost context manager triggers the flush. If any level is <code>atomic</code>, the entire batch becomes atomic:</p>
+<pre><code class="language-python"><span class="kw">async</span> <span class="kw">with</span> server.frame():
+    <span class="kw">await</span> player.get_name()
+    <span class="kw">async</span> <span class="kw">with</span> server.atomic():
+        <span class="kw">await</span> player.set_health(<span class="nb">20</span>)
+        <span class="kw">await</span> player.set_food_level(<span class="nb">20</span>)
+    <span class="cm"># Inner atomic doesn't flush yet</span>
+<span class="cm"># Everything flushes here as atomic=true (because inner was atomic)</span>
+</code></pre>
+<h3 id="batch-thread-safety">Batch thread safety</h3>
+<p>If <strong>all</strong> calls in a batch are thread-safe, the entire batch executes on the bridge thread. If <strong>any</strong> call is not thread-safe, the entire batch goes to the main thread.</p>
+<h3 id="when-to-use-batching">When to use batching</h3>
+<ul>
+<li><strong><code>frame()</code></strong> — Multiple independent reads. Good for UI updates, data gathering. Reduces N round trips to 1.</li>
+<li><strong><code>atomic()</code></strong> — Related writes where partial failure is bad. Good for inventory operations, multi-step entity setup.</li>
+<li><strong>Neither</strong> — Single calls, or when each result is needed before the next call.</li>
+</ul>
+<hr />
+<h2 id="wait-mechanism">Wait Mechanism</h2>
+<p><code>server.after(ticks)</code> pauses execution for N server ticks:</p>
+<pre><code class="language-python"><span class="kw">await</span> server.after(<span class="nb">20</span>)  <span class="cm"># Wait 1 second (20 ticks)</span>
+</code></pre>
+<p><strong>Implementation:</strong> Python sends <code>{"type": "wait", "id": N, "ticks": 20}</code>. Java schedules a <code>runTaskLater</code> on the Bukkit scheduler. When the delay expires, Java sends <code>{"type": "return", "id": N, "result": null}</code>. The Python future resolves and execution continues.</p>
+<p>This is the correct way to introduce delays — it integrates with the server's tick system rather than using <code>asyncio.sleep()</code> which would be wall-clock time and might not align with server ticks.</p>
+    </div>
+    <footer class="site-footer">
+      &copy; Omena0 2026 &middot; PyJavaBridge Documentation
+    </footer>
+  </main>
+
+  <!-- Back to top -->
+  <button class="back-to-top" aria-label="Back to top">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+      <path d="M18 15l-6-6-6 6"/>
+    </svg>
+  </button>
+
+  <script src="script.js"></script>
+</body>
+</html>

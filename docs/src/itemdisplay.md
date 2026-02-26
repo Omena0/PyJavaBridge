@@ -23,7 +23,7 @@ Create and spawn an item display entity.
   - `billboard` (`str`) — Billboard mode. Default `"FIXED"`.
 
 | Billboard | Description |
-|-----------|-------------|
+| --------- | ----------- |
 | `"FIXED"` | No rotation (default) |
 | `"CENTER"` | Always faces the player |
 | `"HORIZONTAL"` | Only rotates horizontally |

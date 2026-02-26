@@ -374,6 +374,21 @@ Set the player's active scoreboard.
 
 ## Effects
 
+### effects
+
+```python
+effects = player.effects
+```
+
+Get a list of the player's active potion effects.
+
+- **Type:** `list[`[`Effect`](effect.md)`]`
+
+```python
+for effect in player.effects:
+    print(f"{effect.type}: amplifier {effect.amplifier}, {effect.duration} ticks left")
+```
+
 ### add_effect
 
 ```python

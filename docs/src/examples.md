@@ -77,6 +77,7 @@ async def invsee(event: Event, p: str):
 ```
 
 **Concepts demonstrated:**
+
 - [`@command`](decorators.md) with and without arguments
 - [`raycast()`](raycast.md) for finding ground level
 - [`Inventory`](inventory.md) with custom contents
@@ -116,6 +117,7 @@ async def block_explode(event: Event):
 ```
 
 **Concepts demonstrated:**
+
 - [`@event`](decorators.md) for `block_break`, `block_place`, `block_explode`, and `load`
 - [`Event.cancel()`](event.md#cancel) to prevent block modification
 - [`Event.block`](event.md#block) to access block coordinates
@@ -236,6 +238,7 @@ async def player_join(event: Event):
 ```
 
 **Concepts demonstrated:**
+
 - [`@command`](decorators.md) with multiple optional arguments
 - [`Player`](player.md) creation by name for offline lookups
 - [`Player.kick()`](player.md#kick) with a formatted reason

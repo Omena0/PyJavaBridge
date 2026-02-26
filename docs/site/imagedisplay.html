@@ -46,8 +46,11 @@
   <ul class="sidebar-links">
     <li><a href="#constructor">Constructor</a></li>
     <li><a href="#methods">Methods</a></li>
-    <li><a href="#teleport" style="padding-left:40px;font-size:.8rem">teleport</a></li>
-    <li><a href="#remove" style="padding-left:40px;font-size:.8rem">remove</a></li>
+    <li><ul class="toc-sub" data-parent="methods">
+      <li><a href="#teleport">teleport</a></li>
+      <li><a href="#update">update</a></li>
+      <li><a href="#remove">remove</a></li>
+    </ul></li>
     <li><a href="#notes">Notes</a></li>
   </ul>
 </div>
@@ -136,6 +139,17 @@
     <li><a href="reflect.html">Reflect</a></li>
   </ul>
 </div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="internals">Internals</div>
+  <ul class="sidebar-links">
+    <li><a href="bridge.html">Bridge</a></li>
+    <li><a href="events_internal.html">Events</a></li>
+    <li><a href="execution.html">Execution</a></li>
+    <li><a href="serialization.html">Serialization</a></li>
+    <li><a href="lifecycle.html">Lifecycle</a></li>
+    <li><a href="debugging.html">Debugging</a></li>
+  </ul>
+</div>
   </aside>
   <div class="sidebar-overlay"></div>
 
@@ -147,13 +161,18 @@
 <p>An <code>ImageDisplay</code> renders an image file as a display entity in the world. It converts image pixels to colored map-like displays.</p>
 <hr />
 <h2 id="constructor">Constructor</h2>
-<pre><code class="language-python">ImageDisplay(location, image_path, pixel_size=..., dual_sided=<span class="kw">False</span>, dual_side_mode=<span class="st">&quot;mirror&quot;</span>)
+<pre><code class="language-python">ImageDisplay(location, image, pixel_size=..., dual_sided=<span class="kw">False</span>, dual_side_mode=<span class="st">&quot;mirror&quot;</span>)
 </code></pre>
 <p>Create and spawn an image display.</p>
 <ul>
 <li><strong>Parameters:</strong></li>
 <li><code>location</code> (<a href="location.html"><code>Location</code></a>) — Spawn position.</li>
-<li><code>image_path</code> (<code>str</code>) — Path to the image file (relative to plugin data folder, or absolute).</li>
+<li><code>image</code> — Image source. Accepts:<ul>
+<li><code>str</code> — File path (relative to plugin data folder, or absolute).</li>
+<li>PIL <code>Image</code> object — Used directly (requires Pillow).</li>
+<li><code>(width, height, pixel_data)</code> tuple — Raw pixel data. <code>pixel_data</code> is a flat list of <code>(r, g, b, a)</code> tuples in row-major order.</li>
+</ul>
+</li>
 <li><code>pixel_size</code> (<code>float</code>) — Size of each pixel in blocks. Smaller = more detail but more entities.</li>
 <li><code>dual_sided</code> (<code>bool</code>) — Whether the image is visible from both sides. Default <code>False</code>.</li>
 <li><code>dual_side_mode</code> (<code>str</code>) — How the back side renders. Default <code>"mirror"</code>.</li>
@@ -172,12 +191,22 @@
 </tr>
 </tbody>
 </table>
-<pre><code class="language-python">display = ImageDisplay(
+<pre><code class="language-python"><span class="cm"># From file</span>
+display = ImageDisplay(
     Location(<span class="nb">100</span>, <span class="nb">70</span>, <span class="nb">200</span>, <span class="st">&quot;world&quot;</span>),
     <span class="st">&quot;images/logo.png&quot;</span>,
     pixel_size=<span class="nb">0.1</span>,
     dual_sided=<span class="kw">True</span>
 )
+
+<span class="cm"># From PIL Image</span>
+<span class="kw">from</span> PIL <span class="kw">import</span> Image
+img = Image.new(<span class="st">&quot;RGBA&quot;</span>, (<span class="nb">16</span>, <span class="nb">16</span>), (<span class="nb">255</span>, <span class="nb">0</span>, <span class="nb">0</span>, <span class="nb">255</span>))
+display = ImageDisplay(Location(<span class="nb">100</span>, <span class="nb">70</span>, <span class="nb">200</span>, <span class="st">&quot;world&quot;</span>), img, pixel_size=<span class="nb">0.1</span>)
+
+<span class="cm"># From raw pixel data</span>
+pixels = [(<span class="nb">255</span>, <span class="nb">0</span>, <span class="nb">0</span>, <span class="nb">255</span>)] * (<span class="nb">16</span> * <span class="nb">16</span>)
+display = ImageDisplay(Location(<span class="nb">100</span>, <span class="nb">70</span>, <span class="nb">200</span>, <span class="st">&quot;world&quot;</span>), (<span class="nb">16</span>, <span class="nb">16</span>, pixels), pixel_size=<span class="nb">0.1</span>)
 </code></pre>
 <hr />
 <h2 id="methods">Methods</h2>
@@ -189,6 +218,30 @@
 <li><strong>Parameters:</strong></li>
 <li><code>location</code> (<a href="location.html"><code>Location</code></a>) — New position.</li>
 </ul>
+<h3 id="update">update</h3>
+<pre><code class="language-python">display.update(image)
+</code></pre>
+<p>Update pixel colors without respawning entities.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>image</code> — New image data. Accepts:<ul>
+<li><code>str</code> — File path. Requires Pillow.</li>
+<li>PIL <code>Image</code> object — Used directly.</li>
+<li><code>(width, height, pixel_data)</code> tuple — Raw pixel data.</li>
+<li><code>list</code> of <code>(r, g, b, a)</code> tuples — Flat RGBA pixel list (same dimensions as original, row-major).</li>
+<li><code>list</code> of <code>int</code> — Flat ARGB int list, one per entity in spawn order. This is the fastest option.</li>
+</ul>
+</li>
+</ul>
+<p>If the image dimensions differ from the original, the display is destroyed and recreated.</p>
+<pre><code class="language-python"><span class="cm"># Update from PIL Image (no file I/O)</span>
+img = Image.new(<span class="st">&quot;RGBA&quot;</span>, (<span class="nb">16</span>, <span class="nb">16</span>), (<span class="nb">0</span>, <span class="nb">255</span>, <span class="nb">0</span>, <span class="nb">255</span>))
+display.update(img)
+
+<span class="cm"># Update from raw RGBA tuples (fastest without pre-computing ARGB)</span>
+pixels = [(<span class="nb">0</span>, <span class="nb">0</span>, <span class="nb">255</span>, <span class="nb">255</span>)] * (<span class="nb">16</span> * <span class="nb">16</span>)
+display.update(pixels)
+</code></pre>
 <h3 id="remove">remove</h3>
 <pre><code class="language-python">display.remove()
 </code></pre>
@@ -199,6 +252,7 @@
 <li>Large images with small <code>pixel_size</code> can create many display entities and impact performance</li>
 <li>Supported formats depend on the Java ImageIO library (PNG, JPEG, GIF, BMP)</li>
 <li>Place the image files in the plugin's data folder or use an absolute path</li>
+<li>For animated displays, pass PIL Images or raw pixel data directly to <code>update()</code> to avoid file I/O overhead</li>
 </ul>
     </div>
     <footer class="site-footer">

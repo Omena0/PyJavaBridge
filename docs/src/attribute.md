@@ -76,7 +76,7 @@ Change the base value of this attribute.
 ## Common Attribute Types
 
 | AttributeType | Default | Description |
-|---------------|---------|-------------|
+| ------------- | ------- | ----------- |
 | `GENERIC_MAX_HEALTH` | 20.0 | Maximum health (1.0 = half heart) |
 | `GENERIC_MOVEMENT_SPEED` | 0.1 | Walk speed |
 | `GENERIC_ATTACK_DAMAGE` | 1.0 | Base melee damage |

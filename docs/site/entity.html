@@ -46,35 +46,41 @@
   <ul class="sidebar-links">
     <li><a href="#constructor">Constructor</a></li>
     <li><a href="#class-methods">Class Methods</a></li>
-    <li><a href="#spawn" style="padding-left:40px;font-size:.8rem">spawn</a></li>
+    <li><ul class="toc-sub" data-parent="class-methods">
+      <li><a href="#spawn">spawn</a></li>
+    </ul></li>
     <li><a href="#attributes">Attributes</a></li>
-    <li><a href="#uuid" style="padding-left:40px;font-size:.8rem">uuid</a></li>
-    <li><a href="#type" style="padding-left:40px;font-size:.8rem">type</a></li>
-    <li><a href="#location" style="padding-left:40px;font-size:.8rem">location</a></li>
-    <li><a href="#world" style="padding-left:40px;font-size:.8rem">world</a></li>
-    <li><a href="#velocity" style="padding-left:40px;font-size:.8rem">velocity</a></li>
-    <li><a href="#is_dead" style="padding-left:40px;font-size:.8rem">is_dead</a></li>
-    <li><a href="#is_alive" style="padding-left:40px;font-size:.8rem">is_alive</a></li>
-    <li><a href="#is_valid" style="padding-left:40px;font-size:.8rem">is_valid</a></li>
-    <li><a href="#fire_ticks" style="padding-left:40px;font-size:.8rem">fire_ticks</a></li>
-    <li><a href="#passengers" style="padding-left:40px;font-size:.8rem">passengers</a></li>
-    <li><a href="#custom_name" style="padding-left:40px;font-size:.8rem">custom_name</a></li>
-    <li><a href="#is_projectile" style="padding-left:40px;font-size:.8rem">is_projectile</a></li>
-    <li><a href="#shooter" style="padding-left:40px;font-size:.8rem">shooter</a></li>
-    <li><a href="#is_tamed" style="padding-left:40px;font-size:.8rem">is_tamed</a></li>
-    <li><a href="#owner" style="padding-left:40px;font-size:.8rem">owner</a></li>
-    <li><a href="#owner_uuid" style="padding-left:40px;font-size:.8rem">owner_uuid</a></li>
-    <li><a href="#owner_name" style="padding-left:40px;font-size:.8rem">owner_name</a></li>
-    <li><a href="#source" style="padding-left:40px;font-size:.8rem">source</a></li>
+    <li><ul class="toc-sub" data-parent="attributes">
+      <li><a href="#uuid">uuid</a></li>
+      <li><a href="#type">type</a></li>
+      <li><a href="#location">location</a></li>
+      <li><a href="#world">world</a></li>
+      <li><a href="#velocity">velocity</a></li>
+      <li><a href="#is_dead">is_dead</a></li>
+      <li><a href="#is_alive">is_alive</a></li>
+      <li><a href="#is_valid">is_valid</a></li>
+      <li><a href="#fire_ticks">fire_ticks</a></li>
+      <li><a href="#passengers">passengers</a></li>
+      <li><a href="#custom_name">custom_name</a></li>
+      <li><a href="#is_projectile">is_projectile</a></li>
+      <li><a href="#shooter">shooter</a></li>
+      <li><a href="#is_tamed">is_tamed</a></li>
+      <li><a href="#owner">owner</a></li>
+      <li><a href="#owner_uuid">owner_uuid</a></li>
+      <li><a href="#owner_name">owner_name</a></li>
+      <li><a href="#source">source</a></li>
+    </ul></li>
     <li><a href="#methods">Methods</a></li>
-    <li><a href="#teleport" style="padding-left:40px;font-size:.8rem">teleport</a></li>
-    <li><a href="#remove" style="padding-left:40px;font-size:.8rem">remove</a></li>
-    <li><a href="#set_velocity" style="padding-left:40px;font-size:.8rem">set_velocity</a></li>
-    <li><a href="#set_fire_ticks" style="padding-left:40px;font-size:.8rem">set_fire_ticks</a></li>
-    <li><a href="#add_passenger" style="padding-left:40px;font-size:.8rem">add_passenger</a></li>
-    <li><a href="#remove_passenger" style="padding-left:40px;font-size:.8rem">remove_passenger</a></li>
-    <li><a href="#set_custom_name" style="padding-left:40px;font-size:.8rem">set_custom_name</a></li>
-    <li><a href="#set_custom_name_visible" style="padding-left:40px;font-size:.8rem">set_custom_name_visible</a></li>
+    <li><ul class="toc-sub" data-parent="methods">
+      <li><a href="#teleport">teleport</a></li>
+      <li><a href="#remove">remove</a></li>
+      <li><a href="#set_velocity">set_velocity</a></li>
+      <li><a href="#set_fire_ticks">set_fire_ticks</a></li>
+      <li><a href="#add_passenger">add_passenger</a></li>
+      <li><a href="#remove_passenger">remove_passenger</a></li>
+      <li><a href="#set_custom_name">set_custom_name</a></li>
+      <li><a href="#set_custom_name_visible">set_custom_name_visible</a></li>
+    </ul></li>
   </ul>
 </div>
 
@@ -160,6 +166,17 @@
     <li><a href="raycast.html">Raycast</a></li>
     <li><a href="chat.html">Chat</a></li>
     <li><a href="reflect.html">Reflect</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="internals">Internals</div>
+  <ul class="sidebar-links">
+    <li><a href="bridge.html">Bridge</a></li>
+    <li><a href="events_internal.html">Events</a></li>
+    <li><a href="execution.html">Execution</a></li>
+    <li><a href="serialization.html">Serialization</a></li>
+    <li><a href="lifecycle.html">Lifecycle</a></li>
+    <li><a href="debugging.html">Debugging</a></li>
   </ul>
 </div>
   </aside>
@@ -269,27 +286,46 @@ zombie = <span class="kw">await</span> Entity.spawn(<span class="st">&quot;ZOMBI
 <ul>
 <li><strong>Type:</strong> <code>bool</code></li>
 </ul>
-<p>Whether this entity is a tameable animal that has been tamed.</p>
+<p>Whether this entity is a tameable animal that has been tamed (wolf, cat, horse, etc.).</p>
 <h3 id="owner">owner</h3>
 <ul>
 <li><strong>Type:</strong> <a href="player.html"><code>Player</code></a> | <code>None</code></li>
 </ul>
-<p>The player who owns this tamed entity, if the owner is online.</p>
+<p>The player who caused/owns this entity. Works for:</p>
+<ul>
+<li><strong>Tamed animals</strong> — the player who tamed them</li>
+<li><strong>Projectiles</strong> — the player who shot them (same as <code>shooter</code> when shooter is a player)</li>
+<li><strong>TNT</strong> — the player who ignited it</li>
+<li><strong>Any entity</strong> with a traceable cause</li>
+</ul>
+<p>Returns <code>None</code> if the owner is offline or unknown.</p>
 <h3 id="owner_uuid">owner_uuid</h3>
 <ul>
 <li><strong>Type:</strong> <code>str | None</code></li>
 </ul>
-<p>UUID of the taming player, even if they're offline.</p>
+<p>UUID of the owning player, even if they're offline.</p>
 <h3 id="owner_name">owner_name</h3>
 <ul>
 <li><strong>Type:</strong> <code>str | None</code></li>
 </ul>
-<p>Name of the taming player, if known.</p>
+<p>Name of the owning player, if known.</p>
 <h3 id="source">source</h3>
 <ul>
 <li><strong>Type:</strong> <a href="#"><code>Entity</code></a> | <a href="player.html"><code>Player</code></a> | <code>None</code></li>
 </ul>
 <p>The entity that created this entity. For example, the player who lit a TNT block, or the witch that threw a potion.</p>
+<pre><code class="language-python"><span class="dc">@event</span>
+<span class="kw">async</span> <span class="kw">def</span> entity_damage_by_entity(e):
+    <span class="cm"># Track who's responsible for projectile kills</span>
+    damager = e.damager
+    <span class="kw">if</span> damager.is_projectile <span class="kw">and</span> damager.owner:
+        owner = damager.owner
+        <span class="kw">await</span> owner.send_message(<span class="st">f&quot;You hit {e.entity.type}!&quot;</span>)
+
+    <span class="cm"># Check if a tamed wolf attacked something</span>
+    <span class="kw">if</span> damager.is_tamed:
+        <span class="kw">await</span> damager.owner.send_message(<span class="st">f&quot;Your {damager.type} attacked {e.entity.type}&quot;</span>)
+</code></pre>
 <hr />
 <h2 id="methods">Methods</h2>
 <h3 id="teleport">teleport</h3>

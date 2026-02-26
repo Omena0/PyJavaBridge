@@ -133,31 +133,52 @@ For projectiles, the entity or block that launched it. `None` for non-projectile
 
 - **Type:** `bool`
 
-Whether this entity is a tameable animal that has been tamed.
+Whether this entity is a tameable animal that has been tamed (wolf, cat, horse, etc.).
 
 ### owner
 
 - **Type:** [`Player`](player.md) | `None`
 
-The player who owns this tamed entity, if the owner is online.
+The player who caused/owns this entity. Works for:
+
+- **Tamed animals** — the player who tamed them
+- **Projectiles** — the player who shot them (same as `shooter` when shooter is a player)
+- **TNT** — the player who ignited it
+- **Any entity** with a traceable cause
+
+Returns `None` if the owner is offline or unknown.
 
 ### owner_uuid
 
 - **Type:** `str | None`
 
-UUID of the taming player, even if they're offline.
+UUID of the owning player, even if they're offline.
 
 ### owner_name
 
 - **Type:** `str | None`
 
-Name of the taming player, if known.
+Name of the owning player, if known.
 
 ### source
 
 - **Type:** [`Entity`](#) | [`Player`](player.md) | `None`
 
 The entity that created this entity. For example, the player who lit a TNT block, or the witch that threw a potion.
+
+```python
+@event
+async def entity_damage_by_entity(e):
+    # Track who's responsible for projectile kills
+    damager = e.damager
+    if damager.is_projectile and damager.owner:
+        owner = damager.owner
+        await owner.send_message(f"You hit {e.entity.type}!")
+
+    # Check if a tamed wolf attacked something
+    if damager.is_tamed:
+        await damager.owner.send_message(f"Your {damager.type} attacked {e.entity.type}")
+```
 
 ---
 

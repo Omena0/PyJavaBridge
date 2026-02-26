@@ -112,7 +112,7 @@ Revoke a single criterion.
 ## Common Advancement Keys
 
 | Key | Description |
-|-----|-------------|
+| --- | ----------- |
 | `minecraft:story/mine_stone` | Mine stone with a pickaxe |
 | `minecraft:story/upgrade_tools` | Craft a stone pickaxe |
 | `minecraft:story/smelt_iron` | Smelt an iron ingot |

@@ -21,7 +21,7 @@ Register a function as an event handler. The function name determines the event 
 
 ### Signature
 
-```
+```py
 @event(*, once_per_tick=False, priority="NORMAL", throttle_ms=0)
 ```
 
@@ -49,7 +49,7 @@ async def player_move(e):
 The Bukkit event priority. Determines the order in which handlers run. Options (lowest runs first):
 
 | Priority | Description |
-|----------|-------------|
+| -------- | ----------- |
 | `LOWEST` | Runs first. Use for early cancellation. |
 | `LOW` | Runs before normal handlers. |
 | `NORMAL` | Default priority. |
@@ -102,7 +102,7 @@ Register a function as a script command. The command is automatically available 
 
 ### Signature
 
-```
+```py
 @command(description=None, *, name=None, permission=None)
 ```
 
@@ -176,7 +176,7 @@ Register a repeating async task. The function is called repeatedly at the specif
 
 ### Signature
 
-```
+```py
 @task(*, interval=20, delay=0)
 ```
 

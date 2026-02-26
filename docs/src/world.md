@@ -560,3 +560,23 @@ Spawn an entity with custom SNBT (Stringified NBT) data.
 ```python
 await world.spawn_with_nbt(loc, "ZOMBIE", '{IsBaby:1b,CustomName:\'{"text":"Baby Zombie"}\'}')
 ```
+
+---
+
+## Dimension
+
+The `Dimension` type represents a world's dimension. It's available as a property on `World` objects.
+
+### Properties
+
+#### name
+
+- **Type:** `str`
+
+The dimension name (e.g. `"OVERWORLD"`, `"THE_NETHER"`, `"THE_END"`).
+
+```python
+world = player.world
+dim = world.dimension
+print(dim.name)  # "OVERWORLD"
+```

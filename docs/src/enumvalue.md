@@ -101,7 +101,7 @@ Name lookup is case-insensitive on the Java side, but by convention use `UPPER_S
 ## Subclasses
 
 | Class | Description | Example |
-|-------|-------------|---------|
+| ----- | ----------- | ------- |
 | `Material` | Block/item materials | `Material.DIAMOND` |
 | `EntityType` | Entity types | `EntityType.ZOMBIE` |
 | `Biome` | World biomes | `Biome.PLAINS` |

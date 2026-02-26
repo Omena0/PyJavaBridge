@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Events — PyJavaBridge</title>
+  <meta property="og:title" content="Events — PyJavaBridge">
+  <meta property="og:description" content="Event subscriptions, dispatch, cancellation, overrides, and commands">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="PyJavaBridge Docs">
+  <meta name="theme-color" content="#6366f1">
+  <meta name="color-scheme" content="dark">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Header -->
+  <header class="site-header">
+    <button class="menu-toggle" aria-label="Toggle menu">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M3 12h18M3 6h18M3 18h18"/>
+      </svg>
+    </button>
+    <a href="index.html" class="header-brand">
+      <span class="logo">Py</span>
+      PyJavaBridge
+    </a>
+    <nav class="header-nav">
+      <a href="index.html">Docs</a>
+      <a href="examples.html">Examples</a>
+      <a href="https://github.com/Omena0/PyJavaBridge">GitHub</a>
+    </nav>
+  </header>
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+<div class="search-box">
+  <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+  <input type="text" id="sidebar-search" placeholder="Search docs…">
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading" data-section="on-this-page">On This Page</div>
+  <ul class="sidebar-links">
+    <li><a href="#subscription">Subscription</a></li>
+    <li><ul class="toc-sub" data-parent="subscription">
+      <li><a href="#priority">Priority</a></li>
+      <li><a href="#throttling">Throttling</a></li>
+    </ul></li>
+    <li><a href="#dispatch-flow">Dispatch Flow</a></li>
+    <li><ul class="toc-sub" data-parent="dispatch-flow">
+      <li><a href="#payload-auto-extraction">Payload auto-extraction</a></li>
+    </ul></li>
+    <li><a href="#blocking-behavior">Blocking Behavior</a></li>
+    <li><ul class="toc-sub" data-parent="blocking-behavior">
+      <li><a href="#implications">Implications</a></li>
+    </ul></li>
+    <li><a href="#cancellation">Cancellation</a></li>
+    <li><a href="#result-overrides">Result Overrides</a></li>
+    <li><ul class="toc-sub" data-parent="result-overrides">
+      <li><a href="#chat-message-override">Chat message override</a></li>
+      <li><a href="#damage-override">Damage override</a></li>
+      <li><a href="#multiple-handlers">Multiple handlers</a></li>
+    </ul></li>
+    <li><a href="#block-explosion-special-handling">Block Explosion Special Handling</a></li>
+    <li><a href="#event-name-mapping">Event Name Mapping</a></li>
+    <li><a href="#command-registration">Command Registration</a></li>
+    <li><ul class="toc-sub" data-parent="command-registration">
+      <li><a href="#the-command-decorator">The @command decorator</a></li>
+      <li><a href="#signature-parsing">Signature parsing</a></li>
+      <li><a href="#java-side-registration">Java-side registration</a></li>
+      <li><a href="#tab-completion">Tab completion</a></li>
+      <li><a href="#command-cleanup-on-shutdown">Command cleanup on shutdown</a></li>
+    </ul></li>
+  </ul>
+</div>
+
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="getting-started">Getting Started</div>
+  <ul class="sidebar-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="decorators.html">Decorators</a></li>
+    <li><a href="exceptions.html">Exceptions</a></li>
+    <li><a href="examples.html">Examples</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="core">Core</div>
+  <ul class="sidebar-links">
+    <li><a href="server.html">Server</a></li>
+    <li><a href="event.html">Event</a></li>
+    <li><a href="entity.html">Entity</a></li>
+    <li><a href="player.html">Player</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="world-space">World & Space</div>
+  <ul class="sidebar-links">
+    <li><a href="world.html">World</a></li>
+    <li><a href="location.html">Location</a></li>
+    <li><a href="block.html">Block</a></li>
+    <li><a href="chunk.html">Chunk</a></li>
+    <li><a href="vector.html">Vector</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="items-inventory">Items & Inventory</div>
+  <ul class="sidebar-links">
+    <li><a href="item.html">Item</a></li>
+    <li><a href="itembuilder.html">ItemBuilder</a></li>
+    <li><a href="inventory.html">Inventory</a></li>
+    <li><a href="menu.html">Menu</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="effects-attributes">Effects & Attributes</div>
+  <ul class="sidebar-links">
+    <li><a href="effect.html">Effect</a></li>
+    <li><a href="potion.html">Potion</a></li>
+    <li><a href="attribute.html">Attribute</a></li>
+    <li><a href="advancement.html">Advancement</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="scoreboards-ui">Scoreboards & UI</div>
+  <ul class="sidebar-links">
+    <li><a href="bossbar.html">BossBar</a></li>
+    <li><a href="scoreboard.html">Scoreboard</a></li>
+    <li><a href="objective.html">Objective</a></li>
+    <li><a href="team.html">Team</a></li>
+    <li><a href="sidebar.html">Sidebar</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="helpers">Helpers</div>
+  <ul class="sidebar-links">
+    <li><a href="config.html">Config</a></li>
+    <li><a href="cooldown.html">Cooldown</a></li>
+    <li><a href="hologram.html">Hologram</a></li>
+    <li><a href="enumvalue.html">EnumValue</a></li>
+    <li><a href="enums.html">Enums</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="display-entities">Display Entities</div>
+  <ul class="sidebar-links">
+    <li><a href="actionbardisplay.html">ActionBarDisplay</a></li>
+    <li><a href="bossbardisplay.html">BossBarDisplay</a></li>
+    <li><a href="blockdisplay.html">BlockDisplay</a></li>
+    <li><a href="itemdisplay.html">ItemDisplay</a></li>
+    <li><a href="imagedisplay.html">ImageDisplay</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="utilities">Utilities</div>
+  <ul class="sidebar-links">
+    <li><a href="raycast.html">Raycast</a></li>
+    <li><a href="chat.html">Chat</a></li>
+    <li><a href="reflect.html">Reflect</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="internals">Internals</div>
+  <ul class="sidebar-links">
+    <li><a href="bridge.html">Bridge</a></li>
+    <li><a href="events_internal.html" class="active">Events</a></li>
+    <li><a href="execution.html">Execution</a></li>
+    <li><a href="serialization.html">Serialization</a></li>
+    <li><a href="lifecycle.html">Lifecycle</a></li>
+    <li><a href="debugging.html">Debugging</a></li>
+  </ul>
+</div>
+  </aside>
+  <div class="sidebar-overlay"></div>
+
+  <!-- Main -->
+  <main class="main">
+    <div class="content">
+      <p class="subtitle">Event subscriptions, dispatch, cancellation, overrides, and commands</p>
+      <h1 id="events">Events</h1>
+<p>How Bukkit events are captured, sent to Python, and how Python can cancel them or override their values. Also covers command registration, which follows a similar player-triggered dispatch model.</p>
+<hr />
+<h2 id="subscription">Subscription</h2>
+<p>When you use <code>@event</code> in Python, the bridge registers a Bukkit event listener on the Java side:</p>
+<pre><code class="language-python"><span class="dc">@event</span>
+<span class="kw">async</span> <span class="kw">def</span> player_join(event):
+    <span class="kw">await</span> event.player.send_message(<span class="st">&quot;Welcome!&quot;</span>)
+</code></pre>
+<p><strong>Wire message (Python → Java):</strong></p>
+<pre><code class="language-json">{
+  &quot;type&quot;: &quot;subscribe&quot;,
+  &quot;event&quot;: &quot;player_join&quot;,
+  &quot;priority&quot;: &quot;NORMAL&quot;,
+  &quot;once_per_tick&quot;: false,
+  &quot;throttle_ms&quot;: 0
+}
+</code></pre>
+<h3 id="priority">Priority</h3>
+<p>Maps to Bukkit's <code>EventPriority</code> — controls the order handlers run relative to other plugins:</p>
+<table>
+<thead>
+<tr>
+<th>Priority</th>
+<th>When to use</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>LOWEST</code></td>
+<td>Read event data before anyone modifies it</td>
+</tr>
+<tr>
+<td><code>LOW</code></td>
+<td>Early processing</td>
+</tr>
+<tr>
+<td><code>NORMAL</code></td>
+<td>Default. Most handlers should use this</td>
+</tr>
+<tr>
+<td><code>HIGH</code></td>
+<td>Override other plugins' decisions</td>
+</tr>
+<tr>
+<td><code>HIGHEST</code></td>
+<td>Final say before MONITOR</td>
+</tr>
+<tr>
+<td><code>MONITOR</code></td>
+<td>Read-only observation. Do not modify the event</td>
+</tr>
+</tbody>
+</table>
+<pre><code class="language-python"><span class="dc">@event</span>(priority=<span class="st">&quot;HIGH&quot;</span>)
+<span class="kw">async</span> <span class="kw">def</span> player_chat(event):
+    <span class="kw">return</span> <span class="st">f&quot;[VIP] {event.message}&quot;</span>  <span class="cm"># Override after other plugins</span>
+</code></pre>
+<h3 id="throttling">Throttling</h3>
+<p>Two mechanisms prevent event spam:</p>
+<p><strong><code>once_per_tick</code></strong> — Only dispatch the first occurrence per server tick. Useful for events that fire many times per tick (e.g. <code>entity_move</code>):</p>
+<pre><code class="language-python"><span class="dc">@event</span>(once_per_tick=<span class="kw">True</span>)
+<span class="kw">async</span> <span class="kw">def</span> entity_move(event):
+    <span class="kw">pass</span>  <span class="cm"># Called at most once per tick per subscription</span>
+</code></pre>
+<p><strong><code>throttle_ms</code></strong> — Minimum milliseconds between dispatches. Nanosecond-precision cooldown:</p>
+<pre><code class="language-python"><span class="dc">@event</span>(throttle_ms=<span class="nb">100</span>)
+<span class="kw">async</span> <span class="kw">def</span> player_move(event):
+    <span class="kw">pass</span>  <span class="cm"># At most 10 dispatches per second</span>
+</code></pre>
+<hr />
+<h2 id="dispatch-flow">Dispatch Flow</h2>
+<pre><code class="language-flow">1. Bukkit event fires (e.g. PlayerJoinEvent)
+         │
+2. Java EventSubscription executor runs
+   ├── Check once_per_tick: skip if already fired this tick
+   └── Check throttle_ms: skip if cooldown not elapsed
+         │
+3. Java EventDispatcher serializes the event
+   ├── Auto-extract fields via reflection (player, entity, block, etc.)
+   └── For cancellable events: assign event ID, create PendingEvent
+         │
+4. Java → Python:
+   {&quot;type&quot;: &quot;event&quot;, &quot;event&quot;: &quot;player_join&quot;, &quot;payload&quot;: {...}, &quot;id&quot;: 42}
+         │
+5. Python _dispatch_event() runs all registered @event handlers
+   ├── Both sync and async handlers supported
+   ├── All handlers for same event run concurrently (asyncio.gather)
+   └── Exceptions are caught and logged, don't crash the script
+         │
+6. Python → Java (in order):
+   a. {&quot;type&quot;: &quot;event_cancel&quot;, &quot;id&quot;: 42}         (if event.cancel() called)
+   b. {&quot;type&quot;: &quot;event_result&quot;, &quot;id&quot;: 42, ...}    (if handler returned a value)
+   c. {&quot;type&quot;: &quot;event_done&quot;, &quot;id&quot;: 42}           (always sent last)
+         │
+7. Java applies modifications to the Bukkit event
+   ├── Cancel: event.setCancelled(true)
+   ├── Chat override: replace message text
+   └── Damage override: event.setDamage(value)
+</code></pre>
+<h3 id="payload-auto-extraction">Payload auto-extraction</h3>
+<p>The Java EventDispatcher uses reflection to extract common event fields. It tries multiple getter names for compatibility across Bukkit versions:</p>
+<pre><code class="language-java">tryAddPayload(payload, event, &quot;player&quot;, &quot;getPlayer&quot;, &quot;getWhoClicked&quot;);
+tryAddPayload(payload, event, &quot;entity&quot;, &quot;getEntity&quot;);
+tryAddPayload(payload, event, &quot;block&quot;, &quot;getBlock&quot;, &quot;getClickedBlock&quot;);
+tryAddPayload(payload, event, &quot;inventory&quot;, &quot;getInventory&quot;, &quot;getClickedInventory&quot;);
+</code></pre>
+<p>Fields are serialized with the full bridge serializer, so you get proper proxy objects in Python (not raw JSON).</p>
+<hr />
+<h2 id="blocking-behavior">Blocking Behavior</h2>
+<p>The Java event handler thread <strong>blocks</strong> while waiting for Python to respond. This is necessary for cancellation/modification to work — Java must wait for Python's answer before the event proceeds.</p>
+<p><strong>Timeout:</strong> 1 second. If Python doesn't respond in time, the event continues unmodified.</p>
+<p><strong>While blocking</strong>, Java calls <code>drainMainThreadQueue()</code> in a loop. This means Python's event handler can make API calls back to Java and they'll be processed — the event dispatch doesn't deadlock the main thread queue.</p>
+<pre><code class="language-java">while (System.currentTimeMillis() &lt; deadline &amp;&amp; pending.latch.getCount() &gt; 0) {
+    plugin.drainMainThreadQueue();  // Process API calls while waiting
+    pending.latch.await(5, TimeUnit.MILLISECONDS);
+}
+</code></pre>
+<h3 id="implications">Implications</h3>
+<ul>
+<li>Event handlers should be <strong>fast</strong>. Long operations delay the event (and the server tick).</li>
+<li>Each script receives events independently with its own timeout.</li>
+<li>Non-cancellable events (no <code>id</code> field) are fire-and-forget — Java doesn't block.</li>
+</ul>
+<hr />
+<h2 id="cancellation">Cancellation</h2>
+<p>Call <code>event.cancel()</code> inside any handler to cancel a cancellable event:</p>
+<pre><code class="language-python"><span class="dc">@event</span>
+<span class="kw">async</span> <span class="kw">def</span> player_chat(event):
+    <span class="kw">if</span> <span class="st">&quot;bad_word&quot;</span> <span class="kw">in</span> event.message.lower():
+        event.cancel()
+        <span class="kw">await</span> event.player.send_message(<span class="st">&quot;§cWatch your language!&quot;</span>)
+</code></pre>
+<p>Python sends <code>{"type": "event_cancel", "id": 42}</code> before <code>event_done</code>. Java sets <code>event.setCancelled(true)</code> on the Bukkit event.</p>
+<p>Not all Bukkit events are cancellable. Non-cancellable events (like <code>player_join</code>) ignore cancel requests.</p>
+<hr />
+<h2 id="result-overrides">Result Overrides</h2>
+<p>Handlers can modify event data by returning values:</p>
+<h3 id="chat-message-override">Chat message override</h3>
+<p>Return a string from a chat event handler to replace the message:</p>
+<pre><code class="language-python"><span class="dc">@event</span>
+<span class="kw">async</span> <span class="kw">def</span> async_chat(event):
+    <span class="kw">return</span> <span class="st">f&quot;[{event.player.name}] {event.message}&quot;</span>
+</code></pre>
+<p>Sends: <code>{"type": "event_result", "id": 42, "result": "[Steve] Hello", "result_type": "chat"}</code></p>
+<h3 id="damage-override">Damage override</h3>
+<p>Return a number from a damage event handler to change the damage amount:</p>
+<pre><code class="language-python"><span class="dc">@event</span>
+<span class="kw">async</span> <span class="kw">def</span> entity_damage(event):
+    <span class="kw">if</span> event.entity.type == <span class="st">&quot;PLAYER&quot;</span>:
+        <span class="kw">return</span> event.damage * <span class="nb">0.5</span>  <span class="cm"># Half damage</span>
+</code></pre>
+<p>Sends: <code>{"type": "event_result", "id": 42, "result": 2.5, "result_type": "damage"}</code></p>
+<h3 id="multiple-handlers">Multiple handlers</h3>
+<p>If multiple handlers return values, the last one wins. All handlers run concurrently via <code>asyncio.gather</code>, so ordering isn't guaranteed.</p>
+<hr />
+<h2 id="block-explosion-special-handling">Block Explosion Special Handling</h2>
+<p>Block explosion events (<code>block_explode</code>, <code>entity_explode</code>) get special treatment. Instead of one event for the entire explosion, Java creates one event per affected block and sends them as a batch:</p>
+<pre><code class="language-json">{&quot;type&quot;: &quot;event_batch&quot;, &quot;event&quot;: &quot;block_explode&quot;, &quot;payloads&quot;: [{...}, {...}, ...]}
+</code></pre>
+<p>Each payload gets dispatched individually on the Python side. Cancelled blocks are removed from the explosion's block list — you can selectively protect blocks:</p>
+<pre><code class="language-python"><span class="dc">@event</span>
+<span class="kw">async</span> <span class="kw">def</span> block_explode(event):
+    <span class="kw">if</span> <span class="kw">await</span> event.block.get_type() == <span class="st">&quot;DIAMOND_ORE&quot;</span>:
+        event.cancel()  <span class="cm"># Protect diamond ore from explosions</span>
+</code></pre>
+<hr />
+<h2 id="event-name-mapping">Event Name Mapping</h2>
+<p>Bukkit event class names are converted to snake_case for Python. The mapping strips common suffixes:</p>
+<table>
+<thead>
+<tr>
+<th>Bukkit Class</th>
+<th>Python Event Name</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>PlayerJoinEvent</code></td>
+<td><code>player_join</code></td>
+</tr>
+<tr>
+<td><code>AsyncChatEvent</code></td>
+<td><code>async_chat</code></td>
+</tr>
+<tr>
+<td><code>EntityDamageByEntityEvent</code></td>
+<td><code>entity_damage_by_entity</code></td>
+</tr>
+<tr>
+<td><code>BlockBreakEvent</code></td>
+<td><code>block_break</code></td>
+</tr>
+<tr>
+<td><code>InventoryClickEvent</code></td>
+<td><code>inventory_click</code></td>
+</tr>
+</tbody>
+</table>
+<p>The <code>Event</code> suffix is always stripped. CamelCase is split into snake_case.</p>
+<hr />
+<h2 id="command-registration">Command Registration</h2>
+<p>Commands follow the same pattern as events — a player action triggers a dispatch from Java to Python.</p>
+<h3 id="the-command-decorator">The <code>@command</code> decorator</h3>
+<p>Python scripts register commands using the <code>@command</code> decorator:</p>
+<pre><code class="language-python"><span class="kw">from</span> bridge <span class="kw">import</span> command
+
+<span class="dc">@command</span>
+<span class="kw">def</span> greet(player, name: str, count: int = <span class="nb">1</span>):
+    <span class="kw">for</span> i <span class="kw">in</span> range(count):
+        player.send_message(<span class="st">f&quot;Hello, {name}!&quot;</span>)
+</code></pre>
+<h3 id="signature-parsing">Signature parsing</h3>
+<p>The decorator inspects the function's signature:</p>
+<ol>
+<li><strong>First parameter</strong> — Always the command sender (Player). Not included in usage.</li>
+<li><strong>Subsequent parameters</strong> — Command arguments</li>
+<li><strong>Type annotations</strong> — <code>str</code>, <code>int</code>, <code>float</code> for auto-conversion</li>
+<li><strong>Default values</strong> — Make arguments optional</li>
+</ol>
+<p>Usage string auto-generated: <code>/greet &lt;name&gt; [count]</code></p>
+<h3 id="java-side-registration">Java-side registration</h3>
+<p>When Python registers a command, it sends:</p>
+<pre><code class="language-json">{&quot;type&quot;: &quot;register_command&quot;, &quot;name&quot;: &quot;greet&quot;, &quot;usage&quot;: &quot;/greet &lt;name&gt; [count]&quot;, &quot;description&quot;: &quot;...&quot;}
+</code></pre>
+<p>Java creates a <code>ScriptCommand</code> and registers it on Bukkit's <code>CommandMap</code>:</p>
+<pre><code class="language-java">ScriptCommand cmd = new ScriptCommand(name, usage, description, scriptInstance);
+Bukkit.getCommandMap().register(&quot;pjb&quot;, cmd);
+</code></pre>
+<h3 id="tab-completion">Tab completion</h3>
+<p>Commands support tab completion. When a player presses Tab, Java sends a completion request to Python, which returns suggestions based on the current argument position and type.</p>
+<h3 id="command-cleanup-on-shutdown">Command cleanup on shutdown</h3>
+<p>When a script is stopped or reloaded, its commands are unregistered:</p>
+<pre><code class="language-java">void unregisterCommands() {
+    for (ScriptCommand cmd : registeredCommands) {
+        cmd.unregister(Bukkit.getCommandMap());
+    }
+    registeredCommands.clear();
+}
+</code></pre>
+<p>This means after a hot reload, commands are re-registered fresh from the new script.</p>
+    </div>
+    <footer class="site-footer">
+      &copy; Omena0 2026 &middot; PyJavaBridge Documentation
+    </footer>
+  </main>
+
+  <!-- Back to top -->
+  <button class="back-to-top" aria-label="Back to top">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+      <path d="M18 15l-6-6-6 6"/>
+    </svg>
+  </button>
+
+  <script src="script.js"></script>
+</body>
+</html>

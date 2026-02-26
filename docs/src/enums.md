@@ -37,7 +37,7 @@ Block and item types. Minecraft has hundreds of materials.
 **Common materials:**
 
 | Category | Examples |
-|----------|----------|
+| -------- | -------- |
 | Ores | `DIAMOND_ORE`, `IRON_ORE`, `GOLD_ORE`, `COAL_ORE` |
 | Blocks | `STONE`, `DIRT`, `GRASS_BLOCK`, `OAK_PLANKS`, `COBBLESTONE` |
 | Items | `DIAMOND_SWORD`, `IRON_PICKAXE`, `BOW`, `ARROW`, `STICK` |
@@ -63,7 +63,7 @@ from bridge import EntityType
 Mob and entity types.
 
 | Category | Examples |
-|----------|----------|
+| -------- | -------- |
 | Hostile | `ZOMBIE`, `SKELETON`, `CREEPER`, `SPIDER`, `ENDERMAN`, `WITCH` |
 | Passive | `COW`, `PIG`, `SHEEP`, `CHICKEN`, `VILLAGER`, `HORSE` |
 | Projectiles | `ARROW`, `FIREBALL`, `SNOWBALL`, `ENDER_PEARL`, `TRIDENT` |
@@ -85,7 +85,7 @@ from bridge import EffectType
 Potion effect types.
 
 | Name | Description |
-|------|-------------|
+| ---- | ----------- |
 | `SPEED` | Increases movement speed |
 | `SLOWNESS` | Decreases movement speed |
 | `HASTE` | Increases mining speed |
@@ -124,7 +124,7 @@ from bridge import AttributeType
 Entity attribute types for stat modification.
 
 | Name | Default | Description |
-|------|---------|-------------|
+| ---- | ------- | ----------- |
 | `GENERIC_MAX_HEALTH` | 20.0 | Maximum health |
 | `GENERIC_MOVEMENT_SPEED` | 0.1 | Walking speed |
 | `GENERIC_ATTACK_DAMAGE` | 1.0 | Melee damage |
@@ -144,7 +144,7 @@ from bridge import GameMode
 ```
 
 | Name | Description |
-|------|-------------|
+| ---- | ----------- |
 | `SURVIVAL` | Normal survival |
 | `CREATIVE` | Creative mode |
 | `ADVENTURE` | Adventure mode |
@@ -165,7 +165,7 @@ from bridge import Sound
 Minecraft sound effects. Examples:
 
 | Name | Description |
-|------|-------------|
+| ---- | ----------- |
 | `ENTITY_EXPERIENCE_ORB_PICKUP` | XP orb |
 | `BLOCK_NOTE_BLOCK_BASS` | Note block bass |
 | `BLOCK_NOTE_BLOCK_PLING` | Note block pling |
@@ -190,7 +190,7 @@ from bridge import Particle
 Particle effects.
 
 | Name | Description |
-|------|-------------|
+| ---- | ----------- |
 | `FLAME` | Fire particles |
 | `HEART` | Heart particles |
 | `VILLAGER_HAPPY` | Green sparkles |
@@ -216,7 +216,7 @@ from bridge import Difficulty
 ```
 
 | Name |
-|------|
+| ---- |
 | `PEACEFUL` |
 | `EASY` |
 | `NORMAL` |
@@ -245,7 +245,7 @@ from bridge import BarColor
 ```
 
 | Name |
-|------|
+| ---- |
 | `PINK` |
 | `BLUE` |
 | `RED` |
@@ -263,7 +263,7 @@ from bridge import BarStyle
 ```
 
 | Name | Description |
-|------|-------------|
+| ---- | ----------- |
 | `SOLID` | No segments |
 | `SEGMENTED_6` | 6 segments |
 | `SEGMENTED_10` | 10 segments |

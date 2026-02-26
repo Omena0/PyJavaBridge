@@ -128,9 +128,38 @@ document.addEventListener('DOMContentLoaded', () => {
     btn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
   }
 
-  // ── Active sidebar link tracking ────────────────────────────
+  // ── Active sidebar link tracking + TOC sub-section collapse ──
   const sections = document.querySelectorAll('.api-section, h2[id]');
   const allLinks = document.querySelectorAll('.sidebar-links a');
+  const tocSubs = document.querySelectorAll('.toc-sub');
+
+  function expandTocSub(sub) {
+    if (sub.classList.contains('expanded')) return;
+    sub.classList.add('expanded');
+    sub.style.maxHeight = sub.scrollHeight + 'px';
+    sub.addEventListener('transitionend', function handler() {
+      if (sub.classList.contains('expanded')) sub.style.maxHeight = 'none';
+      sub.removeEventListener('transitionend', handler);
+    });
+  }
+  function collapseTocSub(sub) {
+    if (!sub.classList.contains('expanded')) return;
+    sub.style.maxHeight = sub.scrollHeight + 'px';
+    sub.offsetHeight; // reflow
+    sub.classList.remove('expanded');
+    sub.style.maxHeight = '0';
+  }
+
+  function updateActiveTocSub(activeH2Id) {
+    tocSubs.forEach(sub => {
+      if (sub.dataset.parent === activeH2Id) {
+        expandTocSub(sub);
+      } else {
+        collapseTocSub(sub);
+      }
+    });
+  }
+
   if (sections.length && allLinks.length) {
     const observer = new IntersectionObserver(entries => {
       entries.forEach(entry => {
@@ -139,10 +168,28 @@ document.addEventListener('DOMContentLoaded', () => {
           allLinks.forEach(l => {
             l.classList.toggle('active', l.getAttribute('href') === '#' + id);
           });
+          // Find the parent H2 for this section
+          let h2Id = id;
+          const el = entry.target;
+          if (el.tagName === 'H3' || (el.tagName !== 'H2' && el.closest && !el.matches('h2'))) {
+            // Walk backwards to find the owning H2
+            let prev = el;
+            while (prev) {
+              prev = prev.previousElementSibling;
+              if (prev && prev.tagName === 'H2' && prev.id) {
+                h2Id = prev.id;
+                break;
+              }
+            }
+          }
+          updateActiveTocSub(h2Id);
         }
       });
     }, { rootMargin: '-80px 0px -60% 0px', threshold: 0 });
     sections.forEach(s => { if (s.id) observer.observe(s); });
+
+    // Also observe h3[id] elements for sub-section tracking
+    document.querySelectorAll('h3[id]').forEach(s => observer.observe(s));
   }
 
   // ── Smooth scroll for sidebar links ─────────────────────────

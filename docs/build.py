@@ -90,6 +90,14 @@ SIDEBAR = [
         ("chat", "Chat"),
         ("reflect", "Reflect"),
     ]),
+    ("Internals", [
+        ("bridge", "Bridge"),
+        ("events_internal", "Events"),
+        ("execution", "Execution"),
+        ("serialization", "Serialization"),
+        ("lifecycle", "Lifecycle"),
+        ("debugging", "Debugging")
+    ]),
 ]
 
 # ── Frontmatter parser ──────────────────────────────────────────────────────
@@ -254,10 +262,12 @@ def build_toc_sidebar(toc_tokens, current_slug):
     ]
     for token in toc_tokens:
         toc_parts.append(f'    <li><a href="#{token["id"]}">{token["name"]}</a></li>')
-        toc_parts.extend(
-            f'    <li><a href="#{child["id"]}" style="padding-left:40px;font-size:.8rem">{child["name"]}</a></li>'
-            for child in token.get("children", [])
-        )
+        children = token.get("children", [])
+        if children:
+            toc_parts.append(f'    <li><ul class="toc-sub" data-parent="{token["id"]}">')
+            for child in children:
+                toc_parts.append(f'      <li><a href="#{child["id"]}">{child["name"]}</a></li>')
+            toc_parts.append('    </ul></li>')
     toc_parts.extend(('  </ul>', '</div>'))
 
     # Insert TOC right after the search box (first </div>)

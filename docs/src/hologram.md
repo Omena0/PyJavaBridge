@@ -25,7 +25,7 @@ Create and spawn a hologram.
   - `billboard` (`str`) — Billboard mode. Default `"CENTER"`.
 
 | Billboard | Description |
-|-----------|-------------|
+| --------- | ----------- |
 | `"CENTER"` | Always faces the player (default) |
 | `"FIXED"` | Fixed orientation |
 | `"HORIZONTAL"` | Only rotates horizontally |

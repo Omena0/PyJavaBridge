@@ -165,7 +165,7 @@ Show or hide the bar without removing players.
 ## BarColor Options
 
 | Name | Description |
-|------|-------------|
+| ---- | ----------- |
 | `PINK` | Default pink |
 | `BLUE` | Blue |
 | `RED` | Red |
@@ -177,7 +177,7 @@ Show or hide the bar without removing players.
 ## BarStyle Options
 
 | Name | Description |
-|------|-------------|
+| ---- | ----------- |
 | `SOLID` | No segments |
 | `SEGMENTED_6` | 6 segments |
 | `SEGMENTED_10` | 10 segments |

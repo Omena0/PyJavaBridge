@@ -107,7 +107,7 @@ score = obj.get_score(player.name)
 ## Criteria Types
 
 | Criteria | Description |
-|----------|-------------|
+| -------- | ----------- |
 | `dummy` | Manual scores only — set by commands/plugins |
 | `health` | Player health (auto-updated) |
 | `playerKillCount` | Player kills (auto-updated) |

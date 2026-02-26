@@ -14,6 +14,7 @@ import org.bukkit.scheduler.BukkitTask;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -37,6 +38,8 @@ public class PyJavaBridgePlugin extends JavaPlugin {
     private volatile boolean watchEnabled = false;
 
     private BukkitTask mainThreadPump;
+    private Method serverExecuteMethod; // MinecraftServer.execute(Runnable) for sub-tick scheduling
+    private Object minecraftServer;
 
     private long currentTick = 0L;
     private long lastTickNano = 0L;
@@ -46,8 +49,21 @@ public class PyJavaBridgePlugin extends JavaPlugin {
 
     @Override
     public void onEnable() {
+        debugManager.setLogger(getLogger());
         getCommand("bridge").setExecutor(this);
         getCommand("bridge").setTabCompleter(this);
+
+        // Resolve MinecraftServer.execute() for sub-tick task scheduling
+        try {
+            Object craftServer = Bukkit.getServer();
+            minecraftServer = craftServer.getClass().getMethod("getServer").invoke(craftServer);
+            serverExecuteMethod = minecraftServer.getClass().getMethod("execute", Runnable.class);
+            getLogger().info("Sub-tick scheduling enabled via MinecraftServer.execute()");
+        } catch (Exception e) {
+            getLogger().warning("Sub-tick scheduling unavailable, falling back to tick-based queue: " + e.getMessage());
+            serverExecuteMethod = null;
+            minecraftServer = null;
+        }
 
         Path dataDir = getDataFolder().toPath();
         Path scriptsDir = dataDir.resolve("scripts");
@@ -77,16 +93,7 @@ public class PyJavaBridgePlugin extends JavaPlugin {
             lastTickNano = now;
             currentTick++;
 
-            Runnable task;
-
-            while ((task = mainThreadQueue.poll()) != null) {
-                try {
-                    task.run();
-
-                } catch (Exception ex) {
-                    getLogger().severe("Main-thread task error: " + ex.getMessage());
-                }
-            }
+            drainMainThreadQueue();
         }, 1L, 1L);
 
         startScripts(scriptsDir, runtimeDir);
@@ -188,7 +195,7 @@ public class PyJavaBridgePlugin extends JavaPlugin {
     CompletableFuture<Object> runOnMainThread(BridgeInstance instance, CallableTask task) {
         CompletableFuture<Object> future = new CompletableFuture<>();
 
-        mainThreadQueue.add(() -> {
+        Runnable wrapped = () -> {
             try {
                 Object result = task.call();
                 future.complete(result);
@@ -197,20 +204,52 @@ public class PyJavaBridgePlugin extends JavaPlugin {
                 future.completeExceptionally(ex);
                 instance.logError("Main-thread call failed", ex);
             }
-        });
+        };
+
+        // Use MinecraftServer.execute() for immediate processing (wakes main thread between ticks)
+        if (serverExecuteMethod != null) {
+            try {
+                serverExecuteMethod.invoke(minecraftServer, wrapped);
+            } catch (Exception e) {
+                // Fall back to queue
+                mainThreadQueue.add(wrapped);
+            }
+        } else {
+            mainThreadQueue.add(wrapped);
+        }
+
         return future;
     }
 
+    private static final long SPIN_WAIT_NS = 5_000_000; // 5ms spin to catch chained calls
+    private static final long MAX_SPIN_NS = 20_000_000; // 20ms hard cap per drain cycle
+
     void drainMainThreadQueue() {
-        Runnable task;
+        long spinDeadline = 0;
+        long hardDeadline = 0;
 
-        while ((task = mainThreadQueue.poll()) != null) {
-            try {
-                task.run();
-
-            } catch (Exception ex) {
-                getLogger().severe("Main-thread task error: " + ex.getMessage());
+        while (true) {
+            Runnable task = mainThreadQueue.poll();
+            if (task != null) {
+                try {
+                    task.run();
+                } catch (Exception ex) {
+                    getLogger().severe("Main-thread task error: " + ex.getMessage());
+                }
+                long now = System.nanoTime();
+                if (hardDeadline == 0) {
+                    hardDeadline = now + MAX_SPIN_NS;
+                }
+                spinDeadline = now + SPIN_WAIT_NS;
+                if (spinDeadline > hardDeadline) {
+                    spinDeadline = hardDeadline;
+                }
+                continue;
             }
+            if (spinDeadline == 0 || System.nanoTime() >= spinDeadline) {
+                break;
+            }
+            Thread.onSpinWait();
         }
     }
 
@@ -301,6 +340,10 @@ public class PyJavaBridgePlugin extends JavaPlugin {
         debugManager.broadcastErrorToDebugPlayers(message);
     }
 
+    void broadcastDebug(String message) {
+        debugManager.broadcastDebug(message);
+    }
+
     public Set<UUID> getDebugPlayerUuids() {
         return debugManager.getDebugPlayerUuids();
     }
@@ -344,7 +387,11 @@ public class PyJavaBridgePlugin extends JavaPlugin {
                 }
 
             } else if (sender instanceof ConsoleCommandSender) {
-                sender.sendMessage("\u00a7eDebug is for players only.");
+                boolean nowEnabled = !debugManager.isConsoleDebug();
+                debugManager.setConsoleDebug(nowEnabled);
+                sender.sendMessage(nowEnabled
+                        ? "\u00a7aPyJavaBridge console debug enabled."
+                        : "\u00a7ePyJavaBridge console debug disabled.");
             }
 
             return true;
