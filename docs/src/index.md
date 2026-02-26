@@ -128,4 +128,9 @@ Drop your `.py` file into the server's `scripts/` folder and reload. The bridge 
 
 | Page | Description |
 | ---- | ----------- |
-| [Events (Internal)](events_internal.md) | Event subscriptions, dispatch, cancellation, overrides, and commands |
+| [Bridge](bridge.md) | Overview of the bridge architecture and wire protocol |
+| [Events](events_internal.md) | Event subscriptions, dispatch, cancellation, overrides, and commands |
+| [Execution](execution.md) | Call dispatch, threading, timing, and batching |
+| [Serialization](serialization.md) | Object handles, type serialization, and proxy classes |
+| [Lifecycle](lifecycle.md) | Startup, shutdown, and hot reload |
+| [Debugging](debugging.md) | Debug logging, metrics, error codes, and performance tips |
