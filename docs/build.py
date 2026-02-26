@@ -84,6 +84,7 @@ SIDEBAR = [
         ("blockdisplay", "BlockDisplay"),
         ("itemdisplay", "ItemDisplay"),
         ("imagedisplay", "ImageDisplay"),
+        ("meshdisplay", "MeshDisplay")
     ]),
     ("Utilities", [
         ("raycast", "Raycast"),
