@@ -107,6 +107,7 @@ Drop your `.py` file into the server's `scripts/` folder and reload. The bridge 
 | [BlockDisplay](blockdisplay.md) | Block display entity |
 | [ItemDisplay](itemdisplay.md) | Item display entity |
 | [ImageDisplay](imagedisplay.md) | Pixel art display |
+| [MeshDisplay](meshdisplay.md) | 3D triangle mesh rendering |
 
 ### Utilities
 
@@ -122,3 +123,14 @@ Drop your `.py` file into the server's `scripts/` folder and reload. The bridge 
 | Page | Description |
 | ---- | ----------- |
 | [Examples](examples.md) | Full script examples |
+
+### Internals
+
+| Page | Description |
+| ---- | ----------- |
+| [Bridge](bridge.md) | Overview of the bridge architecture and wire protocol |
+| [Events](events_internal.md) | Event subscriptions, dispatch, cancellation, overrides, and commands |
+| [Execution](execution.md) | Call dispatch, threading, timing, and batching |
+| [Serialization](serialization.md) | Object handles, type serialization, and proxy classes |
+| [Lifecycle](lifecycle.md) | Startup, shutdown, and hot reload |
+| [Debugging](debugging.md) | Debug logging, metrics, error codes, and performance tips |
