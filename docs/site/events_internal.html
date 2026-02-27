@@ -62,6 +62,7 @@
     <li><ul class="toc-sub" data-parent="result-overrides">
       <li><a href="#chat-message-override">Chat message override</a></li>
       <li><a href="#damage-override">Damage override</a></li>
+      <li><a href="#respawn-location-override">Respawn location override</a></li>
       <li><a href="#multiple-handlers">Multiple handlers</a></li>
     </ul></li>
     <li><a href="#block-explosion-special-handling">Block Explosion Special Handling</a></li>
@@ -279,7 +280,8 @@
 7. Java applies modifications to the Bukkit event
    ├── Cancel: event.setCancelled(true)
    ├── Chat override: replace message text
-   └── Damage override: event.setDamage(value)
+   ├── Damage override: event.setDamage(value)
+   └── Respawn override: event.setRespawnLocation(location)
 </code></pre>
 <h3 id="payload-auto-extraction">Payload auto-extraction</h3>
 <p>The Java EventDispatcher uses reflection to extract common event fields. It tries multiple getter names for compatibility across Bukkit versions:</p>
@@ -334,6 +336,13 @@ tryAddPayload(payload, event, &quot;inventory&quot;, &quot;getInventory&quot;, &
         <span class="kw">return</span> event.damage * <span class="nb">0.5</span>  <span class="cm"># Half damage</span>
 </code></pre>
 <p>Sends: <code>{"type": "event_result", "id": 42, "result": 2.5, "result_type": "damage"}</code></p>
+<h3 id="respawn-location-override">Respawn location override</h3>
+<p>Return a <code>Location</code> from a respawn event handler to change where the player respawns:</p>
+<pre><code class="language-python"><span class="dc">@event</span>
+<span class="kw">async</span> <span class="kw">def</span> player_respawn(event):
+    <span class="kw">return</span> Location(<span class="nb">0</span>, <span class="nb">100</span>, <span class="nb">0</span>, event.player.world)  <span class="cm"># Spawn at world center</span>
+</code></pre>
+<p>Sends: <code>{"type": "event_result", "id": 42, "result": {"__value__": "Location", "fields": {...}}, "result_type": "respawn"}</code></p>
 <h3 id="multiple-handlers">Multiple handlers</h3>
 <p>If multiple handlers return values, the last one wins. All handlers run concurrently via <code>asyncio.gather</code>, so ordering isn't guaranteed.</p>
 <hr />

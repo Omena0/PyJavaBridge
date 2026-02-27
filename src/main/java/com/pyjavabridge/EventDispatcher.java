@@ -142,6 +142,9 @@ public class EventDispatcher {
                 if (pending.damageOverride != null && pending.event instanceof EntityDamageEvent damageEvent) {
                     damageEvent.setDamage(pending.damageOverride);
                 }
+                if (pending.respawnOverride != null && pending.event instanceof org.bukkit.event.player.PlayerRespawnEvent respawnEvent) {
+                    respawnEvent.setRespawnLocation(pending.respawnOverride);
+                }
                 if (cancelRequested && cancelMode == CancelMode.EVENT) {
                     pending.cancellable.setCancelled(true);
                 }

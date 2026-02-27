@@ -15,4 +15,5 @@ public class PendingEvent {
     public int id;
     public String chatOverride;
     public Double damageOverride;
+    public org.bukkit.Location respawnOverride;
 }

@@ -2474,9 +2474,14 @@ class BridgeConnection:
                 if handlers:
                     override_text = None
                     override_damage = None
+                    override_respawn = None
                     is_damage_event = isinstance(payload, ProxyBase) and "damage" in payload.fields
+                    is_respawn_event = event_name in ("player_respawn",)
                     for result in results:
-                        if isinstance(result, str):
+                        if isinstance(result, Location):
+                            if is_respawn_event:
+                                override_respawn = result
+                        elif isinstance(result, str):
                             override_text = result
                         elif is_damage_event and isinstance(result, (int, float)) and not isinstance(result, bool):
                             override_damage = float(result)
@@ -2484,6 +2489,8 @@ class BridgeConnection:
                         self.send({"type": "event_result", "id": event_id, "result": override_text, "result_type": "chat"})
                     if override_damage is not None:
                         self.send({"type": "event_result", "id": event_id, "result": override_damage, "result_type": "damage"})
+                    if override_respawn is not None:
+                        self.send({"type": "event_result", "id": event_id, "result": self._serialize(override_respawn), "result_type": "respawn"})
                 self.send({"type": "event_done", "id": event_id})
 
     async def _handle_shutdown(self):

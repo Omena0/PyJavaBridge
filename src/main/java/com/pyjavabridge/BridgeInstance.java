@@ -564,6 +564,15 @@ public class BridgeInstance {
             return;
         }
 
+        if ("respawn".equalsIgnoreCase(resultType)) {
+            JsonElement result = message.get("result");
+            Object deserialized = serializer.deserialize(result);
+            if (deserialized instanceof org.bukkit.Location loc) {
+                pending.respawnOverride = loc;
+            }
+            return;
+        }
+
         if (resultType == null || "chat".equalsIgnoreCase(resultType)) {
             pending.chatOverride = message.get("result").getAsString();
         }

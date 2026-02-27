@@ -101,7 +101,8 @@ async def player_move(event):
 7. Java applies modifications to the Bukkit event
    ├── Cancel: event.setCancelled(true)
    ├── Chat override: replace message text
-   └── Damage override: event.setDamage(value)
+   ├── Damage override: event.setDamage(value)
+   └── Respawn override: event.setRespawnLocation(location)
 ```
 
 ### Payload auto-extraction
@@ -188,6 +189,18 @@ async def entity_damage(event):
 ```
 
 Sends: `{"type": "event_result", "id": 42, "result": 2.5, "result_type": "damage"}`
+
+### Respawn location override
+
+Return a `Location` from a respawn event handler to change where the player respawns:
+
+```python
+@event
+async def player_respawn(event):
+    return Location(0, 100, 0, event.player.world)  # Spawn at world center
+```
+
+Sends: `{"type": "event_result", "id": 42, "result": {"__value__": "Location", "fields": {...}}, "result_type": "respawn"}`
 
 ### Multiple handlers
 

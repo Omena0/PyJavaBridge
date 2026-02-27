@@ -66,6 +66,7 @@
     </ul></li>
     <li><a href="#damage-override">Damage Override</a></li>
     <li><a href="#chat-override">Chat Override</a></li>
+    <li><a href="#respawn-location-override">Respawn Location Override</a></li>
     <li><a href="#event-type-mapping">Event Type Mapping</a></li>
     <li><ul class="toc-sub" data-parent="event-type-mapping">
       <li><a href="#special-cases">Special cases</a></li>
@@ -284,6 +285,13 @@
     <span class="kw">return</span> <span class="st">f&quot;[VIP] {e.player.name}: {e.message}&quot;</span>
 </code></pre>
 <p>Returning <code>None</code> (or not returning) leaves the chat message unchanged.</p>
+<hr />
+<h2 id="respawn-location-override">Respawn Location Override</h2>
+<p>For <code>player_respawn</code> events, returning a <code>Location</code> overrides where the player respawns:</p>
+<pre><code class="language-python"><span class="dc">@event</span>
+<span class="kw">async</span> <span class="kw">def</span> player_respawn(e):
+    <span class="kw">return</span> Location(<span class="nb">0</span>, <span class="nb">100</span>, <span class="nb">0</span>, e.player.world)  <span class="cm"># Custom spawn point</span>
+</code></pre>
 <hr />
 <h2 id="event-type-mapping">Event Type Mapping</h2>
 <p>Events are resolved from handler function names: <code>snake_case</code> → <code>PascalCase</code> + <code>Event</code>.</p>

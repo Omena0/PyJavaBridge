@@ -148,6 +148,18 @@ Returning `None` (or not returning) leaves the chat message unchanged.
 
 ---
 
+## Respawn Location Override
+
+For `player_respawn` events, returning a `Location` overrides where the player respawns:
+
+```python
+@event
+async def player_respawn(e):
+    return Location(0, 100, 0, e.player.world)  # Custom spawn point
+```
+
+---
+
 ## Event Type Mapping
 
 Events are resolved from handler function names: `snake_case` → `PascalCase` + `Event`.
