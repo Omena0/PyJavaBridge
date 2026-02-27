@@ -440,6 +440,30 @@ await player.play_sound(Sound.ENTITY_EXPERIENCE_ORB_PICKUP)
 await player.play_sound('block_note_block_bass', volume=0.5, pitch=2.0)
 ```
 
+### set_resource_pack
+
+```python
+await player.set_resource_pack(url, hash="", prompt=None, required=False)
+```
+
+Send a resource pack to the player.
+
+- **Parameters:**
+  - `url` (`str`) — URL of the resource pack.
+  - `hash` (`str`) — SHA-1 hash of the pack as a hex string (optional but recommended).
+  - `prompt` (`str | None`) — Custom prompt message shown to the player.
+  - `required` (`bool`) — Whether the pack is required to stay on the server (default `False`).
+- **Returns:** `Awaitable[None]`
+
+```python
+await player.set_resource_pack(
+    "https://example.com/pack.zip",
+    hash="a1b2c3d4e5f6...",
+    prompt="Download our custom textures!",
+    required=True
+)
+```
+
 ### send_action_bar
 
 ```python

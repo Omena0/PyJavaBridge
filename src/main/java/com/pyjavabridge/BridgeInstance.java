@@ -1225,6 +1225,19 @@ public class BridgeInstance {
             case "getTabListFooter" -> {
                 return getTabListFooter(player);
             }
+            case "setResourcePack" -> {
+                if (args.isEmpty()) return null;
+                String url = String.valueOf(args.get(0));
+                String hash = args.size() > 1 && args.get(1) != null ? String.valueOf(args.get(1)) : "";
+                boolean required = args.size() > 2 && args.get(2) instanceof Boolean b && b;
+                String prompt = args.size() > 3 && args.get(3) != null ? String.valueOf(args.get(3)) : null;
+                if (prompt != null) {
+                    player.setResourcePack(url, hash, required, Component.text(prompt));
+                } else {
+                    player.setResourcePack(url, hash, required, null);
+                }
+                return null;
+            }
         }
         return UNHANDLED;
     }

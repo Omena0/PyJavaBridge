@@ -942,6 +942,17 @@ class Player(Entity):
     def food_level(self):
         return self._call_sync("getFoodLevel")
 
+    def set_resource_pack(self, url: str, hash: str = "", prompt: str = None, required: bool = False):
+        """Send a resource pack to the player.
+
+        Args:
+            url: URL of the resource pack.
+            hash: SHA-1 hash of the resource pack (hex string, optional).
+            prompt: Custom prompt message (optional).
+            required: Whether the pack is required to join (default False).
+        """
+        return self._call("setResourcePack", url, hash, required, prompt)
+
     @property
     def inventory(self):
         if self._handle is None and self._target == "ref":

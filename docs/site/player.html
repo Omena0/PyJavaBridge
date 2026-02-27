@@ -97,6 +97,7 @@
     <li><a href="#sounds-ui">Sounds &amp; UI</a></li>
     <li><ul class="toc-sub" data-parent="sounds-ui">
       <li><a href="#play_sound">play_sound</a></li>
+      <li><a href="#set_resource_pack">set_resource_pack</a></li>
       <li><a href="#send_action_bar">send_action_bar</a></li>
       <li><a href="#send_title">send_title</a></li>
     </ul></li>
@@ -550,6 +551,25 @@ p = Player(uuid=<span class="st">&quot;550e8400-e29b-41d4-a716-446655440000&quot
 </ul>
 <pre><code class="language-python"><span class="kw">await</span> player.play_sound(Sound.ENTITY_EXPERIENCE_ORB_PICKUP)
 <span class="kw">await</span> player.play_sound('block_note_block_bass', volume=<span class="nb">0.5</span>, pitch=<span class="nb">2.0</span>)
+</code></pre>
+<h3 id="set_resource_pack">set_resource_pack</h3>
+<pre><code class="language-python"><span class="kw">await</span> player.set_resource_pack(url, hash=<span class="st">&quot;&quot;</span>, prompt=<span class="kw">None</span>, required=<span class="kw">False</span>)
+</code></pre>
+<p>Send a resource pack to the player.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>url</code> (<code>str</code>) — URL of the resource pack.</li>
+<li><code>hash</code> (<code>str</code>) — SHA-1 hash of the pack as a hex string (optional but recommended).</li>
+<li><code>prompt</code> (<code>str | None</code>) — Custom prompt message shown to the player.</li>
+<li><code>required</code> (<code>bool</code>) — Whether the pack is required to stay on the server (default <code>False</code>).</li>
+<li><strong>Returns:</strong> <code>Awaitable[None]</code></li>
+</ul>
+<pre><code class="language-python"><span class="kw">await</span> player.set_resource_pack(
+    <span class="st">&quot;https://example.com/pack.zip&quot;</span>,
+    hash=<span class="st">&quot;a1b2c3d4e5f6...&quot;</span>,
+    prompt=<span class="st">&quot;Download our custom textures!&quot;</span>,
+    required=<span class="kw">True</span>
+)
 </code></pre>
 <h3 id="send_action_bar">send_action_bar</h3>
 <pre><code class="language-python"><span class="kw">await</span> player.send_action_bar(message)
