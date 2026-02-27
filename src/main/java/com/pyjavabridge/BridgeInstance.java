@@ -980,6 +980,10 @@ public class BridgeInstance {
             result = invokePlayerMethod(player, method, args);
         }
 
+        if (result == UNHANDLED && target instanceof Entity) {
+            result = invokeMobMethod((Entity) target, method, args);
+        }
+
         if (result == UNHANDLED && target instanceof ItemStack itemStack) {
             result = invokeItemStackMethod(itemStack, method, args);
         }
@@ -1051,6 +1055,19 @@ public class BridgeInstance {
             }
         }
         return args;
+    }
+
+    private Location toLocation(Object arg, Entity context) {
+        if (arg instanceof Location loc) return loc;
+        if (arg instanceof List<?> list && list.size() >= 3) {
+            Double x = list.get(0) instanceof Number n ? n.doubleValue() : null;
+            Double y = list.get(1) instanceof Number n ? n.doubleValue() : null;
+            Double z = list.get(2) instanceof Number n ? n.doubleValue() : null;
+            if (x != null && y != null && z != null) {
+                return new Location(context.getWorld(), x, y, z);
+            }
+        }
+        return null;
     }
 
     private Object invokeWorldMethod(World world, String method, List<Object> args, JsonObject argsObj) throws Exception {
@@ -1315,6 +1332,67 @@ public class BridgeInstance {
                     player.setResourcePack(url, hash, required, Component.text(prompt));
                 } else {
                     player.setResourcePack(url, hash, required, null);
+                }
+                return null;
+            }
+        }
+        return UNHANDLED;
+    }
+
+    private Object invokeMobMethod(Entity entity, String method, List<Object> args) {
+        if (!(entity instanceof org.bukkit.entity.Mob mob)) return UNHANDLED;
+        switch (method) {
+            case "getTarget" -> { return mob.getTarget(); }
+            case "setTarget" -> {
+                if (args.size() >= 1 && args.get(0) instanceof org.bukkit.entity.LivingEntity le) {
+                    mob.setTarget(le);
+                } else {
+                    mob.setTarget(null);
+                }
+                return null;
+            }
+            case "isAware" -> { return mob.isAware(); }
+            case "setAware" -> {
+                mob.setAware(args.size() >= 1 && Boolean.TRUE.equals(args.get(0)));
+                return null;
+            }
+            case "pathfindTo" -> {
+                if (args.isEmpty()) return null;
+                Location loc = toLocation(args.get(0), mob);
+                if (loc == null) return false;
+                double speed = args.size() >= 2 ? ((Number) args.get(1)).doubleValue() : 1.0;
+                com.destroystokyo.paper.entity.Pathfinder pathfinder = mob.getPathfinder();
+                if (pathfinder != null) {
+                    return pathfinder.moveTo(loc, speed);
+                }
+                return false;
+            }
+            case "stopPathfinding" -> {
+                com.destroystokyo.paper.entity.Pathfinder pathfinder = mob.getPathfinder();
+                if (pathfinder != null) {
+                    pathfinder.stopPathfinding();
+                }
+                return null;
+            }
+            case "hasLineOfSight" -> {
+                if (args.size() >= 1 && args.get(0) instanceof Entity other) {
+                    return mob.hasLineOfSight(other);
+                }
+                return false;
+            }
+            case "lookAt" -> {
+                if (args.size() >= 1) {
+                    Location loc = toLocation(args.get(0), mob);
+                    if (loc != null) {
+                        Location mobLoc = mob.getLocation();
+                        double dx = loc.getX() - mobLoc.getX();
+                        double dy = loc.getY() - mobLoc.getY();
+                        double dz = loc.getZ() - mobLoc.getZ();
+                        double dist = Math.sqrt(dx * dx + dz * dz);
+                        float yaw = (float) Math.toDegrees(Math.atan2(-dx, dz));
+                        float pitch = (float) Math.toDegrees(-Math.atan2(dy, dist));
+                        mob.setRotation(yaw, pitch);
+                    }
                 }
                 return null;
             }

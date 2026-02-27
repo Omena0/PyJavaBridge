@@ -81,6 +81,17 @@
       <li><a href="#set_custom_name">set_custom_name</a></li>
       <li><a href="#set_custom_name_visible">set_custom_name_visible</a></li>
     </ul></li>
+    <li><a href="#mob-ai">Mob AI</a></li>
+    <li><ul class="toc-sub" data-parent="mob-ai">
+      <li><a href="#target">target</a></li>
+      <li><a href="#set_target">set_target</a></li>
+      <li><a href="#is_aware">is_aware</a></li>
+      <li><a href="#set_aware">set_aware</a></li>
+      <li><a href="#pathfind_to">pathfind_to</a></li>
+      <li><a href="#stop_pathfinding">stop_pathfinding</a></li>
+      <li><a href="#has_line_of_sight">has_line_of_sight</a></li>
+      <li><a href="#look_at">look_at</a></li>
+    </ul></li>
   </ul>
 </div>
 
@@ -413,6 +424,88 @@ zombie = <span class="kw">await</span> Entity.spawn(<span class="st">&quot;ZOMBI
 <li><code>value</code> (<code>bool</code>) — Whether the name should be visible.</li>
 <li><strong>Returns:</strong> <code>Awaitable[None]</code></li>
 </ul>
+<hr />
+<h2 id="mob-ai">Mob AI</h2>
+<p>These methods only work on Mob entities (zombies, skeletons, etc). They will fail silently on non-mob entities like dropped items or projectiles.</p>
+<h3 id="target">target</h3>
+<pre><code class="language-python">target = entity.target
+</code></pre>
+<p>Get the mob's current attack target.</p>
+<ul>
+<li><strong>Returns:</strong> <a href="#"><code>Entity</code></a> <code>| None</code></li>
+</ul>
+<h3 id="set_target">set_target</h3>
+<pre><code class="language-python"><span class="kw">await</span> entity.set_target(target)
+</code></pre>
+<p>Set the mob's attack target. Pass <code>None</code> to clear.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>target</code> (<a href="#"><code>Entity</code></a> <code>| None</code>) — The entity to target.</li>
+<li><strong>Returns:</strong> <code>Awaitable[None]</code></li>
+</ul>
+<pre><code class="language-python"><span class="kw">await</span> zombie.set_target(player)
+<span class="kw">await</span> zombie.set_target(<span class="kw">None</span>)  <span class="cm"># clear target</span>
+</code></pre>
+<h3 id="is_aware">is_aware</h3>
+<pre><code class="language-python">aware = entity.is_aware
+</code></pre>
+<p>Check if the mob has AI awareness (responds to environment, pathfinds, etc).</p>
+<ul>
+<li><strong>Returns:</strong> <code>bool</code></li>
+</ul>
+<h3 id="set_aware">set_aware</h3>
+<pre><code class="language-python"><span class="kw">await</span> entity.set_aware(aware)
+</code></pre>
+<p>Enable or disable AI awareness. When disabled, the mob won't move or react.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>aware</code> (<code>bool</code>) — Whether AI should be active.</li>
+<li><strong>Returns:</strong> <code>Awaitable[None]</code></li>
+</ul>
+<pre><code class="language-python"><span class="kw">await</span> zombie.set_aware(<span class="kw">False</span>)  <span class="cm"># freeze the mob</span>
+</code></pre>
+<h3 id="pathfind_to">pathfind_to</h3>
+<pre><code class="language-python">result = entity.pathfind_to(location, speed=<span class="nb">1.0</span>)
+</code></pre>
+<p>Make the mob pathfind to a location using Paper's Pathfinder API.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>location</code> (<a href="location.html"><code>Location</code></a>) — Destination.</li>
+<li><code>speed</code> (<code>float</code>) — Movement speed multiplier. Default <code>1.0</code>.</li>
+<li><strong>Returns:</strong> <code>bool</code> — <code>True</code> if a path was found.</li>
+</ul>
+<pre><code class="language-python">found = zombie.pathfind_to(player.location, speed=<span class="nb">1.5</span>)
+</code></pre>
+<h3 id="stop_pathfinding">stop_pathfinding</h3>
+<pre><code class="language-python"><span class="kw">await</span> entity.stop_pathfinding()
+</code></pre>
+<p>Stop the mob's current pathfinding. The mob will stand still.</p>
+<ul>
+<li><strong>Returns:</strong> <code>Awaitable[None]</code></li>
+</ul>
+<h3 id="has_line_of_sight">has_line_of_sight</h3>
+<pre><code class="language-python">can_see = entity.has_line_of_sight(other)
+</code></pre>
+<p>Check if this mob has line of sight to another entity.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>other</code> (<a href="#"><code>Entity</code></a>) — The entity to check visibility for.</li>
+<li><strong>Returns:</strong> <code>bool</code></li>
+</ul>
+<pre><code class="language-python"><span class="kw">if</span> zombie.has_line_of_sight(player):
+    <span class="kw">await</span> zombie.set_target(player)
+</code></pre>
+<h3 id="look_at">look_at</h3>
+<pre><code class="language-python"><span class="kw">await</span> entity.look_at(location)
+</code></pre>
+<p>Make the mob face a location.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>location</code> (<a href="location.html"><code>Location</code></a>) — The location to look at.</li>
+<li><strong>Returns:</strong> <code>Awaitable[None]</code></li>
+</ul>
+<pre><code class="language-python"><span class="kw">await</span> zombie.look_at(player.location)
+</code></pre>
     </div>
     <footer class="site-footer">
       &copy; Omena0 2026 &middot; PyJavaBridge Documentation

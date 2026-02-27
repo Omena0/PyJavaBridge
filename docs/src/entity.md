@@ -295,3 +295,122 @@ Show or hide the custom name tag. When `True`, the name is visible through walls
 - **Parameters:**
   - `value` (`bool`) — Whether the name should be visible.
 - **Returns:** `Awaitable[None]`
+
+---
+
+## Mob AI
+
+These methods only work on Mob entities (zombies, skeletons, etc). They will fail silently on non-mob entities like dropped items or projectiles.
+
+### target
+
+```python
+target = entity.target
+```
+
+Get the mob's current attack target.
+
+- **Returns:** [`Entity`](#) `| None`
+
+### set_target
+
+```python
+await entity.set_target(target)
+```
+
+Set the mob's attack target. Pass `None` to clear.
+
+- **Parameters:**
+  - `target` ([`Entity`](#) `| None`) — The entity to target.
+- **Returns:** `Awaitable[None]`
+
+```python
+await zombie.set_target(player)
+await zombie.set_target(None)  # clear target
+```
+
+### is_aware
+
+```python
+aware = entity.is_aware
+```
+
+Check if the mob has AI awareness (responds to environment, pathfinds, etc).
+
+- **Returns:** `bool`
+
+### set_aware
+
+```python
+await entity.set_aware(aware)
+```
+
+Enable or disable AI awareness. When disabled, the mob won't move or react.
+
+- **Parameters:**
+  - `aware` (`bool`) — Whether AI should be active.
+- **Returns:** `Awaitable[None]`
+
+```python
+await zombie.set_aware(False)  # freeze the mob
+```
+
+### pathfind_to
+
+```python
+result = entity.pathfind_to(location, speed=1.0)
+```
+
+Make the mob pathfind to a location using Paper's Pathfinder API.
+
+- **Parameters:**
+  - `location` ([`Location`](location.md)) — Destination.
+  - `speed` (`float`) — Movement speed multiplier. Default `1.0`.
+- **Returns:** `bool` — `True` if a path was found.
+
+```python
+found = zombie.pathfind_to(player.location, speed=1.5)
+```
+
+### stop_pathfinding
+
+```python
+await entity.stop_pathfinding()
+```
+
+Stop the mob's current pathfinding. The mob will stand still.
+
+- **Returns:** `Awaitable[None]`
+
+### has_line_of_sight
+
+```python
+can_see = entity.has_line_of_sight(other)
+```
+
+Check if this mob has line of sight to another entity.
+
+- **Parameters:**
+  - `other` ([`Entity`](#)) — The entity to check visibility for.
+- **Returns:** `bool`
+
+```python
+if zombie.has_line_of_sight(player):
+    await zombie.set_target(player)
+```
+
+### look_at
+
+```python
+await entity.look_at(location)
+```
+
+Make the mob face a location.
+
+- **Parameters:**
+  - `location` ([`Location`](location.md)) — The location to look at.
+- **Returns:** `Awaitable[None]`
+
+```python
+await zombie.look_at(player.location)
+```

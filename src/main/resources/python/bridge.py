@@ -862,6 +862,42 @@ class Entity(ProxyBase):
     def world(self):
         return self._call_sync("getWorld")
 
+    # -- Mob AI methods (only work on Mob entities) --
+
+    @property
+    def target(self):
+        """Get the mob's current target entity."""
+        return self._call_sync("getTarget")
+
+    def set_target(self, entity: "Entity | None" = None):
+        """Set the mob's target entity (None to clear)."""
+        return self._call("setTarget", entity)
+
+    @property
+    def is_aware(self):
+        """Check if the mob has AI awareness enabled."""
+        return self._call_sync("isAware")
+
+    def set_aware(self, aware: bool):
+        """Enable or disable AI awareness."""
+        return self._call("setAware", aware)
+
+    def pathfind_to(self, location: "Location", speed: float = 1.0):
+        """Make the mob pathfind to a location. Returns True if path was found."""
+        return self._call_sync("pathfindTo", location, speed)
+
+    def stop_pathfinding(self):
+        """Stop the mob's current pathfinding."""
+        return self._call("stopPathfinding")
+
+    def has_line_of_sight(self, entity: "Entity"):
+        """Check if this mob has line of sight to another entity."""
+        return self._call_sync("hasLineOfSight", entity)
+
+    def look_at(self, location: "Location"):
+        """Make the mob look at a location."""
+        return self._call("lookAt", location)
+
 class Player(Entity):
     """Player API (inherits Entity)."""
     def __init__(self, handle: Optional[int] = None, type_name: Optional[str] = None, fields: Optional[Dict[str, Any]] = None, target: Optional[str] = None, uuid: Optional[str] = None, name: Optional[str] = None):
