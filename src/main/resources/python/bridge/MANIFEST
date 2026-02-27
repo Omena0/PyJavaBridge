@@ -1,4 +1,17 @@
+
 # Bridge package files to copy (paths relative to bridge/)
+
 __init__.py
 __init__.pyi
+errors.py
+types.py
+connection.py
+wrappers.py
+utils.py
+helpers.py
+decorators.py
+api.py
 extensions/__init__.py
+extensions/npc.py
+extensions/image_display.py
+extensions/mesh_display.py

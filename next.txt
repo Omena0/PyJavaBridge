@@ -7,7 +7,7 @@ Move the following things into the extension module:
 
 Update documentation to add a [ext] tag to all features that are in the extension module, and update the type stub as well.
 
-Make the bridge module a proper module (a folder, with __init__.py) and split it into multiple files.
+- ✅ Make the bridge module a proper module (a folder, with __init__.py) and split it into multiple files.
 The extension module will be imported as `from bridge.extensions import xyz`. each feature will have its own file.
 
 - BossBarDisplay:

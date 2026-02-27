@@ -2,11 +2,10 @@
 
 Import extensions individually::
 
-    from bridge.extensions import Quest, QuestTree
-    from bridge.extensions import Dialog
-    from bridge.extensions import Bank
-
-Or import specific modules::
-
-    from bridge.extensions.quest import Quest
+    from bridge.extensions.npc import NPC
+    from bridge.extensions.image_display import ImageDisplay
+    from bridge.extensions.mesh_display import MeshDisplay
 """
+from bridge.extensions.npc import NPC
+from bridge.extensions.image_display import ImageDisplay
+from bridge.extensions.mesh_display import MeshDisplay

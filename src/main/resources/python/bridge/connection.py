@@ -1,0 +1,508 @@
+"""BridgeConnection — stdin/stdout IPC with the Java plugin."""
+from __future__ import annotations
+
+import asyncio
+import inspect
+import itertools
+import json
+import struct
+import threading
+import sys
+from types import SimpleNamespace
+from typing import Any, Awaitable, Callable, Dict, List, Optional, cast
+
+from bridge.errors import (
+    BridgeError, ConnectionError, _make_bridge_error,
+)
+from bridge.types import BridgeCall, EnumValue, _SyncWait
+
+# orjson setup
+try:
+    import orjson as _orjson  # type: ignore[import-not-found]
+
+    def _json_dumps(obj: Any) -> bytes:
+        return _orjson.dumps(obj)
+
+    def _json_loads(data: Any) -> Any:
+        return _orjson.loads(data)
+
+except (ImportError, ModuleNotFoundError):
+
+    def _json_dumps(obj: Any) -> bytes:
+        return json.dumps(obj, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+
+    def _json_loads(data: Any) -> Any:
+        return json.loads(data)
+
+
+_print = __builtins__["print"] if isinstance(__builtins__, dict) else __builtins__.print  # type: ignore[index]
+
+def print(*args):
+    _print(*args, file=sys.stderr)
+
+
+class _BatchContext:
+    def __init__(self, connection: BridgeConnection, mode: str):
+        self._connection = connection
+        self._mode = mode
+
+    async def __aenter__(self):
+        self._connection._begin_batch(self._mode)
+        return self
+
+    async def __aexit__(self, exc_type: Any, exc: Any, tb: Any):
+        self._connection._end_batch()
+        if exc_type is None:
+            await self._connection.flush()
+        return False
+
+
+class BridgeConnection:
+    """Stdin/stdout bridge connection and dispatcher."""
+    def __init__(self):
+        try:
+            self._loop = asyncio.get_event_loop()
+        except RuntimeError:
+            self._loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(self._loop)
+
+        self._pending: Dict[int, "asyncio.Future[Any]"] = {}
+        self._pending_sync: Dict[int, _SyncWait] = {}
+        self._handlers: Dict[str, List[Callable[[Any], Awaitable[None]]]] = {}
+        self._tab_complete_handlers: Dict[str, Callable[..., Any]] = {}
+
+        self._id_counter = itertools.count(1)
+        self._stdin = sys.stdin.buffer
+        self._stdout = sys.stdout.buffer
+        self._lock = threading.Lock()
+
+        self._batch_stack: List[str] = []
+        self._batch_messages: List[Dict[str, Any]] = []
+        self._batch_futures: List["asyncio.Future[Any]"] = []
+
+        self._release_queue: List[int] = []
+        self._release_lock = threading.Lock()
+
+        self._thread = threading.Thread(target=self._reader, daemon=True)
+        self._thread.start()
+        print(f"[PyJavaBridge] Connected via stdin/stdout")
+
+    def subscribe(self, event_name: str, once_per_tick: bool, priority: str = "NORMAL", throttle_ms: int = 0):
+        print(f"[PyJavaBridge] Subscribing to {event_name} once_per_tick={once_per_tick} priority={priority} throttle_ms={throttle_ms}")
+        self.send({"type": "subscribe", "event": event_name, "once_per_tick": once_per_tick, "priority": priority, "throttle_ms": throttle_ms})
+
+    def register_command(self, name: str, permission: Optional[str] = None, completions: Optional[dict] = None, has_tab_complete: bool = False):
+        """Register a command name with the server."""
+        msg: Dict[str, Any] = {"type": "register_command", "name": name}
+        if permission is not None:
+            msg["permission"] = permission
+        if completions is not None:
+            msg["completions"] = {str(k): v for k, v in completions.items()}
+        if has_tab_complete:
+            msg["has_tab_complete"] = True
+        self.send(msg)
+
+    def on(self, event_name: str, handler: Callable[[Any], Awaitable[None]]):
+        self._handlers.setdefault(event_name, []).append(handler)
+
+    def call(self, method: str, args: Optional[List[Any]] = None, handle: Optional[int] = None, target: Optional[str] = None, **kwargs: Any) -> BridgeCall:
+        self._flush_releases()
+        request_id = self._next_id()
+        future = self._loop.create_future()
+        self._pending[request_id] = future
+        message: Dict[str, Any] = {
+            "type": "call",
+            "id": request_id,
+            "method": method,
+            "args_list": [self._serialize(arg) for arg in (args or [])],
+        }
+        if handle is not None:
+            message["handle"] = handle
+        if target is not None:
+            message["target"] = target
+        extra_args = {k: self._serialize(v) for k, v in kwargs.items() if k not in {"field", "value"}}
+        if extra_args:
+            message["args"] = extra_args
+        if "field" in kwargs:
+            message["field"] = kwargs["field"]
+        if "value" in kwargs:
+            message["value"] = self._serialize(kwargs["value"])
+        if self._batch_stack:
+            self._batch_messages.append(message)
+            self._batch_futures.append(future)
+            return BridgeCall(future)
+        self.send(message)
+        return BridgeCall(future)
+
+    def call_sync(self, method: str, args: Optional[List[Any]] = None, handle: Optional[int] = None, target: Optional[str] = None, **kwargs: Any) -> Any:
+        request_id = self._next_id()
+        wait = _SyncWait()
+        self._pending_sync[request_id] = wait
+        message: Dict[str, Any] = {
+            "type": "call",
+            "id": request_id,
+            "method": method,
+            "args_list": [self._serialize(arg) for arg in (args or [])],
+        }
+        if handle is not None:
+            message["handle"] = handle
+        if target is not None:
+            message["target"] = target
+        extra_args = {k: self._serialize(v) for k, v in kwargs.items() if k not in {"field", "value"}}
+        if extra_args:
+            message["args"] = extra_args
+        if "field" in kwargs:
+            message["field"] = kwargs["field"]
+        if "value" in kwargs:
+            message["value"] = self._serialize(kwargs["value"])
+        self.send(message)
+        wait.event.wait()
+        if wait.error is not None:
+            raise wait.error
+        return wait.result
+
+    def call_sync_raw(self, msg_type: str, **fields: Any) -> Any:
+        """Send a raw typed message and wait synchronously for response."""
+        request_id = self._next_id()
+        wait = _SyncWait()
+        self._pending_sync[request_id] = wait
+        msg: Dict[str, Any] = {"type": msg_type, "id": request_id}
+        msg.update(fields)
+        self.send(msg)
+        wait.event.wait()
+        if wait.error is not None:
+            raise wait.error
+        return wait.result
+
+    def send_fire_forget(self, msg_type: str, **fields: Any) -> None:
+        """Send a message without waiting for a response (fire-and-forget)."""
+        msg: Dict[str, Any] = {"type": msg_type}
+        msg.update(fields)
+        self.send(msg)
+
+    def wait(self, ticks: int = 1) -> BridgeCall:
+        request_id = self._next_id()
+        future = self._loop.create_future()
+        self._pending[request_id] = future
+        self.send({"type": "wait", "id": request_id, "ticks": int(ticks)})
+        return BridgeCall(future)
+
+    def _begin_batch(self, mode: str):
+        self._batch_stack.append(mode)
+
+    def _end_batch(self):
+        if self._batch_stack:
+            self._batch_stack.pop()
+
+    def _current_batch_mode(self) -> Optional[str]:
+        if not self._batch_stack:
+            return None
+        return "atomic" if "atomic" in self._batch_stack else "frame"
+
+    async def flush(self):
+        if not self._batch_messages:
+            return None
+        mode = self._current_batch_mode()
+        messages = self._batch_messages
+        futures = self._batch_futures
+        self._batch_messages = []
+        self._batch_futures = []
+        self.send({"type": "call_batch", "atomic": mode == "atomic", "messages": messages})
+        results = await asyncio.gather(*futures, return_exceptions=True)
+        for result in results:
+            if isinstance(result, Exception):
+                raise result
+        return None
+
+    def frame(self):
+        return _BatchContext(self, "frame")
+
+    def atomic(self):
+        return _BatchContext(self, "atomic")
+
+    def send(self, message: Dict[str, Any]):
+        data = _json_dumps(message)
+        header = struct.pack("!I", len(data))
+        with self._lock:
+            self._stdout.write(header)
+            self._stdout.write(data)
+            self._stdout.flush()
+
+    def _queue_release(self, handle: int):
+        with self._release_lock:
+            self._release_queue.append(handle)
+            if len(self._release_queue) >= 64:
+                self._flush_releases_locked()
+
+    def _flush_releases_locked(self):
+        """Flush queued handle releases. Must be called with _release_lock held."""
+        if not self._release_queue:
+            return
+        handles = self._release_queue[:]
+        self._release_queue.clear()
+        try:
+            self.send({"type": "release", "handles": handles})
+        except Exception:
+            pass
+
+    def _flush_releases(self):
+        """Flush queued handle releases."""
+        with self._release_lock:
+            self._flush_releases_locked()
+
+    def completed_call(self, result: Any):
+        future = self._loop.create_future()
+        future.set_result(result)
+        return BridgeCall(future)
+
+    def _read_exact(self, size: int) -> Optional[bytes]:
+        data = bytearray(size)
+        view = memoryview(data)
+        offset = 0
+        try:
+            while offset < size:
+                chunk = self._stdin.read(size - offset)
+                if not chunk:
+                    return None
+                view[offset:offset + len(chunk)] = chunk
+                offset += len(chunk)
+        except (OSError, ValueError):
+            return None
+        return bytes(data)
+
+    def _reader(self):
+        try:
+            while True:
+                header = self._read_exact(4)
+                if not header:
+                    break
+                try:
+                    length = struct.unpack("!I", header)[0]
+                    payload = self._read_exact(length)
+                    if payload is None:
+                        break
+                    message = _json_loads(payload)
+                    msg_type = message.get("type")
+                    if msg_type in ("return", "error"):
+                        msg_id = message.get("id")
+                        if msg_id is not None:
+                            wait = self._pending_sync.pop(msg_id, None)
+                            if wait is not None:
+                                if msg_type == "return":
+                                    wait.result = self._deserialize(message.get("result"))
+                                else:
+                                    wait.error = _make_bridge_error(message)
+                                wait.event.set()
+                                continue
+                    self._loop.call_soon_threadsafe(self._handle_message, message)
+                except Exception as exc:
+                    self._loop.call_soon_threadsafe(self._handle_reader_error, exc)
+                    break
+        finally:
+            disconnect_error = ConnectionError("Connection lost")
+            for wait in list(self._pending_sync.values()):
+                wait.error = disconnect_error
+                wait.event.set()
+            self._pending_sync.clear()
+            self._loop.call_soon_threadsafe(self._handle_reader_error, disconnect_error)
+
+    def _handle_message(self, message: Dict[str, Any]):
+        import bridge
+        from bridge.utils import _proxy_from
+
+        msg_type = message.get("type")
+        if msg_type == "return":
+            msg_id: int = message.get("id")  # type: ignore[assignment]
+            future = self._pending.pop(msg_id, None)
+            if future is not None:
+                future.set_result(self._deserialize(message.get("result")))
+        elif msg_type == "error":
+            msg_id: int = message.get("id")  # type: ignore[assignment]
+            future = self._pending.pop(msg_id, None)
+            if future is not None:
+                future.set_exception(_make_bridge_error(message))
+        elif msg_type == "event":
+            event_name = message.get("event")
+            print(f"[PyJavaBridge] Event received: {event_name}")
+            payload = self._deserialize(message.get("payload"))
+            if isinstance(payload, dict) and "event" in payload:
+                p = cast(Dict[str, Any], payload)
+                event_obj = p.get("event")
+                from bridge.wrappers import ProxyBase
+                if isinstance(event_obj, ProxyBase):
+                    if "id" in p:
+                        event_obj.fields["__event_id__"] = p.get("id")
+                    for key, value in p.items():
+                        if key != "event":
+                            event_obj.fields[key] = value
+                    payload = event_obj
+            if event_name is not None:
+                asyncio.create_task(self._dispatch_event(event_name, payload))
+        elif msg_type == "event_batch":
+            event_name = message.get("event")
+            payloads = message.get("payloads", [])
+            for payload in payloads:
+                self._handle_message({"type": "event", "event": event_name, "payload": payload})
+        elif msg_type == "tab_complete":
+            asyncio.create_task(self._handle_tab_complete(message))
+        elif msg_type == "shutdown":
+            asyncio.create_task(self._handle_shutdown())
+
+    async def _handle_tab_complete(self, message: Dict[str, Any]):
+        request_id = message.get("id")
+        command_name = message.get("command", "")
+        args = message.get("args", [])
+        handler = self._tab_complete_handlers.get(command_name)
+        results: List[str] = []
+        if handler is not None:
+            try:
+                sender_data = self._deserialize(message.get("sender"))
+                player_data = self._deserialize(message.get("player")) if "player" in message else None
+                event_obj = sender_data
+                if player_data is not None:
+                    event_obj = player_data
+                result = handler(event_obj, args)
+                if inspect.isawaitable(result):
+                    result = await result
+                if isinstance(result, (list, tuple)):
+                    results = [str(x) for x in result]
+            except Exception as exc:
+                print(f"[PyJavaBridge] Tab complete handler error: {exc}")
+        self.send({"type": "tab_complete_response", "id": request_id, "results": results})
+
+    def register_tab_complete(self, command_name: str, handler: Callable[..., Any]):
+        """Register a dynamic tab completion handler for a command."""
+        self._tab_complete_handlers[command_name] = handler
+
+    async def _dispatch_event(self, event_name: str, payload: Any):
+        from bridge.wrappers import ProxyBase
+        from bridge.helpers import State
+
+        handlers = list(self._handlers.get(event_name, []))
+        results: List[Any] = []
+        try:
+            awaitables: List[Awaitable[Any]] = []
+            for handler in handlers:
+                try:
+                    result = handler(payload)
+                except Exception as exc:
+                    results.append(exc)
+                    continue
+                if inspect.isawaitable(result):
+                    awaitables.append(result)
+                else:
+                    results.append(result)
+            if awaitables:
+                gathered = await asyncio.gather(*awaitables, return_exceptions=True)
+                results.extend(gathered)
+            for result in results:
+                if isinstance(result, Exception):
+                    print(f"[PyJavaBridge] Handler error: {result}")
+        finally:
+            event_id = None
+            if isinstance(payload, ProxyBase):
+                event_id = payload.fields.get("__event_id__")
+            if event_id is not None:
+                if handlers:
+                    from bridge.wrappers import Entity, Location
+
+                    override_text = None
+                    override_damage = None
+                    override_respawn = None
+                    override_target = None
+                    is_damage_event = isinstance(payload, ProxyBase) and "damage" in payload.fields
+                    is_respawn_event = event_name in ("player_respawn",)
+                    is_target_event = event_name in ("entity_target", "entity_target_living_entity")
+                    for result in results:
+                        if isinstance(result, Entity):
+                            if is_target_event:
+                                override_target = result
+                        elif isinstance(result, Location):
+                            if is_respawn_event:
+                                override_respawn = result
+                        elif isinstance(result, str):
+                            override_text = result
+                        elif is_damage_event and isinstance(result, (int, float)) and not isinstance(result, bool):
+                            override_damage = float(result)
+                    if override_text is not None:
+                        self.send({"type": "event_result", "id": event_id, "result": override_text, "result_type": "chat"})
+                    if override_damage is not None:
+                        self.send({"type": "event_result", "id": event_id, "result": override_damage, "result_type": "damage"})
+                    if override_respawn is not None:
+                        self.send({"type": "event_result", "id": event_id, "result": self._serialize(override_respawn), "result_type": "respawn"})
+                    if override_target is not None:
+                        self.send({"type": "event_result", "id": event_id, "result": self._serialize(override_target), "result_type": "target"})
+                self.send({"type": "event_done", "id": event_id})
+
+    async def _handle_shutdown(self):
+        """Handle server shutdown."""
+        from bridge.helpers import State
+        try:
+            for state in State._instances:
+                try:
+                    state.save()
+                except Exception:
+                    pass
+            await self._dispatch_event("shutdown", SimpleNamespace(fields={}))
+        except Exception as e:
+            print(f"[PyJavaBridge] Shutdown handler error: {e}")
+        finally:
+            try:
+                self.send({"type": "shutdown_ack"})
+            except Exception:
+                pass
+            try:
+                self._stdin.close()
+            except Exception:
+                pass
+            self._loop.stop()
+
+    def _handle_reader_error(self, exc: Exception):
+        for future in self._pending.values():
+            if not future.done():
+                future.set_exception(exc)
+
+    def _next_id(self) -> int:
+        return next(self._id_counter)
+
+    def _serialize(self, value: Any) -> Any:
+        import uuid as _uuid
+        from bridge.wrappers import ProxyBase
+
+        if isinstance(value, ProxyBase):
+            if value._handle is not None:
+                return {"__handle__": value._handle}
+            if value._target == "ref" and value._ref_type and value._ref_id:
+                return {"__ref__": {"type": value._ref_type, "id": value._ref_id}}
+            return {"__value__": value.__class__.__name__, "fields": {k: self._serialize(v) for k, v in value.fields.items()}}
+        if isinstance(value, EnumValue):
+            return {"__enum__": value.type, "name": value.name}
+        if isinstance(value, _uuid.UUID):
+            return {"__uuid__": str(value)}
+        if isinstance(value, list):
+            items = cast(List[Any], value)
+            return [self._serialize(v) for v in items]
+        if isinstance(value, dict):
+            d = cast(Dict[str, Any], value)
+            return {k: self._serialize(v) for k, v in d.items()}
+        return value
+
+    def _deserialize(self, value: Any) -> Any:
+        import uuid as _uuid
+        from bridge.utils import _proxy_from, _enum_from
+
+        if isinstance(value, dict):
+            d = cast(Dict[str, Any], value)
+            if "__handle__" in d:
+                return _proxy_from(d)
+            if "__uuid__" in d:
+                return _uuid.UUID(d["__uuid__"])
+            if "__enum__" in d:
+                return _enum_from(d["__enum__"], d["name"])
+            if {"x", "y", "z"}.issubset(d.keys()):
+                return SimpleNamespace(**{k: self._deserialize(v) for k, v in d.items()})
+            return {k: self._deserialize(v) for k, v in d.items()}
+        if isinstance(value, list):
+            items = cast(List[Any], value)
+            return [self._deserialize(v) for v in items]
+        return value

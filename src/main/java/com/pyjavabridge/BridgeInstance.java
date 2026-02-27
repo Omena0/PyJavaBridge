@@ -20,6 +20,8 @@ import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Registry;
 import org.bukkit.Sound;
+import io.papermc.paper.registry.RegistryAccess;
+import io.papermc.paper.registry.RegistryKey;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
@@ -1535,7 +1537,8 @@ public class BridgeInstance {
         }
         if ("getAllEnchantments".equals(method)) {
             List<String> names = new ArrayList<>();
-            for (org.bukkit.enchantments.Enchantment ench : org.bukkit.Registry.ENCHANTMENT) {
+            Registry<org.bukkit.enchantments.Enchantment> enchReg = RegistryAccess.registryAccess().getRegistry(RegistryKey.ENCHANTMENT);
+            for (org.bukkit.enchantments.Enchantment ench : enchReg) {
                 names.add(ench.getKey().getKey().toUpperCase());
             }
             return names;
@@ -1545,7 +1548,8 @@ public class BridgeInstance {
             Material mat = Material.valueOf(materialName);
             ItemStack testItem = new ItemStack(mat);
             List<String> names = new ArrayList<>();
-            for (org.bukkit.enchantments.Enchantment ench : org.bukkit.Registry.ENCHANTMENT) {
+            Registry<org.bukkit.enchantments.Enchantment> enchReg2 = RegistryAccess.registryAccess().getRegistry(RegistryKey.ENCHANTMENT);
+            for (org.bukkit.enchantments.Enchantment ench : enchReg2) {
                 if (ench.canEnchantItem(testItem)) {
                     names.add(ench.getKey().getKey().toUpperCase());
                 }
