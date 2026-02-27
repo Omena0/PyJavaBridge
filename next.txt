@@ -20,3 +20,5 @@ Add:
   - Support linking to Dialog, r-click will start the dialog.
   - Support linking to Player
   - Support range checks, callback when player gets out of range (to pause quest etc), and back in.
+
+- Bank:

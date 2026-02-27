@@ -212,75 +212,62 @@ def cmd_search(query):
         sys.exit(1)
 
     symbols = build_symbol_index(docs_dir)
-    query_lower = query.lower()
 
-    # Check if query is "Class.member" format
-    if "." in query:
-        parts = query.split(".", 1)
-        class_q = parts[0].lower()
-        member_q = parts[1].lower()
+    if query.endswith("."):
+        # "Player." → list all members of that class
+        class_q = query[:-1].lower()
+        members = [s for s in symbols if s["class_name"].lower() == class_q and s["name"]]
+        if not members:
+            print(f"No class '{query[:-1]}' found")
+            return
+        print(f"\033[1m{members[0]['class_name']}\033[0m  \033[90m({members[0]['file']}.md)\033[0m")
+        for s in members:
+            print(f"  \033[36m.{s['name']}\033[0m  \033[90m{s['section'] or ''}\033[0m")
+    elif "." in query:
+        # "Player.name" → find specific member(s)
+        class_q, member_q = query.split(".", 1)
+        class_q, member_q = class_q.lower(), member_q.lower()
+        results = []
+        for s in symbols:
+            if not s["name"]:
+                continue
+            if s["class_name"].lower() == class_q and member_q in s["name"].lower():
+                exact = s["name"].lower() == member_q
+                results.append((0 if exact else 1, s))
+        results.sort(key=lambda x: (x[0], x[1]["qualified"]))
+        if not results:
+            print(f"No symbol '{query}' found")
+            return
+        for _, s in results:
+            desc = f"  \033[90m{s['desc']}\033[0m" if s["desc"] else ""
+            print(f"  \033[90m{s['class_name']}.\033[0m\033[36m{s['name']}\033[0m  \033[90m({s['section'] or 'class'})\033[0m{desc}")
     else:
-        class_q = None
-        member_q = None
-
-    scored = []
-    for sym in symbols:
-        qualified = sym["qualified"].lower()
-        name = (sym["name"] or sym["class_name"]).lower()
-
-        score = 0
-        if class_q and member_q:
-            # "Player.name" style query
-            if qualified == query_lower:
-                score = 100  # exact match
-            elif sym["name"] and member_q in sym["name"].lower() and class_q in sym["class_name"].lower():
-                score = 80  # partial match on both parts
-            elif member_q == name:
-                score = 40  # member exact match, wrong class
-            elif member_q in name:
-                score = 20  # member partial match
+        # "Player" → match class names, or fall back to member names
+        q = query.lower()
+        classes = [s for s in symbols if not s["name"] and q in s["class_name"].lower()]
+        classes.sort(key=lambda s: (s["class_name"].lower() != q, s["class_name"]))
+        if classes:
+            for s in classes:
+                desc = f"  \033[90m— {s['desc']}\033[0m" if s["desc"] else ""
+                print(f"  \033[36;1m{s['class_name']}\033[0m{desc}")
         else:
-            # Single word query - match symbol names
-            if name == query_lower:
-                score = 100  # exact match
-            elif qualified == query_lower:
-                score = 100
-            elif name.startswith(query_lower):
-                score = 70  # prefix match
-            elif query_lower in name:
-                score = 40  # substring match
-            elif query_lower in qualified:
-                score = 30
-
-        if score > 0:
-            scored.append((score, sym))
-
-    scored.sort(key=lambda x: (-x[0], x[1]["qualified"]))
-
-    if not scored:
-        print(f"No symbols matching '{query}'")
-        return
-
-    print(f"\033[1m{len(scored)} symbol(s) for '{query}':\033[0m\n")
-
-    for score, sym in scored:
-        qualified = sym["qualified"]
-        kind = sym["section"] or "class"
-        desc = sym["desc"]
-        file_ref = f"{sym['file']}.md:L{sym['line']}"
-
-        # Color the qualified name
-        if sym["name"]:
-            cls_part = f"\033[90m{sym['class_name']}.\033[0m"
-            name_part = f"\033[36m{sym['name']}\033[0m"
-            display = cls_part + name_part
-        else:
-            display = f"\033[36;1m{sym['class_name']}\033[0m"
-
-        print(f"  {display}  \033[90m({kind})\033[0m")
-        if desc:
-            print(f"    {desc}")
-        print(f"    \033[90m{file_ref}\033[0m")
+            # No class match → search member names across all classes
+            results = []
+            for s in symbols:
+                if not s["name"]:
+                    continue
+                if q == s["name"].lower():
+                    results.append((0, s))
+                elif s["name"].lower().startswith(q):
+                    results.append((1, s))
+                elif q in s["name"].lower():
+                    results.append((2, s))
+            results.sort(key=lambda x: (x[0], x[1]["qualified"]))
+            if not results:
+                print(f"No symbols matching '{query}'")
+                return
+            for _, s in results:
+                print(f"  \033[90m{s['class_name']}.\033[0m\033[36m{s['name']}\033[0m  \033[90m({s['section'] or 'class'})\033[0m")
 
 
 def cmd_events(filter_str=None):
