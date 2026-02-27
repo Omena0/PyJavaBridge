@@ -41,14 +41,77 @@ Add:
   - Anti-dupe measures, handle logout, delay packets, close without packet, etc
 
 - Ability:
-  - Attrs: name, desc, cooldown, on_use(player), can_use(player), last_used (timestamp or None), cooldown_msg, use_cost=None (mana cost )
+  - Attrs: name, desc, cooldown, on_use(player), can_use(player), last_used (timestamp or None), cooldown_msg, use_cost=None (mana cost, if using), display_bossbar=False
   - Designed to be a parent class.
   - Represents a player ability with a cooldown. Can be used in combat or for utility.
   - Methods: use(player): calls can_use, if true calls on_use and sets last_used to current time. Otherwise, sends cooldown message.
 
 - ManaStore:
+  - Attrs (constructor): default_mana, default_max_mana, default_regen_rate, mana (dict of player: current mana), display_bossbar=False
   - Global mana bar instance
   - Tracks mana for each player
   - Use list index notation mana[player]
   - Integrates with BossBarDisplay.
   - Mana regen rate, max mana, etc. per player with default values.
+
+- CombatSystem (constructor):
+  - Attrs: last_attack_times (dict of player: timestamp), combat_timeout (seconds), display_bossbar=False
+  - Tracks last attack times, and prevents users from logging out in combat.
+  - Integrates with BossBarDisplay
+
+- LevelSystem:
+  - List index notation for player xp, level, etc.
+  - Custom multiplier and exponent for level cost, with default values.
+  - Methods to add xp, check level, etc.
+
+- Region:
+  - Attrs: name, world, x1, y1, z1, x2, y2, z2, on_enter(player), on_exit(player)
+  - Represents a cuboid region in the world. Can be used for quest areas, shops, etc.
+  - Methods to check if a player is inside, and to handle enter/exit events.
+
+- Dungeon:
+  - Attrs: name, desc, instances, on_enter(), on_exit(), reward(), difficulty, recc_level, rooms
+  - Designed to be a parent class for dungeons. Each dungeon can have multiple instances for different players/groups.
+  - Child class of region. Instanced region, each player or group gets their own copy. Can have custom mobs, loot, etc.
+  - Methods to create instance, handle player entry/exit, track progress, etc.
+
+- DungeonInstance:
+  - Attrs: generate(), players, on_complete(), on_enter(), on_exit(), progress, etc
+  - Automatically generated dungeon. Can have multiple rooms, custom mobs, loot, etc. Tracks player progress and can trigger events on completion.
+  - Is automatically deleted on clear.
+
+- DungeonRoom:
+  - Attrs: on_enter, on_clear, mobs, type (boss, combat, puzzle, treasure, trap, hallway, etc), cleared, etc
+  - Represents a room within a dungeon. Can have custom mobs, loot, puzzles, etc. Tracks if the room is cleared, and can trigger events on clear.
+  - Has conditions for generation, such as room size, type, difficulty, etc. Can be used in procedural generation of dungeons.
+  - For example:
+    - Boss rooms cant generate near the entrance, must be at least 8 rooms away.
+    - Puzzle rooms must be connected to treasure rooms or boss rooms.
+    - etc
+
+- Party:
+  - Attrs: name, members, leader, max_size, on_join(player), on_leave(player), on_disband(), etc
+  - Represents a group of players. Can be used for dungeon groups, quest groups, etc. Has a leader and can have a max size. Methods to join/leave party, disband, etc.
+  - Can integrate with quests, dungeons, etc to allow for group content. For example, a quest that requires 3 players can check if the player is in a party of at least 3 members.
+  - Can also have party chat, shared quest progress, etc.
+  - Party leader can kick members, promote new leader, etc.
+  - Party members cannot attack each other, can share loot, etc.
+
+- Guild:
+  - Attrs: name, members, leader, max_size, on_join(player), on_leave(player), on_disband(), etc
+  - Collection of parties and individuals.
+  - Guild chat, guild bank, guild quests, etc.
+  - Guild leader can promote/demote members, manage guild bank, etc.
+
+- CustomItem:
+  - Item subclass, can be used to create custom items.
+  - These items are then registered in a global registry, and can be used in quests, shops, etc. Can have custom attributes and methods as needed.
+  - Designed to be a parent class
+
+- Leaderboard:
+  - Hologram subclass
+  - Displays a leaderboard for some metric, such as kills, levels, money, etc.
+  - Attrs: pos, get_metric(player), title, update_interval
+
+- Player:
+  - freeze(), unfreeze(), is_frozen

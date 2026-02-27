@@ -175,12 +175,14 @@ def build_symbol_index(docs_dir):
                 if " " in member:
                     continue
                 desc = _get_desc_after(lines, i)
+                sig = _get_signature(lines, i, member)
                 symbols.append({
                     "class_name": class_name,
                     "name": member,
                     "section": section,
                     "qualified": f"{class_name}.{member}",
                     "desc": desc,
+                    "sig": sig,
                     "file": md_file.stem,
                     "line": i + 1,
                 })
@@ -202,6 +204,25 @@ def _get_desc_after(lines, heading_idx):
             return l.strip()
         return l[:100]
     return ""
+
+
+def _get_signature(lines, heading_idx, member):
+    """Extract method signature from the code block after a ### heading."""
+    in_code = False
+    for j in range(heading_idx + 1, min(heading_idx + 6, len(lines))):
+        l = lines[j].strip()
+        if l.startswith("```"):
+            if not in_code:
+                in_code = True
+                continue
+            else:
+                break
+        if in_code and member in l:
+            # Extract args from the call: member(args)
+            m = re.search(re.escape(member) + r'\((.*)\)', l)
+            if m:
+                return f"({m.group(1)})"
+    return None
 
 
 def _strip_md(line):
@@ -354,7 +375,10 @@ def _get_class_doc(md_path):
         elif stripped.startswith("# "):
             out.append(f"  \033[36;1m{stripped.lstrip('# ')}\033[0m")
         elif stripped.startswith("## "):
-            out.append(f"  \033[1m{stripped.lstrip('# ')}\033[0m")
+            heading = stripped.lstrip('# ').strip()
+            if heading == "Constructor":
+                continue  # skip Constructor header
+            out.append(f"  \033[1m{heading}\033[0m")
         elif stripped.startswith("- "):
             out.append(f"  {_strip_md(line.rstrip())}")
         elif stripped:
@@ -366,7 +390,14 @@ def _get_class_doc(md_path):
     while out and not out[-1].strip():
         out.pop()
 
-    return "\n".join(out)
+    # Collapse consecutive blank lines
+    collapsed = []
+    for line in out:
+        if not line.strip() and collapsed and not collapsed[-1].strip():
+            continue
+        collapsed.append(line)
+
+    return "\n".join(collapsed)
 
 
 def cmd_search(query):
@@ -387,7 +418,8 @@ def cmd_search(query):
             return
         print(f"\033[1m{members[0]['class_name']}\033[0m  \033[90m({members[0]['file']}.md)\033[0m")
         for s in members:
-            print(f"  \033[36m.{s['name']}\033[0m  \033[90m{s['section'] or ''}\033[0m")
+            sig = s.get('sig', '') or ''
+            print(f"  \033[36m.{s['name']}{sig}\033[0m  \033[90m{s['section'] or ''}\033[0m")
     elif "." in query:
         # "Player.name" → find specific member(s)
         class_q, member_q = query.split(".", 1)
