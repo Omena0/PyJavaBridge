@@ -52,6 +52,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       });
     });
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        const first = document.querySelector('.sidebar-links a:not([style*="display: none"])');
+        if (first) { first.click(); }
+      }
+    });
   }
 
   // ── Collapsible sections with animation ─────────────────────
@@ -241,9 +247,24 @@ document.addEventListener('DOMContentLoaded', () => {
     const seen = new Set();
     const unique = [];
     for (const h of hits) {
-      if (!seen.has(h.url) && unique.length < 12) {
-        seen.add(h.url);
+      // When heading equals title, collapse to the base page URL
+      const baseUrl = h.url.split('#')[0];
+      if (h.heading && h.heading === h.title) {
+        h.heading = null;
+        h.url = baseUrl;
+      }
+      const key = h.url;
+      if (!seen.has(key) && unique.length < 12) {
+        seen.add(key);
+        // Also mark the base URL as seen so title+section don't both appear
+        seen.add(baseUrl);
         unique.push(h);
+      } else {
+        // Merge: if existing entry has no text but this one does, update it
+        const existing = unique.find(u => u.url.split('#')[0] === baseUrl);
+        if (existing && !existing.text && h.text) {
+          existing.text = h.text;
+        }
       }
     }
     if (!unique.length) {
@@ -266,6 +287,10 @@ document.addEventListener('DOMContentLoaded', () => {
         headerSearch.value = '';
         searchResults.style.display = 'none';
         headerSearch.blur();
+      }
+      if (e.key === 'Enter') {
+        const first = searchResults.querySelector('.search-hit');
+        if (first) { window.location.href = first.getAttribute('href'); }
       }
     });
     document.addEventListener('click', e => {

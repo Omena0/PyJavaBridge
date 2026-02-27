@@ -72,26 +72,6 @@ Add:
   - Represents a cuboid region in the world. Can be used for quest areas, shops, etc.
   - Methods to check if a player is inside, and to handle enter/exit events.
 
-- Dungeon:
-  - Attrs: name, desc, instances, on_enter(), on_exit(), reward(), difficulty, recc_level, rooms
-  - Designed to be a parent class for dungeons. Each dungeon can have multiple instances for different players/groups.
-  - Child class of region. Instanced region, each player or group gets their own copy. Can have custom mobs, loot, etc.
-  - Methods to create instance, handle player entry/exit, track progress, etc.
-
-- DungeonInstance:
-  - Attrs: generate(), players, on_complete(), on_enter(), on_exit(), progress, etc
-  - Automatically generated dungeon. Can have multiple rooms, custom mobs, loot, etc. Tracks player progress and can trigger events on completion.
-  - Is automatically deleted on clear.
-
-- DungeonRoom:
-  - Attrs: on_enter, on_clear, mobs, type (boss, combat, puzzle, treasure, trap, hallway, etc), cleared, etc
-  - Represents a room within a dungeon. Can have custom mobs, loot, puzzles, etc. Tracks if the room is cleared, and can trigger events on clear.
-  - Has conditions for generation, such as room size, type, difficulty, etc. Can be used in procedural generation of dungeons.
-  - For example:
-    - Boss rooms cant generate near the entrance, must be at least 8 rooms away.
-    - Puzzle rooms must be connected to treasure rooms or boss rooms.
-    - etc
-
 - Party:
   - Attrs: name, members, leader, max_size, on_join(player), on_leave(player), on_disband(), etc
   - Represents a group of players. Can be used for dungeon groups, quest groups, etc. Has a leader and can have a max size. Methods to join/leave party, disband, etc.
@@ -131,5 +111,28 @@ Add:
   - Global, per-player data store. Can be used to store any custom data for players.
   - Used list index notation. Data is automatically saved and loaded.
 
+# WARNING: THIS IS A COMPLEX FEATURE, MAKE SURE YOU DO IT RIGHT
+# FOR AUTO GENERATION USE QUANTUM WAVE FUNCTION COLLAPSE GENERATION ALGORITHM.
+- Dungeon:
+  - Attrs: name, desc, instances, on_enter(), on_exit(), reward(), difficulty, recc_level, rooms
+  - Designed to be a parent class for dungeons. Each dungeon can have multiple instances for different players/groups.
+  - Child class of region. Instanced region, each player or group gets their own copy. Can have custom mobs, loot, etc.
+  - Methods to create instance, handle player entry/exit, track progress, etc.
+
+- DungeonInstance:
+  - Attrs: generate(), players, on_complete(), on_enter(), on_exit(), progress, etc
+  - Automatically generated dungeon. Can have multiple rooms, custom mobs, loot, etc. Tracks player progress and can trigger events on completion.
+  - Is automatically deleted on clear.
+
+- DungeonRoom:
+  - Attrs: on_enter, on_clear, mobs, type (boss, combat, puzzle, treasure, trap, hallway, etc), cleared, etc
+  - Represents a room within a dungeon. Can have custom mobs, loot, puzzles, etc. Tracks if the room is cleared, and can trigger events on clear.
+  - Has conditions for generation, such as room size, type, difficulty, etc. Can be used in procedural generation of dungeons.
+  - For example:
+    - Boss rooms cant generate near the entrance, must be at least 8 rooms away.
+    - Puzzle rooms must be connected to treasure rooms or boss rooms.
+    - etc
+
+
 document everything after you've implemented it, and add type hints. Make sure to update the type stub as well.
-git commit every feature, commit summaries should be sh
+git commit every feature, commit summaries should be short and descriptive but casual.
