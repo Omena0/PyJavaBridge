@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NPC — PyJavaBridge</title>
+  <meta property="og:title" content="NPC — PyJavaBridge">
+  <meta property="og:description" content="Fake players with click handlers, dialog, and movement paths">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="PyJavaBridge Docs">
+  <meta name="theme-color" content="#6366f1">
+  <meta name="color-scheme" content="dark">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Header -->
+  <header class="site-header">
+    <button class="menu-toggle" aria-label="Toggle menu">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M3 12h18M3 6h18M3 18h18"/>
+      </svg>
+    </button>
+    <a href="index.html" class="header-brand">
+      <span class="logo">Py</span>
+      PyJavaBridge
+    </a>
+    <nav class="header-nav">
+      <a href="index.html">Docs</a>
+      <a href="examples.html">Examples</a>
+      <a href="https://github.com/Omena0/PyJavaBridge">GitHub</a>
+    </nav>
+  </header>
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+<div class="search-box">
+  <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+  <input type="text" id="sidebar-search" placeholder="Search docs…">
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading" data-section="on-this-page">On This Page</div>
+  <ul class="sidebar-links">
+    <li><a href="#spawning">Spawning</a></li>
+    <li><a href="#properties">Properties</a></li>
+    <li><ul class="toc-sub" data-parent="properties">
+      <li><a href="#entity">entity</a></li>
+      <li><a href="#uuid">uuid</a></li>
+      <li><a href="#location">location</a></li>
+    </ul></li>
+    <li><a href="#click-handlers">Click Handlers</a></li>
+    <li><ul class="toc-sub" data-parent="click-handlers">
+      <li><a href="#on_click">on_click</a></li>
+      <li><a href="#on_right_click">on_right_click</a></li>
+    </ul></li>
+    <li><a href="#dialog-trees">Dialog Trees</a></li>
+    <li><ul class="toc-sub" data-parent="dialog-trees">
+      <li><a href="#dialog">dialog</a></li>
+    </ul></li>
+    <li><a href="#movement">Movement</a></li>
+    <li><ul class="toc-sub" data-parent="movement">
+      <li><a href="#move_to">move_to</a></li>
+      <li><a href="#follow_path">follow_path</a></li>
+      <li><a href="#stop_path">stop_path</a></li>
+    </ul></li>
+    <li><a href="#removing">Removing</a></li>
+    <li><ul class="toc-sub" data-parent="removing">
+      <li><a href="#remove">remove</a></li>
+    </ul></li>
+  </ul>
+</div>
+
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="getting-started">Getting Started</div>
+  <ul class="sidebar-links">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="decorators.html">Decorators</a></li>
+    <li><a href="exceptions.html">Exceptions</a></li>
+    <li><a href="examples.html">Examples</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="core">Core</div>
+  <ul class="sidebar-links">
+    <li><a href="server.html">Server</a></li>
+    <li><a href="event.html">Event</a></li>
+    <li><a href="entity.html">Entity</a></li>
+    <li><a href="player.html">Player</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="world-space">World & Space</div>
+  <ul class="sidebar-links">
+    <li><a href="world.html">World</a></li>
+    <li><a href="location.html">Location</a></li>
+    <li><a href="block.html">Block</a></li>
+    <li><a href="chunk.html">Chunk</a></li>
+    <li><a href="vector.html">Vector</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="items-inventory">Items & Inventory</div>
+  <ul class="sidebar-links">
+    <li><a href="item.html">Item</a></li>
+    <li><a href="itembuilder.html">ItemBuilder</a></li>
+    <li><a href="inventory.html">Inventory</a></li>
+    <li><a href="recipe.html">Recipe</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="effects-attributes">Effects & Attributes</div>
+  <ul class="sidebar-links">
+    <li><a href="effect.html">Effect</a></li>
+    <li><a href="potion.html">Potion</a></li>
+    <li><a href="attribute.html">Attribute</a></li>
+    <li><a href="advancement.html">Advancement</a></li>
+    <li><a href="firework.html">Firework</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="scoreboards-ui">Scoreboards & UI</div>
+  <ul class="sidebar-links">
+    <li><a href="menu.html">Menu</a></li>
+    <li><a href="menuitem.html">MenuItem</a></li>
+    <li><a href="sidebar.html">Sidebar</a></li>
+    <li><a href="actionbardisplay.html">ActionBarDisplay</a></li>
+    <li><a href="bossbardisplay.html">BossBarDisplay</a></li>
+    <li><a href="bossbar.html">BossBar</a></li>
+    <li><a href="scoreboard.html">Scoreboard</a></li>
+    <li><a href="objective.html">Objective</a></li>
+    <li><a href="team.html">Team</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="helpers">Helpers</div>
+  <ul class="sidebar-links">
+    <li><a href="npc.html" class="active">NPC</a></li>
+    <li><a href="config.html">Config</a></li>
+    <li><a href="state.html">State</a></li>
+    <li><a href="cooldown.html">Cooldown</a></li>
+    <li><a href="enums.html">Enums</a></li>
+    <li><a href="enumvalue.html">EnumValue</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="display-entities">Display Entities</div>
+  <ul class="sidebar-links">
+    <li><a href="hologram.html">Hologram</a></li>
+    <li><a href="blockdisplay.html">BlockDisplay</a></li>
+    <li><a href="itemdisplay.html">ItemDisplay</a></li>
+    <li><a href="imagedisplay.html">ImageDisplay</a></li>
+    <li><a href="meshdisplay.html">MeshDisplay</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="utilities">Utilities</div>
+  <ul class="sidebar-links">
+    <li><a href="raycast.html">Raycast</a></li>
+    <li><a href="chat.html">Chat</a></li>
+    <li><a href="reflect.html">Reflect</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="internals">Internals</div>
+  <ul class="sidebar-links">
+    <li><a href="bridge.html">Bridge</a></li>
+    <li><a href="events_internal.html">Events</a></li>
+    <li><a href="execution.html">Execution</a></li>
+    <li><a href="serialization.html">Serialization</a></li>
+    <li><a href="lifecycle.html">Lifecycle</a></li>
+    <li><a href="debugging.html">Debugging</a></li>
+  </ul>
+</div>
+  </aside>
+  <div class="sidebar-overlay"></div>
+
+  <!-- Main -->
+  <main class="main">
+    <div class="content">
+      <p class="subtitle">Fake players with click handlers, dialog, and movement paths</p>
+      <h1 id="npc">NPC</h1>
+<p><code>NPC</code> spawns a mob (default: villager) with AI disabled and provides click handlers, dialog trees, and pathfinding movement.</p>
+<hr />
+<h2 id="spawning">Spawning</h2>
+<pre><code class="language-python">npc = <span class="kw">await</span> NPC.spawn(location, entity_type=<span class="st">&quot;VILLAGER&quot;</span>, name=<span class="st">&quot;Guard&quot;</span>)
+</code></pre>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>location</code> (<a href="location.html"><code>Location</code></a>) — Where to spawn the NPC.</li>
+<li><code>entity_type</code> (<a href="enums.html"><code>EntityType</code></a> <code>| str</code>) — Mob type. Default <code>"VILLAGER"</code>.</li>
+<li><code>name</code> (<code>str | None</code>) — Display name shown above the NPC.</li>
+<li><code>**kwargs</code> — Extra spawn options passed to <code>Entity.spawn</code>.</li>
+<li><strong>Returns:</strong> <code>Awaitable[NPC]</code></li>
+</ul>
+<pre><code class="language-python">guard = <span class="kw">await</span> NPC.spawn(Location(<span class="nb">100</span>, <span class="nb">64</span>, <span class="nb">200</span>, <span class="st">&quot;world&quot;</span>), name=<span class="st">&quot;§6Town Guard&quot;</span>)
+shopkeeper = <span class="kw">await</span> NPC.spawn(player.location, entity_type=<span class="st">&quot;VILLAGER&quot;</span>, name=<span class="st">&quot;§aShop&quot;</span>)
+</code></pre>
+<hr />
+<h2 id="properties">Properties</h2>
+<h3 id="entity">entity</h3>
+<pre><code class="language-python">npc.entity  <span class="cm"># → Entity</span>
+</code></pre>
+<p>The underlying <a href="entity.html"><code>Entity</code></a> instance.</p>
+<h3 id="uuid">uuid</h3>
+<pre><code class="language-python">npc.uuid  <span class="cm"># → str | None</span>
+</code></pre>
+<p>The entity's UUID string.</p>
+<h3 id="location">location</h3>
+<pre><code class="language-python">npc.location  <span class="cm"># → Location</span>
+</code></pre>
+<p>The NPC's current location.</p>
+<hr />
+<h2 id="click-handlers">Click Handlers</h2>
+<h3 id="on_click">on_click</h3>
+<pre><code class="language-python"><span class="dc">@npc</span>.on_click
+<span class="kw">def</span> handler(player, npc):
+    ...
+</code></pre>
+<p>Register a handler called when a player left-clicks the NPC. Handler receives <code>(Player, NPC)</code>.</p>
+<h3 id="on_right_click">on_right_click</h3>
+<pre><code class="language-python"><span class="dc">@npc</span>.on_right_click
+<span class="kw">def</span> handler(player, npc):
+    ...
+</code></pre>
+<p>Register a handler called when a player right-clicks the NPC. Handler receives <code>(Player, NPC)</code>.</p>
+<pre><code class="language-python">guard = <span class="kw">await</span> NPC.spawn(loc, name=<span class="st">&quot;Guard&quot;</span>)
+
+<span class="dc">@guard</span>.on_right_click
+<span class="kw">async</span> <span class="kw">def</span> greet(player, npc):
+    <span class="kw">await</span> player.send_message(<span class="st">&quot;§eHalt! State your business.&quot;</span>)
+</code></pre>
+<hr />
+<h2 id="dialog-trees">Dialog Trees</h2>
+<h3 id="dialog">dialog</h3>
+<pre><code class="language-python">npc.dialog(messages, loop=<span class="kw">False</span>)
+</code></pre>
+<p>Set a sequence of messages shown one per right-click. Each click advances to the next message.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>messages</code> (<code>list[str]</code>) — Messages to show in order.</li>
+<li><code>loop</code> (<code>bool</code>) — If <code>True</code>, restart from the beginning after the last message. Default <code>False</code> (stays on last message).</li>
+</ul>
+<pre><code class="language-python">npc.dialog([
+    <span class="st">&quot;§eWelcome, traveler!&quot;</span>,
+    <span class="st">&quot;§eThe dungeon lies to the north.&quot;</span>,
+    <span class="st">&quot;§eBeware of the dragon!&quot;</span>,
+    <span class="st">&quot;§7(The guard nods silently.)&quot;</span>
+], loop=<span class="kw">False</span>)
+</code></pre>
+<hr />
+<h2 id="movement">Movement</h2>
+<h3 id="move_to">move_to</h3>
+<pre><code class="language-python"><span class="kw">await</span> npc.move_to(location, speed=<span class="nb">1.0</span>)
+</code></pre>
+<p>Move the NPC to a location using pathfinding. Temporarily enables AI.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>location</code> (<a href="location.html"><code>Location</code></a>) — Destination.</li>
+<li><code>speed</code> (<code>float</code>) — Speed multiplier. Default <code>1.0</code>.</li>
+</ul>
+<h3 id="follow_path">follow_path</h3>
+<pre><code class="language-python"><span class="kw">await</span> npc.follow_path(waypoints, loop=<span class="kw">False</span>, speed=<span class="nb">1.0</span>, delay=<span class="nb">0.5</span>)
+</code></pre>
+<p>Make the NPC walk through a list of waypoints.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>waypoints</code> (<code>list[</code><a href="location.html"><code>Location</code></a><code>]</code>) — Locations to visit in order.</li>
+<li><code>loop</code> (<code>bool</code>) — If <code>True</code>, repeat the path endlessly.</li>
+<li><code>speed</code> (<code>float</code>) — Speed multiplier.</li>
+<li><code>delay</code> (<code>float</code>) — Seconds between each waypoint. Default <code>0.5</code>.</li>
+</ul>
+<h3 id="stop_path">stop_path</h3>
+<pre><code class="language-python">npc.stop_path()
+</code></pre>
+<p>Stop the current movement and disable AI.</p>
+<pre><code class="language-python">path = [Location(<span class="nb">0</span>, <span class="nb">64</span>, <span class="nb">0</span>, <span class="st">&quot;world&quot;</span>), Location(<span class="nb">10</span>, <span class="nb">64</span>, <span class="nb">0</span>, <span class="st">&quot;world&quot;</span>), Location(<span class="nb">10</span>, <span class="nb">64</span>, <span class="nb">10</span>, <span class="st">&quot;world&quot;</span>)]
+<span class="kw">await</span> npc.follow_path(path, loop=<span class="kw">True</span>, speed=<span class="nb">0.8</span>)
+
+<span class="cm"># Later...</span>
+npc.stop_path()
+</code></pre>
+<hr />
+<h2 id="removing">Removing</h2>
+<h3 id="remove">remove</h3>
+<pre><code class="language-python"><span class="kw">await</span> npc.remove()
+</code></pre>
+<p>Remove the NPC entity from the world and unregister all handlers.</p>
+    </div>
+    <footer class="site-footer">
+      &copy; Omena0 2026 &middot; PyJavaBridge Documentation
+    </footer>
+  </main>
+
+  <!-- Back to top -->
+  <button class="back-to-top" aria-label="Back to top">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+      <path d="M18 15l-6-6-6 6"/>
+    </svg>
+  </button>
+
+  <script src="script.js"></script>
+</body>
+</html>

@@ -77,6 +77,7 @@ SIDEBAR = [
         ("team", "Team"),
     ]),
     ("Helpers", [
+        ("npc", "NPC"),
         ("config", "Config"),
         ("state", "State"),
         ("cooldown", "Cooldown"),
