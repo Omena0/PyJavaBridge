@@ -204,6 +204,75 @@ def _get_desc_after(lines, heading_idx):
     return ""
 
 
+def _strip_md(line):
+    """Strip markdown formatting from a line for terminal display."""
+    line = re.sub(r'\[([^\]]*)\]\([^)]*\)', r'\1', line)  # links
+    line = re.sub(r'`([^`]*)`', r'\1', line)  # inline code
+    line = line.replace('**', '').replace('*', '')
+    return line
+
+
+def _get_class_doc(md_path):
+    """Extract class-level documentation (before first ### member heading)."""
+    content = md_path.read_text(encoding="utf-8")
+    lines = content.split("\n")
+
+    out = []
+    in_frontmatter = False
+    past_frontmatter = False
+    in_code_block = False
+
+    for line in lines:
+        stripped = line.strip()
+
+        # Skip frontmatter
+        if stripped == "---":
+            if not past_frontmatter:
+                in_frontmatter = not in_frontmatter
+                if not in_frontmatter:
+                    past_frontmatter = True
+                continue
+            elif not in_code_block:
+                continue  # skip --- separators
+
+        if in_frontmatter:
+            continue
+
+        # Stop at first ### heading (member definitions)
+        if stripped.startswith("### ") and not in_code_block:
+            # Drop trailing section headers and blank lines
+            while out and not out[-1].strip():
+                out.pop()
+            if out and out[-1].strip().startswith("\033[1m"):
+                out.pop()
+            break
+
+        # Track code blocks
+        if stripped.startswith("```"):
+            in_code_block = not in_code_block
+            out.append(f"  \033[90m{line.rstrip()}\033[0m")
+            continue
+
+        if in_code_block:
+            out.append(f"  \033[90m{line.rstrip()}\033[0m")
+        elif stripped.startswith("# "):
+            out.append(f"  \033[36;1m{stripped.lstrip('# ')}\033[0m")
+        elif stripped.startswith("## "):
+            out.append(f"  \033[1m{stripped.lstrip('# ')}\033[0m")
+        elif stripped.startswith("- "):
+            out.append(f"  {_strip_md(line.rstrip())}")
+        elif stripped:
+            out.append(f"  {_strip_md(line.rstrip())}")
+        else:
+            out.append("")
+
+    # Trim trailing blank lines
+    while out and not out[-1].strip():
+        out.pop()
+
+    return "\n".join(out)
+
+
 def cmd_search(query):
     docs_dir = find_docs_dir()
     if docs_dir is None:
@@ -248,8 +317,12 @@ def cmd_search(query):
         classes.sort(key=lambda s: (s["class_name"].lower() != q, s["class_name"]))
         if classes:
             for s in classes:
-                desc = f"  \033[90m— {s['desc']}\033[0m" if s["desc"] else ""
-                print(f"  \033[36;1m{s['class_name']}\033[0m{desc}")
+                # Show the class-level doc text (everything before first ### member)
+                md_path = docs_dir / f"{s['file']}.md"
+                if md_path.exists():
+                    print(_get_class_doc(md_path))
+                else:
+                    print(f"  \033[36;1m{s['class_name']}\033[0m")
         else:
             # No class match → search member names across all classes
             results = []

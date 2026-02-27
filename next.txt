@@ -22,3 +22,11 @@ Add:
   - Support range checks, callback when player gets out of range (to pause quest etc), and back in.
 
 - Bank:
+  - Global bank instance
+  - Methods: deposit(player, item, amount), withdraw(player, item, amount), check_balance(player, item)
+  - Should integrate with Player class. support player.balance, player.deposit/withdraw
+  - on_transaction event
+
+- Shop:
+  - Attrs: open(player), close(player), items (dict of Item: price), on_purchase event
+  - Should open a chest GUI with multiple tabs showing each of the items as well as the p
