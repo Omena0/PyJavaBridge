@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ActionBarDisplay — PyJavaBridge</title>
-  <meta property="og:title" content="ActionBarDisplay — PyJavaBridge">
-  <meta property="og:description" content="Persistent action bar text">
+  <title>State — PyJavaBridge</title>
+  <meta property="og:title" content="State — PyJavaBridge">
+  <meta property="og:description" content="Persistent key-value store across reloads">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="PyJavaBridge Docs">
   <meta name="theme-color" content="#6366f1">
@@ -45,14 +45,22 @@
   <div class="sidebar-heading" data-section="on-this-page">On This Page</div>
   <ul class="sidebar-links">
     <li><a href="#constructor">Constructor</a></li>
-    <li><a href="#player-access">Player Access</a></li>
-    <li><ul class="toc-sub" data-parent="player-access">
-      <li><a href="#set-text">Set text</a></li>
-      <li><a href="#get-text">Get text</a></li>
-      <li><a href="#remove">Remove</a></li>
+    <li><a href="#usage">Usage</a></li>
+    <li><a href="#methods">Methods</a></li>
+    <li><ul class="toc-sub" data-parent="methods">
+      <li><a href="#save">save</a></li>
+      <li><a href="#load">load</a></li>
+      <li><a href="#get">get</a></li>
+      <li><a href="#clear">clear</a></li>
+      <li><a href="#update">update</a></li>
     </ul></li>
-    <li><a href="#example-status-bar">Example: Status bar</a></li>
-    <li><a href="#example-ability-cooldown-indicator">Example: Ability cooldown indicator</a></li>
+    <li><a href="#properties">Properties</a></li>
+    <li><ul class="toc-sub" data-parent="properties">
+      <li><a href="#data">data</a></li>
+      <li><a href="#path">path</a></li>
+    </ul></li>
+    <li><a href="#example-kill-counter">Example: Kill counter</a></li>
+    <li><a href="#example-persistent-warps">Example: Persistent warps</a></li>
   </ul>
 </div>
 
@@ -109,7 +117,7 @@
     <li><a href="menu.html">Menu</a></li>
     <li><a href="menuitem.html">MenuItem</a></li>
     <li><a href="sidebar.html">Sidebar</a></li>
-    <li><a href="actionbardisplay.html" class="active">ActionBarDisplay</a></li>
+    <li><a href="actionbardisplay.html">ActionBarDisplay</a></li>
     <li><a href="bossbardisplay.html">BossBarDisplay</a></li>
     <li><a href="bossbar.html">BossBar</a></li>
     <li><a href="scoreboard.html">Scoreboard</a></li>
@@ -121,7 +129,7 @@
   <div class="sidebar-heading collapsed" data-section="helpers">Helpers</div>
   <ul class="sidebar-links">
     <li><a href="config.html">Config</a></li>
-    <li><a href="state.html">State</a></li>
+    <li><a href="state.html" class="active">State</a></li>
     <li><a href="cooldown.html">Cooldown</a></li>
     <li><a href="enums.html">Enums</a></li>
     <li><a href="enumvalue.html">EnumValue</a></li>
@@ -162,75 +170,108 @@
   <!-- Main -->
   <main class="main">
     <div class="content">
-      <p class="subtitle">Persistent action bar text</p>
-      <h1 id="actionbardisplay">ActionBarDisplay</h1>
-<p><code>ActionBarDisplay</code> manages persistent action bar messages per player. Unlike <code>player.send_action_bar()</code> which fades after a few seconds, <code>ActionBarDisplay</code> continuously re-sends the message to keep it visible.</p>
+      <p class="subtitle">Persistent key-value store across reloads</p>
+      <h1 id="state">State</h1>
+<p>A simple persistent key-value store that survives script reloads and server restarts. Data is stored as JSON.</p>
+<p>Works like a dict — read, write, and delete keys directly. Auto-saves on script shutdown.</p>
 <hr />
 <h2 id="constructor">Constructor</h2>
-<pre><code class="language-python">ActionBarDisplay()
+<pre><code class="language-python">State(name=<span class="kw">None</span>)
 </code></pre>
-<p>Create a new action bar display manager.</p>
-<pre><code class="language-python">status = ActionBarDisplay()
-</code></pre>
-<hr />
-<h2 id="player-access">Player Access</h2>
-<p>ActionBarDisplay uses <code>[]</code> notation with players as keys.</p>
-<h3 id="set-text">Set text</h3>
-<pre><code class="language-python">display[player] = text
-</code></pre>
-<p>Start showing persistent action bar text to a player.</p>
 <ul>
 <li><strong>Parameters:</strong></li>
-<li><code>player</code> (<a href="player.html"><code>Player</code></a>) — Target player.</li>
-<li><code>text</code> (<code>str</code>) — Action bar text. Supports <code>§</code> color codes.</li>
+<li><code>name</code> (<code>str | None</code>) — State file name. Defaults to the script filename.</li>
 </ul>
-<h3 id="get-text">Get text</h3>
-<pre><code class="language-python">text = display[player]
+<pre><code class="language-python">state = State()            <span class="cm"># Uses script name</span>
+state = State(<span class="st">&quot;my_data&quot;</span>)   <span class="cm"># Custom name</span>
 </code></pre>
-<p>Get the current action bar text for a player.</p>
-<ul>
-<li><strong>Returns:</strong> <code>str</code></li>
-</ul>
-<h3 id="remove">Remove</h3>
-<pre><code class="language-python"><span class="kw">del</span> display[player]
-</code></pre>
-<p>Stop showing action bar text to a player.</p>
 <hr />
-<h2 id="example-status-bar">Example: Status bar</h2>
-<pre><code class="language-python"><span class="kw">from</span> bridge <span class="kw">import</span> *
+<h2 id="usage">Usage</h2>
+<pre><code class="language-python">state = State()
 
-status_bar = ActionBarDisplay()
+<span class="cm"># Read/write like a dict</span>
+state[<span class="st">&quot;kills&quot;</span>] = state.get(<span class="st">&quot;kills&quot;</span>, <span class="nb">0</span>) + <span class="nb">1</span>
+state[<span class="st">&quot;banned_players&quot;</span>] = [<span class="st">&quot;Steve&quot;</span>, <span class="st">&quot;Alex&quot;</span>]
 
-<span class="dc">@event</span>
-<span class="kw">async</span> <span class="kw">def</span> player_join(e: Event):
-    p = e.player
-    status_bar[p] = <span class="st">f&quot;§a❤ {int(p.health)}/20 §7| §e⚔ Kills: 0&quot;</span>
+<span class="cm"># Check membership</span>
+<span class="kw">if</span> <span class="st">&quot;kills&quot;</span> <span class="kw">in</span> state:
+    print(state[<span class="st">&quot;kills&quot;</span>])
 
-<span class="dc">@event</span>
-<span class="kw">async</span> <span class="kw">def</span> entity_damage(e: Event):
-    <span class="kw">if</span> hasattr(e.player, 'name'):
-        p = e.player
-        status_bar[p] = <span class="st">f&quot;§a❤ {int(p.health)}/20 §7| §c-{e.damage}&quot;</span>
+<span class="cm"># Delete</span>
+<span class="kw">del</span> state[<span class="st">&quot;banned_players&quot;</span>]
 
-<span class="dc">@event</span>
-<span class="kw">async</span> <span class="kw">def</span> player_quit(e: Event):
-    <span class="kw">del</span> status_bar[e.player]
+<span class="cm"># Manual save (also auto-saves on shutdown)</span>
+state.save()
 </code></pre>
-<h2 id="example-ability-cooldown-indicator">Example: Ability cooldown indicator</h2>
+<hr />
+<h2 id="methods">Methods</h2>
+<h3 id="save">save</h3>
+<pre><code class="language-python">state.save()
+</code></pre>
+<p>Save state to disk. Called automatically on script shutdown, but you can call it manually for safety.</p>
+<h3 id="load">load</h3>
+<pre><code class="language-python">state.load()
+</code></pre>
+<p>Reload state from disk. Called automatically on construction.</p>
+<h3 id="get">get</h3>
+<pre><code class="language-python">state.get(key, default=<span class="kw">None</span>)
+</code></pre>
+<p>Get a value with a default fallback.</p>
+<h3 id="clear">clear</h3>
+<pre><code class="language-python">state.clear()
+</code></pre>
+<p>Remove all keys.</p>
+<h3 id="update">update</h3>
+<pre><code class="language-python">state.update({<span class="st">&quot;key&quot;</span>: <span class="st">&quot;value&quot;</span>, ...})
+</code></pre>
+<p>Merge a dict into the state.</p>
+<hr />
+<h2 id="properties">Properties</h2>
+<h3 id="data">data</h3>
+<ul>
+<li><strong>Type:</strong> <code>dict</code></li>
+</ul>
+<p>Direct access to the underlying data dict.</p>
+<h3 id="path">path</h3>
+<ul>
+<li><strong>Type:</strong> <code>str</code></li>
+</ul>
+<p>Path to the state file on disk.</p>
+<hr />
+<h2 id="example-kill-counter">Example: Kill counter</h2>
 <pre><code class="language-python"><span class="kw">from</span> bridge <span class="kw">import</span> *
 
-cd_display = ActionBarDisplay()
-ability_cd = Cooldown(seconds=<span class="nb">5.0</span>)
+state = State()
 
-<span class="dc">@command</span>(<span class="st">&quot;Use ability&quot;</span>)
-<span class="kw">async</span> <span class="kw">def</span> ability(player: Player, args: list[str]):
-    <span class="kw">if</span> <span class="kw">not</span> ability_cd.check(player):
-        r = ability_cd.remaining(player)
-        cd_display[player] = <span class="st">f&quot;§c⏳ Cooldown: {r:.1f}s&quot;</span>
+<span class="dc">@event</span>
+<span class="kw">async</span> <span class="kw">def</span> player_death(e):
+    killer = e.killer
+    <span class="kw">if</span> killer:
+        name = killer.name
+        state[name] = state.get(name, <span class="nb">0</span>) + <span class="nb">1</span>
+        <span class="kw">await</span> killer.send_message(<span class="st">f&quot;Kills: {state[name]}&quot;</span>)
+        state.save()
+</code></pre>
+<h2 id="example-persistent-warps">Example: Persistent warps</h2>
+<pre><code class="language-python"><span class="kw">from</span> bridge <span class="kw">import</span> *
+
+state = State(<span class="st">&quot;warps&quot;</span>)
+
+<span class="dc">@command</span>(<span class="st">&quot;Set a warp point&quot;</span>)
+<span class="kw">async</span> <span class="kw">def</span> setwarp(e, name: str):
+    loc = e.player.location
+    state[name] = {<span class="st">&quot;x&quot;</span>: loc.x, <span class="st">&quot;y&quot;</span>: loc.y, <span class="st">&quot;z&quot;</span>: loc.z, <span class="st">&quot;world&quot;</span>: loc.world.name}
+    state.save()
+    <span class="kw">await</span> e.player.send_message(<span class="st">f&quot;Warp '{name}' set!&quot;</span>)
+
+<span class="dc">@command</span>(<span class="st">&quot;Teleport to warp&quot;</span>)
+<span class="kw">async</span> <span class="kw">def</span> warp(e, name: str):
+    data = state.get(name)
+    <span class="kw">if</span> <span class="kw">not</span> data:
+        <span class="kw">await</span> e.player.send_message(<span class="st">f&quot;Warp '{name}' not found.&quot;</span>)
         <span class="kw">return</span>
-
-    cd_display[player] = <span class="st">&quot;§a✓ Ability used!&quot;</span>
-    <span class="kw">await</span> player.send_message(<span class="st">&quot;§aAbility activated!&quot;</span>)
+    loc = Location(data[<span class="st">&quot;x&quot;</span>], data[<span class="st">&quot;y&quot;</span>], data[<span class="st">&quot;z&quot;</span>], data[<span class="st">&quot;world&quot;</span>])
+    <span class="kw">await</span> e.player.teleport(loc)
 </code></pre>
     </div>
     <footer class="site-footer">

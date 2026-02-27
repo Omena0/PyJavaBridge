@@ -116,6 +116,7 @@ __all__ = [
     "Potion",
     "RaycastResult",
     "Config",
+    "State",
     "Recipe",
     "Firework",
     "FireworkEffect",
@@ -2909,6 +2910,12 @@ class BridgeConnection:
     async def _handle_shutdown(self):
         """Handle server shutdown - dispatch to handlers, then ack."""
         try:
+            # Auto-save all State instances
+            for state in State._instances:
+                try:
+                    state.save()
+                except Exception:
+                    pass
             await self._dispatch_event("shutdown", SimpleNamespace(fields={}))
         except Exception as e:
             print(f"[PyJavaBridge] Shutdown handler error: {e}")
@@ -3227,6 +3234,93 @@ class Config:
     @property
     def path(self) -> str:
         """Path to the config file on disk."""
+        return self._path
+
+class State:
+    """Simple persistent key-value store that survives script reloads.
+
+    Data is stored as JSON in the plugin's config directory.
+    Access it like a dict.
+
+    Usage::
+
+        state = State()
+        state["kills"] = state.get("kills", 0) + 1
+        state.save()  # auto-saved on script shutdown too
+    """
+
+    _instances: list = []
+
+    def __init__(self, name: Optional[str] = None):
+        script_path = os.environ.get("PYJAVABRIDGE_SCRIPT", "")
+        if name is None:
+            name = os.path.splitext(os.path.basename(script_path))[0] if script_path else "state"
+        scripts_dir = os.path.dirname(script_path) if script_path else "."
+        plugin_dir = os.path.dirname(scripts_dir)
+        state_dir = os.path.join(plugin_dir, "state")
+        os.makedirs(state_dir, exist_ok=True)
+        self._path = os.path.join(state_dir, f"{name}.json")
+        self._data: Dict[str, Any] = {}
+        self.load()
+        State._instances.append(self)
+
+    def load(self):
+        """Load state from disk."""
+        if os.path.exists(self._path):
+            try:
+                with open(self._path, "r", encoding="utf-8") as f:
+                    loaded = json.load(f)
+                    if isinstance(loaded, dict):
+                        self._data = loaded
+            except Exception:
+                pass
+
+    def save(self):
+        """Save state to disk."""
+        try:
+            with open(self._path, "w", encoding="utf-8") as f:
+                json.dump(self._data, f, indent=2, default=str)
+        except Exception:
+            pass
+
+    def __getitem__(self, key: str) -> Any:
+        return self._data[key]
+
+    def __setitem__(self, key: str, value: Any):
+        self._data[key] = value
+
+    def __delitem__(self, key: str):
+        del self._data[key]
+
+    def __contains__(self, key: str) -> bool:
+        return key in self._data
+
+    def get(self, key: str, default: Any = None) -> Any:
+        return self._data.get(key, default)
+
+    def keys(self):
+        return self._data.keys()
+
+    def values(self):
+        return self._data.values()
+
+    def items(self):
+        return self._data.items()
+
+    def clear(self):
+        self._data.clear()
+
+    def update(self, data: dict):
+        self._data.update(data)
+
+    @property
+    def data(self) -> Dict[str, Any]:
+        """Direct access to the underlying data dict."""
+        return self._data
+
+    @property
+    def path(self) -> str:
+        """Path to the state file on disk."""
         return self._path
 
 class Cooldown:

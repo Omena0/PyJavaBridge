@@ -78,6 +78,7 @@ SIDEBAR = [
     ]),
     ("Helpers", [
         ("config", "Config"),
+        ("state", "State"),
         ("cooldown", "Cooldown"),
         ("enums", "Enums"),
         ("enumvalue", "EnumValue"),
