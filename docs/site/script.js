@@ -209,15 +209,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // ── Header full-text search ─────────────────────────────────
   const headerSearch = document.getElementById('header-search');
   const searchResults = document.getElementById('search-results');
-  let searchIndex = null;
-
-  async function loadSearchIndex() {
-    if (searchIndex) return;
-    try {
-      const resp = await fetch('search-index.json');
-      searchIndex = await resp.json();
-    } catch { searchIndex = []; }
-  }
+  let searchIndex = window.SEARCH_INDEX || [];
 
   function doSearch(query) {
     if (!searchIndex || !query.trim()) {
@@ -268,7 +260,6 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   if (headerSearch) {
-    headerSearch.addEventListener('focus', loadSearchIndex);
     headerSearch.addEventListener('input', () => doSearch(headerSearch.value));
     headerSearch.addEventListener('keydown', e => {
       if (e.key === 'Escape') {

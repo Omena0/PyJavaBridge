@@ -348,6 +348,7 @@ TEMPLATE = """\
     </svg>
   </button>
 
+  <script>window.SEARCH_INDEX={search_index};</script>
   <script src="script.js"></script>
 </body>
 </html>
@@ -397,6 +398,7 @@ def build_page(slug):
         subtitle_html=subtitle_html,
         body=body_html,
         sidebar=sidebar,
+        search_index=_search_index_json,
     )
 
     out_name = "index.html" if slug == "index" else f"{slug}.html"
@@ -413,7 +415,10 @@ def get_all_slugs():
     return slugs
 
 
+_search_index_json = "[]"
+
 def main():
+    global _search_index_json
     print("📖 Building PyJavaBridge docs...")
     print(f"   Source: {SRC_DIR}")
     print(f"   Output: {OUT_DIR}")
@@ -431,16 +436,15 @@ def main():
 
     built = 0
     search_index = []
+
+    # Build search index first (needed for inlining into pages)
     for slug in slugs:
         src = os.path.join(SRC_DIR, f"{slug}.md")
         if os.path.exists(src):
-            build_page(slug)
-            # Build search index entry
             with open(src, "r", encoding="utf-8") as f:
                 raw = f.read()
             meta, body_md = parse_frontmatter(raw)
             title = meta.get("title", slug.capitalize())
-            # Extract text sections with headings
             current_heading = title
             sections = []
             for line in body_md.split("\n"):
@@ -452,14 +456,17 @@ def main():
                         sections.append({"heading": current_heading, "text": clean})
             url = "index.html" if slug == "index" else f"{slug}.html"
             search_index.append({"slug": slug, "title": title, "url": url, "sections": sections})
+
+    import json
+    _search_index_json = json.dumps(search_index, separators=(',', ':'))
+
+    # Build pages (with search index inlined)
+    for slug in slugs:
+        src = os.path.join(SRC_DIR, f"{slug}.md")
+        if os.path.exists(src):
+            build_page(slug)
             print(f"  ✓ {slug}.html")
             built += 1
-
-    # Write search index
-    import json
-    index_path = os.path.join(OUT_DIR, "search-index.json")
-    with open(index_path, "w", encoding="utf-8") as f:
-        json.dump(search_index, f, separators=(',', ':'))
 
     print(f"\n✅ Built {built} pages")
 
