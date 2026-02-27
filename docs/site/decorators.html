@@ -341,9 +341,11 @@
     partial = args[-<span class="nb">1</span>].lower() <span class="kw">if</span> args <span class="kw">else</span> <span class="st">&quot;&quot;</span>
     <span class="kw">return</span> [n <span class="kw">for</span> n <span class="kw">in</span> names <span class="kw">if</span> n.lower().startswith(partial)]
 </code></pre>
-<p>The tab completion handler receives:
-- <strong>sender</strong> — the player or command sender requesting completions
-- <strong>args</strong> — list of current argument strings (the last one is being typed)</p>
+<p>The tab completion handler receives:</p>
+<ul>
+<li><strong>sender</strong> — the player or command sender requesting completions</li>
+<li><strong>args</strong> — list of current argument strings (the last one is being typed)</li>
+</ul>
 <p>It should return a list of suggestion strings. The handler can be <code>async</code> or synchronous.</p>
 <pre><code class="language-python"><span class="dc">@command</span>(<span class="st">&quot;Give item to player&quot;</span>)
 <span class="kw">async</span> <span class="kw">def</span> give(e, player: str, item: str, amount: str = <span class="st">&quot;1&quot;</span>):

@@ -201,6 +201,7 @@ async def tp_complete(sender, args):
 ```
 
 The tab completion handler receives:
+
 - **sender** — the player or command sender requesting completions
 - **args** — list of current argument strings (the last one is being typed)
 

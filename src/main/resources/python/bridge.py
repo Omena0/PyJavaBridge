@@ -120,6 +120,7 @@ __all__ = [
     "Recipe",
     "Firework",
     "FireworkEffect",
+    "WorldTime",
     "DamageCause",
     "Enchantment",
     "ItemFlag",
@@ -325,6 +326,110 @@ class _SyncWait:
         self.result: Any = None
         self.error: Optional[Exception] = None
 
+# Enums
+class Material(EnumValue):
+    """
+        Material, such as diamond, netherite, wood, etc
+    """
+    TYPE_NAME = "org.bukkit.Material"
+
+    def __init__(self, name: str, _name: Optional[str] = None):
+        actual = _name if _name is not None else name
+        super().__init__(self.TYPE_NAME, str(actual).upper())
+
+class Biome(EnumValue):
+    """
+        Minecraft biome, e.g. plains, void, ice_spikes, etc
+    """
+    TYPE_NAME = "org.bukkit.block.Biome"
+
+class EffectType(EnumValue):
+    """
+        Potion effect type. e.g. poison, regeneration, strength, etc
+    """
+    TYPE_NAME = "org.bukkit.potion.PotionEffectType"
+
+class AttributeType(EnumValue):
+    """
+        Attribute type, e.g. movement speed, base attack damage, etc
+    """
+    TYPE_NAME = "org.bukkit.attribute.Attribute"
+
+class GameMode(EnumValue):
+    TYPE_NAME = "org.bukkit.GameMode"
+
+class Sound(EnumValue):
+    TYPE_NAME = "org.bukkit.Sound"
+
+class Particle(EnumValue):
+    TYPE_NAME = "org.bukkit.Particle"
+
+class Difficulty(EnumValue):
+    TYPE_NAME = "org.bukkit.Difficulty"
+
+class DamageCause(EnumValue):
+    TYPE_NAME = "org.bukkit.event.entity.EntityDamageEvent.DamageCause"
+
+class Enchantment(EnumValue):
+    TYPE_NAME = "org.bukkit.enchantments.Enchantment"
+
+class ItemFlag(EnumValue):
+    TYPE_NAME = "org.bukkit.inventory.ItemFlag"
+
+class EquipmentSlot(EnumValue):
+    TYPE_NAME = "org.bukkit.inventory.EquipmentSlot"
+
+class DyeColor(EnumValue):
+    TYPE_NAME = "org.bukkit.DyeColor"
+
+class SpawnReason(EnumValue):
+    TYPE_NAME = "org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason"
+
+class EntityCategory(EnumValue):
+    TYPE_NAME = "org.bukkit.entity.EntityCategory"
+
+class EntityPose(EnumValue):
+    TYPE_NAME = "org.bukkit.entity.Pose"
+
+class BlockFace(EnumValue):
+    TYPE_NAME = "org.bukkit.block.BlockFace"
+
+class TreeType(EnumValue):
+    TYPE_NAME = "org.bukkit.TreeType"
+
+class WeatherType(EnumValue):
+    TYPE_NAME = "org.bukkit.WeatherType"
+
+class WorldType(EnumValue):
+    TYPE_NAME = "org.bukkit.WorldType"
+
+class Action(EnumValue):
+    TYPE_NAME = "org.bukkit.event.block.Action"
+
+class ChatColor(EnumValue):
+    TYPE_NAME = "org.bukkit.ChatColor"
+
+class EventPriority(EnumValue):
+    TYPE_NAME = "org.bukkit.event.EventPriority"
+
+class TeleportCause(EnumValue):
+    TYPE_NAME = "org.bukkit.event.player.PlayerTeleportEvent.TeleportCause"
+
+class InventoryType(EnumValue):
+    TYPE_NAME = "org.bukkit.event.inventory.InventoryType"
+
+class Billboard(EnumValue):
+    TYPE_NAME = "org.bukkit.entity.Display.Billboard"
+
+class BarFlag(EnumValue):
+    TYPE_NAME = "org.bukkit.boss.BarFlag"
+
+class BarColor(EnumValue):
+    TYPE_NAME = "org.bukkit.boss.BarColor"
+
+class BarStyle(EnumValue):
+    TYPE_NAME = "org.bukkit.boss.BarStyle"
+
 # Core proxy class
 class ProxyBase:
     """Base class for all proxy objects."""
@@ -401,6 +506,109 @@ class Event(ProxyBase):
             _connection.send({"type": "event_cancel", "id": event_id})
             return _connection.completed_call(None)
         return self._call("setCancelled", True)
+
+class WorldTime:
+    """Represents a Minecraft world time of day (0-24000 ticks).
+
+    Well-known times:
+        WorldTime.DAWN      = 0
+        WorldTime.NOON      = 6000
+        WorldTime.DUSK      = 12000
+        WorldTime.MIDNIGHT  = 18000
+    """
+    DAWN     = None  # type: WorldTime  # set below
+    NOON     = None  # type: WorldTime
+    DUSK     = None  # type: WorldTime
+    MIDNIGHT = None  # type: WorldTime
+
+    def __init__(self, ticks: int):
+        self.ticks = ticks % 24000
+
+    @classmethod
+    def from_hours(cls, hours: float) -> "WorldTime":
+        """Create from a 24h clock value. 6.0 = dawn, 12.0 = noon, etc."""
+        # Minecraft 0 ticks = 6:00 AM, so offset by 6 hours
+        mc_hours = (hours - 6.0) % 24.0
+        return cls(int(mc_hours * 1000))
+
+    @property
+    def hours(self) -> float:
+        """Convert to 24h clock value."""
+        return ((self.ticks / 1000.0) + 6.0) % 24.0
+
+    @property
+    def is_day(self) -> bool:
+        return 0 <= self.ticks < 12000
+
+    @property
+    def is_night(self) -> bool:
+        return self.ticks >= 12000
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, WorldTime):
+            return self.ticks == other.ticks
+        if isinstance(other, int):
+            return self.ticks == other % 24000
+        return NotImplemented
+
+    def __hash__(self) -> int:
+        return hash(self.ticks)
+
+    def __int__(self) -> int:
+        return self.ticks
+
+    def __repr__(self) -> str:
+        h = self.hours
+        hh = int(h)
+        mm = int((h - hh) * 60)
+        return f"WorldTime(ticks={self.ticks}, {hh:02d}:{mm:02d})"
+
+WorldTime.DAWN     = WorldTime(0)
+WorldTime.NOON     = WorldTime(6000)
+WorldTime.DUSK     = WorldTime(12000)
+WorldTime.MIDNIGHT = WorldTime(18000)
+
+# at_time registration: maps world name -> list of (ticks, handler)
+_at_time_handlers: Dict[str, List[tuple]] = {}
+_at_time_loop_started = False
+
+def _start_at_time_loop():
+    """Start the global at_time polling loop (once)."""
+    global _at_time_loop_started
+    if _at_time_loop_started:
+        return
+    _at_time_loop_started = True
+
+    async def _poll():
+        prev_times: Dict[str, int] = {}
+        while _connection is not None and _connection._thread.is_alive():
+            try:
+                for world_name, entries in list(_at_time_handlers.items()):
+                    if not entries:
+                        continue
+                    w = World(name=world_name)
+                    current = int(await w._call("getTime"))
+                    current_day = current % 24000
+                    prev = prev_times.get(world_name)
+                    if prev is not None:
+                        prev_day = prev % 24000
+                        for target_ticks, handler in entries:
+                            # Check if we crossed the target time since last poll
+                            if prev_day <= target_ticks < current_day or (
+                                current_day < prev_day and (target_ticks >= prev_day or target_ticks < current_day)
+                            ):
+                                try:
+                                    result = handler(w)
+                                    if inspect.isawaitable(result):
+                                        await result
+                                except Exception as exc:
+                                    _print(f"[PyJavaBridge] at_time handler error: {exc}")
+                    prev_times[world_name] = current
+            except Exception:
+                pass
+            await _connection.wait(20)  # poll every second
+
+    _connection.on("server_boot", lambda _: asyncio.ensure_future(_poll()))
 
 class Server(ProxyBase):
     """Server-level API."""
@@ -943,7 +1151,7 @@ class Player(Entity):
     def food_level(self):
         return self._call_sync("getFoodLevel")
 
-    def set_resource_pack(self, url: str, hash: str = "", prompt: str = None, required: bool = False):
+    def set_resource_pack(self, url: str, hash: str = "", prompt: str | None = None, required: bool = False):
         """Send a resource pack to the player.
 
         Args:
@@ -1012,6 +1220,37 @@ class World(ProxyBase):
     def time(self):
         """Get world time."""
         return self._call_sync("getTime")
+
+    @property
+    def world_time(self) -> "WorldTime":
+        """Get world time as a WorldTime object."""
+        return WorldTime(self._call_sync("getTime"))
+
+    def at_time(self, time: "WorldTime | int"):
+        """Decorator: register a handler that runs when this world reaches a specific time.
+
+        Usage:
+            world = World(name="world")
+
+            @world.at_time(WorldTime.NOON)
+            async def high_noon(w):
+                await server.broadcast("It's high noon!")
+
+            @world.at_time(0)
+            async def dawn(w):
+                await server.broadcast("Dawn breaks!")
+        """
+        if isinstance(time, WorldTime):
+            target_ticks = time.ticks
+        else:
+            target_ticks = int(time) % 24000
+        world_name = self.fields.get("name") or self.fields.get("ref_id", "world")
+
+        def decorator(handler: Callable[..., Any]) -> Callable[..., Any]:
+            _at_time_handlers.setdefault(world_name, []).append((target_ticks, handler))
+            _start_at_time_loop()
+            return handler
+        return decorator
 
     def set_difficulty(self, difficulty: "Difficulty"):
         """Set world difficulty."""
@@ -1264,7 +1503,7 @@ class Firework:
     """Launch fireworks with custom effects."""
 
     @staticmethod
-    def launch(location: "Location", effects: list = None, power: int = 1):
+    def launch(location: "Location", effects: list | None = None, power: int = 1):
         """Launch a firework at a location.
 
         Args:
@@ -1341,6 +1580,97 @@ class FireworkEffect:
         if isinstance(c, (list, tuple)) and len(c) >= 3:
             return list(c)
         return c
+
+class Effect(ProxyBase):
+    """Active potion effect."""
+    @classmethod
+    def apply(cls, player: "Player", effect_type: Optional[EffectType | str] = None, duration: int = 0, amplifier: int = 0, ambient: bool = False, particles: bool = True, icon: bool = True):
+        """Apply a potion effect to a player."""
+        effect = Effect(effect_type, duration, amplifier, ambient, particles, icon)
+        return player.add_effect(effect)
+
+    def __init__(self, effect_type: Optional[EffectType | str] = None, duration: int = 0, amplifier: int = 0, ambient: bool = False, particles: bool = True, icon: bool = True, handle: Optional[int] = None, type_name: Optional[str] = None, fields: Optional[Dict[str, Any]] = None, target: Optional[str] = None):
+        if handle is None and fields is None and effect_type is not None:
+            if isinstance(effect_type, str):
+                effect_type = EffectType.from_name(effect_type.upper())
+            fields = {
+                "type": effect_type,
+                "duration": int(duration),
+                "amplifier": int(amplifier),
+                "ambient": bool(ambient),
+                "particles": bool(particles),
+                "icon": bool(icon),
+            }
+            super().__init__(handle=None, type_name=type_name, fields=fields, target=target)
+        else:
+            super().__init__(handle=handle, type_name=type_name, fields=fields, target=target)
+
+    @property
+    def type(self):
+        return self.fields.get("type")
+
+    @property
+    def duration(self) -> int:
+        return int(self.fields.get("duration") or 0)
+
+    @property
+    def amplifier(self) -> int:
+        return int(self.fields.get("amplifier") or 0)
+
+    @property
+    def ambient(self) -> bool:
+        return bool(self.fields.get("ambient"))
+
+    @property
+    def particles(self) -> bool:
+        return bool(self.fields.get("particles", True))
+
+    @property
+    def icon(self) -> bool:
+        return bool(self.fields.get("icon", True))
+
+    def with_duration(self, duration: int):
+        """Return a copy with a different duration."""
+        if self._handle is None:
+            return Effect(self.type, duration, self.amplifier, self.ambient, self.particles, self.icon)
+        return self._call("withDuration", duration)
+
+    def with_amplifier(self, amplifier: int):
+        """Return a copy with a different amplifier."""
+        if self._handle is None:
+            return Effect(self.type, self.duration, amplifier, self.ambient, self.particles, self.icon)
+        return self._call("withAmplifier", amplifier)
+
+class Attribute(ProxyBase):
+    """Attribute instance for a living entity."""
+    @classmethod
+    def apply(cls, player: Player, attribute_type: AttributeType | str, base_value: float):
+        """Set a player's base attribute value."""
+        if isinstance(attribute_type, str):
+            attribute_type = AttributeType.from_name(attribute_type.upper())
+        attr = player._call_sync("getAttribute", attribute_type)
+        if attr is None:
+            return None
+        return attr.set_base_value(base_value)
+
+    @property
+    def attribute_type(self):
+        """Get the attribute type."""
+        return self._call_sync("getAttribute")
+
+    @property
+    def value(self):
+        """Get attribute value."""
+        return self._call_sync("getValue")
+
+    @property
+    def base_value(self):
+        """Get base value."""
+        return self._call_sync("getBaseValue")
+
+    def set_base_value(self, value: float):
+        """Set base value."""
+        return self._call("setBaseValue", value)
 
 class Dimension(ProxyBase):
     def __init__(self, name: Optional[str] = None, **kwargs: Any):
@@ -2087,223 +2417,6 @@ class Recipe:
         """Remove a custom recipe by its key."""
         return _connection.call(method="removeRecipe", target="server", args=[key])
 
-class Material(EnumValue):
-    """
-        Material, such as diamond, netherite, wood, etc
-    """
-    TYPE_NAME = "org.bukkit.Material"
-
-    def __init__(self, name: str, _name: Optional[str] = None):
-        actual = _name if _name is not None else name
-        super().__init__(self.TYPE_NAME, str(actual).upper())
-
-class Biome(EnumValue):
-    """
-        Minecraft biome, e.g. plains, void, ice_spikes, etc
-    """
-    TYPE_NAME = "org.bukkit.block.Biome"
-
-class Effect(ProxyBase):
-    """Active potion effect."""
-    @classmethod
-    def apply(cls, player: "Player", effect_type: Optional[EffectType | str] = None, duration: int = 0, amplifier: int = 0, ambient: bool = False, particles: bool = True, icon: bool = True):
-        """Apply a potion effect to a player."""
-        effect = Effect(effect_type, duration, amplifier, ambient, particles, icon)
-        return player.add_effect(effect)
-
-    def __init__(self, effect_type: Optional[EffectType | str] = None, duration: int = 0, amplifier: int = 0, ambient: bool = False, particles: bool = True, icon: bool = True, handle: Optional[int] = None, type_name: Optional[str] = None, fields: Optional[Dict[str, Any]] = None, target: Optional[str] = None):
-        if handle is None and fields is None and effect_type is not None:
-            if isinstance(effect_type, str):
-                effect_type = EffectType.from_name(effect_type.upper())
-            fields = {
-                "type": effect_type,
-                "duration": int(duration),
-                "amplifier": int(amplifier),
-                "ambient": bool(ambient),
-                "particles": bool(particles),
-                "icon": bool(icon),
-            }
-            super().__init__(handle=None, type_name=type_name, fields=fields, target=target)
-        else:
-            super().__init__(handle=handle, type_name=type_name, fields=fields, target=target)
-
-    @property
-    def type(self):
-        return self.fields.get("type")
-
-    @property
-    def duration(self) -> int:
-        return int(self.fields.get("duration") or 0)
-
-    @property
-    def amplifier(self) -> int:
-        return int(self.fields.get("amplifier") or 0)
-
-    @property
-    def ambient(self) -> bool:
-        return bool(self.fields.get("ambient"))
-
-    @property
-    def particles(self) -> bool:
-        return bool(self.fields.get("particles", True))
-
-    @property
-    def icon(self) -> bool:
-        return bool(self.fields.get("icon", True))
-
-    def with_duration(self, duration: int):
-        """Return a copy with a different duration."""
-        if self._handle is None:
-            return Effect(self.type, duration, self.amplifier, self.ambient, self.particles, self.icon)
-        return self._call("withDuration", duration)
-
-    def with_amplifier(self, amplifier: int):
-        """Return a copy with a different amplifier."""
-        if self._handle is None:
-            return Effect(self.type, self.duration, amplifier, self.ambient, self.particles, self.icon)
-        return self._call("withAmplifier", amplifier)
-
-class EffectType(EnumValue):
-    """
-        Potion effect type. e.g. poison, regeneration, strength, etc
-    """
-    TYPE_NAME = "org.bukkit.potion.PotionEffectType"
-
-class AttributeType(EnumValue):
-    """
-        Attribute type, e.g. movement speed, base attack damage, etc
-    """
-    TYPE_NAME = "org.bukkit.attribute.Attribute"
-
-class Attribute(ProxyBase):
-    """Attribute instance for a living entity."""
-    @classmethod
-    def apply(cls, player: Player, attribute_type: AttributeType | str, base_value: float):
-        """Set a player's base attribute value."""
-        if isinstance(attribute_type, str):
-            attribute_type = AttributeType.from_name(attribute_type.upper())
-        attr = player._call_sync("getAttribute", attribute_type)
-        if attr is None:
-            return None
-        return attr.set_base_value(base_value)
-
-    @property
-    def attribute_type(self):
-        """Get the attribute type."""
-        return self._call_sync("getAttribute")
-
-    @property
-    def value(self):
-        """Get attribute value."""
-        return self._call_sync("getValue")
-
-    @property
-    def base_value(self):
-        """Get base value."""
-        return self._call_sync("getBaseValue")
-
-    def set_base_value(self, value: float):
-        """Set base value."""
-        return self._call("setBaseValue", value)
-
-class GameMode(EnumValue):
-    TYPE_NAME = "org.bukkit.GameMode"
-
-class Sound(EnumValue):
-    TYPE_NAME = "org.bukkit.Sound"
-
-class Particle(EnumValue):
-    TYPE_NAME = "org.bukkit.Particle"
-
-class Difficulty(EnumValue):
-    TYPE_NAME = "org.bukkit.Difficulty"
-
-class DamageCause(EnumValue):
-    TYPE_NAME = "org.bukkit.event.entity.EntityDamageEvent.DamageCause"
-
-class Enchantment(EnumValue):
-    TYPE_NAME = "org.bukkit.enchantments.Enchantment"
-
-class ItemFlag(EnumValue):
-    TYPE_NAME = "org.bukkit.inventory.ItemFlag"
-
-class EquipmentSlot(EnumValue):
-    TYPE_NAME = "org.bukkit.inventory.EquipmentSlot"
-
-class DyeColor(EnumValue):
-    TYPE_NAME = "org.bukkit.DyeColor"
-
-class SpawnReason(EnumValue):
-    TYPE_NAME = "org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason"
-
-class EntityCategory(EnumValue):
-    TYPE_NAME = "org.bukkit.entity.EntityCategory"
-
-class EntityPose(EnumValue):
-    TYPE_NAME = "org.bukkit.entity.Pose"
-
-class BlockFace(EnumValue):
-    TYPE_NAME = "org.bukkit.block.BlockFace"
-
-class TreeType(EnumValue):
-    TYPE_NAME = "org.bukkit.TreeType"
-
-class WeatherType(EnumValue):
-    TYPE_NAME = "org.bukkit.WeatherType"
-
-class WorldType(EnumValue):
-    TYPE_NAME = "org.bukkit.WorldType"
-
-class Action(EnumValue):
-    TYPE_NAME = "org.bukkit.event.block.Action"
-
-class ChatColor(EnumValue):
-    TYPE_NAME = "org.bukkit.ChatColor"
-
-class EventPriority(EnumValue):
-    TYPE_NAME = "org.bukkit.event.EventPriority"
-
-class TeleportCause(EnumValue):
-    TYPE_NAME = "org.bukkit.event.player.PlayerTeleportEvent.TeleportCause"
-
-class InventoryType(EnumValue):
-    TYPE_NAME = "org.bukkit.event.inventory.InventoryType"
-
-class Billboard(EnumValue):
-    TYPE_NAME = "org.bukkit.entity.Display.Billboard"
-
-class BarFlag(EnumValue):
-    TYPE_NAME = "org.bukkit.boss.BarFlag"
-
-class Vector(ProxyBase):
-    """
-        Basic Vec3.
-    """
-    def __init__(self, x: float = 0.0, y: float = 0.0, z: float = 0.0, handle: Optional[int] = None, type_name: Optional[str] = None, fields: Optional[Dict[str, Any]] = None, target: Optional[str] = None):
-        if handle is None and fields is None:
-            fields = {"x": float(x), "y": float(y), "z": float(z)}
-            super().__init__(handle=None, type_name=type_name, fields=fields, target=target)
-        else:
-            super().__init__(handle=handle, type_name=type_name, fields=fields, target=target)
-
-    @property
-    def x(self) -> float:
-        return self.fields.get("x", 0.0)
-
-    @property
-    def y(self) -> float:
-        return self.fields.get("y", 0.0)
-
-    @property
-    def z(self) -> float:
-        return self.fields.get("z", 0.0)
-
-class BarColor(EnumValue):
-    TYPE_NAME = "org.bukkit.boss.BarColor"
-
-class BarStyle(EnumValue):
-    TYPE_NAME = "org.bukkit.boss.BarStyle"
-
 class BossBar(ProxyBase):
     """Boss bar API."""
     @classmethod
@@ -2546,6 +2659,30 @@ class Potion(ProxyBase):
         """Get potion level."""
         return self._call_sync("getLevel")
 
+class Vector(ProxyBase):
+    """
+        Basic Vec3.
+    """
+    def __init__(self, x: float = 0.0, y: float = 0.0, z: float = 0.0, handle: Optional[int] = None, type_name: Optional[str] = None, fields: Optional[Dict[str, Any]] = None, target: Optional[str] = None):
+        if handle is None and fields is None:
+            fields = {"x": float(x), "y": float(y), "z": float(z)}
+            super().__init__(handle=None, type_name=type_name, fields=fields, target=target)
+        else:
+            super().__init__(handle=handle, type_name=type_name, fields=fields, target=target)
+
+    @property
+    def x(self) -> float:
+        return self.fields.get("x", 0.0)
+
+    @property
+    def y(self) -> float:
+        return self.fields.get("y", 0.0)
+
+    @property
+    def z(self) -> float:
+        return self.fields.get("z", 0.0)
+
+# Facades
 class ChatFacade(ProxyBase):
     """Chat helper facade."""
     def broadcast(self, message: str):

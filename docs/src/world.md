@@ -60,6 +60,12 @@ All players currently in this world.
 
 Current world time (0–24000). 0 = dawn, 6000 = noon, 12000 = dusk, 18000 = midnight.
 
+### world_time
+
+- **Type:** [`WorldTime`](#worldtime-class)
+
+Current world time as a `WorldTime` object with helper properties.
+
 ### full_time
 
 - **Type:** `int`
@@ -244,6 +250,35 @@ Set the world time.
 - **Parameters:**
   - `time` (`int`) — Time value (0–24000).
 - **Returns:** `Awaitable[None]`
+
+### at_time
+
+```python
+@world.at_time(time)
+async def handler(world):
+    ...
+```
+
+Register a handler that runs every time this world crosses the specified time of day. Useful for day/night cycle events.
+
+- **Parameters:**
+  - `time` (`WorldTime | int`) — Target time (0–24000 ticks, or a `WorldTime` constant).
+
+```python
+world = World(name="world")
+
+@world.at_time(WorldTime.NOON)
+async def high_noon(w):
+    await server.broadcast("It's high noon!")
+
+@world.at_time(WorldTime.DUSK)
+async def sunset(w):
+    await server.broadcast("Night is falling...")
+
+@world.at_time(0)
+async def dawn(w):
+    await server.broadcast("A new day begins!")
+```
 
 ### set_full_time
 
@@ -579,4 +614,90 @@ The dimension name (e.g. `"OVERWORLD"`, `"THE_NETHER"`, `"THE_END"`).
 world = player.world
 dim = world.dimension
 print(dim.name)  # "OVERWORLD"
+```
+
+---
+
+## WorldTime Class
+
+The `WorldTime` class represents a Minecraft time of day (0–24000 ticks) with utilities for conversion and comparison.
+
+### Constructor
+
+```python
+WorldTime(ticks: int)
+```
+
+Create a `WorldTime` from a tick value. Automatically wraps to 0–24000.
+
+### Class Methods
+
+#### from_hours
+
+```python
+WorldTime.from_hours(hours: float) -> WorldTime
+```
+
+Create from a 24-hour clock value. `6.0` = dawn (tick 0), `12.0` = noon (tick 6000).
+
+```python
+noon = WorldTime.from_hours(12.0)   # WorldTime(ticks=6000)
+midnight = WorldTime.from_hours(0)  # WorldTime(ticks=18000)
+```
+
+### Constants
+
+| Constant | Ticks | Real-world equivalent |
+| -------- | ----- | -------------------- |
+| `WorldTime.DAWN` | 0 | 6:00 AM |
+| `WorldTime.NOON` | 6000 | 12:00 PM |
+| `WorldTime.DUSK` | 12000 | 6:00 PM |
+| `WorldTime.MIDNIGHT` | 18000 | 12:00 AM |
+
+### Properties
+
+#### ticks
+
+- **Type:** `int`
+
+The raw tick value (0–24000).
+
+#### hours
+
+- **Type:** `float`
+
+The time as a 24-hour clock value (0.0–24.0).
+
+#### is_day
+
+- **Type:** `bool`
+
+`True` when ticks are in the 0–12000 range (daytime).
+
+#### is_night
+
+- **Type:** `bool`
+
+`True` when ticks are 12000+ (nighttime).
+
+### Example
+
+```python
+from bridge import WorldTime, World, server
+
+world = World(name="world")
+
+# Check time of day
+t = world.world_time
+if t.is_night:
+    await server.broadcast("It's dark outside!")
+
+# Schedule events at specific times
+@world.at_time(WorldTime.NOON)
+async def noon_event(w):
+    await server.broadcast("The sun is at its peak!")
+
+@world.at_time(WorldTime.MIDNIGHT)
+async def midnight_event(w):
+    await server.broadcast("Beware the creatures of the night!")
 ```

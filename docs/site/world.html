@@ -53,6 +53,7 @@
       <li><a href="#entities">entities</a></li>
       <li><a href="#players">players</a></li>
       <li><a href="#time">time</a></li>
+      <li><a href="#world_time">world_time</a></li>
       <li><a href="#full_time">full_time</a></li>
       <li><a href="#difficulty">difficulty</a></li>
       <li><a href="#spawn_location">spawn_location</a></li>
@@ -75,6 +76,7 @@
     <li><a href="#time-weather-setters">Time &amp; Weather Setters</a></li>
     <li><ul class="toc-sub" data-parent="time-weather-setters">
       <li><a href="#set_time">set_time</a></li>
+      <li><a href="#at_time">at_time</a></li>
       <li><a href="#set_full_time">set_full_time</a></li>
       <li><a href="#set_difficulty">set_difficulty</a></li>
       <li><a href="#set_spawn_location">set_spawn_location</a></li>
@@ -108,6 +110,14 @@
     <li><a href="#dimension">Dimension</a></li>
     <li><ul class="toc-sub" data-parent="dimension">
       <li><a href="#properties">Properties</a></li>
+    </ul></li>
+    <li><a href="#worldtime-class">WorldTime Class</a></li>
+    <li><ul class="toc-sub" data-parent="worldtime-class">
+      <li><a href="#constructor_1">Constructor</a></li>
+      <li><a href="#class-methods">Class Methods</a></li>
+      <li><a href="#constants">Constants</a></li>
+      <li><a href="#properties_1">Properties</a></li>
+      <li><a href="#example">Example</a></li>
     </ul></li>
   </ul>
 </div>
@@ -262,6 +272,11 @@
 <li><strong>Type:</strong> <code>int</code></li>
 </ul>
 <p>Current world time (0–24000). 0 = dawn, 6000 = noon, 12000 = dusk, 18000 = midnight.</p>
+<h3 id="world_time">world_time</h3>
+<ul>
+<li><strong>Type:</strong> <a href="#worldtime-class"><code>WorldTime</code></a></li>
+</ul>
+<p>Current world time as a <code>WorldTime</code> object with helper properties.</p>
 <h3 id="full_time">full_time</h3>
 <ul>
 <li><strong>Type:</strong> <code>int</code></li>
@@ -403,6 +418,30 @@ print(block.type)  <span class="cm"># Material.GRASS_BLOCK</span>
 <li><code>time</code> (<code>int</code>) — Time value (0–24000).</li>
 <li><strong>Returns:</strong> <code>Awaitable[None]</code></li>
 </ul>
+<h3 id="at_time">at_time</h3>
+<pre><code class="language-python"><span class="dc">@world</span>.at_time(time)
+<span class="kw">async</span> <span class="kw">def</span> handler(world):
+    ...
+</code></pre>
+<p>Register a handler that runs every time this world crosses the specified time of day. Useful for day/night cycle events.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>time</code> (<code>WorldTime | int</code>) — Target time (0–24000 ticks, or a <code>WorldTime</code> constant).</li>
+</ul>
+<pre><code class="language-python">world = World(name=<span class="st">&quot;world&quot;</span>)
+
+<span class="dc">@world</span>.at_time(WorldTime.NOON)
+<span class="kw">async</span> <span class="kw">def</span> high_noon(w):
+    <span class="kw">await</span> server.broadcast(<span class="st">&quot;It's high noon!&quot;</span>)
+
+<span class="dc">@world</span>.at_time(WorldTime.DUSK)
+<span class="kw">async</span> <span class="kw">def</span> sunset(w):
+    <span class="kw">await</span> server.broadcast(<span class="st">&quot;Night is falling...&quot;</span>)
+
+<span class="dc">@world</span>.at_time(<span class="nb">0</span>)
+<span class="kw">async</span> <span class="kw">def</span> dawn(w):
+    <span class="kw">await</span> server.broadcast(<span class="st">&quot;A new day begins!&quot;</span>)
+</code></pre>
 <h3 id="set_full_time">set_full_time</h3>
 <pre><code class="language-python"><span class="kw">await</span> world.set_full_time(time)
 </code></pre>
@@ -653,6 +692,93 @@ print(block.type)  <span class="cm"># Material.GRASS_BLOCK</span>
 <pre><code class="language-python">world = player.world
 dim = world.dimension
 print(dim.name)  <span class="cm"># &quot;OVERWORLD&quot;</span>
+</code></pre>
+<hr />
+<h2 id="worldtime-class">WorldTime Class</h2>
+<p>The <code>WorldTime</code> class represents a Minecraft time of day (0–24000 ticks) with utilities for conversion and comparison.</p>
+<h3 id="constructor_1">Constructor</h3>
+<pre><code class="language-python">WorldTime(ticks: int)
+</code></pre>
+<p>Create a <code>WorldTime</code> from a tick value. Automatically wraps to 0–24000.</p>
+<h3 id="class-methods">Class Methods</h3>
+<h4 id="from_hours">from_hours</h4>
+<pre><code class="language-python">WorldTime.from_hours(hours: float) -&gt; WorldTime
+</code></pre>
+<p>Create from a 24-hour clock value. <code>6.0</code> = dawn (tick 0), <code>12.0</code> = noon (tick 6000).</p>
+<pre><code class="language-python">noon = WorldTime.from_hours(<span class="nb">12.0</span>)   <span class="cm"># WorldTime(ticks=6000)</span>
+midnight = WorldTime.from_hours(<span class="nb">0</span>)  <span class="cm"># WorldTime(ticks=18000)</span>
+</code></pre>
+<h3 id="constants">Constants</h3>
+<table>
+<thead>
+<tr>
+<th>Constant</th>
+<th>Ticks</th>
+<th>Real-world equivalent</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>WorldTime.DAWN</code></td>
+<td>0</td>
+<td>6:00 AM</td>
+</tr>
+<tr>
+<td><code>WorldTime.NOON</code></td>
+<td>6000</td>
+<td>12:00 PM</td>
+</tr>
+<tr>
+<td><code>WorldTime.DUSK</code></td>
+<td>12000</td>
+<td>6:00 PM</td>
+</tr>
+<tr>
+<td><code>WorldTime.MIDNIGHT</code></td>
+<td>18000</td>
+<td>12:00 AM</td>
+</tr>
+</tbody>
+</table>
+<h3 id="properties_1">Properties</h3>
+<h4 id="ticks">ticks</h4>
+<ul>
+<li><strong>Type:</strong> <code>int</code></li>
+</ul>
+<p>The raw tick value (0–24000).</p>
+<h4 id="hours">hours</h4>
+<ul>
+<li><strong>Type:</strong> <code>float</code></li>
+</ul>
+<p>The time as a 24-hour clock value (0.0–24.0).</p>
+<h4 id="is_day">is_day</h4>
+<ul>
+<li><strong>Type:</strong> <code>bool</code></li>
+</ul>
+<p><code>True</code> when ticks are in the 0–12000 range (daytime).</p>
+<h4 id="is_night">is_night</h4>
+<ul>
+<li><strong>Type:</strong> <code>bool</code></li>
+</ul>
+<p><code>True</code> when ticks are 12000+ (nighttime).</p>
+<h3 id="example">Example</h3>
+<pre><code class="language-python"><span class="kw">from</span> bridge <span class="kw">import</span> WorldTime, World, server
+
+world = World(name=<span class="st">&quot;world&quot;</span>)
+
+<span class="cm"># Check time of day</span>
+t = world.world_time
+<span class="kw">if</span> t.is_night:
+    <span class="kw">await</span> server.broadcast(<span class="st">&quot;It's dark outside!&quot;</span>)
+
+<span class="cm"># Schedule events at specific times</span>
+<span class="dc">@world</span>.at_time(WorldTime.NOON)
+<span class="kw">async</span> <span class="kw">def</span> noon_event(w):
+    <span class="kw">await</span> server.broadcast(<span class="st">&quot;The sun is at its peak!&quot;</span>)
+
+<span class="dc">@world</span>.at_time(WorldTime.MIDNIGHT)
+<span class="kw">async</span> <span class="kw">def</span> midnight_event(w):
+    <span class="kw">await</span> server.broadcast(<span class="st">&quot;Beware the creatures of the night!&quot;</span>)
 </code></pre>
     </div>
     <footer class="site-footer">

@@ -39,7 +39,6 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.ShapedRecipe;
 import org.bukkit.inventory.ShapelessRecipe;
 import org.bukkit.inventory.FurnaceRecipe;
-import org.bukkit.inventory.RecipeChoice;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.permissions.PermissionAttachment;
 import org.bukkit.util.Transformation;
@@ -361,7 +360,6 @@ public class BridgeInstance {
         }, ticks);
     }
 
-    @SuppressWarnings("unchecked")
     private void handleRegisterCommand(JsonObject message) {
         String commandName = message.get("name").getAsString();
         String permission = message.has("permission") ? message.get("permission").getAsString() : null;
