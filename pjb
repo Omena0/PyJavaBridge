@@ -212,6 +212,103 @@ def _strip_md(line):
     return line
 
 
+# ANSI color codes
+_C_KEYWORD = "\033[35m"    # magenta
+_C_BUILTIN = "\033[33m"    # yellow
+_C_STRING  = "\033[32m"    # green
+_C_COMMENT = "\033[90m"    # gray
+_C_NUMBER  = "\033[34m"    # blue
+_C_FUNC    = "\033[36m"    # cyan
+_C_RESET   = "\033[0m"
+
+_PY_KEYWORDS = {
+    'False', 'None', 'True', 'and', 'as', 'assert', 'async', 'await',
+    'break', 'class', 'continue', 'def', 'del', 'elif', 'else', 'except',
+    'finally', 'for', 'from', 'global', 'if', 'import', 'in', 'is',
+    'lambda', 'nonlocal', 'not', 'or', 'pass', 'raise', 'return', 'try',
+    'while', 'with', 'yield',
+}
+_PY_BUILTINS = {
+    'print', 'len', 'range', 'int', 'str', 'float', 'bool', 'list',
+    'dict', 'set', 'tuple', 'type', 'isinstance', 'super', 'property',
+    'staticmethod', 'classmethod', 'enumerate', 'zip', 'map', 'filter',
+}
+
+
+def _highlight_python(line):
+    """Apply basic Python syntax highlighting with ANSI colors."""
+    result = []
+    i = 0
+    n = len(line)
+
+    while i < n:
+        # Comments
+        if line[i] == '#':
+            result.append(f"{_C_COMMENT}{line[i:]}{_C_RESET}")
+            break
+
+        # Strings (single/double, triple-quoted handled simply)
+        if line[i] in ('"', "'"):
+            quote = line[i]
+            # Check for triple quote
+            if line[i:i+3] in ('"""', "'''"):
+                end = line.find(quote * 3, i + 3)
+                if end == -1:
+                    end = n
+                else:
+                    end += 3
+            else:
+                end = i + 1
+                while end < n and line[end] != quote:
+                    if line[end] == '\\':
+                        end += 1
+                    end += 1
+                end = min(end + 1, n)
+            result.append(f"{_C_STRING}{line[i:end]}{_C_RESET}")
+            i = end
+            continue
+
+        # Numbers
+        if line[i].isdigit() or (line[i] == '.' and i + 1 < n and line[i+1].isdigit()):
+            j = i
+            while j < n and (line[j].isdigit() or line[j] in '.eE_xXabcdefABCDEF'):
+                j += 1
+            result.append(f"{_C_NUMBER}{line[i:j]}{_C_RESET}")
+            i = j
+            continue
+
+        # Identifiers / keywords
+        if line[i].isalpha() or line[i] == '_':
+            j = i
+            while j < n and (line[j].isalnum() or line[j] == '_'):
+                j += 1
+            word = line[i:j]
+            if word in _PY_KEYWORDS:
+                result.append(f"{_C_KEYWORD}{word}{_C_RESET}")
+            elif word in _PY_BUILTINS:
+                result.append(f"{_C_BUILTIN}{word}{_C_RESET}")
+            elif j < n and line[j] == '(':
+                result.append(f"{_C_FUNC}{word}{_C_RESET}")
+            else:
+                result.append(word)
+            i = j
+            continue
+
+        # Decorators
+        if line[i] == '@':
+            j = i + 1
+            while j < n and (line[j].isalnum() or line[j] in '_.'):
+                j += 1
+            result.append(f"{_C_FUNC}{line[i:j]}{_C_RESET}")
+            i = j
+            continue
+
+        result.append(line[i])
+        i += 1
+
+    return "".join(result)
+
+
 def _get_class_doc(md_path):
     """Extract class-level documentation (before first ### member heading)."""
     content = md_path.read_text(encoding="utf-8")
@@ -250,11 +347,10 @@ def _get_class_doc(md_path):
         # Track code blocks
         if stripped.startswith("```"):
             in_code_block = not in_code_block
-            out.append(f"  \033[90m{line.rstrip()}\033[0m")
-            continue
+            continue  # hide ``` markers
 
         if in_code_block:
-            out.append(f"  \033[90m{line.rstrip()}\033[0m")
+            out.append(f"  {_highlight_python(line.rstrip())}")
         elif stripped.startswith("# "):
             out.append(f"  \033[36;1m{stripped.lstrip('# ')}\033[0m")
         elif stripped.startswith("## "):

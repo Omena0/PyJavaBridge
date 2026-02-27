@@ -1,4 +1,7 @@
 Add:
+- BossBarDisplay:
+  - Rename linked cooldown attribute to linked_to, since after this it can be many things.
+
 - Quest class:
   - Attrs: name, desc, on_complete(), start(), end(), start_time, end_time, time_limit=None, status, progress, accept(), etc
   - Designed to be a parent class
@@ -28,5 +31,24 @@ Add:
   - on_transaction event
 
 - Shop:
-  - Attrs: open(player), close(player), items (dict of Item: price), on_purchase event
-  - Should open a chest GUI with multiple tabs showing each of the items as well as the p
+  - Attrs: open(player), close(player), items (dict of Item: price (int or Item)), on_purchase event, storage (Inventory, contains items that will be sold as well as payment), balance (bank balance, int)
+  - Should open a chest GUI with multiple tabs showing each of the items as well as the price in the last line of lore.
+
+- TradeWindow:
+  - Attrs: open(p1, p2), close(p1 / p2) (closes for both, either one can be input), offers (tuple of (Inventory, balance) for each player), on_trade event, confirmed (tuple: bool)
+  - Opens a trade chest GUI and shows both players' offers and balances. Each player can add/remove items and adjust their offer balance. When both players confirm, the trade is executed after delay seconds.
+  - Cant edit items after you have accepted, you have to cancel first.
+  - Anti-dupe measures, handle logout, delay packets, close without packet, etc
+
+- Ability:
+  - Attrs: name, desc, cooldown, on_use(player), can_use(player), last_used (timestamp or None), cooldown_msg, use_cost=None (mana cost )
+  - Designed to be a parent class.
+  - Represents a player ability with a cooldown. Can be used in combat or for utility.
+  - Methods: use(player): calls can_use, if true calls on_use and sets last_used to current time. Otherwise, sends cooldown message.
+
+- ManaStore:
+  - Global mana bar instance
+  - Tracks mana for each player
+  - Use list index notation mana[player]
+  - Integrates with BossBarDisplay.
+  - Mana regen rate, max mana, etc. per player with default values.
