@@ -1,4 +1,6 @@
-Add:
+These features will be in an extension module, that is not imported by default.
+For the features that already ei
+
 - BossBarDisplay:
   - Rename linked cooldown attribute to linked_to, since after this it can be many things.
 
