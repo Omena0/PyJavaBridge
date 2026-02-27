@@ -138,4 +138,4 @@ async def dash(player: Player, args: list[str]):
     await player.send_action_bar("§6Dash!")
 ```
 
-> **See also:** [`BossBarDisplay.link_cooldown()`](bossbardisplay.md#link_cooldown) to visually display cooldown progress.
+> **See also:** [`BossBarDisplay.link_to()`](bossbardisplay.md#link_to) to visually display cooldown progress.

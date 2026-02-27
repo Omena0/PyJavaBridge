@@ -6,8 +6,6 @@ import json
 import os
 from typing import Any, Callable, Dict, List, Optional
 
-import bridge
-
 
 class Bank:
     """Global bank instance — tracks per-player currency balances.

@@ -92,7 +92,7 @@ def command(description: Optional[str] = None, *, name: Optional[str] = None, pe
     """
     def decorator(handler: Any) -> Any:
         from bridge.wrappers import ProxyBase, Player
-        from bridge.helpers import _ConsolePlayer
+        from bridge.helpers import ConsolePlayer
 
         sig = inspect.signature(handler)
         positional_params, keyword_only_names, has_varargs, has_varkw = _command_signature_params(sig)
@@ -133,13 +133,13 @@ def command(description: Optional[str] = None, *, name: Optional[str] = None, pe
                 player = event_obj.fields.get("player")
                 sender_obj = event_obj.fields.get("sender")
                 if player is None and sender_obj is not None and not isinstance(sender_obj, Player):
-                    event_obj.fields["player"] = _ConsolePlayer(sender_obj)
+                    event_obj.fields["player"] = ConsolePlayer(sender_obj)
             elif isinstance(event_obj, dict):
                 evt = cast(Dict[str, Any], event_obj)
                 player_d: Any = evt.get("player")
                 sender_d: Any = evt.get("sender")
                 if player_d is None and sender_d is not None and not isinstance(sender_d, Player):
-                    evt["player"] = _ConsolePlayer(sender_d)
+                    evt["player"] = ConsolePlayer(sender_d)
 
             raw_args: List[str] = []
             if isinstance(event_obj, ProxyBase):

@@ -31,7 +31,6 @@ class DialogEntry:
         self.answers = answers or []
         self.delay = delay
 
-
 class Dialog:
     """A full dialog sequence that can be played for a player.
 
@@ -137,6 +136,6 @@ class Dialog:
             return None
         finally:
             # Remove the handler
-            handlers = bridge._connection._event_handlers.get("player_chat", [])
+            handlers = bridge._connection._handlers.get("player_chat", [])
             if _chat_handler in handlers:
                 handlers.remove(_chat_handler)

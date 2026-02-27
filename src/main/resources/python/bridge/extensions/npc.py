@@ -116,6 +116,74 @@ class NPC:
         self._entity.stop_pathfinding()
         self._entity.set_aware(False)
 
+    def link_dialog(self, dialog: Any):
+        """Link a Dialog object — right-clicking starts the dialog."""
+        self._linked_dialog = dialog
+        _ensure_npc_listener()
+
+    def link_player(self, player: Any):
+        """Link a Player — the NPC will use that player's skin (if supported)."""
+        self._linked_player = player
+
+    def set_range(self, distance: float):
+        """Set a range check distance. Use on_range_enter/on_range_exit for callbacks."""
+        self._range = distance
+        if not self._range_task_started:
+            self._range_task_started = True
+            asyncio.ensure_future(self._range_check_loop())
+
+    def on_range_enter(self, handler: Callable) -> Callable:
+        """Register a callback for when a player enters range. Receives (player, npc)."""
+        self._range_enter_handlers.append(handler)
+        return handler
+
+    def on_range_exit(self, handler: Callable) -> Callable:
+        """Register a callback for when a player exits range. Receives (player, npc)."""
+        self._range_exit_handlers.append(handler)
+        return handler
+
+    async def _range_check_loop(self):
+        from bridge.wrappers import server, Player
+        while self._range is not None:
+            try:
+                npc_loc = self._entity.location
+                if npc_loc is None:
+                    await server.after(20)
+                    continue
+                online = await server.online_players
+                for p in online:
+                    puuid = str(p.uuid)
+                    try:
+                        ploc = p.location
+                        dx = ploc.x - npc_loc.x
+                        dy = ploc.y - npc_loc.y
+                        dz = ploc.z - npc_loc.z
+                        dist = (dx * dx + dy * dy + dz * dz) ** 0.5
+                        in_range = dist <= self._range
+                    except Exception:
+                        in_range = False
+                    was_in = self._tracked_players.get(puuid, False)
+                    self._tracked_players[puuid] = in_range
+                    if in_range and not was_in:
+                        for h in self._range_enter_handlers:
+                            try:
+                                result = h(p, self)
+                                if inspect.isawaitable(result):
+                                    await result
+                            except Exception as e:
+                                print(f"[PyJavaBridge] NPC range enter error: {e}")
+                    elif not in_range and was_in:
+                        for h in self._range_exit_handlers:
+                            try:
+                                result = h(p, self)
+                                if inspect.isawaitable(result):
+                                    await result
+                            except Exception as e:
+                                print(f"[PyJavaBridge] NPC range exit error: {e}")
+                await server.after(10)
+            except Exception:
+                break
+
     async def remove(self):
         """Remove the NPC entity and unregister."""
         uuid = self.uuid

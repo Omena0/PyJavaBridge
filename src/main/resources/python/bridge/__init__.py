@@ -22,7 +22,6 @@ from bridge.errors import *
 from bridge.types import *
 from bridge.api import *
 
-
 # ── Module-level globals ──────────────────────────────────────────────
 _connection: BridgeConnection = None  # type: ignore[assignment]
 _player_uuid_cache: Dict[str, str] = {}

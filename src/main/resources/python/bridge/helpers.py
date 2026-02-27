@@ -21,6 +21,7 @@ __all__ = [
     "ItemDisplay",
     "Menu",
     "MenuItem",
+    "Paginator",
 ]
 from typing import Any, Callable, Dict, List, Optional, cast
 
@@ -627,11 +628,11 @@ class BossBarDisplay:
         self._bar.set_progress(max(0.0, min(1.0, self._value / self._max)))
 
     def link_cooldown(self, cooldown: Cooldown, player: Any):
-        """Deprecated: use linked_to instead."""
-        print('DeprecationWarning: BossBarDisplay.link_cooldown is deprecat')
-        self.linked_to(cooldown, player)
+        """Deprecated: use link_to instead."""
+        print('DeprecationWarning: BossBarDisplay.link_cooldown is deprecated. Please use .link_to instead.')
+        self.link_to(cooldown, player)
 
-    def linked_to(self, source: Any, player: Any):
+    def link_to(self, source: Any, player: Any):
         """Link this boss bar to a Cooldown (or any object with .remaining(player) and .seconds)."""
         from bridge.wrappers import server
         self.show(player)

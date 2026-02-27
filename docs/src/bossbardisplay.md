@@ -98,10 +98,10 @@ Hide the boss bar from a player. This is synchronous.
 - **Parameters:**
   - `player` ([`Player`](player.md)) — Player to hide from.
 
-### link_cooldown
+### link_to
 
 ```python
-display.link_cooldown(cooldown, player)
+display.link_to(cooldown, player)
 ```
 
 Link this bar to a [`Cooldown`](cooldown.md) — the bar progress will automatically animate to reflect the remaining cooldown time.
@@ -119,7 +119,7 @@ async def fireball(player: Player, args: list[str]):
     if not cd.check(player):
         return
 
-    bar.link_cooldown(cd, player)
+    bar.link_to(cd, player)
     await player.send_message("§6🔥 Fireball!")
 ```
 
@@ -140,7 +140,7 @@ async def fireball(player: Player, args: list[str]):
         await player.send_message(f"§c{r:.1f}s cooldown!")
         return
 
-    fireball_bar.link_cooldown(fireball_cd, player)
+    fireball_bar.link_to(fireball_cd, player)
     await world.spawn_projectile(player, "FIREBALL")
     await player.send_message("§6🔥 Fireball launched!")
 ```
@@ -175,7 +175,7 @@ async def ability(player: Player, args: list[str]):
     if not ab["cd"].check(player):
         return
 
-    ab["bar"].link_cooldown(ab["cd"], player)
+    ab["bar"].link_to(ab["cd"], player)
     await player.send_message(f"§aUsed {args[0]}!")
 ```
 
