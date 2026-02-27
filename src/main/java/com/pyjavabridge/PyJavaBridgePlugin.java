@@ -190,6 +190,33 @@ public class PyJavaBridgePlugin extends JavaPlugin {
         return uuidResolver.resolvePlayerUuidByName(name);
     }
 
+    public void sendScriptMessage(String fromScript, String toScript, com.google.gson.JsonElement data) {
+        if ("*".equals(toScript)) {
+            // Broadcast to all other scripts
+            for (var entry : instances.entrySet()) {
+                if (!entry.getKey().equals(fromScript) && entry.getValue().isRunning()) {
+                    deliverScriptMessage(entry.getValue(), fromScript, data);
+                }
+            }
+        } else {
+            BridgeInstance target = instances.get(toScript);
+            if (target != null && target.isRunning()) {
+                deliverScriptMessage(target, fromScript, data);
+            }
+        }
+    }
+
+    private void deliverScriptMessage(BridgeInstance target, String fromScript, com.google.gson.JsonElement data) {
+        com.google.gson.JsonObject payload = new com.google.gson.JsonObject();
+        payload.addProperty("from", fromScript);
+        payload.add("data", data);
+        target.sendEvent("script_message", payload);
+    }
+
+    public java.util.Collection<String> getScriptNames() {
+        return instances.keySet();
+    }
+
     private void copyRuntimeResource(String resourcePath, Path destination) throws IOException {
         try (InputStream input = getResource(resourcePath)) {
             if (input == null) {

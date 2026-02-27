@@ -121,6 +121,9 @@ __all__ = [
     "Firework",
     "FireworkEffect",
     "WorldTime",
+    "script_send",
+    "on_script_message",
+    "get_scripts",
     "DamageCause",
     "Enchantment",
     "ItemFlag",
@@ -5406,6 +5409,38 @@ async def greet(event: Event, name: str):
 server = Server(target="server")
 chat = ChatFacade(target="chat")
 reflect = ReflectFacade(target="reflect")
+
+# --- Inter-script communication ---
+
+def script_send(target: str, data: Any = None):
+    """Send a message to another script (or '*' for all scripts).
+
+    Args:
+        target: Script filename (e.g. 'other.py') or '*' to broadcast.
+        data: Any JSON-serializable data to send.
+    """
+    _connection.send({"type": "script_message", "target": target, "data": data})
+
+def on_script_message(handler: Callable[[Any], Any]) -> Callable[[Any], Any]:
+    """Decorator: register a handler for messages from other scripts.
+
+    The handler receives a dict with 'from' (sender script name) and 'data'.
+
+    Usage:
+        @on_script_message
+        async def handle(msg):
+            print(f"Got {msg['data']} from {msg['from']}")
+    """
+    _connection.on("script_message", handler)
+    return handler
+
+def get_scripts() -> "BridgeCall":
+    """Get a list of all running script names. Returns Awaitable[list[str]]."""
+    request_id = _connection._next_id()
+    future = _connection._loop.create_future()
+    _connection._pending[request_id] = future
+    _connection.send({"type": "get_scripts", "id": request_id})
+    return BridgeCall(future)
 
 def _bootstrap(script_path: str): # type: ignore
     global _connection

@@ -271,6 +271,8 @@ public class BridgeInstance {
             case "event_result" -> handleEventResult(message);
             case "register_command" -> handleRegisterCommand(message);
             case "tab_complete_response" -> handleTabCompleteResponse(message);
+            case "script_message" -> handleScriptMessage(message);
+            case "get_scripts" -> handleGetScripts(message);
             case "remove_entities" -> handleRemoveEntities(message);
             case "update_entities" -> handleUpdateEntities(message);
             case "move_entities" -> handleMoveEntities(message);
@@ -421,6 +423,27 @@ public class BridgeInstance {
             pendingTabCompletes.remove(requestId);
             return List.of();
         }
+    }
+
+    private void handleScriptMessage(JsonObject message) {
+        String target = message.has("target") ? message.get("target").getAsString() : null;
+        JsonElement data = message.has("data") ? message.get("data") : new JsonObject();
+        if (target != null) {
+            plugin.sendScriptMessage(name, target, data);
+        }
+    }
+
+    private void handleGetScripts(JsonObject message) {
+        int id = message.get("id").getAsInt();
+        JsonObject response = new JsonObject();
+        response.addProperty("type", "return");
+        response.addProperty("id", id);
+        com.google.gson.JsonArray arr = new com.google.gson.JsonArray();
+        for (String scriptName : plugin.getScriptNames()) {
+            arr.add(scriptName);
+        }
+        response.add("result", arr);
+        send(response);
     }
 
     private void handleRemoveEntities(JsonObject message) {
