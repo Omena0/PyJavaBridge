@@ -1383,8 +1383,80 @@ class Block(ProxyBase):
 
     @property
     def inventory(self):
-        """Get inventory if block has one."""
+        """Get inventory if block has one (chests, hoppers, furnaces, etc.)."""
         return self._call_sync("getInventory")
+
+    @property
+    def is_container(self) -> bool:
+        """Check if this block is a container (has an inventory)."""
+        return self._call_sync("isContainer")
+
+    @property
+    def state_type(self) -> str:
+        """Get the tile entity type name (e.g. 'Sign', 'Chest', 'Furnace')."""
+        return self._call_sync("getStateType")
+
+    # --- Sign methods ---
+
+    @property
+    def sign_lines(self) -> list:
+        """Get front sign text as a list of 4 strings. Returns None if not a sign."""
+        return self._call_sync("getSignLines")
+
+    @property
+    def sign_back_lines(self) -> list:
+        """Get back sign text as a list of 4 strings. Returns None if not a sign."""
+        return self._call_sync("getSignBackLines")
+
+    def set_sign_line(self, index: int, text: str):
+        """Set a single front sign line (0-3)."""
+        return self._call("setSignLine", index, text)
+
+    def set_sign_lines(self, lines: list):
+        """Set all front sign lines (list of up to 4 strings)."""
+        return self._call("setSignLines", lines)
+
+    def set_sign_back_line(self, index: int, text: str):
+        """Set a single back sign line (0-3)."""
+        return self._call("setSignBackLine", index, text)
+
+    def set_sign_back_lines(self, lines: list):
+        """Set all back sign lines (list of up to 4 strings)."""
+        return self._call("setSignBackLines", lines)
+
+    def set_sign_glowing(self, glowing: bool):
+        """Set whether the front sign text glows."""
+        return self._call("setSignGlowing", glowing)
+
+    @property
+    def is_sign_glowing(self) -> bool:
+        """Check if the front sign text is glowing."""
+        return self._call_sync("isSignGlowing")
+
+    # --- Furnace methods ---
+
+    @property
+    def furnace_burn_time(self) -> int:
+        """Get furnace burn time remaining. Returns None if not a furnace."""
+        return self._call_sync("getFurnaceBurnTime")
+
+    @property
+    def furnace_cook_time(self) -> int:
+        """Get furnace cook time progress. Returns None if not a furnace."""
+        return self._call_sync("getFurnaceCookTime")
+
+    @property
+    def furnace_cook_time_total(self) -> int:
+        """Get furnace total cook time needed. Returns None if not a furnace."""
+        return self._call_sync("getFurnaceCookTimeTotal")
+
+    def set_furnace_burn_time(self, ticks: int):
+        """Set furnace burn time remaining (in ticks)."""
+        return self._call("setFurnaceBurnTime", ticks)
+
+    def set_furnace_cook_time(self, ticks: int):
+        """Set furnace cook time progress (in ticks)."""
+        return self._call("setFurnaceCookTime", ticks)
 
     @property
     def x(self) -> int:

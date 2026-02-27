@@ -151,6 +151,166 @@ Set the block's data state.
   - `data` (`any`) — Block data value.
 - **Returns:** `Awaitable[None]`
 
+---
+
+## Container Properties
+
+These work on blocks that hold inventories (chests, hoppers, dispensers, droppers, barrels, etc.).
+
+### inventory
+
+- **Type:** [`Inventory`](inventory.md) `| None`
+
+The block's inventory, or `None` if the block isn't a container.
+
+```python
+chest = world.block_at(10, 64, 20)
+inv = chest.inventory
+if inv:
+    items = inv.contents
+```
+
+### is_container
+
+- **Type:** `bool`
+
+Whether this block has an inventory.
+
+### state_type
+
+- **Type:** `str`
+
+The tile entity type name (e.g. `"Sign"`, `"Chest"`, `"Furnace"`, `"Hopper"`).
+
+---
+
+## Sign Methods
+
+These work on sign blocks (oak sign, birch sign, etc.). Properties return `None` if the block isn't a sign.
+
+### sign_lines
+
+- **Type:** `list[str] | None`
+
+Front side text as a list of 4 strings.
+
+```python
+sign = world.block_at(10, 64, 20)
+lines = sign.sign_lines  # ["Hello", "World", "", ""]
+```
+
+### sign_back_lines
+
+- **Type:** `list[str] | None`
+
+Back side text as a list of 4 strings.
+
+### set_sign_line
+
+```python
+await block.set_sign_line(index, text)
+```
+
+Set a single front sign line.
+
+- **Parameters:**
+  - `index` (`int`) — Line index (0–3).
+  - `text` (`str`) — Line text.
+- **Returns:** `Awaitable[None]`
+
+### set_sign_lines
+
+```python
+await block.set_sign_lines(lines)
+```
+
+Set all front sign lines at once.
+
+- **Parameters:**
+  - `lines` (`list[str]`) — Up to 4 lines.
+- **Returns:** `Awaitable[None]`
+
+```python
+await sign.set_sign_lines(["Welcome", "to the", "shop!", ""])
+```
+
+### set_sign_back_line / set_sign_back_lines
+
+Same as front-side methods, but for the back of the sign.
+
+### set_sign_glowing
+
+```python
+await block.set_sign_glowing(glowing)
+```
+
+Set whether the front sign text glows.
+
+- **Parameters:**
+  - `glowing` (`bool`) — Whether text should glow.
+- **Returns:** `Awaitable[None]`
+
+### is_sign_glowing
+
+- **Type:** `bool | None`
+
+Whether the front sign text is glowing. `None` if not a sign.
+
+---
+
+## Furnace Methods
+
+These work on furnace blocks (furnace, blast furnace, smoker). Properties return `None` if the block isn't a furnace.
+
+### furnace_burn_time
+
+- **Type:** `int | None`
+
+Remaining fuel burn time in ticks.
+
+### furnace_cook_time
+
+- **Type:** `int | None`
+
+Current cooking progress in ticks.
+
+### furnace_cook_time_total
+
+- **Type:** `int | None`
+
+Total cook time needed for the current item.
+
+### set_furnace_burn_time
+
+```python
+await block.set_furnace_burn_time(ticks)
+```
+
+Set remaining fuel burn time.
+
+- **Parameters:**
+  - `ticks` (`int`) — Burn time in ticks.
+- **Returns:** `Awaitable[None]`
+
+### set_furnace_cook_time
+
+```python
+await block.set_furnace_cook_time(ticks)
+```
+
+Set cooking progress.
+
+- **Parameters:**
+  - `ticks` (`int`) — Cook time in ticks.
+- **Returns:** `Awaitable[None]`
+
+```python
+furnace = world.block_at(10, 64, 20)
+if furnace.state_type == "Furnace":
+    print(f"Cook progress: {furnace.furnace_cook_time}/{furnace.furnace_cook_time_total}")
+    inv = furnace.inventory
+```
+
 ### set_biome
 
 ```python

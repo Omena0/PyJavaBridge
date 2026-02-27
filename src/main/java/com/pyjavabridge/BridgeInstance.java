@@ -23,6 +23,10 @@ import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
+import org.bukkit.block.Sign;
+import org.bukkit.block.sign.Side;
+import org.bukkit.block.sign.SignSide;
+import org.bukkit.block.Furnace;
 import org.bukkit.entity.Display;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
@@ -880,6 +884,10 @@ public class BridgeInstance {
             result = invokeBlockMethod(block, method);
         }
 
+        if (result == UNHANDLED && target instanceof Block block) {
+            result = invokeBlockMethodWithArgs(block, method, args);
+        }
+
         if (result == UNHANDLED && target instanceof org.bukkit.inventory.Inventory inv) {
             result = invokeInventoryMethod(inv, method);
         }
@@ -982,6 +990,142 @@ public class BridgeInstance {
         if ("getInventory".equals(method)) {
             BlockState state = block.getState();
             return state instanceof InventoryHolder holder ? holder.getInventory() : null;
+        }
+        if ("getStateType".equals(method)) {
+            BlockState state = block.getState();
+            return state.getClass().getSimpleName().replace("Craft", "");
+        }
+        if ("isContainer".equals(method)) {
+            return block.getState() instanceof InventoryHolder;
+        }
+        // Sign methods
+        if ("getSignLines".equals(method)) {
+            BlockState state = block.getState();
+            if (state instanceof Sign sign) {
+                SignSide side = sign.getSide(Side.FRONT);
+                List<String> lines = new ArrayList<>();
+                for (int i = 0; i < 4; i++) {
+                    lines.add(PlainTextComponentSerializer.plainText().serialize(side.line(i)));
+                }
+                return lines;
+            }
+            return null;
+        }
+        if ("getSignBackLines".equals(method)) {
+            BlockState state = block.getState();
+            if (state instanceof Sign sign) {
+                SignSide side = sign.getSide(Side.BACK);
+                List<String> lines = new ArrayList<>();
+                for (int i = 0; i < 4; i++) {
+                    lines.add(PlainTextComponentSerializer.plainText().serialize(side.line(i)));
+                }
+                return lines;
+            }
+            return null;
+        }
+        // Furnace methods
+        if ("getFurnaceBurnTime".equals(method)) {
+            BlockState state = block.getState();
+            return state instanceof Furnace furnace ? furnace.getBurnTime() : null;
+        }
+        if ("getFurnaceCookTime".equals(method)) {
+            BlockState state = block.getState();
+            return state instanceof Furnace furnace ? furnace.getCookTime() : null;
+        }
+        if ("getFurnaceCookTimeTotal".equals(method)) {
+            BlockState state = block.getState();
+            return state instanceof Furnace furnace ? furnace.getCookTimeTotal() : null;
+        }
+        return UNHANDLED;
+    }
+
+    private Object invokeBlockMethodWithArgs(Block block, String method, List<Object> args) {
+        // Sign methods with args
+        if ("setSignLine".equals(method) && args.size() >= 2) {
+            BlockState state = block.getState();
+            if (state instanceof Sign sign) {
+                int line = ((Number) args.get(0)).intValue();
+                String text = String.valueOf(args.get(1));
+                sign.getSide(Side.FRONT).line(line, Component.text(text));
+                sign.update();
+                return null;
+            }
+            return null;
+        }
+        if ("setSignLines".equals(method) && args.size() >= 1) {
+            BlockState state = block.getState();
+            if (state instanceof Sign sign) {
+                @SuppressWarnings("unchecked")
+                List<String> lines = (List<String>) args.get(0);
+                SignSide side = sign.getSide(Side.FRONT);
+                for (int i = 0; i < Math.min(lines.size(), 4); i++) {
+                    side.line(i, Component.text(lines.get(i)));
+                }
+                sign.update();
+                return null;
+            }
+            return null;
+        }
+        if ("setSignBackLine".equals(method) && args.size() >= 2) {
+            BlockState state = block.getState();
+            if (state instanceof Sign sign) {
+                int line = ((Number) args.get(0)).intValue();
+                String text = String.valueOf(args.get(1));
+                sign.getSide(Side.BACK).line(line, Component.text(text));
+                sign.update();
+                return null;
+            }
+            return null;
+        }
+        if ("setSignBackLines".equals(method) && args.size() >= 1) {
+            BlockState state = block.getState();
+            if (state instanceof Sign sign) {
+                @SuppressWarnings("unchecked")
+                List<String> lines = (List<String>) args.get(0);
+                SignSide side = sign.getSide(Side.BACK);
+                for (int i = 0; i < Math.min(lines.size(), 4); i++) {
+                    side.line(i, Component.text(lines.get(i)));
+                }
+                sign.update();
+                return null;
+            }
+            return null;
+        }
+        if ("setSignGlowing".equals(method) && args.size() >= 1) {
+            BlockState state = block.getState();
+            if (state instanceof Sign sign) {
+                boolean glowing = (boolean) args.get(0);
+                sign.getSide(Side.FRONT).setGlowingText(glowing);
+                sign.update();
+                return null;
+            }
+            return null;
+        }
+        if ("isSignGlowing".equals(method)) {
+            BlockState state = block.getState();
+            if (state instanceof Sign sign) {
+                return sign.getSide(Side.FRONT).isGlowingText();
+            }
+            return null;
+        }
+        // Furnace set methods
+        if ("setFurnaceBurnTime".equals(method) && args.size() >= 1) {
+            BlockState state = block.getState();
+            if (state instanceof Furnace furnace) {
+                furnace.setBurnTime(((Number) args.get(0)).shortValue());
+                furnace.update();
+                return null;
+            }
+            return null;
+        }
+        if ("setFurnaceCookTime".equals(method) && args.size() >= 1) {
+            BlockState state = block.getState();
+            if (state instanceof Furnace furnace) {
+                furnace.setCookTime(((Number) args.get(0)).shortValue());
+                furnace.update();
+                return null;
+            }
+            return null;
         }
         return UNHANDLED;
     }

@@ -67,6 +67,30 @@
       <li><a href="#break_naturally">break_naturally</a></li>
       <li><a href="#set_type">set_type</a></li>
       <li><a href="#set_data">set_data</a></li>
+    </ul></li>
+    <li><a href="#container-properties">Container Properties</a></li>
+    <li><ul class="toc-sub" data-parent="container-properties">
+      <li><a href="#inventory">inventory</a></li>
+      <li><a href="#is_container">is_container</a></li>
+      <li><a href="#state_type">state_type</a></li>
+    </ul></li>
+    <li><a href="#sign-methods">Sign Methods</a></li>
+    <li><ul class="toc-sub" data-parent="sign-methods">
+      <li><a href="#sign_lines">sign_lines</a></li>
+      <li><a href="#sign_back_lines">sign_back_lines</a></li>
+      <li><a href="#set_sign_line">set_sign_line</a></li>
+      <li><a href="#set_sign_lines">set_sign_lines</a></li>
+      <li><a href="#set_sign_back_line-set_sign_back_lines">set_sign_back_line / set_sign_back_lines</a></li>
+      <li><a href="#set_sign_glowing">set_sign_glowing</a></li>
+      <li><a href="#is_sign_glowing">is_sign_glowing</a></li>
+    </ul></li>
+    <li><a href="#furnace-methods">Furnace Methods</a></li>
+    <li><ul class="toc-sub" data-parent="furnace-methods">
+      <li><a href="#furnace_burn_time">furnace_burn_time</a></li>
+      <li><a href="#furnace_cook_time">furnace_cook_time</a></li>
+      <li><a href="#furnace_cook_time_total">furnace_cook_time_total</a></li>
+      <li><a href="#set_furnace_burn_time">set_furnace_burn_time</a></li>
+      <li><a href="#set_furnace_cook_time">set_furnace_cook_time</a></li>
       <li><a href="#set_biome">set_biome</a></li>
     </ul></li>
   </ul>
@@ -286,6 +310,123 @@
 <li><code>data</code> (<code>any</code>) — Block data value.</li>
 <li><strong>Returns:</strong> <code>Awaitable[None]</code></li>
 </ul>
+<hr />
+<h2 id="container-properties">Container Properties</h2>
+<p>These work on blocks that hold inventories (chests, hoppers, dispensers, droppers, barrels, etc.).</p>
+<h3 id="inventory">inventory</h3>
+<ul>
+<li><strong>Type:</strong> <a href="inventory.html"><code>Inventory</code></a> <code>| None</code></li>
+</ul>
+<p>The block's inventory, or <code>None</code> if the block isn't a container.</p>
+<pre><code class="language-python">chest = world.block_at(<span class="nb">10</span>, <span class="nb">64</span>, <span class="nb">20</span>)
+inv = chest.inventory
+<span class="kw">if</span> inv:
+    items = inv.contents
+</code></pre>
+<h3 id="is_container">is_container</h3>
+<ul>
+<li><strong>Type:</strong> <code>bool</code></li>
+</ul>
+<p>Whether this block has an inventory.</p>
+<h3 id="state_type">state_type</h3>
+<ul>
+<li><strong>Type:</strong> <code>str</code></li>
+</ul>
+<p>The tile entity type name (e.g. <code>"Sign"</code>, <code>"Chest"</code>, <code>"Furnace"</code>, <code>"Hopper"</code>).</p>
+<hr />
+<h2 id="sign-methods">Sign Methods</h2>
+<p>These work on sign blocks (oak sign, birch sign, etc.). Properties return <code>None</code> if the block isn't a sign.</p>
+<h3 id="sign_lines">sign_lines</h3>
+<ul>
+<li><strong>Type:</strong> <code>list[str] | None</code></li>
+</ul>
+<p>Front side text as a list of 4 strings.</p>
+<pre><code class="language-python">sign = world.block_at(<span class="nb">10</span>, <span class="nb">64</span>, <span class="nb">20</span>)
+lines = sign.sign_lines  <span class="cm"># [&quot;Hello&quot;, &quot;World&quot;, &quot;&quot;, &quot;&quot;]</span>
+</code></pre>
+<h3 id="sign_back_lines">sign_back_lines</h3>
+<ul>
+<li><strong>Type:</strong> <code>list[str] | None</code></li>
+</ul>
+<p>Back side text as a list of 4 strings.</p>
+<h3 id="set_sign_line">set_sign_line</h3>
+<pre><code class="language-python"><span class="kw">await</span> block.set_sign_line(index, text)
+</code></pre>
+<p>Set a single front sign line.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>index</code> (<code>int</code>) — Line index (0–3).</li>
+<li><code>text</code> (<code>str</code>) — Line text.</li>
+<li><strong>Returns:</strong> <code>Awaitable[None]</code></li>
+</ul>
+<h3 id="set_sign_lines">set_sign_lines</h3>
+<pre><code class="language-python"><span class="kw">await</span> block.set_sign_lines(lines)
+</code></pre>
+<p>Set all front sign lines at once.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>lines</code> (<code>list[str]</code>) — Up to 4 lines.</li>
+<li><strong>Returns:</strong> <code>Awaitable[None]</code></li>
+</ul>
+<pre><code class="language-python"><span class="kw">await</span> sign.set_sign_lines([<span class="st">&quot;Welcome&quot;</span>, <span class="st">&quot;to the&quot;</span>, <span class="st">&quot;shop!&quot;</span>, <span class="st">&quot;&quot;</span>])
+</code></pre>
+<h3 id="set_sign_back_line-set_sign_back_lines">set_sign_back_line / set_sign_back_lines</h3>
+<p>Same as front-side methods, but for the back of the sign.</p>
+<h3 id="set_sign_glowing">set_sign_glowing</h3>
+<pre><code class="language-python"><span class="kw">await</span> block.set_sign_glowing(glowing)
+</code></pre>
+<p>Set whether the front sign text glows.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>glowing</code> (<code>bool</code>) — Whether text should glow.</li>
+<li><strong>Returns:</strong> <code>Awaitable[None]</code></li>
+</ul>
+<h3 id="is_sign_glowing">is_sign_glowing</h3>
+<ul>
+<li><strong>Type:</strong> <code>bool | None</code></li>
+</ul>
+<p>Whether the front sign text is glowing. <code>None</code> if not a sign.</p>
+<hr />
+<h2 id="furnace-methods">Furnace Methods</h2>
+<p>These work on furnace blocks (furnace, blast furnace, smoker). Properties return <code>None</code> if the block isn't a furnace.</p>
+<h3 id="furnace_burn_time">furnace_burn_time</h3>
+<ul>
+<li><strong>Type:</strong> <code>int | None</code></li>
+</ul>
+<p>Remaining fuel burn time in ticks.</p>
+<h3 id="furnace_cook_time">furnace_cook_time</h3>
+<ul>
+<li><strong>Type:</strong> <code>int | None</code></li>
+</ul>
+<p>Current cooking progress in ticks.</p>
+<h3 id="furnace_cook_time_total">furnace_cook_time_total</h3>
+<ul>
+<li><strong>Type:</strong> <code>int | None</code></li>
+</ul>
+<p>Total cook time needed for the current item.</p>
+<h3 id="set_furnace_burn_time">set_furnace_burn_time</h3>
+<pre><code class="language-python"><span class="kw">await</span> block.set_furnace_burn_time(ticks)
+</code></pre>
+<p>Set remaining fuel burn time.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>ticks</code> (<code>int</code>) — Burn time in ticks.</li>
+<li><strong>Returns:</strong> <code>Awaitable[None]</code></li>
+</ul>
+<h3 id="set_furnace_cook_time">set_furnace_cook_time</h3>
+<pre><code class="language-python"><span class="kw">await</span> block.set_furnace_cook_time(ticks)
+</code></pre>
+<p>Set cooking progress.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>ticks</code> (<code>int</code>) — Cook time in ticks.</li>
+<li><strong>Returns:</strong> <code>Awaitable[None]</code></li>
+</ul>
+<pre><code class="language-python">furnace = world.block_at(<span class="nb">10</span>, <span class="nb">64</span>, <span class="nb">20</span>)
+<span class="kw">if</span> furnace.state_type == <span class="st">&quot;Furnace&quot;</span>:
+    print(<span class="st">f&quot;Cook progress: {furnace.furnace_cook_time}/{furnace.furnace_cook_time_total}&quot;</span>)
+    inv = furnace.inventory
+</code></pre>
 <h3 id="set_biome">set_biome</h3>
 <pre><code class="language-python"><span class="kw">await</span> block.set_biome(biome)
 </code></pre>
