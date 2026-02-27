@@ -38,8 +38,7 @@ _print = __builtins__["print"] if isinstance(__builtins__, dict) else __builtins
 def print(*args):
     _print(*args, file=sys.stderr)
 
-
-class _ConsolePlayer:
+class ConsolePlayer:
     def __init__(self, sender_obj: Any):
         self._sender = sender_obj
         self.fields: Dict[str, Any] = {"name": "Console", "uuid": "console"}
@@ -83,7 +82,6 @@ class _ConsolePlayer:
 
     def kick(self, reason: str = ""):
         return _connection.completed_call(None)
-
 
 class Sidebar:
     """Helper for displaying formatted text lines on a sidebar scoreboard."""
@@ -136,7 +134,6 @@ class Sidebar:
     @title.setter
     def title(self, value: str):
         self._obj._call_sync("setDisplayName", value)
-
 
 class Config:
     """Per-script configuration helper with dot-path access and file persistence."""
@@ -265,7 +262,6 @@ class Config:
     def path(self) -> str:
         return self._path
 
-
 class State:
     """Simple persistent key-value store that survives script reloads."""
 
@@ -339,7 +335,6 @@ class State:
     def path(self) -> str:
         return self._path
 
-
 class Cooldown:
     """Per-player cooldown tracker."""
 
@@ -400,7 +395,6 @@ class Cooldown:
                     break
 
         _connection.on("server_boot", lambda _: asyncio.ensure_future(_check_expiry()))
-
 
 class Hologram:
     """Floating text display using a TextDisplay entity."""
@@ -501,7 +495,6 @@ class Hologram:
             self._entity._call("setDefaultBackground", False)
             self._entity._call("setBackgroundColor", value)
 
-
 class ActionBarDisplay:
     """Persistent action bar text that auto-refreshes."""
 
@@ -551,7 +544,6 @@ class ActionBarDisplay:
                     break
 
         _connection.on("server_boot", lambda _: asyncio.ensure_future(_refresh()))
-
 
 class BossBarDisplay:
     """Convenient boss bar display with value/max support and cooldown linking."""
@@ -635,13 +627,18 @@ class BossBarDisplay:
         self._bar.set_progress(max(0.0, min(1.0, self._value / self._max)))
 
     def link_cooldown(self, cooldown: Cooldown, player: Any):
+        """Deprecated: use linked_to instead."""
+        self.linked_to(cooldown, player)
+
+    def linked_to(self, source: Any, player: Any):
+        """Link this boss bar to a Cooldown (or any object with .remaining(player) and .seconds)."""
         from bridge.wrappers import server
         self.show(player)
-        self._max = cooldown.seconds
+        self._max = source.seconds
 
         async def _update():
             while _connection is not None:
-                remaining = cooldown.remaining(player)
+                remaining = source.remaining(player)
                 self._value = remaining
                 self._update_progress()
                 if remaining <= 0:
@@ -652,7 +649,6 @@ class BossBarDisplay:
                     break
 
         asyncio.ensure_future(_update())
-
 
 class BlockDisplay:
     """Block display entity wrapper."""
@@ -683,7 +679,6 @@ class BlockDisplay:
     @billboard.setter
     def billboard(self, value: str):
         self._entity._call("setBillboard", value)
-
 
 class ItemDisplay:
     """Item display entity wrapper."""
@@ -716,7 +711,6 @@ class ItemDisplay:
     @billboard.setter
     def billboard(self, value: str):
         self._entity._call("setBillboard", value)
-
 
 class Menu:
     """Interactive chest GUI menu with click handlers."""
@@ -764,7 +758,6 @@ class Menu:
     def rows(self) -> int:
         return self._rows
 
-
 @dataclass
 class MenuItem:
     """An item in a Menu with an optional click callback."""
@@ -775,7 +768,6 @@ class MenuItem:
         from bridge.wrappers import Item
         if isinstance(self.item, str):
             self.item = Item(self.item)
-
 
 # Global menu tracking
 _open_menus: Dict[str, Menu] = {}
@@ -827,3 +819,4 @@ def _register_menu_events():
     _connection.subscribe("inventory_click", False)
     _connection.on("inventory_close", _on_inventory_close)
     _connection.subscribe("inventory_close", False)
+
