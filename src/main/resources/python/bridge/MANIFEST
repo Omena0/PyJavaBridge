@@ -24,6 +24,11 @@ extensions/ability.py
 extensions/mana.py
 extensions/combat.py
 extensions/levels.py
-extensions/dialog.py
-extensions/bank.py
-extensions/dialog.py
+extensions/region.py
+extensions/party.py
+extensions/guild.py
+extensions/custom_item.py
+extensions/leaderboard.py
+extensions/visual_effect.py
+extensions/player_data.py
+extensions/dungeon.py
