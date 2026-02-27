@@ -75,8 +75,7 @@ public class PyJavaBridgePlugin extends JavaPlugin {
             Files.createDirectories(runtimeDir);
 
             copyRuntimeResource("python/runner.py", runtimeDir.resolve("runner.py"));
-            copyRuntimeResource("python/bridge.py", scriptsDir.resolve("bridge.py"));
-            copyRuntimeResource("python/bridge.pyi", scriptsDir.resolve("bridge.pyi"));
+            copyBridgePackage(scriptsDir);
 
             getLogger().info("PyJavaBridge runtime initialized at " + runtimeDir);
         } catch (IOException e) {
@@ -143,6 +142,7 @@ public class PyJavaBridgePlugin extends JavaPlugin {
                     .filter(path -> path.toString().endsWith(".py"))
                     .filter(path -> !path.getFileName().toString().equals("bridge.py"))
                     .filter(path -> !path.getFileName().toString().equals("runner.py"))
+                    .filter(path -> !Files.isDirectory(path))
                     .forEach(path -> startScript(path, scriptsDir, runtimeDir));
 
         } catch (IOException e) {
@@ -239,6 +239,24 @@ public class PyJavaBridgePlugin extends JavaPlugin {
             }
 
             Files.copy(input, destination, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+        }
+    }
+
+    private void copyBridgePackage(Path scriptsDir) throws IOException {
+        // Read the manifest listing all bridge package files
+        try (InputStream manifest = getResource("python/bridge/MANIFEST")) {
+            if (manifest == null) {
+                throw new IOException("Missing bridge/MANIFEST");
+            }
+            java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.InputStreamReader(manifest));
+            String line;
+            while ((line = reader.readLine()) != null) {
+                line = line.trim();
+                if (line.isEmpty() || line.startsWith("#")) continue;
+                Path dest = scriptsDir.resolve("bridge").resolve(line);
+                Files.createDirectories(dest.getParent());
+                copyRuntimeResource("python/bridge/" + line, dest);
+            }
         }
     }
 

@@ -1,0 +1,4 @@
+# Bridge package files to copy (paths relative to bridge/)
+__init__.py
+__init__.pyi
+extensions/__init__.py
