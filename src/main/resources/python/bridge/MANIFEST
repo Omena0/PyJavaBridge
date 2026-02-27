@@ -17,3 +17,13 @@ extensions/image_display.py
 extensions/mesh_display.py
 extensions/quest.py
 extensions/dialog.py
+extensions/bank.py
+extensions/shop.py
+extensions/trade.py
+extensions/ability.py
+extensions/mana.py
+extensions/combat.py
+extensions/levels.py
+extensions/dialog.py
+extensions/bank.py
+extensions/dialog.py
