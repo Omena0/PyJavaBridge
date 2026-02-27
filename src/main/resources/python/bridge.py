@@ -97,6 +97,25 @@ __all__ = [
     "Potion",
     "RaycastResult",
     "Config",
+    "DamageCause",
+    "Enchantment",
+    "ItemFlag",
+    "EquipmentSlot",
+    "DyeColor",
+    "SpawnReason",
+    "EntityCategory",
+    "EntityPose",
+    "BlockFace",
+    "TreeType",
+    "WeatherType",
+    "WorldType",
+    "Action",
+    "ChatColor",
+    "EventPriority",
+    "TeleportCause",
+    "InventoryType",
+    "Billboard",
+    "BarFlag",
 ]
 
 _print = print
@@ -1855,6 +1874,63 @@ class Particle(EnumValue):
 
 class Difficulty(EnumValue):
     TYPE_NAME = "org.bukkit.Difficulty"
+
+class DamageCause(EnumValue):
+    TYPE_NAME = "org.bukkit.event.entity.EntityDamageEvent.DamageCause"
+
+class Enchantment(EnumValue):
+    TYPE_NAME = "org.bukkit.enchantments.Enchantment"
+
+class ItemFlag(EnumValue):
+    TYPE_NAME = "org.bukkit.inventory.ItemFlag"
+
+class EquipmentSlot(EnumValue):
+    TYPE_NAME = "org.bukkit.inventory.EquipmentSlot"
+
+class DyeColor(EnumValue):
+    TYPE_NAME = "org.bukkit.DyeColor"
+
+class SpawnReason(EnumValue):
+    TYPE_NAME = "org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason"
+
+class EntityCategory(EnumValue):
+    TYPE_NAME = "org.bukkit.entity.EntityCategory"
+
+class EntityPose(EnumValue):
+    TYPE_NAME = "org.bukkit.entity.Pose"
+
+class BlockFace(EnumValue):
+    TYPE_NAME = "org.bukkit.block.BlockFace"
+
+class TreeType(EnumValue):
+    TYPE_NAME = "org.bukkit.TreeType"
+
+class WeatherType(EnumValue):
+    TYPE_NAME = "org.bukkit.WeatherType"
+
+class WorldType(EnumValue):
+    TYPE_NAME = "org.bukkit.WorldType"
+
+class Action(EnumValue):
+    TYPE_NAME = "org.bukkit.event.block.Action"
+
+class ChatColor(EnumValue):
+    TYPE_NAME = "org.bukkit.ChatColor"
+
+class EventPriority(EnumValue):
+    TYPE_NAME = "org.bukkit.event.EventPriority"
+
+class TeleportCause(EnumValue):
+    TYPE_NAME = "org.bukkit.event.player.PlayerTeleportEvent.TeleportCause"
+
+class InventoryType(EnumValue):
+    TYPE_NAME = "org.bukkit.event.inventory.InventoryType"
+
+class Billboard(EnumValue):
+    TYPE_NAME = "org.bukkit.entity.Display.Billboard"
+
+class BarFlag(EnumValue):
+    TYPE_NAME = "org.bukkit.boss.BarFlag"
 
 class Vector(ProxyBase):
     """
@@ -4177,6 +4253,25 @@ def _enum_from(type_name: str, name: str) -> EnumValue:
         "org.bukkit.boss.BarStyle": BarStyle,
         "org.bukkit.entity.EntityType": EntityType,
         "org.bukkit.potion.PotionEffectType": EffectType,
+        "org.bukkit.event.entity.EntityDamageEvent.DamageCause": DamageCause,
+        "org.bukkit.enchantments.Enchantment": Enchantment,
+        "org.bukkit.inventory.ItemFlag": ItemFlag,
+        "org.bukkit.inventory.EquipmentSlot": EquipmentSlot,
+        "org.bukkit.DyeColor": DyeColor,
+        "org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason": SpawnReason,
+        "org.bukkit.entity.EntityCategory": EntityCategory,
+        "org.bukkit.entity.Pose": EntityPose,
+        "org.bukkit.block.BlockFace": BlockFace,
+        "org.bukkit.TreeType": TreeType,
+        "org.bukkit.WeatherType": WeatherType,
+        "org.bukkit.WorldType": WorldType,
+        "org.bukkit.event.block.Action": Action,
+        "org.bukkit.ChatColor": ChatColor,
+        "org.bukkit.event.EventPriority": EventPriority,
+        "org.bukkit.event.player.PlayerTeleportEvent.TeleportCause": TeleportCause,
+        "org.bukkit.event.inventory.InventoryType": InventoryType,
+        "org.bukkit.entity.Display.Billboard": Billboard,
+        "org.bukkit.boss.BarFlag": BarFlag,
     }
     enum_cls = mapping.get(type_name, EnumValue)
     return enum_cls(type_name, name)
