@@ -125,6 +125,11 @@ __all__ = [
     "on_script_message",
     "get_scripts",
     "NPC",
+    "has_packet_api",
+    "on_packet_send",
+    "on_packet_receive",
+    "send_packet",
+    "remove_packet_listener",
     "DamageCause",
     "Enchantment",
     "ItemFlag",
@@ -5626,6 +5631,61 @@ async def greet(event: Event, name: str):
 server = Server(target="server")
 chat = ChatFacade(target="chat")
 reflect = ReflectFacade(target="reflect")
+
+# --- Packet API (requires ProtocolLib) ---
+
+def has_packet_api() -> "BridgeCall":
+    """Check if ProtocolLib packet API is available. Returns Awaitable[bool]."""
+    return _connection.call("hasPacketApi", target="server")
+
+def on_packet_send(packet_type: str):
+    """Decorator: listen for outgoing packets of the given type.
+
+    Handler receives an Event with fields: packet_type, fields, player, direction.
+
+    Usage:
+        @on_packet_send("ENTITY_VELOCITY")
+        async def on_vel(event):
+            print(event.fields)
+    """
+    def decorator(handler):
+        _connection.call("listenPacketSend", target="server", args=[packet_type])
+        _connection.on("packet_send", handler)
+        _connection.subscribe("packet_send", False)
+        return handler
+    return decorator
+
+def on_packet_receive(packet_type: str):
+    """Decorator: listen for incoming packets of the given type.
+
+    Handler receives an Event with fields: packet_type, fields, player, direction.
+
+    Usage:
+        @on_packet_receive("POSITION")
+        async def on_pos(event):
+            print(event.fields)
+    """
+    def decorator(handler):
+        _connection.call("listenPacketReceive", target="server", args=[packet_type])
+        _connection.on("packet_receive", handler)
+        _connection.subscribe("packet_receive", False)
+        return handler
+    return decorator
+
+def send_packet(player: Player, packet_type: str, fields: Dict[str, Any] = None):
+    """Send a raw packet to a player. Requires ProtocolLib.
+
+    Args:
+        player: The target player.
+        packet_type: Packet type name (e.g. "ENTITY_VELOCITY").
+        fields: Dict of field values (int_0, double_0, string_0, etc).
+    """
+    return _connection.call("sendPacket", target="server", args=[player, packet_type, fields or {}])
+
+def remove_packet_listener(key: str):
+    """Remove a packet listener by key (e.g. 'send:ENTITY_VELOCITY')."""
+    return _connection.call("removePacketListener", target="server", args=[key])
+
 
 # --- Inter-script communication ---
 

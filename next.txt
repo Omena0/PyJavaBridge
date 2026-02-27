@@ -1,4 +1,15 @@
 Add:
 - Quest class:
-  - Attrs: name, desc, on_complete(), start(), end(), start_time, end_time, time_limit, status, progress
+  - Attrs: name, desc, on_complete(), start(), end(), start_time, end_time, time_limit=None, status, progress, accept(), etc
   - Designed to be a parent class
+  - BossBarDisplay integration for time limit & progress
+  - Progress is a user-defined getter, args: self, Player
+
+- QuestTree:
+  - Attrs: tree (list of lists or Quest)
+  - Global quest tree, used for quest progression
+  - When all quests in a list is completed, the next depth is unlocked
+  - Methods to view current available/started quests, check completion, and progress through the tree
+
+- NPC:
+  - Add complex dialog

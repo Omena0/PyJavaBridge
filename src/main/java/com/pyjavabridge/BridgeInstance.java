@@ -1552,6 +1552,59 @@ public class BridgeInstance {
             }
             return names;
         }
+        // Packet API
+        if ("listenPacketSend".equals(method) && args.size() >= 1) {
+            if (!plugin.hasPacketBridge()) return "ProtocolLib not available";
+            String packetName = String.valueOf(args.get(0));
+            plugin.getPacketBridge().listenSend(packetName, (player, data) -> {
+                JsonObject payload = new JsonObject();
+                payload.addProperty("direction", "send");
+                payload.addProperty("packet_type", packetName);
+                payload.add("fields", data);
+                payload.add("player", serializer.serialize(player));
+                eventDispatcher.sendEvent("packet_send", payload);
+            });
+            return true;
+        }
+        if ("listenPacketReceive".equals(method) && args.size() >= 1) {
+            if (!plugin.hasPacketBridge()) return "ProtocolLib not available";
+            String packetName = String.valueOf(args.get(0));
+            plugin.getPacketBridge().listenReceive(packetName, (player, data) -> {
+                JsonObject payload = new JsonObject();
+                payload.addProperty("direction", "receive");
+                payload.addProperty("packet_type", packetName);
+                payload.add("fields", data);
+                payload.add("player", serializer.serialize(player));
+                eventDispatcher.sendEvent("packet_receive", payload);
+            });
+            return true;
+        }
+        if ("removePacketListener".equals(method) && args.size() >= 1) {
+            if (!plugin.hasPacketBridge()) return "ProtocolLib not available";
+            plugin.getPacketBridge().removeListener(String.valueOf(args.get(0)));
+            return true;
+        }
+        if ("sendPacket".equals(method) && args.size() >= 3) {
+            if (!plugin.hasPacketBridge()) return "ProtocolLib not available";
+            Object playerObj = args.get(0);
+            String packetName = String.valueOf(args.get(1));
+            Object fieldsObj = args.get(2);
+            if (playerObj instanceof org.bukkit.entity.Player player && fieldsObj instanceof Map<?,?> map) {
+                JsonObject fields = new JsonObject();
+                for (Map.Entry<?, ?> entry : map.entrySet()) {
+                    String k = String.valueOf(entry.getKey());
+                    Object v = entry.getValue();
+                    if (v instanceof Number n) fields.addProperty(k, n);
+                    else if (v instanceof Boolean b) fields.addProperty(k, b);
+                    else if (v instanceof String s) fields.addProperty(k, s);
+                }
+                plugin.getPacketBridge().sendPacket(player, packetName, fields);
+            }
+            return true;
+        }
+        if ("hasPacketApi".equals(method)) {
+            return plugin.hasPacketBridge();
+        }
         return UNHANDLED;
     }
 

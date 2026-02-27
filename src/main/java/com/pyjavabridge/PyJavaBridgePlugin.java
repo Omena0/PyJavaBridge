@@ -46,6 +46,7 @@ public class PyJavaBridgePlugin extends JavaPlugin {
     private double lastTickTimeMs = 0.0;
 
     private final AtomicInteger eventCounter = new AtomicInteger(1);
+    private PacketBridge packetBridge;
 
     @Override
     public void onEnable() {
@@ -96,12 +97,26 @@ public class PyJavaBridgePlugin extends JavaPlugin {
             drainMainThreadQueue();
         }, 1L, 1L);
 
+        // Initialize ProtocolLib packet bridge if available
+        if (getServer().getPluginManager().getPlugin("ProtocolLib") != null) {
+            try {
+                packetBridge = new PacketBridge(this);
+                getLogger().info("ProtocolLib detected — packet API enabled");
+            } catch (Exception e) {
+                getLogger().warning("ProtocolLib found but packet API could not be initialized: " + e.getMessage());
+            }
+        }
+
         startScripts(scriptsDir, runtimeDir);
     }
 
     @Override
     public void onDisable() {
         stopFileWatcher();
+
+        if (packetBridge != null) {
+            packetBridge.removeAllListeners();
+        }
 
         if (mainThreadPump != null) {
             mainThreadPump.cancel();
@@ -389,6 +404,14 @@ public class PyJavaBridgePlugin extends JavaPlugin {
 
     public int nextEventId() {
         return eventCounter.getAndIncrement();
+    }
+
+    public PacketBridge getPacketBridge() {
+        return packetBridge;
+    }
+
+    public boolean hasPacketBridge() {
+        return packetBridge != null;
     }
 
     @Override

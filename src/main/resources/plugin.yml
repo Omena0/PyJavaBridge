@@ -4,6 +4,8 @@ version: '${version}'
 api: '1.21'
 api-version: '1.21'
 author: Omena0
+softdepend:
+  - ProtocolLib
 commands:
   bridge:
     description: Manage PyJavaBridge
