@@ -358,12 +358,27 @@ public class BridgeInstance {
         }, ticks);
     }
 
+    @SuppressWarnings("unchecked")
     private void handleRegisterCommand(JsonObject message) {
         String commandName = message.get("name").getAsString();
         String permission = message.has("permission") ? message.get("permission").getAsString() : null;
 
+        Map<Integer, List<String>> completions = null;
+        if (message.has("completions")) {
+            completions = new java.util.HashMap<>();
+            JsonObject compObj = message.getAsJsonObject("completions");
+            for (var entry : compObj.entrySet()) {
+                int index = Integer.parseInt(entry.getKey());
+                List<String> values = new ArrayList<>();
+                for (var el : entry.getValue().getAsJsonArray()) {
+                    values.add(el.getAsString());
+                }
+                completions.put(index, values);
+            }
+        }
+
         plugin.getLogger().info("[" + name + "] Registering command /" + commandName);
-        plugin.registerScriptCommand(commandName, this, permission);
+        plugin.registerScriptCommand(commandName, this, permission, completions);
     }
 
     private void handleRemoveEntities(JsonObject message) {

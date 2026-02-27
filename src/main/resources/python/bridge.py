@@ -2606,11 +2606,14 @@ class BridgeConnection:
         print(f"[PyJavaBridge] Subscribing to {event_name} once_per_tick={once_per_tick} priority={priority} throttle_ms={throttle_ms}")
         self.send({"type": "subscribe", "event": event_name, "once_per_tick": once_per_tick, "priority": priority, "throttle_ms": throttle_ms})
 
-    def register_command(self, name: str, permission: Optional[str] = None):
+    def register_command(self, name: str, permission: Optional[str] = None, completions: Optional[dict] = None):
         """Register a command name with the server."""
         msg: Dict[str, Any] = {"type": "register_command", "name": name}
         if permission is not None:
             msg["permission"] = permission
+        if completions is not None:
+            # Convert int keys to strings for JSON
+            msg["completions"] = {str(k): v for k, v in completions.items()}
         self.send(msg)
 
     def on(self, event_name: str, handler: Callable[[Any], Awaitable[None]]):
@@ -4980,7 +4983,7 @@ def task(func: Optional[Callable[[], Any]] = None, *, interval: int = 20, delay:
 
     return decorator(func)
 
-def command(description: Optional[str] = None, *, name: Optional[str] = None, permission: Optional[str] = None):
+def command(description: Optional[str] = None, *, name: Optional[str] = None, permission: Optional[str] = None, tab_complete: Optional[dict] = None):
     """
     Register a command handler.
 
@@ -5116,7 +5119,7 @@ async def greet(event: Event, name: str):
             return await handler(event_obj, *pos_args, *var_args, **kwargs)
         event_name = f"command_{command_name}"
         _connection.on(event_name, wrapper)
-        _connection.register_command(command_name, permission=permission)
+        _connection.register_command(command_name, permission=permission, completions=tab_complete)
         setattr(wrapper, "__command_args__", [p.name for p in positional_params])
         setattr(wrapper, "__command_desc__", description)
         return wrapper

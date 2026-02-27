@@ -7,11 +7,16 @@ import org.bukkit.command.CommandMap;
 import org.bukkit.command.CommandSender;
 
 import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.logging.Logger;
 
 class ScriptCommand extends Command {
     private volatile BridgeInstance instance;
     private String permission;
+    private final Map<Integer, List<String>> completions = new HashMap<>();
 
     ScriptCommand(String name, BridgeInstance instance) {
         super(name);
@@ -30,7 +35,14 @@ class ScriptCommand extends Command {
         this.permission = permission;
     }
 
-    static void registerScriptCommand(String name, BridgeInstance instance, String permission, Logger logger) {
+    void setCompletions(Map<Integer, List<String>> completions) {
+        this.completions.clear();
+        if (completions != null) {
+            this.completions.putAll(completions);
+        }
+    }
+
+    static void registerScriptCommand(String name, BridgeInstance instance, String permission, Map<Integer, List<String>> completions, Logger logger) {
         CommandMap map = getCommandMap(logger);
 
         if (map == null) {
@@ -46,6 +58,9 @@ class ScriptCommand extends Command {
             if (permission != null) {
                 scriptCommand.setScriptPermission(permission);
             }
+            if (completions != null) {
+                scriptCommand.setCompletions(completions);
+            }
             return;
         }
 
@@ -56,6 +71,9 @@ class ScriptCommand extends Command {
         ScriptCommand cmd = new ScriptCommand(commandName, instance);
         if (permission != null) {
             cmd.setScriptPermission(permission);
+        }
+        if (completions != null) {
+            cmd.setCompletions(completions);
         }
         map.register("pyjavabridge", cmd);
     }
@@ -108,5 +126,28 @@ class ScriptCommand extends Command {
 
         current.sendEvent("command_" + getName(), payload);
         return true;
+    }
+
+    @Override
+    public List<String> tabComplete(CommandSender sender, String alias, String[] args) {
+        if (args.length == 0) return List.of();
+
+        int argIndex = args.length - 1;
+        String partial = args[argIndex].toLowerCase();
+
+        List<String> options = completions.get(argIndex);
+        if (options == null) {
+            // Check for a wildcard (-1) entry that applies to all positions
+            options = completions.get(-1);
+        }
+        if (options == null) return List.of();
+
+        List<String> results = new ArrayList<>();
+        for (String option : options) {
+            if (option.toLowerCase().startsWith(partial)) {
+                results.add(option);
+            }
+        }
+        return results;
     }
 }

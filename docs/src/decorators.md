@@ -103,7 +103,7 @@ Register a function as a script command. The command is automatically available 
 ### Signature
 
 ```py
-@command(description=None, *, name=None, permission=None)
+@command(description=None, *, name=None, permission=None, tab_complete=None)
 ```
 
 ### Parameters
@@ -145,6 +145,39 @@ Permission node required to use the command. Players without this permission can
 ```python
 @command("Ban a player", permission="admin.ban")
 async def ban(e, target: str):
+    ...
+```
+
+#### tab_complete
+
+- **Type:** `dict[int, list[str]] | None`
+- **Default:** `None`
+
+Static tab completion suggestions per argument position (0-indexed). Use `-1` as a wildcard for all positions without their own entry.
+
+```python
+@command("Set game mode", tab_complete={
+    0: ["survival", "creative", "adventure", "spectator"]
+})
+async def gamemode(e, mode: str):
+    ...
+```
+
+```python
+@command("Teleport to a place", tab_complete={
+    0: ["spawn", "home", "shop", "arena"],
+})
+async def tp(e, place: str):
+    ...
+```
+
+Wildcard example — suggest the same options for any argument position:
+
+```python
+@command("Tag players", tab_complete={
+    -1: ["vip", "admin", "builder", "mod"]
+})
+async def tag(e, *tags):
     ...
 ```
 

@@ -265,7 +265,7 @@
 </code></pre>
 <p>Register a function as a script command. The command is automatically available as <code>/functionname</code> (or as specified via the <code>name</code> parameter). Command arguments are parsed from the function's additional parameters after <code>event</code>.</p>
 <h3 id="signature_1">Signature</h3>
-<pre><code class="language-py"><span class="dc">@command</span>(description=<span class="kw">None</span>, *, name=<span class="kw">None</span>, permission=<span class="kw">None</span>)
+<pre><code class="language-py"><span class="dc">@command</span>(description=<span class="kw">None</span>, *, name=<span class="kw">None</span>, permission=<span class="kw">None</span>, tab_complete=<span class="kw">None</span>)
 </code></pre>
 <h3 id="parameters_1">Parameters</h3>
 <h4 id="description">description</h4>
@@ -297,6 +297,31 @@
 <p>Permission node required to use the command. Players without this permission cannot execute it.</p>
 <pre><code class="language-python"><span class="dc">@command</span>(<span class="st">&quot;Ban a player&quot;</span>, permission=<span class="st">&quot;admin.ban&quot;</span>)
 <span class="kw">async</span> <span class="kw">def</span> ban(e, target: str):
+    ...
+</code></pre>
+<h4 id="tab_complete">tab_complete</h4>
+<ul>
+<li><strong>Type:</strong> <code>dict[int, list[str]] | None</code></li>
+<li><strong>Default:</strong> <code>None</code></li>
+</ul>
+<p>Static tab completion suggestions per argument position (0-indexed). Use <code>-1</code> as a wildcard for all positions without their own entry.</p>
+<pre><code class="language-python"><span class="dc">@command</span>(<span class="st">&quot;Set game mode&quot;</span>, tab_complete={
+    <span class="nb">0</span>: [<span class="st">&quot;survival&quot;</span>, <span class="st">&quot;creative&quot;</span>, <span class="st">&quot;adventure&quot;</span>, <span class="st">&quot;spectator&quot;</span>]
+})
+<span class="kw">async</span> <span class="kw">def</span> gamemode(e, mode: str):
+    ...
+</code></pre>
+<pre><code class="language-python"><span class="dc">@command</span>(<span class="st">&quot;Teleport to a place&quot;</span>, tab_complete={
+    <span class="nb">0</span>: [<span class="st">&quot;spawn&quot;</span>, <span class="st">&quot;home&quot;</span>, <span class="st">&quot;shop&quot;</span>, <span class="st">&quot;arena&quot;</span>],
+})
+<span class="kw">async</span> <span class="kw">def</span> tp(e, place: str):
+    ...
+</code></pre>
+<p>Wildcard example — suggest the same options for any argument position:</p>
+<pre><code class="language-python"><span class="dc">@command</span>(<span class="st">&quot;Tag players&quot;</span>, tab_complete={
+    -<span class="nb">1</span>: [<span class="st">&quot;vip&quot;</span>, <span class="st">&quot;admin&quot;</span>, <span class="st">&quot;builder&quot;</span>, <span class="st">&quot;mod&quot;</span>]
+})
+<span class="kw">async</span> <span class="kw">def</span> tag(e, *tags):
     ...
 </code></pre>
 <h3 id="command-arguments">Command arguments</h3>
