@@ -4276,7 +4276,6 @@ class ImageDisplay:
         if entries and _connection is not None:
             _connection.send_fire_forget("update_entities", entries=entries)
 
-
 class MeshDisplay:
     """Render 3D triangle mesh using TextDisplay entities with greedy meshing.
 
@@ -4713,7 +4712,6 @@ class MeshDisplay:
             entries.append([entity._handle, argb])
         if entries and _connection is not None:
             _connection.send_fire_forget("update_entities", entries=entries)
-
 
 class Menu:
     """Interactive chest GUI menu with click handlers.
@@ -5232,7 +5230,6 @@ def _toml_dumps(data: Dict[str, Any]) -> str:
     _toml_write_table(data, [], lines)
     return "\n".join(lines) + "\n"
 
-
 def _toml_write_table(data: Dict[str, Any], path: List[str], lines: List[str]):
     """Recursively write a TOML table, emitting simple keys first, then sub-tables."""
     for key, value in data.items():
@@ -5260,14 +5257,12 @@ def _toml_write_table(data: Dict[str, Any], path: List[str], lines: List[str]):
                 lines.append(f"[[{'.'.join(_toml_key(p) for p in sub_path)}]]")
                 _toml_write_table(item, sub_path, lines)
 
-
 def _toml_key(key: str) -> str:
     """Return a bare TOML key if safe, otherwise a quoted key."""
     if key and all(c.isalnum() or c in "-_" for c in key):
         return key
     escaped = key.replace("\\", "\\\\").replace('"', '\\"')
     return f'"{escaped}"'
-
 
 def _toml_value(value: Any) -> str:
     """Encode a Python value as a TOML value string."""
@@ -5288,7 +5283,6 @@ def _toml_value(value: Any) -> str:
         return "{" + ", ".join(items) + "}"
     escaped = str(value).replace("\\", "\\\\").replace('"', '\\"')
     return f'"{escaped}"'
-
 
 def _properties_load(path: str) -> Dict[str, Any]:
     """Load a Java-style .properties file into a nested dict."""
@@ -5317,7 +5311,6 @@ def _properties_load(path: str) -> Dict[str, Any]:
             _properties_set_nested(data, key, _properties_parse_value(val_str))
     return data
 
-
 def _properties_set_nested(data: Dict[str, Any], key: str, value: Any):
     """Set a dot-separated key path in a nested dict."""
     parts = key.split(".")
@@ -5327,7 +5320,6 @@ def _properties_set_nested(data: Dict[str, Any], key: str, value: Any):
             node[part] = {}
         node = cast(Dict[str, Any], node[part])
     node[parts[-1]] = value
-
 
 def _properties_parse_value(value: str) -> Any:
     """Parse a properties value string into an appropriate Python type."""
@@ -5353,7 +5345,6 @@ def _properties_dumps(data: Dict[str, Any]) -> str:
     lines: List[str] = []
     _properties_flatten(data, [], lines)
     return "\n".join(lines) + "\n"
-
 
 def _properties_flatten(data: Dict[str, Any], path: List[str], lines: List[str]):
     """Flatten a nested dict into dot-separated key=value lines."""
