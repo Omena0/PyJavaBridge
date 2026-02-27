@@ -32,6 +32,13 @@ class NPC:
         self._path: List[Location] = []
         self._path_loop = False
         self._path_task = None
+        self._linked_dialog: Any = None  # Dialog object
+        self._linked_player: Any = None  # Player to mimic skin of
+        self._range: Optional[float] = None
+        self._range_exit_handlers: List[Callable] = []
+        self._range_enter_handlers: List[Callable] = []
+        self._tracked_players: Dict[str, bool] = {}  # uuid -> was_in_range
+        self._range_task_started = False
         uuid = entity.uuid
         if uuid:
             _npc_registry[str(uuid)] = self
