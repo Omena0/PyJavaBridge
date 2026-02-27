@@ -1,0 +1,221 @@
+#!/usr/bin/env python3
+"""PyJavaBridge CLI tool.
+
+Usage:
+    pjb search <query>     Search the documentation
+    pjb events [<filter>]  List available event names
+"""
+
+import os
+import re
+import sys
+from pathlib import Path
+
+# Resolve docs directory relative to this script
+SCRIPT_DIR = Path(__file__).resolve().parent
+# Try multiple possible locations
+DOCS_CANDIDATES = [
+    SCRIPT_DIR.parent / "docs" / "src",
+    SCRIPT_DIR / "docs" / "src",
+    Path.cwd() / "docs" / "src",
+]
+
+# Known Bukkit/Paper events with their common fields
+EVENTS = {
+    # Player events
+    "player_join": {"fields": ["player"], "cancellable": False, "desc": "Player joins the server"},
+    "player_quit": {"fields": ["player", "quit_message"], "cancellable": False, "desc": "Player leaves the server"},
+    "player_move": {"fields": ["player", "from", "to"], "cancellable": True, "desc": "Player moves"},
+    "player_interact": {"fields": ["player", "action", "block", "item", "hand"], "cancellable": True, "desc": "Player interacts with block/air"},
+    "player_interact_entity": {"fields": ["player", "entity", "hand"], "cancellable": True, "desc": "Player interacts with an entity"},
+    "player_chat": {"fields": ["player", "message"], "cancellable": True, "desc": "Player sends a chat message. Return str to override."},
+    "async_chat": {"fields": ["player", "message"], "cancellable": True, "desc": "Async chat event (Paper). Return str to override."},
+    "player_death": {"fields": ["player", "entity", "death_message"], "cancellable": False, "desc": "Player dies"},
+    "player_respawn": {"fields": ["player", "location"], "cancellable": False, "desc": "Player respawns. Return Location to override spawn."},
+    "player_teleport": {"fields": ["player", "from", "to", "cause"], "cancellable": True, "desc": "Player teleports"},
+    "player_toggle_sneak": {"fields": ["player", "sneaking"], "cancellable": True, "desc": "Player toggles sneaking"},
+    "player_toggle_sprint": {"fields": ["player", "sprinting"], "cancellable": True, "desc": "Player toggles sprinting"},
+    "player_bed_enter": {"fields": ["player", "bed"], "cancellable": True, "desc": "Player enters a bed"},
+    "player_bed_leave": {"fields": ["player", "bed"], "cancellable": False, "desc": "Player leaves a bed"},
+    "player_bucket_empty": {"fields": ["player", "block", "item"], "cancellable": True, "desc": "Player empties a bucket"},
+    "player_bucket_fill": {"fields": ["player", "block", "item"], "cancellable": True, "desc": "Player fills a bucket"},
+    "player_drop_item": {"fields": ["player", "item"], "cancellable": True, "desc": "Player drops an item"},
+    "player_pickup_item": {"fields": ["player", "item", "entity"], "cancellable": True, "desc": "Player picks up an entity/item"},
+    "player_consume_item": {"fields": ["player", "item"], "cancellable": True, "desc": "Player consumes food/potion"},
+    "player_swap_hand_items": {"fields": ["player", "main_hand_item", "off_hand_item"], "cancellable": True, "desc": "Player swaps items between hands"},
+    "player_game_mode_change": {"fields": ["player", "new_game_mode"], "cancellable": True, "desc": "Player's game mode changes"},
+    "player_exp_change": {"fields": ["player", "amount"], "cancellable": True, "desc": "Player XP changes"},
+    "player_level_change": {"fields": ["player", "old_level", "new_level"], "cancellable": False, "desc": "Player level changes"},
+    "player_advancement_done": {"fields": ["player", "advancement"], "cancellable": False, "desc": "Player completes an advancement"},
+    "player_command_preprocess": {"fields": ["player", "message"], "cancellable": True, "desc": "Player sends a command"},
+    "player_portal": {"fields": ["player", "from", "to", "cause"], "cancellable": True, "desc": "Player uses a portal"},
+
+    # Block events
+    "block_break": {"fields": ["player", "block"], "cancellable": True, "desc": "Block is broken"},
+    "block_place": {"fields": ["player", "block"], "cancellable": True, "desc": "Block is placed"},
+    "block_burn": {"fields": ["block"], "cancellable": True, "desc": "Block burns"},
+    "block_fade": {"fields": ["block"], "cancellable": True, "desc": "Block fades (ice melting, etc)"},
+    "block_form": {"fields": ["block"], "cancellable": True, "desc": "Block forms (snow, ice)"},
+    "block_grow": {"fields": ["block"], "cancellable": True, "desc": "Block grows (crop, tree)"},
+    "block_ignite": {"fields": ["block", "player", "cause"], "cancellable": True, "desc": "Block is set on fire"},
+    "block_physics": {"fields": ["block"], "cancellable": True, "desc": "Block physics update"},
+    "block_piston_extend": {"fields": ["block", "blocks"], "cancellable": True, "desc": "Piston extends"},
+    "block_piston_retract": {"fields": ["block", "blocks"], "cancellable": True, "desc": "Piston retracts"},
+    "block_redstone": {"fields": ["block", "old_current", "new_current"], "cancellable": False, "desc": "Redstone current changes"},
+    "block_explode": {"fields": ["block"], "cancellable": True, "desc": "Block explodes. Per-block cancellation."},
+    "sign_change": {"fields": ["player", "block", "lines"], "cancellable": True, "desc": "Player edits a sign"},
+
+    # Entity events
+    "entity_damage": {"fields": ["entity", "damager", "damage", "cause"], "cancellable": True, "desc": "Entity takes damage. Return number to override damage."},
+    "entity_damage_by_entity": {"fields": ["entity", "damager", "damage", "cause"], "cancellable": True, "desc": "Entity damaged by another entity. Return number to override."},
+    "entity_death": {"fields": ["entity", "drops"], "cancellable": False, "desc": "Entity dies"},
+    "entity_spawn": {"fields": ["entity", "location"], "cancellable": True, "desc": "Entity spawns"},
+    "entity_explode": {"fields": ["entity", "location", "blocks"], "cancellable": True, "desc": "Entity explosion"},
+    "entity_target": {"fields": ["entity", "target", "reason"], "cancellable": True, "desc": "Mob targets an entity. Return Entity to override target."},
+    "entity_target_living_entity": {"fields": ["entity", "target", "reason"], "cancellable": True, "desc": "Mob targets a living entity. Return Entity to override."},
+    "entity_combust": {"fields": ["entity"], "cancellable": True, "desc": "Entity starts burning"},
+    "entity_tame": {"fields": ["entity", "owner"], "cancellable": True, "desc": "Entity is tamed"},
+    "entity_regain_health": {"fields": ["entity", "amount", "reason"], "cancellable": True, "desc": "Entity heals"},
+    "entity_change_block": {"fields": ["entity", "block", "to"], "cancellable": True, "desc": "Entity changes a block"},
+    "projectile_hit": {"fields": ["entity", "hit_entity", "hit_block"], "cancellable": True, "desc": "Projectile hits something"},
+    "projectile_launch": {"fields": ["entity"], "cancellable": True, "desc": "Projectile is launched"},
+    "creature_spawn": {"fields": ["entity", "spawn_reason"], "cancellable": True, "desc": "Creature spawns"},
+
+    # Inventory events
+    "inventory_click": {"fields": ["player", "inventory", "slot", "item", "action"], "cancellable": True, "desc": "Player clicks in an inventory"},
+    "inventory_close": {"fields": ["player", "inventory"], "cancellable": False, "desc": "Player closes an inventory"},
+    "inventory_open": {"fields": ["player", "inventory"], "cancellable": True, "desc": "Player opens an inventory"},
+    "inventory_drag": {"fields": ["player", "inventory", "items"], "cancellable": True, "desc": "Player drags items in inventory"},
+
+    # World events
+    "weather_change": {"fields": ["world", "to_state"], "cancellable": True, "desc": "Weather changes"},
+    "thunder_change": {"fields": ["world", "to_state"], "cancellable": True, "desc": "Thunder state changes"},
+    "world_load": {"fields": ["world"], "cancellable": False, "desc": "World is loaded"},
+    "world_unload": {"fields": ["world"], "cancellable": True, "desc": "World is unloaded"},
+    "chunk_load": {"fields": ["chunk", "world"], "cancellable": False, "desc": "Chunk is loaded"},
+    "chunk_unload": {"fields": ["chunk", "world"], "cancellable": True, "desc": "Chunk is unloaded"},
+
+    # Server events
+    "server_boot": {"fields": [], "cancellable": False, "desc": "Server finishes loading. Use for initialization."},
+    "shutdown": {"fields": [], "cancellable": False, "desc": "Server is shutting down. Use for cleanup."},
+
+    # Custom
+    "packet_send": {"fields": ["player", "packet_type", "fields", "direction"], "cancellable": False, "desc": "Outgoing packet (requires ProtocolLib)"},
+    "packet_receive": {"fields": ["player", "packet_type", "fields", "direction"], "cancellable": False, "desc": "Incoming packet (requires ProtocolLib)"},
+    "script_message": {"fields": ["from", "data"], "cancellable": False, "desc": "Message from another script"},
+}
+
+def find_docs_dir():
+    for candidate in DOCS_CANDIDATES:
+        if candidate.is_dir():
+            return candidate
+    return None
+
+
+def cmd_search(query):
+    docs_dir = find_docs_dir()
+    if docs_dir is None:
+        print("Error: Could not find docs/src directory.")
+        print("Run this from the PyJavaBridge project root.")
+        sys.exit(1)
+
+    query_lower = query.lower()
+    results = []
+
+    for md_file in sorted(docs_dir.glob("*.md")):
+        content = md_file.read_text(encoding="utf-8")
+        lines = content.split("\n")
+
+        for i, line in enumerate(lines):
+            if query_lower in line.lower():
+                # Get context: heading above this line
+                heading = md_file.stem
+                for j in range(i, -1, -1):
+                    if lines[j].startswith("#"):
+                        heading = lines[j].lstrip("#").strip()
+                        break
+
+                # Clean the matched line
+                clean_line = line.strip()
+                if not clean_line or clean_line.startswith("---"):
+                    continue
+
+                results.append({
+                    "file": md_file.stem,
+                    "line": i + 1,
+                    "heading": heading,
+                    "text": clean_line[:120],
+                })
+
+    if not results:
+        print(f"No results for '{query}'")
+        return
+
+    print(f"\033[1m{len(results)} result(s) for '{query}':\033[0m\n")
+
+    current_file = None
+    for r in results:
+        if r["file"] != current_file:
+            current_file = r["file"]
+            print(f"\033[36m  {current_file}.md\033[0m")
+        # Highlight the match in the text
+        text = r["text"]
+        highlighted = re.sub(
+            re.escape(query),
+            f"\033[33m{query}\033[0m",
+            text,
+            flags=re.IGNORECASE,
+        )
+        print(f"    L{r['line']:>3}  \033[90m{r['heading']}\033[0m  {highlighted}")
+
+
+def cmd_events(filter_str=None):
+    filter_lower = filter_str.lower() if filter_str else None
+
+    matching = {}
+    for name, info in sorted(EVENTS.items()):
+        if filter_lower:
+            if filter_lower not in name and filter_lower not in info["desc"].lower():
+                if not any(filter_lower in f for f in info["fields"]):
+                    continue
+        matching[name] = info
+
+    if not matching:
+        print(f"No events matching '{filter_str}'")
+        return
+
+    print(f"\033[1m{len(matching)} event(s){'  (filter: ' + filter_str + ')' if filter_str else ''}:\033[0m\n")
+
+    for name, info in matching.items():
+        cancel = "\033[32m✓\033[0m" if info["cancellable"] else "\033[90m✗\033[0m"
+        fields = ", ".join(info["fields"]) if info["fields"] else "(none)"
+        print(f"  {cancel} \033[36m{name}\033[0m")
+        print(f"      {info['desc']}")
+        print(f"      \033[90mfields: {fields}\033[0m")
+
+
+def main():
+    if len(sys.argv) < 2:
+        print(__doc__)
+        sys.exit(1)
+
+    cmd = sys.argv[1].lower()
+
+    if cmd == "search":
+        if len(sys.argv) < 3:
+            print("Usage: pjb search <query>")
+            sys.exit(1)
+        cmd_search(" ".join(sys.argv[2:]))
+
+    elif cmd == "events":
+        filter_str = " ".join(sys.argv[2:]) if len(sys.argv) > 2 else None
+        cmd_events(filter_str)
+
+    else:
+        print(f"Unknown command: {cmd}")
+        print(__doc__)
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()
