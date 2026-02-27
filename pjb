@@ -112,6 +112,98 @@ def find_docs_dir():
     return None
 
 
+def build_symbol_index(docs_dir):
+    """Build an index of symbols from doc headings.
+
+    Each symbol has:
+      - class_name: The top-level # heading (e.g. "Player")
+      - name: The ### heading (e.g. "name", "teleport")
+      - section: The ## heading (e.g. "Attributes", "Methods")
+      - qualified: "Class.member" or just "Class"
+      - desc: First non-empty line after the heading
+      - file, line
+    """
+    symbols = []
+
+    for md_file in sorted(docs_dir.glob("*.md")):
+        content = md_file.read_text(encoding="utf-8")
+        lines = content.split("\n")
+
+        class_name = md_file.stem.capitalize()
+        section = ""
+        subtitle = ""
+        in_code_block = False
+
+        # Extract subtitle from frontmatter
+        in_frontmatter = False
+        for line in lines:
+            if line.strip() == "---":
+                in_frontmatter = not in_frontmatter
+                continue
+            if in_frontmatter and line.startswith("subtitle:"):
+                subtitle = line.split(":", 1)[1].strip()
+
+        for i, line in enumerate(lines):
+            stripped = line.strip()
+
+            # Track fenced code blocks
+            if stripped.startswith("```"):
+                in_code_block = not in_code_block
+                continue
+            if in_code_block:
+                continue
+
+            if stripped.startswith("# ") and not stripped.startswith("## "):
+                class_name = stripped.lstrip("# ").strip()
+                desc = _get_desc_after(lines, i)
+                symbols.append({
+                    "class_name": class_name,
+                    "name": None,
+                    "section": None,
+                    "qualified": class_name,
+                    "desc": subtitle or desc,
+                    "file": md_file.stem,
+                    "line": i + 1,
+                })
+
+            elif stripped.startswith("## ") and not stripped.startswith("### "):
+                section = stripped.lstrip("# ").strip()
+
+            elif stripped.startswith("### "):
+                member = stripped.lstrip("# ").strip()
+                # Only index code-like symbols (no spaces = identifier)
+                if " " in member:
+                    continue
+                desc = _get_desc_after(lines, i)
+                symbols.append({
+                    "class_name": class_name,
+                    "name": member,
+                    "section": section,
+                    "qualified": f"{class_name}.{member}",
+                    "desc": desc,
+                    "file": md_file.stem,
+                    "line": i + 1,
+                })
+
+    return symbols
+
+
+def _get_desc_after(lines, heading_idx):
+    """Get the first meaningful content line after a heading."""
+    for j in range(heading_idx + 1, min(heading_idx + 8, len(lines))):
+        l = lines[j].strip()
+        if not l or l == "---" or l.startswith("#") or l.startswith("```"):
+            continue
+        # Strip markdown formatting
+        l = re.sub(r'\[([^\]]*)\]\([^)]*\)', r'\1', l)  # [text](url) → text
+        l = re.sub(r'`([^`]*)`', r'\1', l)  # `code` → code
+        l = l.replace('**', '').replace('*', '').replace('_', '')
+        if l.startswith("- Type:"):
+            return l.strip()
+        return l[:100]
+    return ""
+
+
 def cmd_search(query):
     docs_dir = find_docs_dir()
     if docs_dir is None:
@@ -119,54 +211,76 @@ def cmd_search(query):
         print("Run this from the PyJavaBridge project root.")
         sys.exit(1)
 
+    symbols = build_symbol_index(docs_dir)
     query_lower = query.lower()
-    results = []
 
-    for md_file in sorted(docs_dir.glob("*.md")):
-        content = md_file.read_text(encoding="utf-8")
-        lines = content.split("\n")
+    # Check if query is "Class.member" format
+    if "." in query:
+        parts = query.split(".", 1)
+        class_q = parts[0].lower()
+        member_q = parts[1].lower()
+    else:
+        class_q = None
+        member_q = None
 
-        for i, line in enumerate(lines):
-            if query_lower in line.lower():
-                # Get context: heading above this line
-                heading = md_file.stem
-                for j in range(i, -1, -1):
-                    if lines[j].startswith("#"):
-                        heading = lines[j].lstrip("#").strip()
-                        break
+    scored = []
+    for sym in symbols:
+        qualified = sym["qualified"].lower()
+        name = (sym["name"] or sym["class_name"]).lower()
 
-                # Clean the matched line
-                clean_line = line.strip()
-                if not clean_line or clean_line.startswith("---"):
-                    continue
+        score = 0
+        if class_q and member_q:
+            # "Player.name" style query
+            if qualified == query_lower:
+                score = 100  # exact match
+            elif sym["name"] and member_q in sym["name"].lower() and class_q in sym["class_name"].lower():
+                score = 80  # partial match on both parts
+            elif member_q == name:
+                score = 40  # member exact match, wrong class
+            elif member_q in name:
+                score = 20  # member partial match
+        else:
+            # Single word query - match symbol names
+            if name == query_lower:
+                score = 100  # exact match
+            elif qualified == query_lower:
+                score = 100
+            elif name.startswith(query_lower):
+                score = 70  # prefix match
+            elif query_lower in name:
+                score = 40  # substring match
+            elif query_lower in qualified:
+                score = 30
 
-                results.append({
-                    "file": md_file.stem,
-                    "line": i + 1,
-                    "heading": heading,
-                    "text": clean_line[:120],
-                })
+        if score > 0:
+            scored.append((score, sym))
 
-    if not results:
-        print(f"No results for '{query}'")
+    scored.sort(key=lambda x: (-x[0], x[1]["qualified"]))
+
+    if not scored:
+        print(f"No symbols matching '{query}'")
         return
 
-    print(f"\033[1m{len(results)} result(s) for '{query}':\033[0m\n")
+    print(f"\033[1m{len(scored)} symbol(s) for '{query}':\033[0m\n")
 
-    current_file = None
-    for r in results:
-        if r["file"] != current_file:
-            current_file = r["file"]
-            print(f"\033[36m  {current_file}.md\033[0m")
-        # Highlight the match in the text
-        text = r["text"]
-        highlighted = re.sub(
-            re.escape(query),
-            f"\033[33m{query}\033[0m",
-            text,
-            flags=re.IGNORECASE,
-        )
-        print(f"    L{r['line']:>3}  \033[90m{r['heading']}\033[0m  {highlighted}")
+    for score, sym in scored:
+        qualified = sym["qualified"]
+        kind = sym["section"] or "class"
+        desc = sym["desc"]
+        file_ref = f"{sym['file']}.md:L{sym['line']}"
+
+        # Color the qualified name
+        if sym["name"]:
+            cls_part = f"\033[90m{sym['class_name']}.\033[0m"
+            name_part = f"\033[36m{sym['name']}\033[0m"
+            display = cls_part + name_part
+        else:
+            display = f"\033[36;1m{sym['class_name']}\033[0m"
+
+        print(f"  {display}  \033[90m({kind})\033[0m")
+        if desc:
+            print(f"    {desc}")
+        print(f"    \033[90m{file_ref}\033[0m")
 
 
 def cmd_events(filter_str=None):
