@@ -447,13 +447,36 @@ def main():
             title = meta.get("title", slug.capitalize())
             current_heading = title
             sections = []
+            in_table = False
+            table_first_cols = []
             for line in body_md.split("\n"):
-                if line.startswith("#"):
-                    current_heading = line.lstrip("#").strip()
-                elif line.strip() and not line.startswith("```") and not line.startswith("---"):
-                    clean = re.sub(r'[`*\[\]()]', '', line.strip())
+                stripped = line.strip()
+                if stripped.startswith("|") and "|" in stripped[1:]:
+                    # Table row
+                    if re.match(r'^\|[\s\-:|]+\|$', stripped):
+                        continue  # separator row
+                    cols = [c.strip() for c in stripped.strip("|").split("|")]
+                    if cols:
+                        col = re.sub(r'[`*\[\]()]', '', cols[0]).strip()
+                        if col:
+                            table_first_cols.append(col)
+                    in_table = True
+                    continue
+                else:
+                    if in_table and table_first_cols:
+                        sections.append({"heading": current_heading, "text": ", ".join(table_first_cols)})
+                        table_first_cols = []
+                    in_table = False
+
+                if stripped.startswith("#"):
+                    current_heading = stripped.lstrip("#").strip()
+                elif stripped and not stripped.startswith("```") and not stripped.startswith("---"):
+                    clean = re.sub(r'[`*\[\]()]', '', stripped)
                     if clean:
                         sections.append({"heading": current_heading, "text": clean})
+            # Flush any remaining table
+            if table_first_cols:
+                sections.append({"heading": current_heading, "text": ", ".join(table_first_cols)})
             url = "index.html" if slug == "index" else f"{slug}.html"
             search_index.append({"slug": slug, "title": title, "url": url, "sections": sections})
 
