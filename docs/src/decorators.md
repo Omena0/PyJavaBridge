@@ -153,7 +153,7 @@ async def ban(e, target: str):
 - **Type:** `dict[int, list[str]] | None`
 - **Default:** `None`
 
-Static tab completion suggestions per argument position (0-indexed). Use `-1` as a wildcard for all positions without their own entry.
+Static tab completion suggestions per argument position (0-indexed). Use `-1` as a wildcard for all positions without their own entry. For dynamic completions, see the `@my_command.tab_complete` decorator below.
 
 ```python
 @command("Set game mode", tab_complete={
@@ -179,6 +179,54 @@ Wildcard example — suggest the same options for any argument position:
 })
 async def tag(e, *tags):
     ...
+```
+
+### Dynamic tab completion
+
+For dynamic completions that depend on server state (online players, entities, etc.), use the `@my_command.tab_complete` decorator:
+
+```python
+@command("Teleport to a player")
+async def tp(e, target: str):
+    ...
+
+@tp.tab_complete
+async def tp_complete(sender, args):
+    # args is the list of current arguments being typed
+    players = await server.get_online_players()
+    names = [p.name for p in players]
+    # Filter by what the user has typed so far
+    partial = args[-1].lower() if args else ""
+    return [n for n in names if n.lower().startswith(partial)]
+```
+
+The tab completion handler receives:
+- **sender** — the player or command sender requesting completions
+- **args** — list of current argument strings (the last one is being typed)
+
+It should return a list of suggestion strings. The handler can be `async` or synchronous.
+
+```python
+@command("Give item to player")
+async def give(e, player: str, item: str, amount: str = "1"):
+    ...
+
+@give.tab_complete
+async def give_complete(sender, args):
+    if len(args) <= 1:
+        # First arg: player names
+        players = await server.get_online_players()
+        partial = args[0].lower() if args else ""
+        return [p.name for p in players if p.name.lower().startswith(partial)]
+    elif len(args) == 2:
+        # Second arg: item types
+        items = ["diamond", "iron_ingot", "gold_ingot", "emerald"]
+        partial = args[1].lower()
+        return [i for i in items if i.startswith(partial)]
+    elif len(args) == 3:
+        # Third arg: amounts
+        return ["1", "16", "32", "64"]
+    return []
 ```
 
 ### Command arguments

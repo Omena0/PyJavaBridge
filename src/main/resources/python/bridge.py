@@ -2586,6 +2586,7 @@ class BridgeConnection:
         self._pending: Dict[int, "asyncio.Future[Any]"] = {}
         self._pending_sync: Dict[int, _SyncWait] = {}
         self._handlers: Dict[str, List[Callable[[Any], Awaitable[None]]]] = {}
+        self._tab_complete_handlers: Dict[str, Callable[..., Any]] = {}
 
         self._id_counter = itertools.count(1)
         self._stdin = sys.stdin.buffer
@@ -2607,7 +2608,7 @@ class BridgeConnection:
         print(f"[PyJavaBridge] Subscribing to {event_name} once_per_tick={once_per_tick} priority={priority} throttle_ms={throttle_ms}")
         self.send({"type": "subscribe", "event": event_name, "once_per_tick": once_per_tick, "priority": priority, "throttle_ms": throttle_ms})
 
-    def register_command(self, name: str, permission: Optional[str] = None, completions: Optional[dict] = None):
+    def register_command(self, name: str, permission: Optional[str] = None, completions: Optional[dict] = None, has_tab_complete: bool = False):
         """Register a command name with the server."""
         msg: Dict[str, Any] = {"type": "register_command", "name": name}
         if permission is not None:
@@ -2615,6 +2616,8 @@ class BridgeConnection:
         if completions is not None:
             # Convert int keys to strings for JSON
             msg["completions"] = {str(k): v for k, v in completions.items()}
+        if has_tab_complete:
+            msg["has_tab_complete"] = True
         self.send(msg)
 
     def on(self, event_name: str, handler: Callable[[Any], Awaitable[None]]):
@@ -2856,8 +2859,37 @@ class BridgeConnection:
             payloads = message.get("payloads", [])
             for payload in payloads:
                 self._handle_message({"type": "event", "event": event_name, "payload": payload})
+        elif msg_type == "tab_complete":
+            asyncio.create_task(self._handle_tab_complete(message))
         elif msg_type == "shutdown":
             asyncio.create_task(self._handle_shutdown())
+
+    async def _handle_tab_complete(self, message: Dict[str, Any]):
+        request_id = message.get("id")
+        command_name = message.get("command", "")
+        args = message.get("args", [])
+        handler = self._tab_complete_handlers.get(command_name)
+        results: List[str] = []
+        if handler is not None:
+            try:
+                # Build an event-like object from the sender info
+                sender_data = self._deserialize(message.get("sender"))
+                player_data = self._deserialize(message.get("player")) if "player" in message else None
+                event_obj = sender_data
+                if player_data is not None:
+                    event_obj = player_data
+                result = handler(event_obj, args)
+                if inspect.isawaitable(result):
+                    result = await result
+                if isinstance(result, (list, tuple)):
+                    results = [str(x) for x in result]
+            except Exception as exc:
+                print(f"[PyJavaBridge] Tab complete handler error: {exc}")
+        self.send({"type": "tab_complete_response", "id": request_id, "results": results})
+
+    def register_tab_complete(self, command_name: str, handler: Callable[..., Any]):
+        """Register a dynamic tab completion handler for a command."""
+        self._tab_complete_handlers[command_name] = handler
 
     async def _dispatch_event(self, event_name: str, payload: Any):
         handlers = list(self._handlers.get(event_name, []))
@@ -5216,6 +5248,20 @@ async def greet(event: Event, name: str):
         _connection.register_command(command_name, permission=permission, completions=tab_complete)
         setattr(wrapper, "__command_args__", [p.name for p in positional_params])
         setattr(wrapper, "__command_desc__", description)
+
+        def _tab_complete_decorator(tc_handler: Callable[..., Any]) -> Callable[..., Any]:
+            """Register a dynamic tab completion handler for this command.
+
+            The handler receives (event, args) where event is the sender/player
+            and args is the list of current arguments. It should return a list of
+            completion strings.
+            """
+            _connection.register_tab_complete(command_name, tc_handler)
+            # Re-register the command with has_tab_complete flag
+            _connection.register_command(command_name, permission=permission, has_tab_complete=True)
+            return tc_handler
+
+        wrapper.tab_complete = _tab_complete_decorator  # type: ignore[attr-defined]
         return wrapper
 
     return decorator

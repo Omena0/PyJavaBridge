@@ -85,6 +85,8 @@ public class BridgeInstance {
     private static final Object UNHANDLED = new Object();
 
     private final Map<Integer, PendingEvent> pendingEvents = new ConcurrentHashMap<>();
+    private final Map<Integer, CompletableFuture<List<String>>> pendingTabCompletes = new ConcurrentHashMap<>();
+    private final java.util.concurrent.atomic.AtomicInteger tabCompleteIdCounter = new java.util.concurrent.atomic.AtomicInteger(0);
     private final Object writeLock = new Object();
 
     private final BridgeSerializer serializer;
@@ -269,6 +271,7 @@ public class BridgeInstance {
             case "event_cancel" -> handleEventCancel(message);
             case "event_result" -> handleEventResult(message);
             case "register_command" -> handleRegisterCommand(message);
+            case "tab_complete_response" -> handleTabCompleteResponse(message);
             case "remove_entities" -> handleRemoveEntities(message);
             case "update_entities" -> handleUpdateEntities(message);
             case "move_entities" -> handleMoveEntities(message);
@@ -362,6 +365,7 @@ public class BridgeInstance {
     private void handleRegisterCommand(JsonObject message) {
         String commandName = message.get("name").getAsString();
         String permission = message.has("permission") ? message.get("permission").getAsString() : null;
+        boolean hasDynamicTabComplete = message.has("has_tab_complete") && message.get("has_tab_complete").getAsBoolean();
 
         Map<Integer, List<String>> completions = null;
         if (message.has("completions")) {
@@ -378,7 +382,47 @@ public class BridgeInstance {
         }
 
         plugin.getLogger().info("[" + name + "] Registering command /" + commandName);
-        plugin.registerScriptCommand(commandName, this, permission, completions);
+        plugin.registerScriptCommand(commandName, this, permission, completions, hasDynamicTabComplete);
+    }
+
+    private void handleTabCompleteResponse(JsonObject message) {
+        int id = message.get("id").getAsInt();
+        CompletableFuture<List<String>> future = pendingTabCompletes.remove(id);
+        if (future == null) return;
+
+        List<String> results = new ArrayList<>();
+        if (message.has("results") && message.get("results").isJsonArray()) {
+            for (var el : message.getAsJsonArray("results")) {
+                results.add(el.getAsString());
+            }
+        }
+        future.complete(results);
+    }
+
+    public List<String> requestTabComplete(String commandName, String[] args, org.bukkit.command.CommandSender sender) {
+        if (!running) return List.of();
+
+        int requestId = tabCompleteIdCounter.incrementAndGet();
+        CompletableFuture<List<String>> future = new CompletableFuture<>();
+        pendingTabCompletes.put(requestId, future);
+
+        JsonObject request = new JsonObject();
+        request.addProperty("type", "tab_complete");
+        request.addProperty("id", requestId);
+        request.addProperty("command", commandName);
+        request.add("args", gson.toJsonTree(args));
+        request.add("sender", serialize(sender));
+        if (sender instanceof Player player) {
+            request.add("player", serialize(player));
+        }
+        send(request);
+
+        try {
+            return future.get(500, TimeUnit.MILLISECONDS);
+        } catch (Exception e) {
+            pendingTabCompletes.remove(requestId);
+            return List.of();
+        }
     }
 
     private void handleRemoveEntities(JsonObject message) {

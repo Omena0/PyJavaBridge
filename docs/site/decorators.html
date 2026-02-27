@@ -54,6 +54,7 @@
     <li><ul class="toc-sub" data-parent="command">
       <li><a href="#signature_1">Signature</a></li>
       <li><a href="#parameters_1">Parameters</a></li>
+      <li><a href="#dynamic-tab-completion">Dynamic tab completion</a></li>
       <li><a href="#command-arguments">Command arguments</a></li>
     </ul></li>
     <li><a href="#task">@task</a></li>
@@ -305,7 +306,7 @@
 <li><strong>Type:</strong> <code>dict[int, list[str]] | None</code></li>
 <li><strong>Default:</strong> <code>None</code></li>
 </ul>
-<p>Static tab completion suggestions per argument position (0-indexed). Use <code>-1</code> as a wildcard for all positions without their own entry.</p>
+<p>Static tab completion suggestions per argument position (0-indexed). Use <code>-1</code> as a wildcard for all positions without their own entry. For dynamic completions, see the <code>@my_command.tab_complete</code> decorator below.</p>
 <pre><code class="language-python"><span class="dc">@command</span>(<span class="st">&quot;Set game mode&quot;</span>, tab_complete={
     <span class="nb">0</span>: [<span class="st">&quot;survival&quot;</span>, <span class="st">&quot;creative&quot;</span>, <span class="st">&quot;adventure&quot;</span>, <span class="st">&quot;spectator&quot;</span>]
 })
@@ -324,6 +325,46 @@
 })
 <span class="kw">async</span> <span class="kw">def</span> tag(e, *tags):
     ...
+</code></pre>
+<h3 id="dynamic-tab-completion">Dynamic tab completion</h3>
+<p>For dynamic completions that depend on server state (online players, entities, etc.), use the <code>@my_command.tab_complete</code> decorator:</p>
+<pre><code class="language-python"><span class="dc">@command</span>(<span class="st">&quot;Teleport to a player&quot;</span>)
+<span class="kw">async</span> <span class="kw">def</span> tp(e, target: str):
+    ...
+
+<span class="dc">@tp</span>.tab_complete
+<span class="kw">async</span> <span class="kw">def</span> tp_complete(sender, args):
+    <span class="cm"># args is the list of current arguments being typed</span>
+    players = <span class="kw">await</span> server.get_online_players()
+    names = [p.name <span class="kw">for</span> p <span class="kw">in</span> players]
+    <span class="cm"># Filter by what the user has typed so far</span>
+    partial = args[-<span class="nb">1</span>].lower() <span class="kw">if</span> args <span class="kw">else</span> <span class="st">&quot;&quot;</span>
+    <span class="kw">return</span> [n <span class="kw">for</span> n <span class="kw">in</span> names <span class="kw">if</span> n.lower().startswith(partial)]
+</code></pre>
+<p>The tab completion handler receives:
+- <strong>sender</strong> — the player or command sender requesting completions
+- <strong>args</strong> — list of current argument strings (the last one is being typed)</p>
+<p>It should return a list of suggestion strings. The handler can be <code>async</code> or synchronous.</p>
+<pre><code class="language-python"><span class="dc">@command</span>(<span class="st">&quot;Give item to player&quot;</span>)
+<span class="kw">async</span> <span class="kw">def</span> give(e, player: str, item: str, amount: str = <span class="st">&quot;1&quot;</span>):
+    ...
+
+<span class="dc">@give</span>.tab_complete
+<span class="kw">async</span> <span class="kw">def</span> give_complete(sender, args):
+    <span class="kw">if</span> len(args) &lt;= <span class="nb">1</span>:
+        <span class="cm"># First arg: player names</span>
+        players = <span class="kw">await</span> server.get_online_players()
+        partial = args[<span class="nb">0</span>].lower() <span class="kw">if</span> args <span class="kw">else</span> <span class="st">&quot;&quot;</span>
+        <span class="kw">return</span> [p.name <span class="kw">for</span> p <span class="kw">in</span> players <span class="kw">if</span> p.name.lower().startswith(partial)]
+    <span class="kw">elif</span> len(args) == <span class="nb">2</span>:
+        <span class="cm"># Second arg: item types</span>
+        items = [<span class="st">&quot;diamond&quot;</span>, <span class="st">&quot;iron_ingot&quot;</span>, <span class="st">&quot;gold_ingot&quot;</span>, <span class="st">&quot;emerald&quot;</span>]
+        partial = args[<span class="nb">1</span>].lower()
+        <span class="kw">return</span> [i <span class="kw">for</span> i <span class="kw">in</span> items <span class="kw">if</span> i.startswith(partial)]
+    <span class="kw">elif</span> len(args) == <span class="nb">3</span>:
+        <span class="cm"># Third arg: amounts</span>
+        <span class="kw">return</span> [<span class="st">&quot;1&quot;</span>, <span class="st">&quot;16&quot;</span>, <span class="st">&quot;32&quot;</span>, <span class="st">&quot;64&quot;</span>]
+    <span class="kw">return</span> []
 </code></pre>
 <h3 id="command-arguments">Command arguments</h3>
 <p>Extra function parameters after the event become command arguments. They are parsed positionally from the player's input:</p>

@@ -171,15 +171,19 @@ public class PyJavaBridgePlugin extends JavaPlugin {
     }
 
     public void registerScriptCommand(String name, BridgeInstance instance) {
-        ScriptCommand.registerScriptCommand(name, instance, null, null, getLogger());
+        ScriptCommand.registerScriptCommand(name, instance, null, null, false, getLogger());
     }
 
     public void registerScriptCommand(String name, BridgeInstance instance, String permission) {
-        ScriptCommand.registerScriptCommand(name, instance, permission, null, getLogger());
+        ScriptCommand.registerScriptCommand(name, instance, permission, null, false, getLogger());
     }
 
     public void registerScriptCommand(String name, BridgeInstance instance, String permission, Map<Integer, List<String>> completions) {
-        ScriptCommand.registerScriptCommand(name, instance, permission, completions, getLogger());
+        ScriptCommand.registerScriptCommand(name, instance, permission, completions, false, getLogger());
+    }
+
+    public void registerScriptCommand(String name, BridgeInstance instance, String permission, Map<Integer, List<String>> completions, boolean hasDynamicTabComplete) {
+        ScriptCommand.registerScriptCommand(name, instance, permission, completions, hasDynamicTabComplete, getLogger());
     }
 
     public UUID resolvePlayerUuidByName(String name) {

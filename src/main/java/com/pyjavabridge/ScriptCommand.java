@@ -17,6 +17,7 @@ class ScriptCommand extends Command {
     private volatile BridgeInstance instance;
     private String permission;
     private final Map<Integer, List<String>> completions = new HashMap<>();
+    private volatile boolean hasDynamicTabComplete = false;
 
     ScriptCommand(String name, BridgeInstance instance) {
         super(name);
@@ -42,7 +43,11 @@ class ScriptCommand extends Command {
         }
     }
 
-    static void registerScriptCommand(String name, BridgeInstance instance, String permission, Map<Integer, List<String>> completions, Logger logger) {
+    void setDynamicTabComplete(boolean dynamic) {
+        this.hasDynamicTabComplete = dynamic;
+    }
+
+    static void registerScriptCommand(String name, BridgeInstance instance, String permission, Map<Integer, List<String>> completions, boolean hasDynamicTabComplete, Logger logger) {
         CommandMap map = getCommandMap(logger);
 
         if (map == null) {
@@ -61,6 +66,7 @@ class ScriptCommand extends Command {
             if (completions != null) {
                 scriptCommand.setCompletions(completions);
             }
+            scriptCommand.setDynamicTabComplete(hasDynamicTabComplete);
             return;
         }
 
@@ -75,6 +81,7 @@ class ScriptCommand extends Command {
         if (completions != null) {
             cmd.setCompletions(completions);
         }
+        cmd.setDynamicTabComplete(hasDynamicTabComplete);
         map.register("pyjavabridge", cmd);
     }
 
@@ -132,12 +139,21 @@ class ScriptCommand extends Command {
     public List<String> tabComplete(CommandSender sender, String alias, String[] args) {
         if (args.length == 0) return List.of();
 
+        // Dynamic tab completion via Python callback
+        if (hasDynamicTabComplete) {
+            BridgeInstance current = this.instance;
+            if (current != null && current.isRunning()) {
+                return current.requestTabComplete(getName(), args, sender);
+            }
+            return List.of();
+        }
+
+        // Static tab completion from registered completions map
         int argIndex = args.length - 1;
         String partial = args[argIndex].toLowerCase();
 
         List<String> options = completions.get(argIndex);
         if (options == null) {
-            // Check for a wildcard (-1) entry that applies to all positions
             options = completions.get(-1);
         }
         if (options == null) return List.of();
