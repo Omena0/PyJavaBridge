@@ -682,6 +682,87 @@ class Player(Entity):
                 return Inventory(handle=None, target="ref", ref_type="player_inventory", ref_id=str(ref_id))
         return self._call_sync("getInventory")
 
+    # -- freeze / vanish helpers (client-side only, no Java counterpart) ------
+    _frozen_players: set = set()
+    _vanished_players: set = set()
+
+    def freeze(self):
+        """Prevent the player from moving (sets walk/fly speed to 0)."""
+        Player._frozen_players.add(self.uuid)
+        self.set_walk_speed(0.0)
+        self.set_fly_speed(0.0)
+
+    def unfreeze(self):
+        Player._frozen_players.discard(self.uuid)
+        self.set_walk_speed(0.2)
+        self.set_fly_speed(0.1)
+
+    @property
+    def is_frozen(self) -> bool:
+        return self.uuid in Player._frozen_players
+
+    def vanish(self):
+        """Hide this player from all others."""
+        Player._vanished_players.add(self.uuid)
+        _connection.call(method="vanish", args=[self], target="player_util")
+
+    def unvanish(self):
+        Player._vanished_players.discard(self.uuid)
+        _connection.call(method="unvanish", args=[self], target="player_util")
+
+    @property
+    def is_vanished(self) -> bool:
+        return self.uuid in Player._vanished_players
+
+    # -- extension integration helpers ----------------------------------------
+    _default_bank: Any = None
+    _default_mana_store: Any = None
+    _default_level_system: Any = None
+
+    @property
+    def balance(self) -> float:
+        """Shortcut: returns balance from the default Bank (set via ``Player._default_bank``)."""
+        if Player._default_bank is None:
+            raise RuntimeError("No default bank set — assign Player._default_bank first")
+        return Player._default_bank.balance(self)
+
+    def deposit(self, amount: float):
+        if Player._default_bank is None:
+            raise RuntimeError("No default bank set")
+        Player._default_bank.deposit(self, amount)
+
+    def withdraw(self, amount: float):
+        if Player._default_bank is None:
+            raise RuntimeError("No default bank set")
+        Player._default_bank.withdraw(self, amount)
+
+    @property
+    def mana(self) -> float:
+        """Shortcut: current mana from the default ManaStore."""
+        if Player._default_mana_store is None:
+            raise RuntimeError("No default ManaStore set — assign Player._default_mana_store first")
+        return Player._default_mana_store[self]
+
+    @mana.setter
+    def mana(self, value: float):
+        if Player._default_mana_store is None:
+            raise RuntimeError("No default ManaStore set")
+        Player._default_mana_store._set(self, value)
+
+    @property
+    def xp(self) -> float:
+        """Shortcut: XP from the default LevelSystem."""
+        if Player._default_level_system is None:
+            raise RuntimeError("No default LevelSystem set — assign Player._default_level_system first")
+        return Player._default_level_system.xp(self)
+
+    @property
+    def player_level(self) -> int:
+        """Shortcut: level from the default LevelSystem (distinct from vanilla ``level``)."""
+        if Player._default_level_system is None:
+            raise RuntimeError("No default LevelSystem set")
+        return Player._default_level_system.level(self)
+
 class World(ProxyBase):
     """World API."""
     def __init__(self, handle: Optional[int] = None, type_name: Optional[str] = None, fields: Optional[Dict[str, Any]] = None, target: Optional[str] = None, name: Optional[str] = None):
