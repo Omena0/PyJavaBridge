@@ -987,6 +987,11 @@ public class BridgeInstance {
         if ("spawnImagePixels".equals(method) && args.size() >= 2) {
             return entitySpawner.spawnImagePixels(world, args.get(0), args.get(1));
         }
+        if ("spawnFirework".equals(method) && args.size() >= 1) {
+            Object locationObj = args.get(0);
+            Map<String, Object> options = serializer.deserializeArgsObject(argsObj);
+            return entitySpawner.spawnFirework(world, locationObj, options);
+        }
         return UNHANDLED;
     }
 

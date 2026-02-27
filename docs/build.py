@@ -63,6 +63,7 @@ SIDEBAR = [
         ("potion", "Potion"),
         ("attribute", "Attribute"),
         ("advancement", "Advancement"),
+        ("firework", "Firework"),
     ]),
     ("Scoreboards & UI", [
         ("menu", "Menu"),

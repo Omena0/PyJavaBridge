@@ -117,6 +117,8 @@ __all__ = [
     "RaycastResult",
     "Config",
     "Recipe",
+    "Firework",
+    "FireworkEffect",
     "DamageCause",
     "Enchantment",
     "ItemFlag",
@@ -1245,6 +1247,88 @@ class World(ProxyBase):
         """Spawn an entity with an SNBT string applied after spawning."""
         kwargs["nbt"] = nbt
         return self.spawn_entity(location, entity_type, **kwargs)
+
+class Firework:
+    """Launch fireworks with custom effects."""
+
+    @staticmethod
+    def launch(location: "Location", effects: list = None, power: int = 1):
+        """Launch a firework at a location.
+
+        Args:
+            location: Where to spawn the firework.
+            effects: List of effect dicts or FireworkEffect objects.
+            power: Flight duration / height (0-127, default 1).
+
+        Returns:
+            The spawned firework Entity.
+        """
+        world = location.world
+        if isinstance(world, str):
+            world = World(name=world)
+        if world is None:
+            raise BridgeError("Location must have a world to launch a firework")
+        effect_list = []
+        if effects:
+            for e in effects:
+                if isinstance(e, FireworkEffect):
+                    effect_list.append(e._to_dict())
+                elif isinstance(e, dict):
+                    effect_list.append(e)
+        return world._call("spawnFirework", location, power=power, effects=effect_list)
+
+class FireworkEffect:
+    """Builder for firework effects."""
+
+    def __init__(self, shape: str = "BALL"):
+        """Create a firework effect.
+
+        Args:
+            shape: Effect shape — BALL, BALL_LARGE, STAR, BURST, or CREEPER.
+        """
+        self._type = shape.upper()
+        self._colors = []
+        self._fade_colors = []
+        self._flicker = False
+        self._trail = False
+
+    def colors(self, *colors) -> "FireworkEffect":
+        """Set explosion colors. Accepts color names, hex strings, RGB tuples, or ints."""
+        self._colors = list(colors)
+        return self
+
+    def fade(self, *colors) -> "FireworkEffect":
+        """Set fade colors."""
+        self._fade_colors = list(colors)
+        return self
+
+    def flicker(self, value: bool = True) -> "FireworkEffect":
+        """Enable/disable flicker (twinkle)."""
+        self._flicker = value
+        return self
+
+    def trail(self, value: bool = True) -> "FireworkEffect":
+        """Enable/disable trail."""
+        self._trail = value
+        return self
+
+    def _to_dict(self) -> dict:
+        d = {"type": self._type}
+        if self._colors:
+            d["colors"] = [self._serialize_color(c) for c in self._colors]
+        if self._fade_colors:
+            d["fade_colors"] = [self._serialize_color(c) for c in self._fade_colors]
+        if self._flicker:
+            d["flicker"] = True
+        if self._trail:
+            d["trail"] = True
+        return d
+
+    @staticmethod
+    def _serialize_color(c):
+        if isinstance(c, (list, tuple)) and len(c) >= 3:
+            return list(c)
+        return c
 
 class Dimension(ProxyBase):
     def __init__(self, name: Optional[str] = None, **kwargs: Any):

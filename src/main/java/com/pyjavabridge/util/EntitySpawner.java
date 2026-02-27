@@ -4,12 +4,15 @@ import com.google.gson.JsonObject;
 
 import net.kyori.adventure.text.Component;
 import org.bukkit.Color;
+import org.bukkit.FireworkEffect;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Display;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
+import org.bukkit.entity.Firework;
 import org.bukkit.entity.LivingEntity;
+import org.bukkit.inventory.meta.FireworkMeta;
 import org.bukkit.entity.TextDisplay;
 import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.util.Transformation;
@@ -80,6 +83,100 @@ public class EntitySpawner {
 
         applySpawnOptions(spawned, location, options);
         return spawned;
+    }
+
+    @SuppressWarnings("unchecked")
+    public Entity spawnFirework(World world, Object locationObj, Map<String, Object> options) throws Exception {
+        Location location = resolveSpawnLocation(world, locationObj, options);
+        Firework firework = world.spawn(location, Firework.class);
+        FireworkMeta meta = firework.getFireworkMeta();
+
+        int power = options.containsKey("power") ? ((Number) options.get("power")).intValue() : 1;
+        meta.setPower(power);
+
+        Object effectsObj = options.get("effects");
+        if (effectsObj instanceof List<?> effectsList) {
+            for (Object effectObj : effectsList) {
+                if (effectObj instanceof Map<?, ?> effectMap) {
+                    meta.addEffect(buildFireworkEffect((Map<String, Object>) effectMap));
+                }
+            }
+        }
+
+        firework.setFireworkMeta(meta);
+        return firework;
+    }
+
+    @SuppressWarnings("unchecked")
+    private FireworkEffect buildFireworkEffect(Map<String, Object> effectMap) {
+        FireworkEffect.Builder builder = FireworkEffect.builder();
+
+        String typeName = String.valueOf(effectMap.getOrDefault("type", "BALL")).toUpperCase();
+        builder.with(FireworkEffect.Type.valueOf(typeName));
+
+        if (effectMap.containsKey("colors")) {
+            for (Object colorObj : (List<Object>) effectMap.get("colors")) {
+                builder.withColor(parseColor(colorObj));
+            }
+        } else {
+            builder.withColor(Color.WHITE);
+        }
+
+        if (effectMap.containsKey("fade_colors")) {
+            for (Object colorObj : (List<Object>) effectMap.get("fade_colors")) {
+                builder.withFade(parseColor(colorObj));
+            }
+        }
+
+        if (effectMap.containsKey("flicker")) {
+            builder.flicker((boolean) effectMap.get("flicker"));
+        }
+        if (effectMap.containsKey("trail")) {
+            builder.trail((boolean) effectMap.get("trail"));
+        }
+
+        return builder.build();
+    }
+
+    private Color parseColor(Object colorObj) {
+        if (colorObj instanceof Number num) {
+            return Color.fromRGB(num.intValue());
+        }
+        if (colorObj instanceof String str) {
+            return switch (str.toUpperCase()) {
+                case "RED" -> Color.RED;
+                case "BLUE" -> Color.BLUE;
+                case "GREEN" -> Color.GREEN;
+                case "YELLOW" -> Color.YELLOW;
+                case "WHITE" -> Color.WHITE;
+                case "BLACK" -> Color.BLACK;
+                case "ORANGE" -> Color.ORANGE;
+                case "PURPLE" -> Color.PURPLE;
+                case "AQUA" -> Color.AQUA;
+                case "LIME" -> Color.LIME;
+                case "FUCHSIA" -> Color.FUCHSIA;
+                case "SILVER" -> Color.SILVER;
+                case "GRAY" -> Color.GRAY;
+                case "MAROON" -> Color.MAROON;
+                case "OLIVE" -> Color.OLIVE;
+                case "TEAL" -> Color.TEAL;
+                case "NAVY" -> Color.NAVY;
+                default -> {
+                    if (str.startsWith("#")) {
+                        yield Color.fromRGB(Integer.parseInt(str.substring(1), 16));
+                    }
+                    yield Color.WHITE;
+                }
+            };
+        }
+        if (colorObj instanceof List<?> rgb && rgb.size() >= 3) {
+            return Color.fromRGB(
+                ((Number) rgb.get(0)).intValue(),
+                ((Number) rgb.get(1)).intValue(),
+                ((Number) rgb.get(2)).intValue()
+            );
+        }
+        return Color.WHITE;
     }
 
     private static final int MAX_IMAGE_PIXELS = 10_000;

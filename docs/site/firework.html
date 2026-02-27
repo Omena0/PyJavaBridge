@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Chat — PyJavaBridge</title>
-  <meta property="og:title" content="Chat — PyJavaBridge">
-  <meta property="og:description" content="Chat broadcast helper">
+  <title>Firework — PyJavaBridge</title>
+  <meta property="og:title" content="Firework — PyJavaBridge">
+  <meta property="og:description" content="Launch fireworks with custom effects">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="PyJavaBridge Docs">
   <meta name="theme-color" content="#6366f1">
@@ -44,13 +44,21 @@
 <div class="sidebar-section">
   <div class="sidebar-heading" data-section="on-this-page">On This Page</div>
   <ul class="sidebar-links">
-    <li><a href="#global-instance">Global Instance</a></li>
+    <li><a href="#fireworklaunch">Firework.launch</a></li>
     <li><a href="#methods">Methods</a></li>
     <li><ul class="toc-sub" data-parent="methods">
-      <li><a href="#broadcast">broadcast</a></li>
+      <li><a href="#colors">colors</a></li>
+      <li><a href="#fade">fade</a></li>
+      <li><a href="#flicker">flicker</a></li>
+      <li><a href="#trail">trail</a></li>
     </ul></li>
-    <li><a href="#chat-vs-serverbroadcast">Chat vs Server.broadcast</a></li>
-    <li><a href="#example-announcement-system">Example: Announcement system</a></li>
+    <li><a href="#examples">Examples</a></li>
+    <li><ul class="toc-sub" data-parent="examples">
+      <li><a href="#simple-colored-firework">Simple colored firework</a></li>
+      <li><a href="#multiple-effects">Multiple effects</a></li>
+      <li><a href="#rgb-colors">RGB colors</a></li>
+      <li><a href="#creeper-face">Creeper face</a></li>
+    </ul></li>
   </ul>
 </div>
 
@@ -98,7 +106,7 @@
     <li><a href="potion.html">Potion</a></li>
     <li><a href="attribute.html">Attribute</a></li>
     <li><a href="advancement.html">Advancement</a></li>
-    <li><a href="firework.html">Firework</a></li>
+    <li><a href="firework.html" class="active">Firework</a></li>
   </ul>
 </div>
 <div class="sidebar-section">
@@ -138,7 +146,7 @@
   <div class="sidebar-heading collapsed" data-section="utilities">Utilities</div>
   <ul class="sidebar-links">
     <li><a href="raycast.html">Raycast</a></li>
-    <li><a href="chat.html" class="active">Chat</a></li>
+    <li><a href="chat.html">Chat</a></li>
     <li><a href="reflect.html">Reflect</a></li>
   </ul>
 </div>
@@ -159,46 +167,88 @@
   <!-- Main -->
   <main class="main">
     <div class="content">
-      <p class="subtitle">Chat broadcast helper</p>
-      <h1 id="chat">Chat</h1>
-<p>The <code>Chat</code> helper provides broadcast functionality. An instance is available as the global <code>chat</code> variable.</p>
+      <p class="subtitle">Launch fireworks with custom effects</p>
+      <h1 id="firework">Firework</h1>
+<p>Launch fireworks with fully customizable effects, colors, and shapes.</p>
 <hr />
-<h2 id="global-instance">Global Instance</h2>
-<pre><code class="language-python"><span class="kw">from</span> bridge <span class="kw">import</span> chat
+<h2 id="fireworklaunch">Firework.launch</h2>
+<pre><code class="language-python">entity = <span class="kw">await</span> Firework.launch(location, effects=<span class="kw">None</span>, power=<span class="nb">1</span>)
 </code></pre>
-<hr />
-<h2 id="methods">Methods</h2>
-<h3 id="broadcast">broadcast</h3>
-<pre><code class="language-python"><span class="kw">await</span> chat.broadcast(message)
-</code></pre>
-<p>Send a message to all online players.</p>
+<p>Spawn a firework rocket at a location.</p>
 <ul>
 <li><strong>Parameters:</strong></li>
-<li><code>message</code> (<code>str</code>) — Message text. Supports <code>§</code> color codes.</li>
-<li><strong>Returns:</strong> <code>Awaitable[None]</code></li>
+<li><code>location</code> (<a href="location.html"><code>Location</code></a>) — Where to spawn the firework.</li>
+<li><code>effects</code> (<code>list[FireworkEffect | dict] | None</code>) — List of effects. Defaults to a plain white burst if omitted.</li>
+<li><code>power</code> (<code>int</code>) — Flight duration / height (0–127, default <code>1</code>). Higher = goes higher before detonating.</li>
+<li><strong>Returns:</strong> <code>Awaitable[</code><a href="entity.html"><code>Entity</code></a><code>]</code></li>
 </ul>
-<pre><code class="language-python"><span class="kw">await</span> chat.broadcast(<span class="st">&quot;§a§lServer restarting in 5 minutes!&quot;</span>)
+<pre><code class="language-python"><span class="kw">await</span> Firework.launch(player.location)
 </code></pre>
 <hr />
-<h2 id="chat-vs-serverbroadcast">Chat vs Server.broadcast</h2>
-<p>Both <code>chat.broadcast()</code> and <code>server.broadcast()</code> send messages to all players:</p>
-<pre><code class="language-python"><span class="cm"># These are equivalent</span>
-<span class="kw">await</span> chat.broadcast(<span class="st">&quot;Hello everyone!&quot;</span>)
-<span class="kw">await</span> server.broadcast(<span class="st">&quot;Hello everyone!&quot;</span>)
+<h1 id="fireworkeffect">FireworkEffect</h1>
+<p>Builder for individual firework effects. Chain methods to configure, then pass to <code>Firework.launch()</code>.</p>
+<pre><code class="language-python">effect = FireworkEffect(shape)
 </code></pre>
-<p>The <code>chat</code> helper exists for convenience and semantic clarity when your script is focused on chat operations.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>shape</code> (<code>str</code>) — Effect shape. One of: <code>BALL</code>, <code>BALL_LARGE</code>, <code>STAR</code>, <code>BURST</code>, <code>CREEPER</code>.</li>
+</ul>
 <hr />
-<h2 id="example-announcement-system">Example: Announcement system</h2>
-<pre><code class="language-python"><span class="kw">from</span> bridge <span class="kw">import</span> *
+<h2 id="methods">Methods</h2>
+<h3 id="colors">colors</h3>
+<pre><code class="language-python">effect.colors(*colors)
+</code></pre>
+<p>Set the explosion colors.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>*colors</code> — Color names (<code>"RED"</code>, <code>"BLUE"</code>), hex strings (<code>"#FF0000"</code>), RGB tuples (<code>(255, 0, 0)</code>), or integers.</li>
+<li><strong>Returns:</strong> <code>FireworkEffect</code> (for chaining)</li>
+</ul>
+<h3 id="fade">fade</h3>
+<pre><code class="language-python">effect.fade(*colors)
+</code></pre>
+<p>Set the fade-out colors (same formats as <code>colors()</code>).</p>
+<ul>
+<li><strong>Returns:</strong> <code>FireworkEffect</code></li>
+</ul>
+<h3 id="flicker">flicker</h3>
+<pre><code class="language-python">effect.flicker(value=<span class="kw">True</span>)
+</code></pre>
+<p>Enable the twinkle/flicker effect.</p>
+<ul>
+<li><strong>Returns:</strong> <code>FireworkEffect</code></li>
+</ul>
+<h3 id="trail">trail</h3>
+<pre><code class="language-python">effect.trail(value=<span class="kw">True</span>)
+</code></pre>
+<p>Enable particle trails.</p>
+<ul>
+<li><strong>Returns:</strong> <code>FireworkEffect</code></li>
+</ul>
+<hr />
+<h2 id="examples">Examples</h2>
+<h3 id="simple-colored-firework">Simple colored firework</h3>
+<pre><code class="language-python">effect = FireworkEffect(<span class="st">&quot;BALL&quot;</span>).colors(<span class="st">&quot;RED&quot;</span>, <span class="st">&quot;BLUE&quot;</span>).trail()
+<span class="kw">await</span> Firework.launch(player.location, effects=[effect], power=<span class="nb">2</span>)
+</code></pre>
+<h3 id="multiple-effects">Multiple effects</h3>
+<pre><code class="language-python">effects = [
+    FireworkEffect(<span class="st">&quot;STAR&quot;</span>).colors(<span class="st">&quot;YELLOW&quot;</span>, <span class="st">&quot;ORANGE&quot;</span>).flicker(),
+    FireworkEffect(<span class="st">&quot;BURST&quot;</span>).colors(<span class="st">&quot;#00FF00&quot;</span>).fade(<span class="st">&quot;WHITE&quot;</span>).trail(),
+]
+<span class="kw">await</span> Firework.launch(location, effects=effects, power=<span class="nb">3</span>)
+</code></pre>
+<h3 id="rgb-colors">RGB colors</h3>
+<pre><code class="language-python">effect = FireworkEffect(<span class="st">&quot;BALL_LARGE&quot;</span>).colors(
+    (<span class="nb">255</span>, <span class="nb">0</span>, <span class="nb">128</span>),    <span class="cm"># Pink</span>
+    (<span class="nb">0</span>, <span class="nb">200</span>, <span class="nb">255</span>),    <span class="cm"># Cyan</span>
+).fade((<span class="nb">255</span>, <span class="nb">255</span>, <span class="nb">255</span>)).trail().flicker()
 
-<span class="dc">@command</span>(<span class="st">&quot;Announce a message&quot;</span>)
-<span class="kw">async</span> <span class="kw">def</span> announce(player: Player, args: list[str]):
-    <span class="kw">if</span> <span class="kw">not</span> args:
-        <span class="kw">await</span> player.send_message(<span class="st">&quot;§cUsage: /announce &lt;message&gt;&quot;</span>)
-        <span class="kw">return</span>
-
-    message = <span class="st">&quot; &quot;</span>.join(args)
-    <span class="kw">await</span> chat.broadcast(<span class="st">f&quot;§6§l[Announcement] §f{message}&quot;</span>)
+<span class="kw">await</span> Firework.launch(player.location.add(<span class="nb">0</span>, <span class="nb">5</span>, <span class="nb">0</span>), effects=[effect])
+</code></pre>
+<h3 id="creeper-face">Creeper face</h3>
+<pre><code class="language-python">effect = FireworkEffect(<span class="st">&quot;CREEPER&quot;</span>).colors(<span class="st">&quot;GREEN&quot;</span>).fade(<span class="st">&quot;LIME&quot;</span>)
+<span class="kw">await</span> Firework.launch(player.location, effects=[effect], power=<span class="nb">1</span>)
 </code></pre>
     </div>
     <footer class="site-footer">
