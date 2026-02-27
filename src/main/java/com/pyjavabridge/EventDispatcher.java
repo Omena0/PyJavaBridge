@@ -13,6 +13,7 @@ import org.bukkit.event.Event;
 import org.bukkit.event.block.BlockExplodeEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
+import org.bukkit.event.entity.EntityTargetEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.InventoryView;
 
@@ -87,6 +88,10 @@ public class EventDispatcher {
         tryAddPayload(payload, event, "item", "getItem");
         tryAddPayload(payload, event, "inventory", "getInventory");
         tryAddPayload(payload, event, "chunk", "getChunk");
+        if (event instanceof EntityTargetEvent targetEvent) {
+            payload.add("target", serializer.serialize(targetEvent.getTarget()));
+            payload.add("reason", serializer.serialize(targetEvent.getReason()));
+        }
         if (event instanceof InventoryClickEvent clickEvent) {
             InventoryView view = clickEvent.getView();
             String title = view != null ? getInventoryViewTitle(view) : "";
@@ -144,6 +149,9 @@ public class EventDispatcher {
                 }
                 if (pending.respawnOverride != null && pending.event instanceof org.bukkit.event.player.PlayerRespawnEvent respawnEvent) {
                     respawnEvent.setRespawnLocation(pending.respawnOverride);
+                }
+                if (pending.targetOverrideSet && pending.event instanceof EntityTargetEvent targetEvent) {
+                    targetEvent.setTarget(pending.targetOverride instanceof org.bukkit.entity.LivingEntity le ? le : null);
                 }
                 if (cancelRequested && cancelMode == CancelMode.EVENT) {
                     pending.cancellable.setCancelled(true);

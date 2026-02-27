@@ -661,6 +661,21 @@ public class BridgeInstance {
             return;
         }
 
+        if ("target".equalsIgnoreCase(resultType)) {
+            JsonElement result = message.get("result");
+            if (result.isJsonNull()) {
+                pending.targetOverride = null;
+                pending.targetOverrideSet = true;
+            } else {
+                Object deserialized = serializer.deserialize(result);
+                if (deserialized instanceof org.bukkit.entity.Entity entity) {
+                    pending.targetOverride = entity;
+                    pending.targetOverrideSet = true;
+                }
+            }
+            return;
+        }
+
         if (resultType == null || "chat".equalsIgnoreCase(resultType)) {
             pending.chatOverride = message.get("result").getAsString();
         }

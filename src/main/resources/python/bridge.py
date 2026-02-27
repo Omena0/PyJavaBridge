@@ -3097,10 +3097,15 @@ class BridgeConnection:
                     override_text = None
                     override_damage = None
                     override_respawn = None
+                    override_target = None
                     is_damage_event = isinstance(payload, ProxyBase) and "damage" in payload.fields
                     is_respawn_event = event_name in ("player_respawn",)
+                    is_target_event = event_name in ("entity_target", "entity_target_living_entity")
                     for result in results:
-                        if isinstance(result, Location):
+                        if isinstance(result, Entity):
+                            if is_target_event:
+                                override_target = result
+                        elif isinstance(result, Location):
                             if is_respawn_event:
                                 override_respawn = result
                         elif isinstance(result, str):
@@ -3113,6 +3118,8 @@ class BridgeConnection:
                         self.send({"type": "event_result", "id": event_id, "result": override_damage, "result_type": "damage"})
                     if override_respawn is not None:
                         self.send({"type": "event_result", "id": event_id, "result": self._serialize(override_respawn), "result_type": "respawn"})
+                    if override_target is not None:
+                        self.send({"type": "event_result", "id": event_id, "result": self._serialize(override_target), "result_type": "target"})
                 self.send({"type": "event_done", "id": event_id})
 
     async def _handle_shutdown(self):
