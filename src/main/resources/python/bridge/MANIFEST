@@ -16,3 +16,4 @@ extensions/npc.py
 extensions/image_display.py
 extensions/mesh_display.py
 extensions/quest.py
+extensions/dialog.py
