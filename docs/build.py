@@ -312,6 +312,11 @@ TEMPLATE = """\
       <span class="logo">Py</span>
       PyJavaBridge
     </a>
+    <div class="header-search">
+      <svg class="header-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+      <input type="text" id="header-search" placeholder="Search docs… (Ctrl+K)" autocomplete="off">
+      <div id="search-results" class="search-results"></div>
+    </div>
     <nav class="header-nav">
       <a href="index.html">Docs</a>
       <a href="examples.html">Examples</a>
@@ -425,12 +430,36 @@ def main():
                     slugs.append(s)
 
     built = 0
+    search_index = []
     for slug in slugs:
         src = os.path.join(SRC_DIR, f"{slug}.md")
         if os.path.exists(src):
             build_page(slug)
+            # Build search index entry
+            with open(src, "r", encoding="utf-8") as f:
+                raw = f.read()
+            meta, body_md = parse_frontmatter(raw)
+            title = meta.get("title", slug.capitalize())
+            # Extract text sections with headings
+            current_heading = title
+            sections = []
+            for line in body_md.split("\n"):
+                if line.startswith("#"):
+                    current_heading = line.lstrip("#").strip()
+                elif line.strip() and not line.startswith("```") and not line.startswith("---"):
+                    clean = re.sub(r'[`*\[\]()]', '', line.strip())
+                    if clean:
+                        sections.append({"heading": current_heading, "text": clean})
+            url = "index.html" if slug == "index" else f"{slug}.html"
+            search_index.append({"slug": slug, "title": title, "url": url, "sections": sections})
             print(f"  ✓ {slug}.html")
             built += 1
+
+    # Write search index
+    import json
+    index_path = os.path.join(OUT_DIR, "search-index.json")
+    with open(index_path, "w", encoding="utf-8") as f:
+        json.dump(search_index, f, separators=(',', ':'))
 
     print(f"\n✅ Built {built} pages")
 

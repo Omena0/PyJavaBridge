@@ -205,4 +205,90 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   });
+
+  // ── Header full-text search ─────────────────────────────────
+  const headerSearch = document.getElementById('header-search');
+  const searchResults = document.getElementById('search-results');
+  let searchIndex = null;
+
+  async function loadSearchIndex() {
+    if (searchIndex) return;
+    try {
+      const resp = await fetch('search-index.json');
+      searchIndex = await resp.json();
+    } catch { searchIndex = []; }
+  }
+
+  function doSearch(query) {
+    if (!searchIndex || !query.trim()) {
+      searchResults.style.display = 'none';
+      return;
+    }
+    const q = query.toLowerCase().trim();
+    const hits = [];
+    for (const page of searchIndex) {
+      // Title match
+      if (page.title.toLowerCase().includes(q)) {
+        hits.push({ url: page.url, title: page.title, text: '', score: 10 });
+      }
+      // Section matches
+      for (const sec of page.sections) {
+        if (sec.text.toLowerCase().includes(q) || sec.heading.toLowerCase().includes(q)) {
+          hits.push({
+            url: page.url + '#' + sec.heading.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+            title: page.title,
+            heading: sec.heading,
+            text: sec.text,
+            score: sec.heading.toLowerCase().includes(q) ? 5 : 1,
+          });
+        }
+      }
+    }
+    // Sort by score, dedupe by url
+    hits.sort((a, b) => b.score - a.score);
+    const seen = new Set();
+    const unique = [];
+    for (const h of hits) {
+      if (!seen.has(h.url) && unique.length < 12) {
+        seen.add(h.url);
+        unique.push(h);
+      }
+    }
+    if (!unique.length) {
+      searchResults.innerHTML = '<div class="search-no-results">No results</div>';
+      searchResults.style.display = 'block';
+      return;
+    }
+    searchResults.innerHTML = unique.map(h => {
+      const snippet = h.text ? h.text.substring(0, 100) : '';
+      const heading = h.heading ? ` › ${h.heading}` : '';
+      return `<a class="search-hit" href="${h.url}"><strong>${h.title}${heading}</strong><span>${snippet}</span></a>`;
+    }).join('');
+    searchResults.style.display = 'block';
+  }
+
+  if (headerSearch) {
+    headerSearch.addEventListener('focus', loadSearchIndex);
+    headerSearch.addEventListener('input', () => doSearch(headerSearch.value));
+    headerSearch.addEventListener('keydown', e => {
+      if (e.key === 'Escape') {
+        headerSearch.value = '';
+        searchResults.style.display = 'none';
+        headerSearch.blur();
+      }
+    });
+    document.addEventListener('click', e => {
+      if (!headerSearch.contains(e.target) && !searchResults.contains(e.target)) {
+        searchResults.style.display = 'none';
+      }
+    });
+    // Ctrl+K shortcut
+    document.addEventListener('keydown', e => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        headerSearch.focus();
+        headerSearch.select();
+      }
+    });
+  }
 });

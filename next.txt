@@ -11,9 +11,9 @@ Add:
   - When all quests in a list is completed, the next depth is unlocked
   - Methods to view current available/started quests, check completion, and progress through the tree
 
-- DialogEntry:
-  - Attrs: speaker, text, answers (list of tuples: (answer_text, callback)), delay (optional, auto advance after delay if no answers, or if player doesn't respond in time)
-  - Represents a single entry in a dialogue sequence
+- Dialog:
+  - Attrs: speaker:str, text, answers (list of tuples: (answer_text, next:DialogEntry|callback)), delay (optional, auto advance after delay if no answers, or if player doesn't respond in time)
+  - Represents a dialog sequence
+  - Methods: start(player)
 
-- NPCDialogue:
-  - Attrs: dialog (list of DialogEntry)
+
