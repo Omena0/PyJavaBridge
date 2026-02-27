@@ -449,24 +449,33 @@ def main():
             sections = []
             in_table = False
             table_first_cols = []
+            table_header_seen = False
             for line in body_md.split("\n"):
                 stripped = line.strip()
                 if stripped.startswith("|") and "|" in stripped[1:]:
                     # Table row
                     if re.match(r'^\|[\s\-:|]+\|$', stripped):
-                        continue  # separator row
+                        table_header_seen = True  # separator marks end of header
+                        continue
+                    if not in_table:
+                        # First row is the header — skip it
+                        in_table = True
+                        table_header_seen = False
+                        continue
+                    if not table_header_seen:
+                        continue  # still in header somehow
                     cols = [c.strip() for c in stripped.strip("|").split("|")]
                     if cols:
                         col = re.sub(r'[`*\[\]()]', '', cols[0]).strip()
                         if col:
                             table_first_cols.append(col)
-                    in_table = True
                     continue
                 else:
                     if in_table and table_first_cols:
                         sections.append({"heading": current_heading, "text": ", ".join(table_first_cols)})
                         table_first_cols = []
                     in_table = False
+                    table_header_seen = False
 
                 if stripped.startswith("#"):
                     current_heading = stripped.lstrip("#").strip()

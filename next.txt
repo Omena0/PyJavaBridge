@@ -130,3 +130,6 @@ Add:
 - PlayerDataStore:
   - Global, per-player data store. Can be used to store any custom data for players.
   - Used list index notation. Data is automatically saved and loaded.
+
+document everything after you've implemented it, and add type hints. Make sure to update the type stub as well.
+git commit every feature, commit summaries should be sh
