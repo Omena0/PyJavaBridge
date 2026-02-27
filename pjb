@@ -417,9 +417,15 @@ def cmd_search(query):
             print(f"No class '{query[:-1]}' found")
             return
         print(f"\033[1m{members[0]['class_name']}\033[0m  \033[90m({members[0]['file']}.md)\033[0m")
+        current_section = None
         for s in members:
+            section = s['section'] or ''
+            if section != current_section:
+                current_section = section
+                if section:
+                    print(f" \033[90m{section}\033[0m")
             sig = s.get('sig', '') or ''
-            print(f"  \033[36m.{s['name']}{sig}\033[0m  \033[90m{s['section'] or ''}\033[0m")
+            print(f"  \033[36m.{s['name']}{sig}\033[0m")
     elif "." in query:
         # "Player.name" → find specific member(s)
         class_q, member_q = query.split(".", 1)

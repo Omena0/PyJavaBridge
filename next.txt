@@ -2,6 +2,9 @@ Add:
 - BossBarDisplay:
   - Rename linked cooldown attribute to linked_to, since after this it can be many things.
 
+- Paginator:
+  - Menu subclass, but has multiple pages.
+
 - Quest class:
   - Attrs: name, desc, on_complete(), start(), end(), start_time, end_time, time_limit=None, status, progress, accept(), etc
   - Designed to be a parent class
@@ -32,7 +35,7 @@ Add:
 
 - Shop:
   - Attrs: open(player), close(player), items (dict of Item: price (int or Item)), on_purchase event, storage (Inventory, contains items that will be sold as well as payment), balance (bank balance, int)
-  - Should open a chest GUI with multiple tabs showing each of the items as well as the price in the last line of lore.
+  - Should open a chest GUI with multiple pages showing each of the items as well as the price in the last line of lore.
 
 - TradeWindow:
   - Attrs: open(p1, p2), close(p1 / p2) (closes for both, either one can be input), offers (tuple of (Inventory, balance) for each player), on_trade event, confirmed (tuple: bool)
@@ -115,3 +118,15 @@ Add:
 
 - Player:
   - freeze(), unfreeze(), is_frozen
+  - balance (bank balance), deposit(amount), withdraw(amount)
+  - mana (integrates with ManaStore)
+  - xp, level (integrates with LevelSystem)
+  - vanish(), unvanish(), is_vanished
+
+- VisualEffect:
+  - Attrs: trigger(pos), effects (list of callables, which are executed one after the other (they sleep internally))
+  - Sequence of particle effects, sounds, etc.
+
+- PlayerDataStore:
+  - Global, per-player data store. Can be used to store any custom data for players.
+  - Used list index notation. Data is automatically saved and loaded.
