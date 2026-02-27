@@ -15,3 +15,4 @@ extensions/__init__.py
 extensions/npc.py
 extensions/image_display.py
 extensions/mesh_display.py
+extensions/quest.py
