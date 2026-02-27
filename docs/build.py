@@ -56,6 +56,7 @@ SIDEBAR = [
         ("item", "Item"),
         ("itembuilder", "ItemBuilder"),
         ("inventory", "Inventory"),
+        ("recipe", "Recipe"),
     ]),
     ("Effects & Attributes", [
         ("effect", "Effect"),

@@ -116,6 +116,7 @@ __all__ = [
     "Potion",
     "RaycastResult",
     "Config",
+    "Recipe",
     "DamageCause",
     "Enchantment",
     "ItemFlag",
@@ -1936,6 +1937,59 @@ class ItemBuilder:
             builder._glow_flag = bool(item.fields.get("glow"))
             builder._item_flags = list(item.fields.get("item_flags") or [])
         return builder
+
+class Recipe:
+    """Register custom crafting and smelting recipes."""
+
+    @staticmethod
+    def shaped(key: str, result: "Material | str", shape: list, ingredients: dict, amount: int = 1):
+        """Register a shaped crafting recipe.
+
+        Args:
+            key: Unique recipe identifier.
+            result: Material of the crafted item.
+            shape: List of 1-3 strings representing the crafting grid rows.
+            ingredients: Dict mapping single characters in shape to materials.
+            amount: Number of items produced (default 1).
+        """
+        result_str = result if isinstance(result, str) else result.name
+        ing = {k: (v if isinstance(v, str) else v.name) for k, v in ingredients.items()}
+        return _connection.call(method="addShapedRecipe", target="server", args=[key, result_str, shape, ing, amount])
+
+    @staticmethod
+    def shapeless(key: str, result: "Material | str", ingredients: list, amount: int = 1):
+        """Register a shapeless crafting recipe.
+
+        Args:
+            key: Unique recipe identifier.
+            result: Material of the crafted item.
+            ingredients: List of materials needed.
+            amount: Number of items produced (default 1).
+        """
+        result_str = result if isinstance(result, str) else result.name
+        ing = [(i if isinstance(i, str) else i.name) for i in ingredients]
+        return _connection.call(method="addShapelessRecipe", target="server", args=[key, result_str, ing, amount])
+
+    @staticmethod
+    def furnace(key: str, input: "Material | str", result: "Material | str", experience: float = 0, cook_time: int = 200, amount: int = 1):
+        """Register a furnace smelting recipe.
+
+        Args:
+            key: Unique recipe identifier.
+            input: Material to smelt.
+            result: Material produced.
+            experience: XP awarded per smelt (default 0).
+            cook_time: Cook time in ticks (default 200 = 10s).
+            amount: Number of items produced (default 1).
+        """
+        input_str = input if isinstance(input, str) else input.name
+        result_str = result if isinstance(result, str) else result.name
+        return _connection.call(method="addFurnaceRecipe", target="server", args=[key, input_str, result_str, experience, cook_time, amount])
+
+    @staticmethod
+    def remove(key: str):
+        """Remove a custom recipe by its key."""
+        return _connection.call(method="removeRecipe", target="server", args=[key])
 
 class Material(EnumValue):
     """

@@ -36,6 +36,10 @@ import org.bukkit.event.Event;
 import org.bukkit.event.EventPriority;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.ShapedRecipe;
+import org.bukkit.inventory.ShapelessRecipe;
+import org.bukkit.inventory.FurnaceRecipe;
+import org.bukkit.inventory.RecipeChoice;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.permissions.PermissionAttachment;
 import org.bukkit.util.Transformation;
@@ -1324,7 +1328,79 @@ public class BridgeInstance {
         if ("broadcastMessage".equals(method) && !args.isEmpty()) {
             plugin.getLogger().info("[broadcast] " + args.get(0));
         }
+        // Recipe methods
+        if ("addShapedRecipe".equals(method) && args.size() >= 4) {
+            return addShapedRecipe(args);
+        }
+        if ("addShapelessRecipe".equals(method) && args.size() >= 3) {
+            return addShapelessRecipe(args);
+        }
+        if ("addFurnaceRecipe".equals(method) && args.size() >= 3) {
+            return addFurnaceRecipe(args);
+        }
+        if ("removeRecipe".equals(method) && args.size() >= 1) {
+            String key = String.valueOf(args.get(0));
+            return Bukkit.removeRecipe(new NamespacedKey(plugin, key));
+        }
         return UNHANDLED;
+    }
+
+    @SuppressWarnings("unchecked")
+    private Object addShapedRecipe(List<Object> args) {
+        String key = String.valueOf(args.get(0));
+        String resultMaterial = String.valueOf(args.get(1));
+        int resultAmount = args.size() > 4 ? ((Number) args.get(4)).intValue() : 1;
+        List<String> shape = (List<String>) args.get(2);
+        Map<String, Object> ingredients = (Map<String, Object>) args.get(3);
+
+        ItemStack result = new ItemStack(Material.valueOf(resultMaterial.toUpperCase()), resultAmount);
+        NamespacedKey recipeKey = new NamespacedKey(plugin, key);
+        ShapedRecipe recipe = new ShapedRecipe(recipeKey, result);
+        recipe.shape(shape.toArray(new String[0]));
+
+        for (Map.Entry<String, Object> entry : ingredients.entrySet()) {
+            char c = entry.getKey().charAt(0);
+            Material mat = Material.valueOf(String.valueOf(entry.getValue()).toUpperCase());
+            recipe.setIngredient(c, mat);
+        }
+
+        Bukkit.addRecipe(recipe);
+        return key;
+    }
+
+    @SuppressWarnings("unchecked")
+    private Object addShapelessRecipe(List<Object> args) {
+        String key = String.valueOf(args.get(0));
+        String resultMaterial = String.valueOf(args.get(1));
+        int resultAmount = args.size() > 3 ? ((Number) args.get(3)).intValue() : 1;
+        List<String> ingredients = (List<String>) args.get(2);
+
+        ItemStack result = new ItemStack(Material.valueOf(resultMaterial.toUpperCase()), resultAmount);
+        NamespacedKey recipeKey = new NamespacedKey(plugin, key);
+        ShapelessRecipe recipe = new ShapelessRecipe(recipeKey, result);
+
+        for (String mat : ingredients) {
+            recipe.addIngredient(Material.valueOf(mat.toUpperCase()));
+        }
+
+        Bukkit.addRecipe(recipe);
+        return key;
+    }
+
+    private Object addFurnaceRecipe(List<Object> args) {
+        String key = String.valueOf(args.get(0));
+        String inputMaterial = String.valueOf(args.get(1));
+        String resultMaterial = String.valueOf(args.get(2));
+        int resultAmount = args.size() > 5 ? ((Number) args.get(5)).intValue() : 1;
+        float experience = args.size() > 3 ? ((Number) args.get(3)).floatValue() : 0f;
+        int cookTime = args.size() > 4 ? ((Number) args.get(4)).intValue() : 200;
+
+        ItemStack result = new ItemStack(Material.valueOf(resultMaterial.toUpperCase()), resultAmount);
+        NamespacedKey recipeKey = new NamespacedKey(plugin, key);
+        FurnaceRecipe recipe = new FurnaceRecipe(recipeKey, result, Material.valueOf(inputMaterial.toUpperCase()), experience, cookTime);
+
+        Bukkit.addRecipe(recipe);
+        return key;
     }
 
     private Object invokeDisplayMethod(Object target, String method, List<Object> args) {

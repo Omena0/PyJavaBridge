@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Cooldown — PyJavaBridge</title>
-  <meta property="og:title" content="Cooldown — PyJavaBridge">
-  <meta property="og:description" content="Rate limiting helper">
+  <title>Recipe — PyJavaBridge</title>
+  <meta property="og:title" content="Recipe — PyJavaBridge">
+  <meta property="og:description" content="Custom crafting and smelting recipes">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="PyJavaBridge Docs">
   <meta name="theme-color" content="#6366f1">
@@ -44,20 +44,13 @@
 <div class="sidebar-section">
   <div class="sidebar-heading" data-section="on-this-page">On This Page</div>
   <ul class="sidebar-links">
-    <li><a href="#constructor">Constructor</a></li>
-    <li><a href="#attributes">Attributes</a></li>
-    <li><ul class="toc-sub" data-parent="attributes">
-      <li><a href="#seconds">seconds</a></li>
-      <li><a href="#on_expire">on_expire</a></li>
-    </ul></li>
     <li><a href="#methods">Methods</a></li>
     <li><ul class="toc-sub" data-parent="methods">
-      <li><a href="#check">check</a></li>
-      <li><a href="#remaining">remaining</a></li>
-      <li><a href="#reset">reset</a></li>
+      <li><a href="#shaped">shaped</a></li>
+      <li><a href="#shapeless">shapeless</a></li>
+      <li><a href="#furnace">furnace</a></li>
+      <li><a href="#remove">remove</a></li>
     </ul></li>
-    <li><a href="#example-ability-with-boss-bar-indicator">Example: Ability with boss bar indicator</a></li>
-    <li><a href="#example-on-expire-callback">Example: On-expire callback</a></li>
   </ul>
 </div>
 
@@ -95,7 +88,7 @@
     <li><a href="item.html">Item</a></li>
     <li><a href="itembuilder.html">ItemBuilder</a></li>
     <li><a href="inventory.html">Inventory</a></li>
-    <li><a href="recipe.html">Recipe</a></li>
+    <li><a href="recipe.html" class="active">Recipe</a></li>
   </ul>
 </div>
 <div class="sidebar-section">
@@ -125,7 +118,7 @@
   <div class="sidebar-heading collapsed" data-section="helpers">Helpers</div>
   <ul class="sidebar-links">
     <li><a href="config.html">Config</a></li>
-    <li><a href="cooldown.html" class="active">Cooldown</a></li>
+    <li><a href="cooldown.html">Cooldown</a></li>
     <li><a href="enums.html">Enums</a></li>
     <li><a href="enumvalue.html">EnumValue</a></li>
   </ul>
@@ -165,111 +158,92 @@
   <!-- Main -->
   <main class="main">
     <div class="content">
-      <p class="subtitle">Rate limiting helper</p>
-      <h1 id="cooldown">Cooldown</h1>
-<p><code>Cooldown</code> is a helper that tracks per-player cooldowns. Use it to prevent ability spam, command abuse, or add skill cooldown timers.</p>
-<hr />
-<h2 id="constructor">Constructor</h2>
-<pre><code class="language-python">Cooldown(seconds=<span class="nb">1.0</span>, on_expire=<span class="kw">None</span>)
-</code></pre>
-<p>Create a cooldown tracker.</p>
-<ul>
-<li><strong>Parameters:</strong></li>
-<li><code>seconds</code> (<code>float</code>) — Cooldown duration in seconds. Default 1.0.</li>
-<li><code>on_expire</code> (<code>Callable[[</code><a href="player.html"><code>Player</code></a><code>], Any] | None</code>) — Callback invoked when a player's cooldown expires. Default <code>None</code>.</li>
-</ul>
-<pre><code class="language-python">ability_cd = Cooldown(seconds=<span class="nb">5.0</span>)
-
-fireball_cd = Cooldown(
-    seconds=<span class="nb">10.0</span>,
-    on_expire=<span class="kw">lambda</span> p: p.send_message(<span class="st">&quot;§aFireball ready!&quot;</span>)
-)
-</code></pre>
-<hr />
-<h2 id="attributes">Attributes</h2>
-<h3 id="seconds">seconds</h3>
-<ul>
-<li><strong>Type:</strong> <code>float</code></li>
-</ul>
-<p>The cooldown duration in seconds.</p>
-<h3 id="on_expire">on_expire</h3>
-<ul>
-<li><strong>Type:</strong> <code>Callable[[</code><a href="player.html"><code>Player</code></a><code>], Any] | None</code></li>
-</ul>
-<p>Callback invoked when the cooldown expires for a player.</p>
+      <p class="subtitle">Custom crafting and smelting recipes</p>
+      <h1 id="recipe">Recipe</h1>
+<p>Register custom crafting and smelting recipes. All methods are static — no need to instantiate.</p>
 <hr />
 <h2 id="methods">Methods</h2>
-<h3 id="check">check</h3>
-<pre><code class="language-python">is_ready = cooldown.check(player)
+<h3 id="shaped">shaped</h3>
+<pre><code class="language-python"><span class="kw">await</span> Recipe.shaped(key, result, shape, ingredients, amount=<span class="nb">1</span>)
 </code></pre>
-<p>Check if the player's cooldown has expired. If ready, <strong>automatically starts a new cooldown</strong>.</p>
+<p>Register a shaped crafting recipe.</p>
 <ul>
 <li><strong>Parameters:</strong></li>
-<li><code>player</code> (<a href="player.html"><code>Player</code></a>) — Player to check.</li>
-<li><strong>Returns:</strong> <code>bool</code> — <code>True</code> if the cooldown was ready (and has now been reset), <code>False</code> if still on cooldown.</li>
+<li><code>key</code> (<code>str</code>) — Unique recipe identifier.</li>
+<li><code>result</code> (<a href="enums.html"><code>Material</code></a> <code>| str</code>) — Material of the crafted item.</li>
+<li><code>shape</code> (<code>list[str]</code>) — 1–3 strings representing crafting grid rows. Use single characters as placeholders and spaces for empty slots.</li>
+<li><code>ingredients</code> (<code>dict[str, Material | str]</code>) — Maps each character in <code>shape</code> to a material.</li>
+<li><code>amount</code> (<code>int</code>) — Number of items produced (default <code>1</code>).</li>
+<li><strong>Returns:</strong> <code>Awaitable[str]</code> — The recipe key.</li>
 </ul>
-<pre><code class="language-python">cd = Cooldown(seconds=<span class="nb">5.0</span>)
-
-<span class="dc">@command</span>(<span class="st">&quot;Use special ability&quot;</span>)
-<span class="kw">async</span> <span class="kw">def</span> ability(player: Player, args: list[str]):
-    <span class="kw">if</span> <span class="kw">not</span> cd.check(player):
-        remaining = cd.remaining(player)
-        <span class="kw">await</span> player.send_message(<span class="st">f&quot;§cOn cooldown! {remaining:.1f}s remaining&quot;</span>)
-        <span class="kw">return</span>
-    <span class="kw">await</span> player.send_message(<span class="st">&quot;§aAbility activated!&quot;</span>)
+<pre><code class="language-python"><span class="cm"># Diamond sword from sticks and emeralds</span>
+<span class="kw">await</span> Recipe.shaped(<span class="st">&quot;emerald_sword&quot;</span>, Material.DIAMOND_SWORD, [
+    <span class="st">&quot;E&quot;</span>,
+    <span class="st">&quot;E&quot;</span>,
+    <span class="st">&quot;S&quot;</span>
+], {
+    <span class="st">&quot;E&quot;</span>: Material.EMERALD,
+    <span class="st">&quot;S&quot;</span>: Material.STICK
+})
 </code></pre>
-<h3 id="remaining">remaining</h3>
-<pre><code class="language-python">time_left = cooldown.remaining(player)
+<pre><code class="language-python"><span class="cm"># 4 TNT from sand and gunpowder</span>
+<span class="kw">await</span> Recipe.shaped(<span class="st">&quot;easy_tnt&quot;</span>, <span class="st">&quot;TNT&quot;</span>, [
+    <span class="st">&quot;SG&quot;</span>,
+    <span class="st">&quot;GS&quot;</span>
+], {
+    <span class="st">&quot;S&quot;</span>: <span class="st">&quot;SAND&quot;</span>,
+    <span class="st">&quot;G&quot;</span>: <span class="st">&quot;GUNPOWDER&quot;</span>
+}, amount=<span class="nb">4</span>)
 </code></pre>
-<p>Get the remaining cooldown time for a player.</p>
+<h3 id="shapeless">shapeless</h3>
+<pre><code class="language-python"><span class="kw">await</span> Recipe.shapeless(key, result, ingredients, amount=<span class="nb">1</span>)
+</code></pre>
+<p>Register a shapeless crafting recipe (ingredients can go in any slot).</p>
 <ul>
 <li><strong>Parameters:</strong></li>
-<li><code>player</code> (<a href="player.html"><code>Player</code></a>) — Player to check.</li>
-<li><strong>Returns:</strong> <code>float</code> — Remaining seconds, or 0.0 if ready.</li>
+<li><code>key</code> (<code>str</code>) — Unique recipe identifier.</li>
+<li><code>result</code> (<a href="enums.html"><code>Material</code></a> <code>| str</code>) — Material of the crafted item.</li>
+<li><code>ingredients</code> (<code>list[Material | str]</code>) — List of required materials.</li>
+<li><code>amount</code> (<code>int</code>) — Number of items produced (default <code>1</code>).</li>
+<li><strong>Returns:</strong> <code>Awaitable[str]</code> — The recipe key.</li>
 </ul>
-<h3 id="reset">reset</h3>
-<pre><code class="language-python">cooldown.reset(player)
+<pre><code class="language-python"><span class="cm"># Combine 4 diamonds into an emerald</span>
+<span class="kw">await</span> Recipe.shapeless(<span class="st">&quot;diamond_to_emerald&quot;</span>, Material.EMERALD, [
+    Material.DIAMOND, Material.DIAMOND,
+    Material.DIAMOND, Material.DIAMOND
+])
 </code></pre>
-<p>Manually reset (clear) a player's cooldown, making the ability immediately available.</p>
+<h3 id="furnace">furnace</h3>
+<pre><code class="language-python"><span class="kw">await</span> Recipe.furnace(key, input, result, experience=<span class="nb">0</span>, cook_time=<span class="nb">200</span>, amount=<span class="nb">1</span>)
+</code></pre>
+<p>Register a furnace smelting recipe.</p>
 <ul>
 <li><strong>Parameters:</strong></li>
-<li><code>player</code> (<a href="player.html"><code>Player</code></a>) — Player to reset.</li>
+<li><code>key</code> (<code>str</code>) — Unique recipe identifier.</li>
+<li><code>input</code> (<a href="enums.html"><code>Material</code></a> <code>| str</code>) — Material to smelt.</li>
+<li><code>result</code> (<a href="enums.html"><code>Material</code></a> <code>| str</code>) — Material produced.</li>
+<li><code>experience</code> (<code>float</code>) — XP awarded per smelt (default <code>0</code>).</li>
+<li><code>cook_time</code> (<code>int</code>) — Cook time in ticks (default <code>200</code> = 10 seconds).</li>
+<li><code>amount</code> (<code>int</code>) — Number of items produced (default <code>1</code>).</li>
+<li><strong>Returns:</strong> <code>Awaitable[str]</code> — The recipe key.</li>
 </ul>
-<hr />
-<h2 id="example-ability-with-boss-bar-indicator">Example: Ability with boss bar indicator</h2>
-<pre><code class="language-python"><span class="kw">from</span> bridge <span class="kw">import</span> *
+<pre><code class="language-python"><span class="cm"># Smelt gravel into flint</span>
+<span class="kw">await</span> Recipe.furnace(<span class="st">&quot;gravel_to_flint&quot;</span>, Material.GRAVEL, Material.FLINT, experience=<span class="nb">0.1</span>)
 
-fireball_cd = Cooldown(seconds=<span class="nb">8.0</span>)
-
-<span class="dc">@command</span>(<span class="st">&quot;Shoot a fireball&quot;</span>)
-<span class="kw">async</span> <span class="kw">def</span> fireball(player: Player, args: list[str]):
-    <span class="kw">if</span> <span class="kw">not</span> fireball_cd.check(player):
-        r = fireball_cd.remaining(player)
-        <span class="kw">await</span> player.send_message(<span class="st">f&quot;§c{r:.1f}s cooldown remaining!&quot;</span>)
-        <span class="kw">return</span>
-
-    loc = player.location
-    <span class="kw">await</span> world.spawn_projectile(player, <span class="st">&quot;FIREBALL&quot;</span>)
-    <span class="kw">await</span> player.send_message(<span class="st">&quot;§6🔥 Fireball launched!&quot;</span>)
+<span class="cm"># Fast-cook cobblestone into stone (5 seconds)</span>
+<span class="kw">await</span> Recipe.furnace(<span class="st">&quot;fast_stone&quot;</span>, <span class="st">&quot;COBBLESTONE&quot;</span>, <span class="st">&quot;STONE&quot;</span>, cook_time=<span class="nb">100</span>)
 </code></pre>
-<h2 id="example-on-expire-callback">Example: On-expire callback</h2>
-<pre><code class="language-python"><span class="kw">from</span> bridge <span class="kw">import</span> *
-
-dash_cd = Cooldown(
-    seconds=<span class="nb">3.0</span>,
-    on_expire=<span class="kw">lambda</span> p: p.send_action_bar(<span class="st">&quot;§aDash ready!&quot;</span>)
-)
-
-<span class="dc">@command</span>(<span class="st">&quot;Dash forward&quot;</span>)
-<span class="kw">async</span> <span class="kw">def</span> dash(player: Player, args: list[str]):
-    <span class="kw">if</span> <span class="kw">not</span> dash_cd.check(player):
-        <span class="kw">await</span> player.send_action_bar(<span class="st">f&quot;§c{dash_cd.remaining(player):.1f}s&quot;</span>)
-        <span class="kw">return</span>
-
-    <span class="kw">await</span> player.set_velocity(Vector(<span class="nb">0</span>, <span class="nb">0.5</span>, <span class="nb">1.5</span>))
-    <span class="kw">await</span> player.send_action_bar(<span class="st">&quot;§6Dash!&quot;</span>)
+<h3 id="remove">remove</h3>
+<pre><code class="language-python"><span class="kw">await</span> Recipe.remove(key)
 </code></pre>
-<div class="callout callout-info"><p><strong>See also:</strong> <a href="bossbardisplay.html#link_cooldown"><code>BossBarDisplay.link_cooldown()</code></a> to visually display cooldown progress.</p></div>
+<p>Remove a previously registered custom recipe.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>key</code> (<code>str</code>) — The recipe key used during registration.</li>
+<li><strong>Returns:</strong> <code>Awaitable[bool]</code> — Whether the recipe was found and removed.</li>
+</ul>
+<pre><code class="language-python"><span class="kw">await</span> Recipe.remove(<span class="st">&quot;emerald_sword&quot;</span>)
+</code></pre>
     </div>
     <footer class="site-footer">
       &copy; Omena0 2026 &middot; PyJavaBridge Documentation
