@@ -628,6 +628,7 @@ class BossBarDisplay:
 
     def link_cooldown(self, cooldown: Cooldown, player: Any):
         """Deprecated: use linked_to instead."""
+        print('DeprecationWarning: BossBarDisplay.link_cooldown is deprecat')
         self.linked_to(cooldown, player)
 
     def linked_to(self, source: Any, player: Any):
@@ -768,6 +769,76 @@ class MenuItem:
         from bridge.wrappers import Item
         if isinstance(self.item, str):
             self.item = Item(self.item)
+
+
+class Paginator(Menu):
+    """Menu subclass with multiple pages and navigation buttons."""
+
+    def __init__(self, title: str = "", rows: int = 3,
+                 items: Optional[List[MenuItem]] = None):
+        super().__init__(title, rows)
+        self._pages: List[Dict[int, MenuItem]] = [{}]
+        self._page_index: Dict[str, int] = {}  # player uuid -> current page
+        usable = (self._rows - 1) * 9  # last row reserved for nav
+        if items:
+            page: Dict[int, MenuItem] = {}
+            slot = 0
+            for mi in items:
+                page[slot] = mi
+                slot += 1
+                if slot >= usable:
+                    self._pages.append(page)
+                    page = {}
+                    slot = 0
+            if page or not self._pages:
+                self._pages.append(page)
+            # first page added as empty at init, remove if we filled pages
+            if self._pages and not self._pages[0]:
+                self._pages.pop(0)
+
+    @property
+    def page_count(self) -> int:
+        return len(self._pages)
+
+    def add_page(self) -> int:
+        self._pages.append({})
+        return len(self._pages) - 1
+
+    def set_page_item(self, page: int, slot: int, menu_item: MenuItem):
+        while page >= len(self._pages):
+            self._pages.append({})
+        usable = (self._rows - 1) * 9
+        if slot < 0 or slot >= usable:
+            raise IndexError(f"Slot {slot} out of range (0-{usable - 1})")
+        self._pages[page][slot] = menu_item
+
+    def open(self, player: Any, page: int = 0):
+        p_uuid = str(player.uuid)
+        page = max(0, min(page, len(self._pages) - 1))
+        self._page_index[p_uuid] = page
+        self._build_page(page)
+        super().open(player)
+
+    def _build_page(self, page: int):
+        from bridge.wrappers import Item as WItem
+        self._items.clear()
+        if 0 <= page < len(self._pages):
+            self._items.update(self._pages[page])
+        nav_row_start = (self._rows - 1) * 9
+        # Previous button
+        if page > 0:
+            prev_item = WItem("ARROW", name="<< Previous")
+            self._items[nav_row_start] = MenuItem(
+                prev_item, on_click=lambda p, e: self.open(p, page - 1))
+        # Page indicator
+        indicator = WItem("PAPER", name=f"Page {page + 1}/{len(self._pages)}")
+        self._items[nav_row_start + 4] = MenuItem(indicator)
+        # Next button
+        if page < len(self._pages) - 1:
+            next_item = WItem("ARROW", name="Next >>")
+            self._items[nav_row_start + 8] = MenuItem(
+                next_item, on_click=lambda p, e: self.open(p, page + 1))
+
 
 # Global menu tracking
 _open_menus: Dict[str, Menu] = {}
