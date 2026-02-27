@@ -51,6 +51,25 @@ __all__ = [
     "chat",
     "reflect",
     "EntityGoneException",
+    "ConnectionError",
+    "TimeoutError",
+    "AtomicAbortError",
+    "PlayerOfflineException",
+    "WorldNotLoadedException",
+    "ChunkNotLoadedException",
+    "InvalidLocationError",
+    "InvalidMaterialError",
+    "InvalidItemError",
+    "MethodNotFoundError",
+    "ClassNotFoundError",
+    "AccessDeniedError",
+    "InvalidEventError",
+    "CommandRegistrationError",
+    "ConfigError",
+    "UnsupportedFormatError",
+    "InvalidEnumError",
+    "SlotOutOfRangeError",
+    "PermissionError",
     "Event",
     "Server",
     "Player",
@@ -128,11 +147,113 @@ _EV = TypeVar("_EV", bound="EnumValue")
 # Errors
 class BridgeError(Exception):
     """Bridge-specific runtime error."""
-    pass
+    def __init__(self, message: str = "", java_stacktrace: Optional[str] = None):
+        self.java_stacktrace = java_stacktrace
+        if java_stacktrace:
+            super().__init__(f"{message}\n--- Java stacktrace ---\n{java_stacktrace}")
+        else:
+            super().__init__(message)
 
 class EntityGoneException(BridgeError):
     """Raised when an entity/player is no longer available."""
     pass
+
+class ConnectionError(BridgeError):
+    """Raised when the bridge connection is lost or unavailable."""
+    pass
+
+class TimeoutError(BridgeError):
+    """Raised when a call to Java times out."""
+    pass
+
+class AtomicAbortError(BridgeError):
+    """Raised when an atomic batch is aborted due to an error."""
+    pass
+
+class PlayerOfflineException(BridgeError):
+    """Raised when targeting a player who is no longer online."""
+    pass
+
+class WorldNotLoadedException(BridgeError):
+    """Raised when accessing a world that isn't loaded."""
+    pass
+
+class ChunkNotLoadedException(BridgeError):
+    """Raised when accessing a chunk that isn't loaded."""
+    pass
+
+class InvalidLocationError(BridgeError):
+    """Raised when a location is invalid or missing required fields."""
+    pass
+
+class InvalidMaterialError(BridgeError):
+    """Raised when a material name is invalid."""
+    pass
+
+class InvalidItemError(BridgeError):
+    """Raised when an item operation is invalid."""
+    pass
+
+class MethodNotFoundError(BridgeError):
+    """Raised when a method doesn't exist on the target object."""
+    pass
+
+class ClassNotFoundError(BridgeError):
+    """Raised when a Java class cannot be found."""
+    pass
+
+class AccessDeniedError(BridgeError):
+    """Raised when access to a method or field is denied."""
+    pass
+
+class InvalidEventError(BridgeError):
+    """Raised when an event name is invalid."""
+    pass
+
+class CommandRegistrationError(BridgeError):
+    """Raised when command registration fails."""
+    pass
+
+class ConfigError(BridgeError):
+    """Raised when a config operation fails."""
+    pass
+
+class UnsupportedFormatError(BridgeError):
+    """Raised when a file format is not supported."""
+    pass
+
+class InvalidEnumError(BridgeError):
+    """Raised when an enum value is invalid."""
+    pass
+
+class SlotOutOfRangeError(BridgeError):
+    """Raised when an inventory slot index is out of range."""
+    pass
+
+class PermissionError(BridgeError):
+    """Raised when a permission check fails."""
+    pass
+
+_ERROR_CODE_MAP: Dict[str, type[BridgeError]] = {
+    "ENTITY_GONE": EntityGoneException,
+    "TIMEOUT": TimeoutError,
+    "ATOMIC_ABORT": AtomicAbortError,
+    "INVALID_MATERIAL": InvalidMaterialError,
+    "INVALID_ENUM": InvalidEnumError,
+    "SLOT_OUT_OF_RANGE": SlotOutOfRangeError,
+    "METHOD_NOT_FOUND": MethodNotFoundError,
+    "CLASS_NOT_FOUND": ClassNotFoundError,
+    "ACCESS_DENIED": AccessDeniedError,
+    "NULL_REFERENCE": BridgeError,
+    "INVALID_ARGUMENT": BridgeError,
+}
+
+def _make_bridge_error(message: Dict[str, Any]) -> BridgeError:
+    code = message.get("code")
+    msg = message.get("message", "Unknown error")
+    stacktrace = message.get("stacktrace")
+    cls = _ERROR_CODE_MAP.get(code, BridgeError) if code else BridgeError
+    return cls(msg, java_stacktrace=stacktrace)
 
 # Result classes
 @dataclass
@@ -226,7 +347,7 @@ class ProxyBase:
 
     def _call(self, method: str, *args: Any, **kwargs: Any) -> "BridgeCall":
         if _connection is None:
-            raise BridgeError("Bridge not connected")
+            raise ConnectionError("Bridge not connected")
         if self._handle is None and self._target == "ref":
             if kwargs:
                 return _connection.call(method="call", args=[self._ref_type, self._ref_id, method, list(args), kwargs], target="ref")
@@ -235,7 +356,7 @@ class ProxyBase:
 
     def _call_sync(self, method: str, *args: Any, **kwargs: Any) -> Any:
         if _connection is None:
-            raise BridgeError("Bridge not connected")
+            raise ConnectionError("Bridge not connected")
         if self._handle is None and self._target == "ref":
             if kwargs:
                 return _connection.call_sync(method="call", args=[self._ref_type, self._ref_id, method, list(args), kwargs], target="ref")
@@ -2460,11 +2581,7 @@ class BridgeConnection:
                                 if msg_type == "return":
                                     wait.result = self._deserialize(message.get("result"))
                                 else:
-                                    code = message.get("code")
-                                    if code == "ENTITY_GONE":
-                                        wait.error = EntityGoneException(message.get("message"))
-                                    else:
-                                        wait.error = BridgeError(message.get("message"))
+                                    wait.error = _make_bridge_error(message)
                                 wait.event.set()
                                 continue
                     self._loop.call_soon_threadsafe(self._handle_message, message)
@@ -2473,7 +2590,7 @@ class BridgeConnection:
                     break
         finally:
             # Wake all pending sync waits on disconnect
-            disconnect_error = BridgeError("Connection lost")
+            disconnect_error = ConnectionError("Connection lost")
             for wait in list(self._pending_sync.values()):
                 wait.error = disconnect_error
                 wait.event.set()
@@ -2492,11 +2609,7 @@ class BridgeConnection:
             msg_id: int = message.get("id")  # type: ignore[assignment]
             future = self._pending.pop(msg_id, None)
             if future is not None:
-                code = message.get("code")
-                if code == "ENTITY_GONE":
-                    future.set_exception(EntityGoneException(message.get("message")))
-                else:
-                    future.set_exception(BridgeError(message.get("message")))
+                future.set_exception(_make_bridge_error(message))
         elif msg_type == "event":
             event_name = message.get("event")
             print(f"[PyJavaBridge] Event received: {event_name}")

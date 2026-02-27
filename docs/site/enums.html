@@ -56,6 +56,25 @@
     <li><a href="#biome">Biome</a></li>
     <li><a href="#barcolor">BarColor</a></li>
     <li><a href="#barstyle">BarStyle</a></li>
+    <li><a href="#damagecause">DamageCause</a></li>
+    <li><a href="#enchantment">Enchantment</a></li>
+    <li><a href="#itemflag">ItemFlag</a></li>
+    <li><a href="#equipmentslot">EquipmentSlot</a></li>
+    <li><a href="#dyecolor">DyeColor</a></li>
+    <li><a href="#spawnreason">SpawnReason</a></li>
+    <li><a href="#entitycategory">EntityCategory</a></li>
+    <li><a href="#entitypose">EntityPose</a></li>
+    <li><a href="#blockface">BlockFace</a></li>
+    <li><a href="#treetype">TreeType</a></li>
+    <li><a href="#weathertype">WeatherType</a></li>
+    <li><a href="#worldtype">WorldType</a></li>
+    <li><a href="#action">Action</a></li>
+    <li><a href="#chatcolor">ChatColor</a></li>
+    <li><a href="#eventpriority">EventPriority</a></li>
+    <li><a href="#teleportcause">TeleportCause</a></li>
+    <li><a href="#inventorytype">InventoryType</a></li>
+    <li><a href="#billboard">Billboard</a></li>
+    <li><a href="#barflag">BarFlag</a></li>
   </ul>
 </div>
 
@@ -660,6 +679,975 @@ material = Material.from_name(<span class="st">&quot;DIAMOND_SWORD&quot;</span>)
 <tr>
 <td><code>SEGMENTED_20</code></td>
 <td>20 segments</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="damagecause">DamageCause</h2>
+<pre><code class="language-python"><span class="kw">from</span> bridge <span class="kw">import</span> DamageCause
+</code></pre>
+<p>Why an entity took damage.</p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>CONTACT</code></td>
+<td>Touching a cactus or berry bush</td>
+</tr>
+<tr>
+<td><code>ENTITY_ATTACK</code></td>
+<td>Melee attack by entity</td>
+</tr>
+<tr>
+<td><code>ENTITY_SWEEP_ATTACK</code></td>
+<td>Sweep attack</td>
+</tr>
+<tr>
+<td><code>PROJECTILE</code></td>
+<td>Hit by a projectile</td>
+</tr>
+<tr>
+<td><code>SUFFOCATION</code></td>
+<td>Stuck inside a block</td>
+</tr>
+<tr>
+<td><code>FALL</code></td>
+<td>Falling</td>
+</tr>
+<tr>
+<td><code>FIRE</code></td>
+<td>Standing in fire</td>
+</tr>
+<tr>
+<td><code>FIRE_TICK</code></td>
+<td>Burning (on fire)</td>
+</tr>
+<tr>
+<td><code>LAVA</code></td>
+<td>In lava</td>
+</tr>
+<tr>
+<td><code>DROWNING</code></td>
+<td>Out of air underwater</td>
+</tr>
+<tr>
+<td><code>BLOCK_EXPLOSION</code></td>
+<td>Block explosion (TNT, bed)</td>
+</tr>
+<tr>
+<td><code>ENTITY_EXPLOSION</code></td>
+<td>Entity explosion (creeper)</td>
+</tr>
+<tr>
+<td><code>VOID</code></td>
+<td>Falling into the void</td>
+</tr>
+<tr>
+<td><code>LIGHTNING</code></td>
+<td>Struck by lightning</td>
+</tr>
+<tr>
+<td><code>STARVATION</code></td>
+<td>No food</td>
+</tr>
+<tr>
+<td><code>POISON</code></td>
+<td>Poison effect</td>
+</tr>
+<tr>
+<td><code>MAGIC</code></td>
+<td>Instant damage potion</td>
+</tr>
+<tr>
+<td><code>WITHER</code></td>
+<td>Wither effect</td>
+</tr>
+<tr>
+<td><code>FALLING_BLOCK</code></td>
+<td>Hit by falling block</td>
+</tr>
+<tr>
+<td><code>FLY_INTO_WALL</code></td>
+<td>Elytra into wall</td>
+</tr>
+<tr>
+<td><code>HOT_FLOOR</code></td>
+<td>Standing on magma</td>
+</tr>
+<tr>
+<td><code>CRAMMING</code></td>
+<td>Too many entities</td>
+</tr>
+<tr>
+<td><code>FREEZE</code></td>
+<td>Powder snow</td>
+</tr>
+</tbody>
+</table>
+<pre><code class="language-python"><span class="dc">@event</span>
+<span class="kw">async</span> <span class="kw">def</span> entity_damage(e):
+    <span class="kw">if</span> e.damage_cause == DamageCause.FALL.name:
+        <span class="kw">return</span> <span class="nb">0</span>  <span class="cm"># No fall damage</span>
+</code></pre>
+<hr />
+<h2 id="enchantment">Enchantment</h2>
+<pre><code class="language-python"><span class="kw">from</span> bridge <span class="kw">import</span> Enchantment
+</code></pre>
+<p>Item enchantment types.</p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>SHARPNESS</code></td>
+<td>Increased melee damage</td>
+</tr>
+<tr>
+<td><code>SMITE</code></td>
+<td>Extra damage to undead</td>
+</tr>
+<tr>
+<td><code>PROTECTION</code></td>
+<td>Reduced damage</td>
+</tr>
+<tr>
+<td><code>FIRE_PROTECTION</code></td>
+<td>Reduced fire damage</td>
+</tr>
+<tr>
+<td><code>EFFICIENCY</code></td>
+<td>Faster mining</td>
+</tr>
+<tr>
+<td><code>SILK_TOUCH</code></td>
+<td>Mine blocks as-is</td>
+</tr>
+<tr>
+<td><code>FORTUNE</code></td>
+<td>More drops</td>
+</tr>
+<tr>
+<td><code>UNBREAKING</code></td>
+<td>Increased durability</td>
+</tr>
+<tr>
+<td><code>MENDING</code></td>
+<td>Repair with XP</td>
+</tr>
+<tr>
+<td><code>INFINITY</code></td>
+<td>Infinite arrows</td>
+</tr>
+<tr>
+<td><code>POWER</code></td>
+<td>Stronger arrows</td>
+</tr>
+<tr>
+<td><code>PUNCH</code></td>
+<td>Arrow knockback</td>
+</tr>
+<tr>
+<td><code>FLAME</code></td>
+<td>Fire arrows</td>
+</tr>
+<tr>
+<td><code>LOOTING</code></td>
+<td>More mob drops</td>
+</tr>
+<tr>
+<td><code>THORNS</code></td>
+<td>Damage attackers</td>
+</tr>
+<tr>
+<td><code>DEPTH_STRIDER</code></td>
+<td>Faster underwater movement</td>
+</tr>
+<tr>
+<td><code>FROST_WALKER</code></td>
+<td>Freeze water</td>
+</tr>
+<tr>
+<td><code>FEATHER_FALLING</code></td>
+<td>Reduced fall damage</td>
+</tr>
+</tbody>
+</table>
+<pre><code class="language-python">item = ItemBuilder(Material.DIAMOND_SWORD).enchant(Enchantment.SHARPNESS, <span class="nb">5</span>).build()
+</code></pre>
+<hr />
+<h2 id="itemflag">ItemFlag</h2>
+<pre><code class="language-python"><span class="kw">from</span> bridge <span class="kw">import</span> ItemFlag
+</code></pre>
+<p>Flags to hide item tooltip sections.</p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>HIDE_ENCHANTS</code></td>
+<td>Hide enchantments</td>
+</tr>
+<tr>
+<td><code>HIDE_ATTRIBUTES</code></td>
+<td>Hide attribute modifiers</td>
+</tr>
+<tr>
+<td><code>HIDE_UNBREAKABLE</code></td>
+<td>Hide "Unbreakable" tag</td>
+</tr>
+<tr>
+<td><code>HIDE_DESTROYS</code></td>
+<td>Hide "Can destroy" list</td>
+</tr>
+<tr>
+<td><code>HIDE_PLACED_ON</code></td>
+<td>Hide "Can be placed on" list</td>
+</tr>
+<tr>
+<td><code>HIDE_DYE</code></td>
+<td>Hide leather armor color</td>
+</tr>
+<tr>
+<td><code>HIDE_ARMOR_TRIM</code></td>
+<td>Hide armor trim</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="equipmentslot">EquipmentSlot</h2>
+<pre><code class="language-python"><span class="kw">from</span> bridge <span class="kw">import</span> EquipmentSlot
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>HAND</code></td>
+</tr>
+<tr>
+<td><code>OFF_HAND</code></td>
+</tr>
+<tr>
+<td><code>HEAD</code></td>
+</tr>
+<tr>
+<td><code>CHEST</code></td>
+</tr>
+<tr>
+<td><code>LEGS</code></td>
+</tr>
+<tr>
+<td><code>FEET</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="dyecolor">DyeColor</h2>
+<pre><code class="language-python"><span class="kw">from</span> bridge <span class="kw">import</span> DyeColor
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>WHITE</code></td>
+</tr>
+<tr>
+<td><code>ORANGE</code></td>
+</tr>
+<tr>
+<td><code>MAGENTA</code></td>
+</tr>
+<tr>
+<td><code>LIGHT_BLUE</code></td>
+</tr>
+<tr>
+<td><code>YELLOW</code></td>
+</tr>
+<tr>
+<td><code>LIME</code></td>
+</tr>
+<tr>
+<td><code>PINK</code></td>
+</tr>
+<tr>
+<td><code>GRAY</code></td>
+</tr>
+<tr>
+<td><code>LIGHT_GRAY</code></td>
+</tr>
+<tr>
+<td><code>CYAN</code></td>
+</tr>
+<tr>
+<td><code>PURPLE</code></td>
+</tr>
+<tr>
+<td><code>BLUE</code></td>
+</tr>
+<tr>
+<td><code>BROWN</code></td>
+</tr>
+<tr>
+<td><code>GREEN</code></td>
+</tr>
+<tr>
+<td><code>RED</code></td>
+</tr>
+<tr>
+<td><code>BLACK</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="spawnreason">SpawnReason</h2>
+<pre><code class="language-python"><span class="kw">from</span> bridge <span class="kw">import</span> SpawnReason
+</code></pre>
+<p>Why a creature spawned.</p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>NATURAL</code></td>
+<td>Natural world spawning</td>
+</tr>
+<tr>
+<td><code>SPAWNER</code></td>
+<td>Monster spawner</td>
+</tr>
+<tr>
+<td><code>EGG</code></td>
+<td>Spawn egg</td>
+</tr>
+<tr>
+<td><code>BREEDING</code></td>
+<td>Animal breeding</td>
+</tr>
+<tr>
+<td><code>COMMAND</code></td>
+<td>/summon command</td>
+</tr>
+<tr>
+<td><code>CUSTOM</code></td>
+<td>Plugin/API spawning</td>
+</tr>
+<tr>
+<td><code>LIGHTNING</code></td>
+<td>Lightning strike (skeleton horse)</td>
+</tr>
+<tr>
+<td><code>VILLAGE_DEFENSE</code></td>
+<td>Iron golem defense</td>
+</tr>
+<tr>
+<td><code>BUILD_IRONGOLEM</code></td>
+<td>Built iron golem</td>
+</tr>
+<tr>
+<td><code>BUILD_SNOWMAN</code></td>
+<td>Built snow golem</td>
+</tr>
+<tr>
+<td><code>CURED</code></td>
+<td>Cured zombie villager</td>
+</tr>
+<tr>
+<td><code>DROWNED</code></td>
+<td>Zombie became drowned</td>
+</tr>
+<tr>
+<td><code>JOCKEY</code></td>
+<td>Spider jockey</td>
+</tr>
+<tr>
+<td><code>REINFORCEMENTS</code></td>
+<td>Zombie reinforcements</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="entitycategory">EntityCategory</h2>
+<pre><code class="language-python"><span class="kw">from</span> bridge <span class="kw">import</span> EntityCategory
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>NONE</code></td>
+</tr>
+<tr>
+<td><code>UNDEAD</code></td>
+</tr>
+<tr>
+<td><code>ARTHROPOD</code></td>
+</tr>
+<tr>
+<td><code>ILLAGER</code></td>
+</tr>
+<tr>
+<td><code>WATER</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="entitypose">EntityPose</h2>
+<pre><code class="language-python"><span class="kw">from</span> bridge <span class="kw">import</span> EntityPose
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>STANDING</code></td>
+</tr>
+<tr>
+<td><code>FALL_FLYING</code></td>
+</tr>
+<tr>
+<td><code>SLEEPING</code></td>
+</tr>
+<tr>
+<td><code>SWIMMING</code></td>
+</tr>
+<tr>
+<td><code>SPIN_ATTACK</code></td>
+</tr>
+<tr>
+<td><code>SNEAKING</code></td>
+</tr>
+<tr>
+<td><code>DYING</code></td>
+</tr>
+<tr>
+<td><code>SITTING</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="blockface">BlockFace</h2>
+<pre><code class="language-python"><span class="kw">from</span> bridge <span class="kw">import</span> BlockFace
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>NORTH</code></td>
+</tr>
+<tr>
+<td><code>SOUTH</code></td>
+</tr>
+<tr>
+<td><code>EAST</code></td>
+</tr>
+<tr>
+<td><code>WEST</code></td>
+</tr>
+<tr>
+<td><code>UP</code></td>
+</tr>
+<tr>
+<td><code>DOWN</code></td>
+</tr>
+<tr>
+<td><code>NORTH_EAST</code></td>
+</tr>
+<tr>
+<td><code>NORTH_WEST</code></td>
+</tr>
+<tr>
+<td><code>SOUTH_EAST</code></td>
+</tr>
+<tr>
+<td><code>SOUTH_WEST</code></td>
+</tr>
+<tr>
+<td><code>SELF</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="treetype">TreeType</h2>
+<pre><code class="language-python"><span class="kw">from</span> bridge <span class="kw">import</span> TreeType
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>TREE</code></td>
+</tr>
+<tr>
+<td><code>BIG_TREE</code></td>
+</tr>
+<tr>
+<td><code>BIRCH</code></td>
+</tr>
+<tr>
+<td><code>REDWOOD</code></td>
+</tr>
+<tr>
+<td><code>TALL_REDWOOD</code></td>
+</tr>
+<tr>
+<td><code>JUNGLE</code></td>
+</tr>
+<tr>
+<td><code>SMALL_JUNGLE</code></td>
+</tr>
+<tr>
+<td><code>JUNGLE_BUSH</code></td>
+</tr>
+<tr>
+<td><code>SWAMP</code></td>
+</tr>
+<tr>
+<td><code>ACACIA</code></td>
+</tr>
+<tr>
+<td><code>DARK_OAK</code></td>
+</tr>
+<tr>
+<td><code>CHERRY</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="weathertype">WeatherType</h2>
+<pre><code class="language-python"><span class="kw">from</span> bridge <span class="kw">import</span> WeatherType
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>CLEAR</code></td>
+</tr>
+<tr>
+<td><code>DOWNFALL</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="worldtype">WorldType</h2>
+<pre><code class="language-python"><span class="kw">from</span> bridge <span class="kw">import</span> WorldType
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>NORMAL</code></td>
+</tr>
+<tr>
+<td><code>FLAT</code></td>
+</tr>
+<tr>
+<td><code>LARGE_BIOMES</code></td>
+</tr>
+<tr>
+<td><code>AMPLIFIED</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="action">Action</h2>
+<pre><code class="language-python"><span class="kw">from</span> bridge <span class="kw">import</span> Action
+</code></pre>
+<p>Player block interaction type.</p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>LEFT_CLICK_BLOCK</code></td>
+<td>Left-clicked a block</td>
+</tr>
+<tr>
+<td><code>RIGHT_CLICK_BLOCK</code></td>
+<td>Right-clicked a block</td>
+</tr>
+<tr>
+<td><code>LEFT_CLICK_AIR</code></td>
+<td>Left-clicked air</td>
+</tr>
+<tr>
+<td><code>RIGHT_CLICK_AIR</code></td>
+<td>Right-clicked air</td>
+</tr>
+<tr>
+<td><code>PHYSICAL</code></td>
+<td>Stepped on pressure plate, etc.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="chatcolor">ChatColor</h2>
+<pre><code class="language-python"><span class="kw">from</span> bridge <span class="kw">import</span> ChatColor
+</code></pre>
+<p>Legacy Minecraft color codes. Prefer <code>§</code> codes in strings for simplicity.</p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Code</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>BLACK</code></td>
+<td>§0</td>
+</tr>
+<tr>
+<td><code>DARK_BLUE</code></td>
+<td>§1</td>
+</tr>
+<tr>
+<td><code>DARK_GREEN</code></td>
+<td>§2</td>
+</tr>
+<tr>
+<td><code>DARK_AQUA</code></td>
+<td>§3</td>
+</tr>
+<tr>
+<td><code>DARK_RED</code></td>
+<td>§4</td>
+</tr>
+<tr>
+<td><code>DARK_PURPLE</code></td>
+<td>§5</td>
+</tr>
+<tr>
+<td><code>GOLD</code></td>
+<td>§6</td>
+</tr>
+<tr>
+<td><code>GRAY</code></td>
+<td>§7</td>
+</tr>
+<tr>
+<td><code>DARK_GRAY</code></td>
+<td>§8</td>
+</tr>
+<tr>
+<td><code>BLUE</code></td>
+<td>§9</td>
+</tr>
+<tr>
+<td><code>GREEN</code></td>
+<td>§a</td>
+</tr>
+<tr>
+<td><code>AQUA</code></td>
+<td>§b</td>
+</tr>
+<tr>
+<td><code>RED</code></td>
+<td>§c</td>
+</tr>
+<tr>
+<td><code>LIGHT_PURPLE</code></td>
+<td>§d</td>
+</tr>
+<tr>
+<td><code>YELLOW</code></td>
+<td>§e</td>
+</tr>
+<tr>
+<td><code>WHITE</code></td>
+<td>§f</td>
+</tr>
+<tr>
+<td><code>BOLD</code></td>
+<td>§l</td>
+</tr>
+<tr>
+<td><code>ITALIC</code></td>
+<td>§o</td>
+</tr>
+<tr>
+<td><code>UNDERLINE</code></td>
+<td>§n</td>
+</tr>
+<tr>
+<td><code>STRIKETHROUGH</code></td>
+<td>§m</td>
+</tr>
+<tr>
+<td><code>RESET</code></td>
+<td>§r</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="eventpriority">EventPriority</h2>
+<pre><code class="language-python"><span class="kw">from</span> bridge <span class="kw">import</span> EventPriority
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>LOWEST</code></td>
+<td>First to run</td>
+</tr>
+<tr>
+<td><code>LOW</code></td>
+<td>Early</td>
+</tr>
+<tr>
+<td><code>NORMAL</code></td>
+<td>Default</td>
+</tr>
+<tr>
+<td><code>HIGH</code></td>
+<td>Late</td>
+</tr>
+<tr>
+<td><code>HIGHEST</code></td>
+<td>Last before monitor</td>
+</tr>
+<tr>
+<td><code>MONITOR</code></td>
+<td>Read-only observation</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="teleportcause">TeleportCause</h2>
+<pre><code class="language-python"><span class="kw">from</span> bridge <span class="kw">import</span> TeleportCause
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ENDER_PEARL</code></td>
+<td>Ender pearl throw</td>
+</tr>
+<tr>
+<td><code>COMMAND</code></td>
+<td>/tp command</td>
+</tr>
+<tr>
+<td><code>PLUGIN</code></td>
+<td>Plugin teleport</td>
+</tr>
+<tr>
+<td><code>NETHER_PORTAL</code></td>
+<td>Nether portal</td>
+</tr>
+<tr>
+<td><code>END_PORTAL</code></td>
+<td>End portal</td>
+</tr>
+<tr>
+<td><code>CHORUS_FRUIT</code></td>
+<td>Ate chorus fruit</td>
+</tr>
+<tr>
+<td><code>SPECTATE</code></td>
+<td>Spectator teleport</td>
+</tr>
+<tr>
+<td><code>UNKNOWN</code></td>
+<td>Unknown cause</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="inventorytype">InventoryType</h2>
+<pre><code class="language-python"><span class="kw">from</span> bridge <span class="kw">import</span> InventoryType
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>CHEST</code></td>
+<td>Chest / double chest</td>
+</tr>
+<tr>
+<td><code>CRAFTING</code></td>
+<td>Player crafting grid</td>
+</tr>
+<tr>
+<td><code>DISPENSER</code></td>
+<td>Dispenser</td>
+</tr>
+<tr>
+<td><code>DROPPER</code></td>
+<td>Dropper</td>
+</tr>
+<tr>
+<td><code>FURNACE</code></td>
+<td>Furnace</td>
+</tr>
+<tr>
+<td><code>HOPPER</code></td>
+<td>Hopper</td>
+</tr>
+<tr>
+<td><code>PLAYER</code></td>
+<td>Player inventory</td>
+</tr>
+<tr>
+<td><code>WORKBENCH</code></td>
+<td>Crafting table</td>
+</tr>
+<tr>
+<td><code>ENCHANTING</code></td>
+<td>Enchanting table</td>
+</tr>
+<tr>
+<td><code>BREWING</code></td>
+<td>Brewing stand</td>
+</tr>
+<tr>
+<td><code>ANVIL</code></td>
+<td>Anvil</td>
+</tr>
+<tr>
+<td><code>BEACON</code></td>
+<td>Beacon</td>
+</tr>
+<tr>
+<td><code>SHULKER_BOX</code></td>
+<td>Shulker box</td>
+</tr>
+<tr>
+<td><code>BARREL</code></td>
+<td>Barrel</td>
+</tr>
+<tr>
+<td><code>BLAST_FURNACE</code></td>
+<td>Blast furnace</td>
+</tr>
+<tr>
+<td><code>SMOKER</code></td>
+<td>Smoker</td>
+</tr>
+<tr>
+<td><code>MERCHANT</code></td>
+<td>Villager trading</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="billboard">Billboard</h2>
+<pre><code class="language-python"><span class="kw">from</span> bridge <span class="kw">import</span> Billboard
+</code></pre>
+<p>Display entity billboard mode (how it faces the player).</p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>FIXED</code></td>
+<td>No rotation</td>
+</tr>
+<tr>
+<td><code>VERTICAL</code></td>
+<td>Rotate on Y axis only</td>
+</tr>
+<tr>
+<td><code>HORIZONTAL</code></td>
+<td>Rotate on X axis only</td>
+</tr>
+<tr>
+<td><code>CENTER</code></td>
+<td>Always face the camera</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="barflag">BarFlag</h2>
+<pre><code class="language-python"><span class="kw">from</span> bridge <span class="kw">import</span> BarFlag
+</code></pre>
+<p>Boss bar display flags.</p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>DARKEN_SKY</code></td>
+<td>Darken the sky</td>
+</tr>
+<tr>
+<td><code>PLAY_BOSS_MUSIC</code></td>
+<td>Play boss music</td>
+</tr>
+<tr>
+<td><code>CREATE_FOG</code></td>
+<td>Create world fog</td>
 </tr>
 </tbody>
 </table>

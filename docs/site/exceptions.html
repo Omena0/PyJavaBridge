@@ -48,6 +48,28 @@
     <li><a href="#entitygoneexception">EntityGoneException</a></li>
     <li><ul class="toc-sub" data-parent="entitygoneexception">
       <li><a href="#when-to-expect-it">When to expect it</a></li>
+    </ul></li>
+    <li><a href="#connectionerror">ConnectionError</a></li>
+    <li><a href="#timeouterror">TimeoutError</a></li>
+    <li><a href="#atomicaborterror">AtomicAbortError</a></li>
+    <li><a href="#playerofflineexception">PlayerOfflineException</a></li>
+    <li><a href="#worldnotloadedexception">WorldNotLoadedException</a></li>
+    <li><a href="#chunknotloadedexception">ChunkNotLoadedException</a></li>
+    <li><a href="#invalidlocationerror">InvalidLocationError</a></li>
+    <li><a href="#invalidmaterialerror">InvalidMaterialError</a></li>
+    <li><a href="#invaliditemerror">InvalidItemError</a></li>
+    <li><a href="#methodnotfounderror">MethodNotFoundError</a></li>
+    <li><a href="#classnotfounderror">ClassNotFoundError</a></li>
+    <li><a href="#accessdeniederror">AccessDeniedError</a></li>
+    <li><a href="#invalideventerror">InvalidEventError</a></li>
+    <li><a href="#commandregistrationerror">CommandRegistrationError</a></li>
+    <li><a href="#configerror">ConfigError</a></li>
+    <li><a href="#unsupportedformaterror">UnsupportedFormatError</a></li>
+    <li><a href="#invalidenumerror">InvalidEnumError</a></li>
+    <li><a href="#slotoutofrangeerror">SlotOutOfRangeError</a></li>
+    <li><a href="#permissionerror">PermissionError</a></li>
+    <li><a href="#java-stack-traces">Java Stack Traces</a></li>
+    <li><ul class="toc-sub" data-parent="java-stack-traces">
       <li><a href="#best-practice">Best practice</a></li>
     </ul></li>
   </ul>
@@ -197,6 +219,110 @@
 <li>You use <code>server.after()</code> between getting a reference and using it</li>
 <li>You handle events where the entity might die (e.g. <code>entity_damage</code>)</li>
 </ul>
+<hr />
+<h2 id="connectionerror">ConnectionError</h2>
+<pre><code class="language-python"><span class="kw">class</span> ConnectionError(BridgeError)
+</code></pre>
+<p>Raised when the bridge connection is lost or unavailable. This happens during shutdown or if the Java side crashes.</p>
+<hr />
+<h2 id="timeouterror">TimeoutError</h2>
+<pre><code class="language-python"><span class="kw">class</span> TimeoutError(BridgeError)
+</code></pre>
+<p>Raised when a call to Java doesn't respond within the timeout period. Usually indicates the server is badly lagging.</p>
+<hr />
+<h2 id="atomicaborterror">AtomicAbortError</h2>
+<pre><code class="language-python"><span class="kw">class</span> AtomicAbortError(BridgeError)
+</code></pre>
+<p>Raised when an <code>atomic()</code> batch is aborted because one of its operations failed. All operations in the batch are rolled back.</p>
+<hr />
+<h2 id="playerofflineexception">PlayerOfflineException</h2>
+<pre><code class="language-python"><span class="kw">class</span> PlayerOfflineException(BridgeError)
+</code></pre>
+<p>Raised when targeting a player who has disconnected.</p>
+<hr />
+<h2 id="worldnotloadedexception">WorldNotLoadedException</h2>
+<pre><code class="language-python"><span class="kw">class</span> WorldNotLoadedException(BridgeError)
+</code></pre>
+<p>Raised when accessing a world that isn't loaded.</p>
+<hr />
+<h2 id="chunknotloadedexception">ChunkNotLoadedException</h2>
+<pre><code class="language-python"><span class="kw">class</span> ChunkNotLoadedException(BridgeError)
+</code></pre>
+<p>Raised when accessing a chunk that isn't loaded.</p>
+<hr />
+<h2 id="invalidlocationerror">InvalidLocationError</h2>
+<pre><code class="language-python"><span class="kw">class</span> InvalidLocationError(BridgeError)
+</code></pre>
+<p>Raised when a location is invalid or missing required fields (e.g. no world).</p>
+<hr />
+<h2 id="invalidmaterialerror">InvalidMaterialError</h2>
+<pre><code class="language-python"><span class="kw">class</span> InvalidMaterialError(BridgeError)
+</code></pre>
+<p>Raised when a material name doesn't match any known Minecraft material.</p>
+<hr />
+<h2 id="invaliditemerror">InvalidItemError</h2>
+<pre><code class="language-python"><span class="kw">class</span> InvalidItemError(BridgeError)
+</code></pre>
+<p>Raised when an item operation is invalid.</p>
+<hr />
+<h2 id="methodnotfounderror">MethodNotFoundError</h2>
+<pre><code class="language-python"><span class="kw">class</span> MethodNotFoundError(BridgeError)
+</code></pre>
+<p>Raised when calling a method that doesn't exist on the target Java object.</p>
+<hr />
+<h2 id="classnotfounderror">ClassNotFoundError</h2>
+<pre><code class="language-python"><span class="kw">class</span> ClassNotFoundError(BridgeError)
+</code></pre>
+<p>Raised when a Java class cannot be found (e.g. in <code>reflect.clazz()</code>).</p>
+<hr />
+<h2 id="accessdeniederror">AccessDeniedError</h2>
+<pre><code class="language-python"><span class="kw">class</span> AccessDeniedError(BridgeError)
+</code></pre>
+<p>Raised when the bridge cannot access a method or field due to Java access controls.</p>
+<hr />
+<h2 id="invalideventerror">InvalidEventError</h2>
+<pre><code class="language-python"><span class="kw">class</span> InvalidEventError(BridgeError)
+</code></pre>
+<p>Raised when subscribing to an event name that doesn't correspond to a valid Bukkit event.</p>
+<hr />
+<h2 id="commandregistrationerror">CommandRegistrationError</h2>
+<pre><code class="language-python"><span class="kw">class</span> CommandRegistrationError(BridgeError)
+</code></pre>
+<p>Raised when command registration fails.</p>
+<hr />
+<h2 id="configerror">ConfigError</h2>
+<pre><code class="language-python"><span class="kw">class</span> ConfigError(BridgeError)
+</code></pre>
+<p>Raised when a config read/write operation fails.</p>
+<hr />
+<h2 id="unsupportedformaterror">UnsupportedFormatError</h2>
+<pre><code class="language-python"><span class="kw">class</span> UnsupportedFormatError(BridgeError)
+</code></pre>
+<p>Raised when a file format is not supported (e.g. unknown config file extension).</p>
+<hr />
+<h2 id="invalidenumerror">InvalidEnumError</h2>
+<pre><code class="language-python"><span class="kw">class</span> InvalidEnumError(BridgeError)
+</code></pre>
+<p>Raised when an enum value doesn't match any known constant.</p>
+<hr />
+<h2 id="slotoutofrangeerror">SlotOutOfRangeError</h2>
+<pre><code class="language-python"><span class="kw">class</span> SlotOutOfRangeError(BridgeError)
+</code></pre>
+<p>Raised when an inventory slot index is out of range.</p>
+<hr />
+<h2 id="permissionerror">PermissionError</h2>
+<pre><code class="language-python"><span class="kw">class</span> PermissionError(BridgeError)
+</code></pre>
+<p>Raised when a permission check fails.</p>
+<hr />
+<h2 id="java-stack-traces">Java Stack Traces</h2>
+<p>All exceptions from the Java side include the full Java stack trace when available. Access it via the <code>java_stacktrace</code> attribute:</p>
+<pre><code class="language-python"><span class="kw">try</span>:
+    <span class="kw">await</span> entity.some_method()
+<span class="kw">except</span> BridgeError <span class="kw">as</span> e:
+    print(e)                    <span class="cm"># Includes Java stacktrace in message</span>
+    print(e.java_stacktrace)   <span class="cm"># Just the stacktrace, or None</span>
+</code></pre>
 <h3 id="best-practice">Best practice</h3>
 <p>If you need to use an entity reference after a delay, check <code>is_valid</code> first or wrap the call in a try/except:</p>
 <pre><code class="language-python"><span class="kw">if</span> entity.is_valid:

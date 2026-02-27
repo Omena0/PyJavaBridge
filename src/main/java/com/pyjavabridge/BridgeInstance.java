@@ -1518,11 +1518,42 @@ public class BridgeInstance {
         }
         if (ex != null) {
             response.addProperty("details", ex.toString());
-            if (ex instanceof EntityGoneException) {
-                response.addProperty("code", "ENTITY_GONE");
+            // Auto-detect error code from exception type if not explicitly set
+            if (code == null) {
+                response.addProperty("code", classifyException(ex));
             }
+            // Include Java stack trace
+            java.io.StringWriter sw = new java.io.StringWriter();
+            ex.printStackTrace(new java.io.PrintWriter(sw));
+            response.addProperty("stacktrace", sw.toString());
         }
         send(response);
+    }
+
+    private String classifyException(Throwable ex) {
+        if (ex instanceof EntityGoneException) return "ENTITY_GONE";
+        if (ex instanceof IllegalArgumentException) {
+            String msg = ex.getMessage();
+            if (msg != null) {
+                String lower = msg.toLowerCase();
+                if (lower.contains("material")) return "INVALID_MATERIAL";
+                if (lower.contains("enum")) return "INVALID_ENUM";
+                if (lower.contains("slot")) return "SLOT_OUT_OF_RANGE";
+            }
+            return "INVALID_ARGUMENT";
+        }
+        if (ex instanceof NoSuchMethodException || ex instanceof NoSuchMethodError)
+            return "METHOD_NOT_FOUND";
+        if (ex instanceof ClassNotFoundException || ex instanceof ClassCastException || ex instanceof NoClassDefFoundError)
+            return "CLASS_NOT_FOUND";
+        if (ex instanceof SecurityException || ex instanceof IllegalAccessException)
+            return "ACCESS_DENIED";
+        if (ex instanceof NullPointerException) return "NULL_REFERENCE";
+        if (ex instanceof java.util.concurrent.TimeoutException) return "TIMEOUT";
+        if (ex instanceof java.lang.reflect.InvocationTargetException ite) {
+            if (ite.getCause() != null) return classifyException(ite.getCause());
+        }
+        return null;
     }
 
     void logError(String message, Throwable ex) {
