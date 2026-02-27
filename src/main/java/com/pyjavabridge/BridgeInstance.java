@@ -1533,6 +1533,25 @@ public class BridgeInstance {
             String key = String.valueOf(args.get(0));
             return Bukkit.removeRecipe(new NamespacedKey(plugin, key));
         }
+        if ("getAllEnchantments".equals(method)) {
+            List<String> names = new ArrayList<>();
+            for (org.bukkit.enchantments.Enchantment ench : org.bukkit.Registry.ENCHANTMENT) {
+                names.add(ench.getKey().getKey().toUpperCase());
+            }
+            return names;
+        }
+        if ("getEnchantmentsForItem".equals(method) && args.size() >= 1) {
+            String materialName = String.valueOf(args.get(0)).toUpperCase();
+            Material mat = Material.valueOf(materialName);
+            ItemStack testItem = new ItemStack(mat);
+            List<String> names = new ArrayList<>();
+            for (org.bukkit.enchantments.Enchantment ench : org.bukkit.Registry.ENCHANTMENT) {
+                if (ench.canEnchantItem(testItem)) {
+                    names.add(ench.getKey().getKey().toUpperCase());
+                }
+            }
+            return names;
+        }
         return UNHANDLED;
     }
 

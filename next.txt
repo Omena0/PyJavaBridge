@@ -1,2 +1,4 @@
 Add:
 - Quest class:
+  - Attrs: name, desc, on_complete(), start(), end(), start_time, end_time, time_limit, status, progress
+  - Designed to be a parent class

@@ -377,6 +377,25 @@ class DamageCause(EnumValue):
 class Enchantment(EnumValue):
     TYPE_NAME = "org.bukkit.enchantments.Enchantment"
 
+    @classmethod
+    def all(cls) -> "BridgeCall":
+        """Return a list of all enchantment names."""
+        future = _connection.call("getAllEnchantments", target="server")
+        async def _wrap():
+            names = await future
+            return [cls(cls.TYPE_NAME, n) for n in names]
+        return BridgeCall(asyncio.ensure_future(_wrap()))
+
+    @classmethod
+    def for_item(cls, item) -> "BridgeCall":
+        """Return enchantments applicable to a material/item."""
+        mat_name = item.name if isinstance(item, (Material, EnumValue)) else str(item)
+        future = _connection.call("getEnchantmentsForItem", target="server", args=[mat_name])
+        async def _wrap():
+            names = await future
+            return [cls(cls.TYPE_NAME, n) for n in names]
+        return BridgeCall(asyncio.ensure_future(_wrap()))
+
 class ItemFlag(EnumValue):
     TYPE_NAME = "org.bukkit.inventory.ItemFlag"
 
