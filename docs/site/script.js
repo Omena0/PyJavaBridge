@@ -227,7 +227,7 @@ document.addEventListener('DOMContentLoaded', () => {
       for (const sec of page.sections) {
         if (sec.text.toLowerCase().includes(q) || sec.heading.toLowerCase().includes(q)) {
           hits.push({
-            url: page.url + '#' + sec.heading.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+            url: page.url + '#' + sec.heading.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, ''),
             title: page.title,
             heading: sec.heading,
             text: sec.text,
