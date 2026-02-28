@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BossBar — PyJavaBridge</title>
-  <meta property="og:title" content="BossBar — PyJavaBridge">
-  <meta property="og:description" content="Boss bar display API">
+  <title>LevelSystem [ext] — PyJavaBridge</title>
+  <meta property="og:title" content="LevelSystem [ext] — PyJavaBridge">
+  <meta property="og:description" content="XP and levelling">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="PyJavaBridge Docs">
   <meta name="theme-color" content="#6366f1">
@@ -49,31 +49,23 @@
 <div class="sidebar-section">
   <div class="sidebar-heading" data-section="on-this-page">On This Page</div>
   <ul class="sidebar-links">
-    <li><a href="#class-methods">Class Methods</a></li>
-    <li><ul class="toc-sub" data-parent="class-methods">
-      <li><a href="#create">create</a></li>
-    </ul></li>
-    <li><a href="#attributes">Attributes</a></li>
-    <li><ul class="toc-sub" data-parent="attributes">
-      <li><a href="#title">title</a></li>
-      <li><a href="#progress">progress</a></li>
-      <li><a href="#color">color</a></li>
-      <li><a href="#style">style</a></li>
-      <li><a href="#visible">visible</a></li>
-    </ul></li>
+    <li><a href="#constructor">Constructor</a></li>
+    <li><a href="#usage">Usage</a></li>
     <li><a href="#methods">Methods</a></li>
     <li><ul class="toc-sub" data-parent="methods">
-      <li><a href="#add_player">add_player</a></li>
-      <li><a href="#remove_player">remove_player</a></li>
-      <li><a href="#set_title">set_title</a></li>
-      <li><a href="#set_progress">set_progress</a></li>
-      <li><a href="#set_color">set_color</a></li>
-      <li><a href="#set_style">set_style</a></li>
-      <li><a href="#set_visible">set_visible</a></li>
+      <li><a href="#xpplayer-float">xp(player) → float</a></li>
+      <li><a href="#levelplayer-int">level(player) → int</a></li>
+      <li><a href="#add_xpplayer-amount">add_xp(player, amount)</a></li>
+      <li><a href="#set_xpplayer-amount">set_xp(player, amount)</a></li>
+      <li><a href="#set_levelplayer-level">set_level(player, level)</a></li>
+      <li><a href="#xp_to_nextplayer-float">xp_to_next(player) → float</a></li>
+      <li><a href="#progressplayer-float">progress(player) → float</a></li>
     </ul></li>
-    <li><a href="#barcolor-options">BarColor Options</a></li>
-    <li><a href="#barstyle-options">BarStyle Options</a></li>
-    <li><a href="#example-health-bar-for-a-boss-fight">Example: Health bar for a boss fight</a></li>
+    <li><a href="#decorators">Decorators</a></li>
+    <li><ul class="toc-sub" data-parent="decorators">
+      <li><a href="#levelson_level_up">@levels.on_level_up</a></li>
+    </ul></li>
+    <li><a href="#player-integration">Player Integration</a></li>
   </ul>
 </div>
 
@@ -132,7 +124,7 @@
     <li><a href="sidebar.html">Sidebar</a></li>
     <li><a href="actionbardisplay.html">ActionBarDisplay</a></li>
     <li><a href="bossbardisplay.html">BossBarDisplay</a></li>
-    <li><a href="bossbar.html" class="active">BossBar</a></li>
+    <li><a href="bossbar.html">BossBar</a></li>
     <li><a href="scoreboard.html">Scoreboard</a></li>
     <li><a href="objective.html">Objective</a></li>
     <li><a href="team.html">Team</a></li>
@@ -171,7 +163,7 @@
     <li><a href="ability.html">Ability</a></li>
     <li><a href="mana.html">ManaStore</a></li>
     <li><a href="combat.html">CombatSystem</a></li>
-    <li><a href="levels.html">LevelSystem</a></li>
+    <li><a href="levels.html" class="active">LevelSystem</a></li>
     <li><a href="region.html">Region</a></li>
     <li><a href="party.html">Party</a></li>
     <li><a href="guild.html">Guild</a></li>
@@ -207,209 +199,48 @@
   <!-- Main -->
   <main class="main">
     <div class="content">
-      <p class="subtitle">Boss bar display API</p>
-      <h1 id="bossbar">BossBar</h1>
-<p>A <code>BossBar</code> is the bar displayed at the top of the screen (like the Ender Dragon or Wither health bar). You can create custom boss bars with custom titles, colors, and progress.</p>
-<hr />
-<h2 id="class-methods">Class Methods</h2>
-<h3 id="create">create</h3>
-<pre><code class="language-python">bar = BossBar.create(title, color=<span class="kw">None</span>, style=<span class="kw">None</span>, players=<span class="kw">None</span>)
-</code></pre>
-<p>Create a new boss bar. This is synchronous.</p>
-<ul>
-<li><strong>Parameters:</strong></li>
-<li><code>title</code> (<code>str</code>) — Bar title text. Supports <code>§</code> color codes.</li>
-<li><code>color</code> (<a href="enums.html"><code>BarColor</code></a> <code>| None</code>) — Bar color. Default <code>None</code> (PINK).</li>
-<li><code>style</code> (<a href="enums.html"><code>BarStyle</code></a> <code>| None</code>) — Bar segmentation style. Default <code>None</code> (SOLID).</li>
-<li><code>players</code> (<code>list[</code><a href="player.html"><code>Player</code></a><code>] | None</code>) — Players who can see the bar. Default <code>None</code>.</li>
-<li><strong>Returns:</strong> <a href="#"><code>BossBar</code></a></li>
-</ul>
-<pre><code class="language-python">bar = BossBar.create(
-    <span class="st">&quot;§c§lRaid Boss&quot;</span>,
-    color=BarColor.RED,
-    style=BarStyle.SEGMENTED_10
-)
+      <p class="subtitle">XP and levelling</p>
+      <h1 id="levelsystem-ext">LevelSystem [ext]</h1>
+<p><code>LevelSystem</code> provides configurable XP/levelling with persistence.</p>
+<pre><code class="language-python"><span class="kw">from</span> bridge.extensions <span class="kw">import</span> LevelSystem
 </code></pre>
 <hr />
-<h2 id="attributes">Attributes</h2>
-<h3 id="title">title</h3>
+<h2 id="constructor">Constructor</h2>
+<pre><code class="language-python">LevelSystem(multiplier=<span class="nb">100</span>, exponent=<span class="nb">1.5</span>, persist=<span class="kw">True</span>)
+</code></pre>
 <ul>
-<li><strong>Type:</strong> <code>str</code></li>
+<li><code>multiplier</code> (<code>float</code>) — Base XP for level 1.</li>
+<li><code>exponent</code> (<code>float</code>) — XP curve exponent. XP for level N = <code>multiplier * N^exponent</code>.</li>
+<li><code>persist</code> (<code>bool</code>) — Save XP to <code>plugins/PyJavaBridge/levels.json</code>.</li>
 </ul>
-<p>Current title text.</p>
-<h3 id="progress">progress</h3>
-<ul>
-<li><strong>Type:</strong> <code>float</code></li>
-</ul>
-<p>Progress value from 0.0 (empty) to 1.0 (full).</p>
-<h3 id="color">color</h3>
-<ul>
-<li><strong>Type:</strong> <a href="enums.html"><code>BarColor</code></a></li>
-</ul>
-<p>Current bar color.</p>
-<h3 id="style">style</h3>
-<ul>
-<li><strong>Type:</strong> <a href="enums.html"><code>BarStyle</code></a></li>
-</ul>
-<p>Current segmentation style.</p>
-<h3 id="visible">visible</h3>
-<ul>
-<li><strong>Type:</strong> <code>bool</code></li>
-</ul>
-<p>Whether the bar is currently visible.</p>
+<hr />
+<h2 id="usage">Usage</h2>
+<pre><code class="language-python">levels = LevelSystem(multiplier=<span class="nb">100</span>, exponent=<span class="nb">1.5</span>)
+
+<span class="cm"># Index notation</span>
+levels[player]  <span class="cm"># current level (int)</span>
+</code></pre>
 <hr />
 <h2 id="methods">Methods</h2>
-<h3 id="add_player">add_player</h3>
-<pre><code class="language-python"><span class="kw">await</span> bar.add_player(player)
-</code></pre>
-<p>Show this bar to a player.</p>
-<ul>
-<li><strong>Parameters:</strong></li>
-<li><code>player</code> (<a href="player.html"><code>Player</code></a>) — Player to add.</li>
-<li><strong>Returns:</strong> <code>Awaitable[None]</code></li>
-</ul>
-<h3 id="remove_player">remove_player</h3>
-<pre><code class="language-python"><span class="kw">await</span> bar.remove_player(player)
-</code></pre>
-<p>Hide this bar from a player.</p>
-<ul>
-<li><strong>Parameters:</strong></li>
-<li><code>player</code> (<a href="player.html"><code>Player</code></a>) — Player to remove.</li>
-<li><strong>Returns:</strong> <code>Awaitable[None]</code></li>
-</ul>
-<h3 id="set_title">set_title</h3>
-<pre><code class="language-python"><span class="kw">await</span> bar.set_title(title)
-</code></pre>
-<p>Change the bar title.</p>
-<ul>
-<li><strong>Parameters:</strong></li>
-<li><code>title</code> (<code>str</code>) — New title text.</li>
-<li><strong>Returns:</strong> <code>Awaitable[None]</code></li>
-</ul>
-<h3 id="set_progress">set_progress</h3>
-<pre><code class="language-python"><span class="kw">await</span> bar.set_progress(value)
-</code></pre>
-<p>Set the bar progress.</p>
-<ul>
-<li><strong>Parameters:</strong></li>
-<li><code>value</code> (<code>float</code>) — Progress from 0.0 to 1.0.</li>
-<li><strong>Returns:</strong> <code>Awaitable[None]</code></li>
-</ul>
-<pre><code class="language-python"><span class="kw">await</span> bar.set_progress(<span class="nb">0.5</span>)  <span class="cm"># Half full</span>
-</code></pre>
-<h3 id="set_color">set_color</h3>
-<pre><code class="language-python"><span class="kw">await</span> bar.set_color(color)
-</code></pre>
-<p>Change the bar color.</p>
-<ul>
-<li><strong>Parameters:</strong></li>
-<li><code>color</code> (<a href="enums.html"><code>BarColor</code></a>) — New color.</li>
-<li><strong>Returns:</strong> <code>Awaitable[None]</code></li>
-</ul>
-<h3 id="set_style">set_style</h3>
-<pre><code class="language-python"><span class="kw">await</span> bar.set_style(style)
-</code></pre>
-<p>Change the bar segmentation style.</p>
-<ul>
-<li><strong>Parameters:</strong></li>
-<li><code>style</code> (<a href="enums.html"><code>BarStyle</code></a>) — New style.</li>
-<li><strong>Returns:</strong> <code>Awaitable[None]</code></li>
-</ul>
-<h3 id="set_visible">set_visible</h3>
-<pre><code class="language-python"><span class="kw">await</span> bar.set_visible(value)
-</code></pre>
-<p>Show or hide the bar without removing players.</p>
-<ul>
-<li><strong>Parameters:</strong></li>
-<li><code>value</code> (<code>bool</code>) — Visibility.</li>
-<li><strong>Returns:</strong> <code>Awaitable[None]</code></li>
-</ul>
+<h3 id="xpplayer-float">xp(player) → float</h3>
+<h3 id="levelplayer-int">level(player) → int</h3>
+<h3 id="add_xpplayer-amount">add_xp(player, amount)</h3>
+<h3 id="set_xpplayer-amount">set_xp(player, amount)</h3>
+<h3 id="set_levelplayer-level">set_level(player, level)</h3>
+<h3 id="xp_to_nextplayer-float">xp_to_next(player) → float</h3>
+<p>XP needed for next level.</p>
+<h3 id="progressplayer-float">progress(player) → float</h3>
+<p>0.0 – 1.0 progress through current level.</p>
 <hr />
-<h2 id="barcolor-options">BarColor Options</h2>
-<table>
-<thead>
-<tr>
-<th>Name</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>PINK</code></td>
-<td>Default pink</td>
-</tr>
-<tr>
-<td><code>BLUE</code></td>
-<td>Blue</td>
-</tr>
-<tr>
-<td><code>RED</code></td>
-<td>Red</td>
-</tr>
-<tr>
-<td><code>GREEN</code></td>
-<td>Green</td>
-</tr>
-<tr>
-<td><code>YELLOW</code></td>
-<td>Yellow</td>
-</tr>
-<tr>
-<td><code>PURPLE</code></td>
-<td>Purple</td>
-</tr>
-<tr>
-<td><code>WHITE</code></td>
-<td>White</td>
-</tr>
-</tbody>
-</table>
-<h2 id="barstyle-options">BarStyle Options</h2>
-<table>
-<thead>
-<tr>
-<th>Name</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>SOLID</code></td>
-<td>No segments</td>
-</tr>
-<tr>
-<td><code>SEGMENTED_6</code></td>
-<td>6 segments</td>
-</tr>
-<tr>
-<td><code>SEGMENTED_10</code></td>
-<td>10 segments</td>
-</tr>
-<tr>
-<td><code>SEGMENTED_12</code></td>
-<td>12 segments</td>
-</tr>
-<tr>
-<td><code>SEGMENTED_20</code></td>
-<td>20 segments</td>
-</tr>
-</tbody>
-</table>
-<hr />
-<h2 id="example-health-bar-for-a-boss-fight">Example: Health bar for a boss fight</h2>
-<pre><code class="language-python"><span class="kw">from</span> bridge <span class="kw">import</span> *
-
-boss_bar = BossBar.create(<span class="st">&quot;§c§lDragon §7- §c100%&quot;</span>, color=BarColor.RED, style=BarStyle.SEGMENTED_10)
-
-<span class="dc">@event</span>
-<span class="kw">async</span> <span class="kw">def</span> entity_damage(e: Event):
-    entity = e.entity
-    <span class="kw">if</span> entity.custom_name == <span class="st">&quot;Dragon&quot;</span>:
-        hp_pct = entity.health / <span class="nb">100</span>
-        <span class="kw">await</span> boss_bar.set_progress(hp_pct)
-        <span class="kw">await</span> boss_bar.set_title(<span class="st">f&quot;§c§lDragon §7- §c{int(hp_pct * 100)}%&quot;</span>)
+<h2 id="decorators">Decorators</h2>
+<h3 id="levelson_level_up">@levels.on_level_up</h3>
+<pre><code class="language-python"><span class="dc">@levels</span>.on_level_up
+<span class="kw">def</span> leveled(player, old_level, new_level, system):
+    player.send_message(<span class="st">f&quot;§aLevel up! {old_level} → {new_level}&quot;</span>)
 </code></pre>
-<div class="callout callout-info"><p><strong>See also:</strong> <a href="bossbardisplay.html"><code>BossBarDisplay</code></a> for a higher-level wrapper with cooldown linking.</p></div>
+<hr />
+<h2 id="player-integration">Player Integration</h2>
+<p>Set <code>Player._default_level_system = levels</code> to enable <code>player.xp</code> and <code>player.player_level</code>.</p>
     </div>
     <footer class="site-footer">
       &copy; Omena0 2026 &middot; PyJavaBridge Documentation

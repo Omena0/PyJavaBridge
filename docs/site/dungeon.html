@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BossBar — PyJavaBridge</title>
-  <meta property="og:title" content="BossBar — PyJavaBridge">
-  <meta property="og:description" content="Boss bar display API">
+  <title>Dungeon [ext] — PyJavaBridge</title>
+  <meta property="og:title" content="Dungeon [ext] — PyJavaBridge">
+  <meta property="og:description" content="Instanced dungeon system with procedural generation">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="PyJavaBridge Docs">
   <meta name="theme-color" content="#6366f1">
@@ -49,31 +49,25 @@
 <div class="sidebar-section">
   <div class="sidebar-heading" data-section="on-this-page">On This Page</div>
   <ul class="sidebar-links">
-    <li><a href="#class-methods">Class Methods</a></li>
-    <li><ul class="toc-sub" data-parent="class-methods">
-      <li><a href="#create">create</a></li>
+    <li><a href="#roomtype">RoomType</a></li>
+    <li><a href="#dungeon">Dungeon</a></li>
+    <li><ul class="toc-sub" data-parent="dungeon">
+      <li><a href="#constructor">Constructor</a></li>
+      <li><a href="#methods">Methods</a></li>
+      <li><a href="#decorators">Decorators</a></li>
     </ul></li>
-    <li><a href="#attributes">Attributes</a></li>
-    <li><ul class="toc-sub" data-parent="attributes">
-      <li><a href="#title">title</a></li>
-      <li><a href="#progress">progress</a></li>
-      <li><a href="#color">color</a></li>
-      <li><a href="#style">style</a></li>
-      <li><a href="#visible">visible</a></li>
+    <li><a href="#dungeoninstance">DungeonInstance</a></li>
+    <li><ul class="toc-sub" data-parent="dungeoninstance">
+      <li><a href="#properties">Properties</a></li>
+      <li><a href="#methods_1">Methods</a></li>
     </ul></li>
-    <li><a href="#methods">Methods</a></li>
-    <li><ul class="toc-sub" data-parent="methods">
-      <li><a href="#add_player">add_player</a></li>
-      <li><a href="#remove_player">remove_player</a></li>
-      <li><a href="#set_title">set_title</a></li>
-      <li><a href="#set_progress">set_progress</a></li>
-      <li><a href="#set_color">set_color</a></li>
-      <li><a href="#set_style">set_style</a></li>
-      <li><a href="#set_visible">set_visible</a></li>
+    <li><a href="#dungeonroom">DungeonRoom</a></li>
+    <li><ul class="toc-sub" data-parent="dungeonroom">
+      <li><a href="#properties_1">Properties</a></li>
+      <li><a href="#methods_2">Methods</a></li>
+      <li><a href="#decorators_1">Decorators</a></li>
     </ul></li>
-    <li><a href="#barcolor-options">BarColor Options</a></li>
-    <li><a href="#barstyle-options">BarStyle Options</a></li>
-    <li><a href="#example-health-bar-for-a-boss-fight">Example: Health bar for a boss fight</a></li>
+    <li><a href="#generation-algorithm">Generation Algorithm</a></li>
   </ul>
 </div>
 
@@ -132,7 +126,7 @@
     <li><a href="sidebar.html">Sidebar</a></li>
     <li><a href="actionbardisplay.html">ActionBarDisplay</a></li>
     <li><a href="bossbardisplay.html">BossBarDisplay</a></li>
-    <li><a href="bossbar.html" class="active">BossBar</a></li>
+    <li><a href="bossbar.html">BossBar</a></li>
     <li><a href="scoreboard.html">Scoreboard</a></li>
     <li><a href="objective.html">Objective</a></li>
     <li><a href="team.html">Team</a></li>
@@ -179,7 +173,7 @@
     <li><a href="leaderboard.html">Leaderboard</a></li>
     <li><a href="visualeffect.html">VisualEffect</a></li>
     <li><a href="playerdatastore.html">PlayerDataStore</a></li>
-    <li><a href="dungeon.html">Dungeon</a></li>
+    <li><a href="dungeon.html" class="active">Dungeon</a></li>
   </ul>
 </div>
 <div class="sidebar-section">
@@ -207,209 +201,181 @@
   <!-- Main -->
   <main class="main">
     <div class="content">
-      <p class="subtitle">Boss bar display API</p>
-      <h1 id="bossbar">BossBar</h1>
-<p>A <code>BossBar</code> is the bar displayed at the top of the screen (like the Ender Dragon or Wither health bar). You can create custom boss bars with custom titles, colors, and progress.</p>
-<hr />
-<h2 id="class-methods">Class Methods</h2>
-<h3 id="create">create</h3>
-<pre><code class="language-python">bar = BossBar.create(title, color=<span class="kw">None</span>, style=<span class="kw">None</span>, players=<span class="kw">None</span>)
-</code></pre>
-<p>Create a new boss bar. This is synchronous.</p>
-<ul>
-<li><strong>Parameters:</strong></li>
-<li><code>title</code> (<code>str</code>) — Bar title text. Supports <code>§</code> color codes.</li>
-<li><code>color</code> (<a href="enums.html"><code>BarColor</code></a> <code>| None</code>) — Bar color. Default <code>None</code> (PINK).</li>
-<li><code>style</code> (<a href="enums.html"><code>BarStyle</code></a> <code>| None</code>) — Bar segmentation style. Default <code>None</code> (SOLID).</li>
-<li><code>players</code> (<code>list[</code><a href="player.html"><code>Player</code></a><code>] | None</code>) — Players who can see the bar. Default <code>None</code>.</li>
-<li><strong>Returns:</strong> <a href="#"><code>BossBar</code></a></li>
-</ul>
-<pre><code class="language-python">bar = BossBar.create(
-    <span class="st">&quot;§c§lRaid Boss&quot;</span>,
-    color=BarColor.RED,
-    style=BarStyle.SEGMENTED_10
-)
+      <p class="subtitle">Instanced dungeon system with procedural generation</p>
+      <h1 id="dungeon-ext">Dungeon [ext]</h1>
+<p>The dungeon system provides <code>Dungeon</code>, <code>DungeonInstance</code>, and <code>DungeonRoom</code> for creating instanced, procedurally generated dungeons.</p>
+<pre><code class="language-python"><span class="kw">from</span> bridge.extensions <span class="kw">import</span> Dungeon, DungeonInstance, DungeonRoom, RoomType
 </code></pre>
 <hr />
-<h2 id="attributes">Attributes</h2>
-<h3 id="title">title</h3>
-<ul>
-<li><strong>Type:</strong> <code>str</code></li>
-</ul>
-<p>Current title text.</p>
-<h3 id="progress">progress</h3>
-<ul>
-<li><strong>Type:</strong> <code>float</code></li>
-</ul>
-<p>Progress value from 0.0 (empty) to 1.0 (full).</p>
-<h3 id="color">color</h3>
-<ul>
-<li><strong>Type:</strong> <a href="enums.html"><code>BarColor</code></a></li>
-</ul>
-<p>Current bar color.</p>
-<h3 id="style">style</h3>
-<ul>
-<li><strong>Type:</strong> <a href="enums.html"><code>BarStyle</code></a></li>
-</ul>
-<p>Current segmentation style.</p>
-<h3 id="visible">visible</h3>
-<ul>
-<li><strong>Type:</strong> <code>bool</code></li>
-</ul>
-<p>Whether the bar is currently visible.</p>
-<hr />
-<h2 id="methods">Methods</h2>
-<h3 id="add_player">add_player</h3>
-<pre><code class="language-python"><span class="kw">await</span> bar.add_player(player)
-</code></pre>
-<p>Show this bar to a player.</p>
-<ul>
-<li><strong>Parameters:</strong></li>
-<li><code>player</code> (<a href="player.html"><code>Player</code></a>) — Player to add.</li>
-<li><strong>Returns:</strong> <code>Awaitable[None]</code></li>
-</ul>
-<h3 id="remove_player">remove_player</h3>
-<pre><code class="language-python"><span class="kw">await</span> bar.remove_player(player)
-</code></pre>
-<p>Hide this bar from a player.</p>
-<ul>
-<li><strong>Parameters:</strong></li>
-<li><code>player</code> (<a href="player.html"><code>Player</code></a>) — Player to remove.</li>
-<li><strong>Returns:</strong> <code>Awaitable[None]</code></li>
-</ul>
-<h3 id="set_title">set_title</h3>
-<pre><code class="language-python"><span class="kw">await</span> bar.set_title(title)
-</code></pre>
-<p>Change the bar title.</p>
-<ul>
-<li><strong>Parameters:</strong></li>
-<li><code>title</code> (<code>str</code>) — New title text.</li>
-<li><strong>Returns:</strong> <code>Awaitable[None]</code></li>
-</ul>
-<h3 id="set_progress">set_progress</h3>
-<pre><code class="language-python"><span class="kw">await</span> bar.set_progress(value)
-</code></pre>
-<p>Set the bar progress.</p>
-<ul>
-<li><strong>Parameters:</strong></li>
-<li><code>value</code> (<code>float</code>) — Progress from 0.0 to 1.0.</li>
-<li><strong>Returns:</strong> <code>Awaitable[None]</code></li>
-</ul>
-<pre><code class="language-python"><span class="kw">await</span> bar.set_progress(<span class="nb">0.5</span>)  <span class="cm"># Half full</span>
-</code></pre>
-<h3 id="set_color">set_color</h3>
-<pre><code class="language-python"><span class="kw">await</span> bar.set_color(color)
-</code></pre>
-<p>Change the bar color.</p>
-<ul>
-<li><strong>Parameters:</strong></li>
-<li><code>color</code> (<a href="enums.html"><code>BarColor</code></a>) — New color.</li>
-<li><strong>Returns:</strong> <code>Awaitable[None]</code></li>
-</ul>
-<h3 id="set_style">set_style</h3>
-<pre><code class="language-python"><span class="kw">await</span> bar.set_style(style)
-</code></pre>
-<p>Change the bar segmentation style.</p>
-<ul>
-<li><strong>Parameters:</strong></li>
-<li><code>style</code> (<a href="enums.html"><code>BarStyle</code></a>) — New style.</li>
-<li><strong>Returns:</strong> <code>Awaitable[None]</code></li>
-</ul>
-<h3 id="set_visible">set_visible</h3>
-<pre><code class="language-python"><span class="kw">await</span> bar.set_visible(value)
-</code></pre>
-<p>Show or hide the bar without removing players.</p>
-<ul>
-<li><strong>Parameters:</strong></li>
-<li><code>value</code> (<code>bool</code>) — Visibility.</li>
-<li><strong>Returns:</strong> <code>Awaitable[None]</code></li>
-</ul>
-<hr />
-<h2 id="barcolor-options">BarColor Options</h2>
+<h2 id="roomtype">RoomType</h2>
+<p>Enum with values: <code>HALLWAY</code>, <code>COMBAT</code>, <code>PUZZLE</code>, <code>TREASURE</code>, <code>TRAP</code>, <code>BOSS</code>.</p>
+<p>Each type has generation constraints:</p>
 <table>
 <thead>
 <tr>
-<th>Name</th>
+<th>Type</th>
+<th>Min Depth</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>HALLWAY</code></td>
+<td>0</td>
+<td>Default filler</td>
+</tr>
+<tr>
+<td><code>COMBAT</code></td>
+<td>0</td>
+<td>Common room</td>
+</tr>
+<tr>
+<td><code>TRAP</code></td>
+<td>1</td>
+<td>Minimum 1 room from entrance</td>
+</tr>
+<tr>
+<td><code>PUZZLE</code></td>
+<td>2</td>
+<td>Must be near treasure or boss</td>
+</tr>
+<tr>
+<td><code>TREASURE</code></td>
+<td>3</td>
+<td>Must be near puzzle, boss, or hallway</td>
+</tr>
+<tr>
+<td><code>BOSS</code></td>
+<td>8</td>
+<td>Max 1 per dungeon, far from entrance</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="dungeon">Dungeon</h2>
+<h3 id="constructor">Constructor</h3>
+<pre><code class="language-python">Dungeon(name, description=<span class="st">&quot;&quot;</span>, difficulty=<span class="nb">1</span>, recommended_level=<span class="nb">1</span>,
+        room_count=<span class="nb">12</span>, grid_size=<span class="nb">8</span>)
+</code></pre>
+<h3 id="methods">Methods</h3>
+<h4 id="create_instanceplayers-room_countnone-grid_sizenone-dungeoninstance">create_instance(players, room_count=None, grid_size=None) → DungeonInstance</h4>
+<p>Generate and return a new dungeon instance.</p>
+<h3 id="decorators">Decorators</h3>
+<pre><code class="language-python">my_dungeon = Dungeon(<span class="st">&quot;Crypt&quot;</span>, difficulty=<span class="nb">3</span>)
+
+<span class="dc">@my_dungeon</span>.on_enter
+<span class="kw">def</span> entered(instance, player):
+    player.send_message(<span class="st">&quot;You enter the Crypt...&quot;</span>)
+
+<span class="dc">@my_dungeon</span>.on_complete
+<span class="kw">def</span> cleared(instance):
+    <span class="kw">for</span> p <span class="kw">in</span> instance.players:
+        p.send_message(<span class="st">&quot;§aDungeon cleared!&quot;</span>)
+
+<span class="dc">@my_dungeon</span>.reward
+<span class="kw">def</span> give_reward(instance):
+    <span class="kw">for</span> p <span class="kw">in</span> instance.players:
+        p.give_exp(<span class="nb">500</span>)
+
+<span class="dc">@my_dungeon</span>.on_room_enter
+<span class="kw">def</span> room_enter(player, room):
+    player.send_message(<span class="st">f&quot;Entering {room.room_type.value} room&quot;</span>)
+
+<span class="dc">@my_dungeon</span>.on_room_clear
+<span class="kw">def</span> room_clear(room):
+    print(<span class="st">f&quot;Room {room.grid_x},{room.grid_z} cleared&quot;</span>)
+</code></pre>
+<hr />
+<h2 id="dungeoninstance">DungeonInstance</h2>
+<p>Created by <code>Dungeon.create_instance()</code>.</p>
+<h3 id="properties">Properties</h3>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Type</th>
 <th>Description</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>PINK</code></td>
-<td>Default pink</td>
+<td><code>rooms</code></td>
+<td><code>list[DungeonRoom]</code></td>
+<td>Generated rooms</td>
 </tr>
 <tr>
-<td><code>BLUE</code></td>
-<td>Blue</td>
+<td><code>players</code></td>
+<td><code>list[Player]</code></td>
+<td>Players in this instance</td>
 </tr>
 <tr>
-<td><code>RED</code></td>
-<td>Red</td>
+<td><code>progress</code></td>
+<td><code>float</code></td>
+<td>0.0 – 1.0 fraction of rooms cleared</td>
 </tr>
 <tr>
-<td><code>GREEN</code></td>
-<td>Green</td>
-</tr>
-<tr>
-<td><code>YELLOW</code></td>
-<td>Yellow</td>
-</tr>
-<tr>
-<td><code>PURPLE</code></td>
-<td>Purple</td>
-</tr>
-<tr>
-<td><code>WHITE</code></td>
-<td>White</td>
+<td><code>is_complete</code></td>
+<td><code>bool</code></td>
+<td>Whether all rooms are cleared</td>
 </tr>
 </tbody>
 </table>
-<h2 id="barstyle-options">BarStyle Options</h2>
+<h3 id="methods_1">Methods</h3>
+<h4 id="complete-awaitable">complete() → Awaitable</h4>
+<p>Fire completion handlers.</p>
+<h4 id="destroy">destroy()</h4>
+<p>Clean up the instance.</p>
+<hr />
+<h2 id="dungeonroom">DungeonRoom</h2>
+<h3 id="properties_1">Properties</h3>
 <table>
 <thead>
 <tr>
-<th>Name</th>
+<th>Property</th>
+<th>Type</th>
 <th>Description</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>SOLID</code></td>
-<td>No segments</td>
+<td><code>room_type</code></td>
+<td><code>RoomType</code></td>
+<td>Type of room</td>
 </tr>
 <tr>
-<td><code>SEGMENTED_6</code></td>
-<td>6 segments</td>
+<td><code>mobs</code></td>
+<td><code>list</code></td>
+<td>Mob descriptors</td>
 </tr>
 <tr>
-<td><code>SEGMENTED_10</code></td>
-<td>10 segments</td>
+<td><code>cleared</code></td>
+<td><code>bool</code></td>
+<td>Whether cleared</td>
 </tr>
 <tr>
-<td><code>SEGMENTED_12</code></td>
-<td>12 segments</td>
-</tr>
-<tr>
-<td><code>SEGMENTED_20</code></td>
-<td>20 segments</td>
+<td><code>grid_x</code> / <code>grid_z</code></td>
+<td><code>int</code></td>
+<td>Grid position</td>
 </tr>
 </tbody>
 </table>
-<hr />
-<h2 id="example-health-bar-for-a-boss-fight">Example: Health bar for a boss fight</h2>
-<pre><code class="language-python"><span class="kw">from</span> bridge <span class="kw">import</span> *
-
-boss_bar = BossBar.create(<span class="st">&quot;§c§lDragon §7- §c100%&quot;</span>, color=BarColor.RED, style=BarStyle.SEGMENTED_10)
-
-<span class="dc">@event</span>
-<span class="kw">async</span> <span class="kw">def</span> entity_damage(e: Event):
-    entity = e.entity
-    <span class="kw">if</span> entity.custom_name == <span class="st">&quot;Dragon&quot;</span>:
-        hp_pct = entity.health / <span class="nb">100</span>
-        <span class="kw">await</span> boss_bar.set_progress(hp_pct)
-        <span class="kw">await</span> boss_bar.set_title(<span class="st">f&quot;§c§lDragon §7- §c{int(hp_pct * 100)}%&quot;</span>)
+<h3 id="methods_2">Methods</h3>
+<h4 id="mark_cleared">mark_cleared()</h4>
+<p>Mark room as cleared and fire <code>on_clear</code> handlers.</p>
+<h3 id="decorators_1">Decorators</h3>
+<pre><code class="language-python">room.on_enter(handler)
+room.on_clear(handler)
 </code></pre>
-<div class="callout callout-info"><p><strong>See also:</strong> <a href="bossbardisplay.html"><code>BossBarDisplay</code></a> for a higher-level wrapper with cooldown linking.</p></div>
+<hr />
+<h2 id="generation-algorithm">Generation Algorithm</h2>
+<p>Room layouts use a wave-function-collapse (WFC) inspired algorithm:</p>
+<ol>
+<li>A random walk from the entrance selects which grid cells become rooms.</li>
+<li>Each cell starts with all possible room types based on depth constraints.</li>
+<li>The cell with the fewest options (lowest entropy) is collapsed first.</li>
+<li>Constraints propagate to neighbours, eliminating impossible types.</li>
+<li>Repeat until all cells are assigned.</li>
+</ol>
     </div>
     <footer class="site-footer">
       &copy; Omena0 2026 &middot; PyJavaBridge Documentation
