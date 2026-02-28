@@ -91,8 +91,8 @@ SIDEBAR = [
         ("itemdisplay", "ItemDisplay"),
     ]),
     ("Extensions", [
-        ("imagedisplay", "ImageDisplay [ext]"),
-        ("meshdisplay", "MeshDisplay [ext]"),
+        ("imagedisplay", "ImageDisplay"),
+        ("meshdisplay", "MeshDisplay"),
         ("quest", "Quest"),
         ("dialog", "Dialog"),
         ("bank", "Bank"),
