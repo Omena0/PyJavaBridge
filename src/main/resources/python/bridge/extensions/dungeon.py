@@ -216,7 +216,8 @@ class RoomTemplate:
                  loot: Dict[str, str],
                  key_map: Dict[str, str],
                  width: int, height: int, depth: int,
-                 blocks: List[List[List[str]]]):
+                 blocks: List[List[List[str]]],
+                 spawns: Optional[List[Dict[str, Any]]] = None):
         self.name = name
         self.path = path
         self.type = room_type
@@ -228,6 +229,9 @@ class RoomTemplate:
         self.height = height
         self.depth = depth
         self.blocks = blocks
+        # Spawn definitions parsed from metadata: list of dicts
+        # Each dict: {entity: str, x:int, y:int, z:int, count:int, kwargs: dict}
+        self.spawns: List[Dict[str, Any]] = spawns or []
 
     @classmethod
     def load(cls, path: str) -> "RoomTemplate":
@@ -246,6 +250,7 @@ class RoomTemplate:
         weight = 10
         loot: Dict[str, str] = {}
         key_map: Dict[str, str] = {"~": "air"}
+        spawns: List[Dict[str, Any]] = []
         meta_width: Optional[int] = None
         meta_height: Optional[int] = None
         meta_depth: Optional[int] = None
@@ -283,6 +288,29 @@ class RoomTemplate:
                     if "=" in pair:
                         tag, _, pool = pair.partition("=")
                         loot[tag] = pool
+            elif meta_key == "spawn":
+                # spawn: <entity> x,y,z [count=N] [k=v ...]
+                toks = value.split()
+                if len(toks) >= 2:
+                    entity = toks[0]
+                    coords = toks[1]
+                    try:
+                        cx, cy, cz = (int(p) for p in coords.split(","))
+                    except Exception:
+                        continue
+                    kwargs: Dict[str, Any] = {}
+                    count = 1
+                    for extra in toks[2:]:
+                        if "=" in extra:
+                            k, _, v = extra.partition("=")
+                            if k == "count":
+                                try:
+                                    count = int(v)
+                                except Exception:
+                                    pass
+                            else:
+                                kwargs[k] = v
+                    spawns.append({"entity": entity, "x": cx, "y": cy, "z": cz, "count": count, "kwargs": kwargs})
 
         # Block data -- single RLE line, decode with dimensions
         block_line = block_part.strip()
@@ -317,7 +345,7 @@ class RoomTemplate:
 
         name = os.path.splitext(os.path.basename(path))[0]
         return cls(name, path, room_type, exits, weight, loot, key_map,
-                   meta_width, meta_height, meta_depth, layers)
+               meta_width, meta_height, meta_depth, layers, spawns)
 
     def to_droom(self) -> str:
         """Serialize back to ``.droom`` format."""
@@ -359,6 +387,16 @@ class RoomTemplate:
                 for b in row:
                     flat_keys.append(reverse.get(b, "~"))
         lines.append(_compress_rle(flat_keys))
+        # Write spawn metadata
+        for s in getattr(self, "spawns", []):
+            ent = s.get("entity")
+            x = s.get("x")
+            y = s.get("y")
+            z = s.get("z")
+            count = s.get("count", 1)
+            extras = "".join(f" {k}={v}" for k, v in (s.get("kwargs") or {}).items())
+            if ent is not None and x is not None:
+                lines.append(f"spawn: {ent} {x},{y},{z} count={count}{extras}")
 
         return "\n".join(lines) + "\n"
 
@@ -1021,11 +1059,28 @@ class Dungeon:
         self._instances.append(instance)
 
         await instance.paste_all()
-        # Call any room-generate handlers to allow spawning mobs or doing
-        # additional world setup that requires the world object.
+        # Auto-spawn entities declared in template metadata, then call
+        # any registered room-generate handlers. Handlers may be async.
         from bridge.wrappers import World
         world = World(world_name)
         for room in rooms:
+            # Automatic spawns from template
+            for s in getattr(room.template, "spawns", []):
+                ent = s.get("entity")
+                count = s.get("count", 1)
+                kwargs = s.get("kwargs") or {}
+                for _i in range(count):
+                    loc = (room.origin[0] + s.get("x", 0),
+                           room.origin[1] + s.get("y", 0),
+                           room.origin[2] + s.get("z", 0))
+                    try:
+                        r = world.spawn_entity(loc, ent, **kwargs)
+                        if inspect.isawaitable(r):
+                            await r
+                    except Exception:
+                        pass
+
+            # Custom handlers
             for h in self._room_generate_handlers:
                 try:
                     r = h(room, world)

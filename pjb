@@ -511,6 +511,60 @@ def _get_class_doc(md_path, ext_tag=""):
 
     return "\n".join(collapsed)
 
+
+def _get_member_doc(md_path, heading_line):
+    """Extract the full documentation block for a ### member heading.
+
+    `heading_line` is 1-based line number where the ### heading appears.
+    Returns formatted text similar to `_get_class_doc`.
+    """
+    content = md_path.read_text(encoding="utf-8")
+    lines = content.split("\n")
+
+    out = []
+    in_code_block = False
+    start = max(0, heading_line - 1)
+
+    for j in range(start, len(lines)):
+        line = lines[j]
+        stripped = line.strip()
+
+        # Track fenced code blocks
+        if stripped.startswith("```"):
+            in_code_block = not in_code_block
+            continue
+
+        # Stop at the next member or section (if not inside a code block)
+        if not in_code_block and j > start and (stripped.startswith("### ") or stripped.startswith("## ")):
+            break
+
+        if in_code_block:
+            out.append(f"  {_highlight_python(line.rstrip())}")
+        elif stripped.startswith("### "):
+            # Skip the first heading line since the caller already prints it
+            if j == start:
+                continue
+            out.append(f"  \033[36;1m{stripped.lstrip('# ')}\033[0m")
+        elif stripped.startswith("- "):
+            out.append(f"  {_strip_md(line.rstrip())}")
+        elif stripped:
+            out.append(f"  {_strip_md(line.rstrip())}")
+        else:
+            out.append("")
+
+    # Trim trailing blank lines
+    while out and not out[-1].strip():
+        out.pop()
+
+    # Collapse consecutive blank lines
+    collapsed = []
+    for line in out:
+        if not line.strip() and collapsed and not collapsed[-1].strip():
+            continue
+        collapsed.append(line)
+
+    return "\n".join(collapsed)
+
 def cmd_search(query):
     docs_dir = find_docs_dir()
     if docs_dir is None:
@@ -555,9 +609,20 @@ def cmd_search(query):
             print(f"No symbol '{query}' found")
             return
         for _, s in results:
-            desc = f"  \033[90m{s['desc']}\033[0m" if s["desc"] else ""
-            ext = _EXT_TAG if s['file'] in _EXT_FILES else ""
-            print(f"  \033[90m{s['class_name']}.\033[0m\033[36m{s['name']}\033[0m  \033[90m({s['section'] or 'class'})\033[0m{ext}{desc}")
+            # If the user asked for the exact member, show the full member block
+            if s['name'].lower() == member_q:
+                ext = _EXT_TAG if s['file'] in _EXT_FILES else ""
+                print(f"  \033[90m{s['class_name']}.\033[0m\033[36m{s['name']}\033[0m  \033[90m({s['section'] or 'class'})\033[0m{ext}")
+                md_path = docs_dir / f"{s['file']}.md"
+                if md_path.exists():
+                    print(_get_member_doc(md_path, s['line']))
+                else:
+                    desc = f"  \033[90m{s['desc']}\033[0m" if s['desc'] else ""
+                    print(desc)
+            else:
+                desc = f"  \033[90m{s['desc']}\033[0m" if s['desc'] else ""
+                ext = _EXT_TAG if s['file'] in _EXT_FILES else ""
+                print(f"  \033[90m{s['class_name']}.\033[0m\033[36m{s['name']}\033[0m  \033[90m({s['section'] or 'class'})\033[0m{ext}{desc}")
 
     else:
         # "Player" → match class names, or fall back to member names
