@@ -12,6 +12,7 @@ helpers.py
 decorators.py
 api.py
 extensions/__init__.py
+extensions/__init__.pyi
 extensions/npc.py
 extensions/image_display.py
 extensions/mesh_display.py
