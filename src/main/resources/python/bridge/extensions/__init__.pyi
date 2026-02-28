@@ -1,19 +1,8 @@
-from typing import Any, Awaitable, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable
 from enum import Enum
 
-# re-exported from sub-modules
-from bridge import (
-    Player as _Player,
-    Location as _Location,
-    Item as _Item,
-    Hologram as _Hologram,
-    BossBarDisplay as _BossBarDisplay,
-    Inventory as _Inventory,
-    Event as _Event,
-)
 
 # ── NPC ──────────────────────────────────────────────────────────────
-
 class NPC:
     def __init__(self, entity: Any, name: str | None = None) -> None: ...
     @classmethod
@@ -38,7 +27,6 @@ class NPC:
     async def remove(self) -> None: ...
 
 # ── ImageDisplay ─────────────────────────────────────────────────────
-
 class ImageDisplay:
     def __init__(self, location: Any, image: str | Any, pixel_size: float = ..., dual_sided: bool = False, dual_side_mode: str = "mirror") -> None: ...
     def teleport(self, location: Any) -> None: ...
@@ -46,7 +34,6 @@ class ImageDisplay:
     def update(self, image: str | Any) -> None: ...
 
 # ── MeshDisplay ──────────────────────────────────────────────────────
-
 class MeshDisplay:
     def __init__(self, location: Any, vertices: list[tuple[float, float, float]], faces: list[tuple[int, int, int]], face_colors: list[tuple[int, int, int, int]] | None = None, vertex_colors: list[tuple[int, int, int, int]] | None = None, texture: Any = None, uvs: list[tuple[float, float]] | None = None, face_uvs: list[tuple[int, int, int]] | None = None, pixel_size: float = ..., dual_sided: bool = False) -> None: ...
     def remove(self) -> None: ...
@@ -54,7 +41,6 @@ class MeshDisplay:
     def update_geometry(self, vertices: list[tuple[float, float, float]], face_colors: list[tuple[int, int, int, int]] | None = None, vertex_colors: list[tuple[int, int, int, int]] | None = None) -> None: ...
 
 # ── Quest ────────────────────────────────────────────────────────────
-
 class Quest:
     name: str
     description: str
@@ -84,7 +70,6 @@ class QuestTree:
     def all_quests(self) -> list[Quest]: ...
 
 # ── Dialog ───────────────────────────────────────────────────────────
-
 class DialogEntry:
     speaker: str
     text: str
@@ -99,7 +84,6 @@ class Dialog:
     def is_active(self, player: Any) -> bool: ...
 
 # ── Bank ─────────────────────────────────────────────────────────────
-
 class Bank:
     name: str
     currency: str
@@ -114,7 +98,6 @@ class Bank:
     def get(cls, name: str = "default") -> "Bank | None": ...
 
 # ── Shop ─────────────────────────────────────────────────────────────
-
 class Shop:
     name: str
     items: list[tuple[Any, int]]
@@ -126,7 +109,6 @@ class Shop:
     def close(self, player: Any) -> None: ...
 
 # ── TradeWindow ──────────────────────────────────────────────────────
-
 class TradeWindow:
     def __init__(self, bank: Bank | None = None, delay: float = 3.0) -> None: ...
     def on_trade(self, handler: Callable[..., Any]) -> Callable[..., Any]: ...
@@ -134,7 +116,6 @@ class TradeWindow:
     def close(self, player: Any) -> None: ...
 
 # ── Ability ──────────────────────────────────────────────────────────
-
 class Ability:
     name: str
     description: str
@@ -151,7 +132,6 @@ class Ability:
     def use(self, player: Any) -> bool: ...
 
 # ── ManaStore ────────────────────────────────────────────────────────
-
 class ManaStore:
     default_mana: float
     default_max_mana: float
@@ -169,7 +149,6 @@ class ManaStore:
     def start_regen(self) -> None: ...
 
 # ── CombatSystem ─────────────────────────────────────────────────────
-
 class CombatSystem:
     combat_timeout: float
     display_bossbar: bool
@@ -181,7 +160,6 @@ class CombatSystem:
     def remaining(self, player: Any) -> float: ...
 
 # ── LevelSystem ──────────────────────────────────────────────────────
-
 class LevelSystem:
     multiplier: float
     exponent: float
@@ -199,7 +177,6 @@ class LevelSystem:
     def progress(self, player: Any) -> float: ...
 
 # ── Region ───────────────────────────────────────────────────────────
-
 class Region:
     name: str
     x1: float
@@ -218,7 +195,6 @@ class Region:
     def remove(self) -> None: ...
 
 # ── Party ────────────────────────────────────────────────────────────
-
 class Party:
     name: str
     leader: Any
@@ -241,7 +217,6 @@ class Party:
     def of(cls, player: Any) -> "Party | None": ...
 
 # ── Guild ────────────────────────────────────────────────────────────
-
 class Guild:
     name: str
     leader_uuid: str
@@ -270,7 +245,6 @@ class Guild:
     def get(cls, name: str) -> "Guild | None": ...
 
 # ── CustomItem ───────────────────────────────────────────────────────
-
 class CustomItem:
     item_id: str
     material: str
@@ -286,7 +260,6 @@ class CustomItem:
     def all(cls) -> dict[str, "CustomItem"]: ...
 
 # ── Leaderboard ──────────────────────────────────────────────────────
-
 class Leaderboard:
     title: str
     update_interval: int
@@ -297,7 +270,6 @@ class Leaderboard:
     def stop(self) -> None: ...
 
 # ── VisualEffect ─────────────────────────────────────────────────────
-
 class VisualEffect:
     name: str
     def __init__(self, name: str = "effect") -> None: ...
@@ -306,7 +278,6 @@ class VisualEffect:
     async def trigger(self, location: Any) -> None: ...
 
 # ── PlayerDataStore ──────────────────────────────────────────────────
-
 class _PlayerView:
     def __getitem__(self, field: str) -> Any: ...
     def __setitem__(self, field: str, value: Any) -> None: ...
@@ -325,7 +296,6 @@ class PlayerDataStore:
     def all_data(self, player: Any) -> dict[str, Any]: ...
 
 # ── Dungeon ──────────────────────────────────────────────────────────
-
 class RoomType(Enum):
     HALLWAY = "hallway"
     COMBAT = "combat"
@@ -377,3 +347,6 @@ class Dungeon:
     def on_room_clear(self, handler: Callable[..., Any]) -> Callable[..., Any]: ...
     def reward(self, handler: Callable[..., Any]) -> Callable[..., Any]: ...
     def create_instance(self, players: list[Any], room_count: int | None = None, grid_size: int | None = None) -> DungeonInstance: ...
+
+
+

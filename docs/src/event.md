@@ -187,7 +187,7 @@ Events are resolved from handler function names: `snake_case` → `PascalCase` +
 
 ### Supported packages
 
-The bridge discovers events from all standard Bukkit event packages:
+The bridge discovers events from all standard Bukkit/Paper event packages:
 
 - `org.bukkit.event.player.*`
 - `org.bukkit.event.block.*`
@@ -200,3 +200,8 @@ The bridge discovers events from all standard Bukkit event packages:
 - `org.bukkit.event.hanging.*`
 - `org.bukkit.event.enchantment.*`
 - `org.bukkit.event.*`
+- `io.papermc.paper.event.player.*`
+- `io.papermc.paper.event.block.*`
+- `io.papermc.paper.event.entity.*`
+- `io.papermc.paper.event.world.*`
+- `io.papermc.paper.event.*`

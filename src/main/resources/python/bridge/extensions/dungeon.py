@@ -25,7 +25,6 @@ class RoomType(Enum):
     TRAP = "trap"
     BOSS = "boss"
 
-
 # ── DungeonRoom ──────────────────────────────────────────────────────
 class DungeonRoom:
     """A single room template within a dungeon layout.
@@ -41,14 +40,14 @@ class DungeonRoom:
 
     # ── generation constraints ─────────────────────────────────────
     # min_depth = minimum distance from entrance for this type to spawn
-    # allowed_neighbours = room types that are allowed next to this one (None = any)
+    # allowed_neighbors = room types that are allowed next to this one (None = any)
     CONSTRAINTS: Dict[RoomType, Dict[str, Any]] = {
         RoomType.BOSS:     {"min_depth": 8, "max_count": 1,
-                            "allowed_neighbours": {RoomType.COMBAT, RoomType.HALLWAY}},
+                            "allowed_neighbors": {RoomType.COMBAT, RoomType.HALLWAY}},
         RoomType.TREASURE: {"min_depth": 3,
-                            "allowed_neighbours": {RoomType.PUZZLE, RoomType.BOSS, RoomType.HALLWAY}},
+                            "allowed_neighbors": {RoomType.PUZZLE, RoomType.BOSS, RoomType.HALLWAY}},
         RoomType.PUZZLE:   {"min_depth": 2,
-                            "allowed_neighbours": {RoomType.TREASURE, RoomType.BOSS, RoomType.HALLWAY, RoomType.COMBAT}},
+                            "allowed_neighbors": {RoomType.TREASURE, RoomType.BOSS, RoomType.HALLWAY, RoomType.COMBAT}},
         RoomType.TRAP:     {"min_depth": 1},
         RoomType.COMBAT:   {"min_depth": 0},
         RoomType.HALLWAY:  {"min_depth": 0},
@@ -97,14 +96,13 @@ class DungeonRoom:
     def __repr__(self):
         return f"<DungeonRoom {self.room_type.value} ({self.grid_x},{self.grid_z}) cleared={self.cleared}>"
 
-
 # ── Wave-function-collapse layout generator ──────────────────────────
 class _WFCGenerator:
     """Minimal constraint-propagation grid generator.
 
     1. Create an NxN grid where each cell starts with all possible room types.
     2. Iteratively pick the cell with the fewest possibilities (least entropy),
-       collapse it to one type, then propagate constraints to neighbours.
+       collapse it to one type, then propagate constraints to neighbors.
     3. If a contradiction occurs, backtrack by resetting the offending cell and
        retrying with a different choice (limited retries).
     """
@@ -134,7 +132,7 @@ class _WFCGenerator:
             possible.add(rt)
         return possible
 
-    def _neighbours_collapsed(self, x: int, z: int) -> List[RoomType]:
+    def _neighbors_collapsed(self, x: int, z: int) -> List[RoomType]:
         result = []
         for dx, dz in self.DIRS:
             nx, nz = x + dx, z + dz
@@ -144,7 +142,7 @@ class _WFCGenerator:
         return result
 
     def _propagate(self, x: int, z: int):
-        """Remove impossible types from neighbours based on constraints."""
+        """Remove impossible types from neighbors based on constraints."""
         collapsed_type = self.collapsed.get((x, z))
         if collapsed_type is None:
             return
@@ -153,11 +151,11 @@ class _WFCGenerator:
             opts = self.grid.get((nx, nz))
             if opts is None or len(opts) <= 1:
                 continue
-            # For each possible type of the neighbour, check allowed_neighbours
+            # For each possible type of the neighbour, check allowed_neighbors
             new_opts = set()
             for rt in opts:
                 c = DungeonRoom.CONSTRAINTS.get(rt, {})
-                allowed = c.get("allowed_neighbours")
+                allowed = c.get("allowed_neighbors")
                 if allowed is not None and collapsed_type not in allowed:
                     # This neighbour type doesn't want to be next to collapsed_type
                     # But only *its* constraint matters for itself
@@ -165,7 +163,7 @@ class _WFCGenerator:
                 new_opts.add(rt)
             # Also check: collapsed_type's constraint about what can be its neighbour
             c_collapsed = DungeonRoom.CONSTRAINTS.get(collapsed_type, {})
-            allowed_for_collapsed = c_collapsed.get("allowed_neighbours")
+            allowed_for_collapsed = c_collapsed.get("allowed_neighbors")
             if allowed_for_collapsed is not None:
                 new_opts = new_opts & allowed_for_collapsed
             if new_opts:
@@ -236,7 +234,6 @@ class _WFCGenerator:
             self._propagate(*best)
 
         return [(x, z, rt) for (x, z), rt in self.collapsed.items()]
-
 
 # ── DungeonInstance ──────────────────────────────────────────────────
 class DungeonInstance:
@@ -316,7 +313,6 @@ class DungeonInstance:
         """Clean up this instance."""
         if self in self.dungeon._instances:
             self.dungeon._instances.remove(self)
-
 
 # ── Dungeon ──────────────────────────────────────────────────────────
 class Dungeon:

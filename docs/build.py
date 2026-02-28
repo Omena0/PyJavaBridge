@@ -89,10 +89,10 @@ SIDEBAR = [
         ("hologram", "Hologram"),
         ("blockdisplay", "BlockDisplay"),
         ("itemdisplay", "ItemDisplay"),
-        ("imagedisplay", "ImageDisplay [ext]"),
-        ("meshdisplay", "MeshDisplay [ext]")
     ]),
     ("Extensions", [
+        ("imagedisplay", "ImageDisplay [ext]"),
+        ("meshdisplay", "MeshDisplay [ext]"),
         ("quest", "Quest"),
         ("dialog", "Dialog"),
         ("bank", "Bank"),

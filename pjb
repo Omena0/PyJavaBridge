@@ -6,13 +6,13 @@ Usage:
     pjb events [<filter>]  List available event names
 """
 
-import os
 import re
 import sys
 from pathlib import Path
 
 # Resolve docs directory relative to this script
 SCRIPT_DIR = Path(__file__).resolve().parent
+
 # Try multiple possible locations
 DOCS_CANDIDATES = [
     SCRIPT_DIR.parent / "docs" / "src",
@@ -22,87 +22,194 @@ DOCS_CANDIDATES = [
 
 # Known Bukkit/Paper events with their common fields
 EVENTS = {
-    # Player events
-    "player_join": {"fields": ["player"], "cancellable": False, "desc": "Player joins the server"},
-    "player_quit": {"fields": ["player", "quit_message"], "cancellable": False, "desc": "Player leaves the server"},
-    "player_move": {"fields": ["player", "from", "to"], "cancellable": True, "desc": "Player moves"},
-    "player_interact": {"fields": ["player", "action", "block", "item", "hand"], "cancellable": True, "desc": "Player interacts with block/air"},
-    "player_interact_entity": {"fields": ["player", "entity", "hand"], "cancellable": True, "desc": "Player interacts with an entity"},
-    "player_chat": {"fields": ["player", "message"], "cancellable": True, "desc": "Player sends a chat message. Return str to override."},
-    "async_chat": {"fields": ["player", "message"], "cancellable": True, "desc": "Async chat event (Paper). Return str to override."},
-    "player_death": {"fields": ["player", "entity", "death_message"], "cancellable": False, "desc": "Player dies"},
-    "player_respawn": {"fields": ["player", "location"], "cancellable": False, "desc": "Player respawns. Return Location to override spawn."},
-    "player_teleport": {"fields": ["player", "from", "to", "cause"], "cancellable": True, "desc": "Player teleports"},
-    "player_toggle_sneak": {"fields": ["player", "sneaking"], "cancellable": True, "desc": "Player toggles sneaking"},
-    "player_toggle_sprint": {"fields": ["player", "sprinting"], "cancellable": True, "desc": "Player toggles sprinting"},
-    "player_bed_enter": {"fields": ["player", "bed"], "cancellable": True, "desc": "Player enters a bed"},
-    "player_bed_leave": {"fields": ["player", "bed"], "cancellable": False, "desc": "Player leaves a bed"},
-    "player_bucket_empty": {"fields": ["player", "block", "item"], "cancellable": True, "desc": "Player empties a bucket"},
-    "player_bucket_fill": {"fields": ["player", "block", "item"], "cancellable": True, "desc": "Player fills a bucket"},
-    "player_drop_item": {"fields": ["player", "item"], "cancellable": True, "desc": "Player drops an item"},
-    "player_pickup_item": {"fields": ["player", "item", "entity"], "cancellable": True, "desc": "Player picks up an entity/item"},
-    "player_consume_item": {"fields": ["player", "item"], "cancellable": True, "desc": "Player consumes food/potion"},
-    "player_swap_hand_items": {"fields": ["player", "main_hand_item", "off_hand_item"], "cancellable": True, "desc": "Player swaps items between hands"},
-    "player_game_mode_change": {"fields": ["player", "new_game_mode"], "cancellable": True, "desc": "Player's game mode changes"},
-    "player_exp_change": {"fields": ["player", "amount"], "cancellable": True, "desc": "Player XP changes"},
-    "player_level_change": {"fields": ["player", "old_level", "new_level"], "cancellable": False, "desc": "Player level changes"},
+    # =========================================================
+    # PLAYER EVENTS (org.bukkit.event.player)
+    # =========================================================
     "player_advancement_done": {"fields": ["player", "advancement"], "cancellable": False, "desc": "Player completes an advancement"},
-    "player_command_preprocess": {"fields": ["player", "message"], "cancellable": True, "desc": "Player sends a command"},
-    "player_portal": {"fields": ["player", "from", "to", "cause"], "cancellable": True, "desc": "Player uses a portal"},
+    "player_animation": {"fields": ["player", "animation"], "cancellable": True, "desc": "Player arm swing animation"},
+    "player_armor_stand_manipulate": {"fields": ["player", "armor_stand", "item", "slot"], "cancellable": True, "desc": "Player manipulates armor stand"},
+    "player_bed_enter": {"fields": ["player", "bed", "enter_result"], "cancellable": True, "desc": "Player attempts to enter bed"},
+    "player_bed_leave": {"fields": ["player", "bed"], "cancellable": False, "desc": "Player leaves bed"},
+    "player_bucket_empty": {"fields": ["player", "block", "item", "hand"], "cancellable": True, "desc": "Player empties bucket"},
+    "player_bucket_entity": {"fields": ["player", "entity", "item"], "cancellable": True, "desc": "Player buckets entity (axolotl, fish)"},
+    "player_bucket_fill": {"fields": ["player", "block", "item", "hand"], "cancellable": True, "desc": "Player fills bucket"},
+    "player_changed_world": {"fields": ["player", "from_world"], "cancellable": False, "desc": "Player changes worlds"},
+    "player_channel_register": {"fields": ["player", "channel"], "cancellable": False, "desc": "Plugin channel registered"},
+    "player_channel_unregister": {"fields": ["player", "channel"], "cancellable": False, "desc": "Plugin channel unregistered"},
+    "player_chat": {"fields": ["player", "message", "recipients"], "cancellable": True, "desc": "Legacy player chat event"},
+    "async_player_chat": {"fields": ["player", "message", "recipients"], "cancellable": True, "desc": "Async chat event"},
+    "player_command_preprocess": {"fields": ["player", "message"], "cancellable": True, "desc": "Player sends command"},
+    "player_command_send": {"fields": ["player", "commands"], "cancellable": False, "desc": "Available commands sent to player"},
+    "player_death": {"fields": ["player", "drops", "death_message"], "cancellable": False, "desc": "Player dies"},
+    "player_drop_item": {"fields": ["player", "item"], "cancellable": True, "desc": "Player drops item"},
+    "player_edit_book": {"fields": ["player", "book_meta", "signing"], "cancellable": True, "desc": "Player edits book"},
+    "player_exp_change": {"fields": ["player", "amount"], "cancellable": True, "desc": "Player exp changes"},
+    "player_fish": {"fields": ["player", "hook", "state", "caught"], "cancellable": True, "desc": "Fishing event"},
+    "player_game_mode_change": {"fields": ["player", "new_game_mode"], "cancellable": True, "desc": "Game mode change"},
+    "player_interact": {"fields": ["player", "action", "block", "item", "hand"], "cancellable": True, "desc": "Player interaction"},
+    "player_interact_at_entity": {"fields": ["player", "entity", "clicked_position", "hand"], "cancellable": True, "desc": "Precise entity interaction"},
+    "player_interact_entity": {"fields": ["player", "entity", "hand"], "cancellable": True, "desc": "Player interacts with entity"},
+    "player_item_break": {"fields": ["player", "item"], "cancellable": False, "desc": "Item breaks"},
+    "player_item_damage": {"fields": ["player", "item", "damage"], "cancellable": True, "desc": "Item durability damage"},
+    "player_item_mend": {"fields": ["player", "item", "repair_amount"], "cancellable": True, "desc": "Item mended"},
+    "player_join": {"fields": ["player", "join_message"], "cancellable": False, "desc": "Player joins server"},
+    "player_kick": {"fields": ["player", "reason", "leave_message"], "cancellable": True, "desc": "Player kicked"},
+    "player_level_change": {"fields": ["player", "old_level", "new_level"], "cancellable": False, "desc": "Level changes"},
+    "player_locale_change": {"fields": ["player", "locale"], "cancellable": False, "desc": "Locale changes"},
+    "player_login": {"fields": ["player", "hostname", "address"], "cancellable": True, "desc": "Login attempt"},
+    "async_player_pre_login": {"fields": ["name", "uuid", "address"], "cancellable": True, "desc": "Async pre-login"},
+    "player_move": {"fields": ["player", "from", "to"], "cancellable": True, "desc": "Player moves"},
+    "player_pickup_arrow": {"fields": ["player", "arrow"], "cancellable": True, "desc": "Pickup arrow"},
+    "player_pickup_item": {"fields": ["player", "item"], "cancellable": True, "desc": "Pickup item (legacy)"},
+    "entity_pickup_item": {"fields": ["entity", "item"], "cancellable": True, "desc": "Entity picks up item"},
+    "player_portal": {"fields": ["player", "from", "to", "cause"], "cancellable": True, "desc": "Player uses portal"},
+    "player_quit": {"fields": ["player", "quit_message"], "cancellable": False, "desc": "Player quits"},
+    "player_respawn": {"fields": ["player", "location", "is_anchor_spawn"], "cancellable": False, "desc": "Player respawns"},
+    "player_riptide": {"fields": ["player"], "cancellable": False, "desc": "Riptide used"},
+    "player_shear_entity": {"fields": ["player", "entity"], "cancellable": True, "desc": "Shears entity"},
+    "player_statistic_increment": {"fields": ["player", "statistic", "amount"], "cancellable": False, "desc": "Statistic increment"},
+    "player_swap_hand_items": {"fields": ["player", "main_hand_item", "off_hand_item"], "cancellable": True, "desc": "Swap hands"},
+    "player_take_lectern_book": {"fields": ["player", "lectern"], "cancellable": True, "desc": "Take lectern book"},
+    "player_teleport": {"fields": ["player", "from", "to", "cause"], "cancellable": True, "desc": "Teleport"},
+    "player_toggle_flight": {"fields": ["player", "is_flying"], "cancellable": True, "desc": "Toggle flight"},
+    "player_toggle_sneak": {"fields": ["player", "is_sneaking"], "cancellable": True, "desc": "Toggle sneak"},
+    "player_toggle_sprint": {"fields": ["player", "is_sprinting"], "cancellable": True, "desc": "Toggle sprint"},
+    "player_velocity": {"fields": ["player", "velocity"], "cancellable": True, "desc": "Velocity change"},
 
-    # Block events
-    "block_break": {"fields": ["player", "block"], "cancellable": True, "desc": "Block is broken"},
-    "block_place": {"fields": ["player", "block"], "cancellable": True, "desc": "Block is placed"},
+    # =========================================================
+    # BLOCK EVENTS
+    # =========================================================
+    "block_break": {"fields": ["player", "block"], "cancellable": True, "desc": "Block broken"},
     "block_burn": {"fields": ["block"], "cancellable": True, "desc": "Block burns"},
-    "block_fade": {"fields": ["block"], "cancellable": True, "desc": "Block fades (ice melting, etc)"},
-    "block_form": {"fields": ["block"], "cancellable": True, "desc": "Block forms (snow, ice)"},
-    "block_grow": {"fields": ["block"], "cancellable": True, "desc": "Block grows (crop, tree)"},
-    "block_ignite": {"fields": ["block", "player", "cause"], "cancellable": True, "desc": "Block is set on fire"},
-    "block_physics": {"fields": ["block"], "cancellable": True, "desc": "Block physics update"},
-    "block_piston_extend": {"fields": ["block", "blocks"], "cancellable": True, "desc": "Piston extends"},
-    "block_piston_retract": {"fields": ["block", "blocks"], "cancellable": True, "desc": "Piston retracts"},
-    "block_redstone": {"fields": ["block", "old_current", "new_current"], "cancellable": False, "desc": "Redstone current changes"},
-    "block_explode": {"fields": ["block"], "cancellable": True, "desc": "Block explodes. Per-block cancellation."},
-    "sign_change": {"fields": ["player", "block", "lines"], "cancellable": True, "desc": "Player edits a sign"},
+    "block_can_build": {"fields": ["player", "block", "material"], "cancellable": True, "desc": "Check if block can build"},
+    "block_damage": {"fields": ["player", "block", "insta_break"], "cancellable": True, "desc": "Block damaged"},
+    "block_dispense": {"fields": ["block", "item", "velocity"], "cancellable": True, "desc": "Dispenser dispense"},
+    "block_dispense_armor": {"fields": ["block", "item", "target"], "cancellable": True, "desc": "Dispense armor"},
+    "block_explode": {"fields": ["block", "blocks", "yield"], "cancellable": True, "desc": "Block explosion"},
+    "block_fade": {"fields": ["block", "new_state"], "cancellable": True, "desc": "Block fades"},
+    "block_form": {"fields": ["block", "new_state"], "cancellable": True, "desc": "Block forms"},
+    "block_from_to": {"fields": ["block", "to_block"], "cancellable": True, "desc": "Liquid flow"},
+    "block_grow": {"fields": ["block", "new_state"], "cancellable": True, "desc": "Block grows"},
+    "block_ignite": {"fields": ["block", "cause", "player"], "cancellable": True, "desc": "Block ignited"},
+    "block_multi_place": {"fields": ["player", "blocks"], "cancellable": True, "desc": "Multiple blocks placed"},
+    "block_physics": {"fields": ["block", "changed_type"], "cancellable": True, "desc": "Physics update"},
+    "block_piston_extend": {"fields": ["block", "blocks", "direction"], "cancellable": True, "desc": "Piston extend"},
+    "block_piston_retract": {"fields": ["block", "blocks", "direction"], "cancellable": True, "desc": "Piston retract"},
+    "block_place": {"fields": ["player", "block", "item"], "cancellable": True, "desc": "Block placed"},
+    "block_redstone": {"fields": ["block", "old_current", "new_current"], "cancellable": False, "desc": "Redstone change"},
+    "block_spread": {"fields": ["source", "block"], "cancellable": True, "desc": "Block spreads"},
+    "bell_ring": {"fields": ["block", "entity"], "cancellable": True, "desc": "Bell rings"},
+    "note_play": {"fields": ["block", "instrument", "note"], "cancellable": True, "desc": "Note block plays"},
+    "sign_change": {"fields": ["player", "block", "lines"], "cancellable": True, "desc": "Sign edited"},
+    "tnt_prime": {"fields": ["block", "entity", "reason"], "cancellable": True, "desc": "TNT primed"},
 
-    # Entity events
-    "entity_damage": {"fields": ["entity", "damager", "damage", "cause"], "cancellable": True, "desc": "Entity takes damage. Return number to override damage."},
-    "entity_damage_by_entity": {"fields": ["entity", "damager", "damage", "cause"], "cancellable": True, "desc": "Entity damaged by another entity. Return number to override."},
-    "entity_death": {"fields": ["entity", "drops"], "cancellable": False, "desc": "Entity dies"},
-    "entity_spawn": {"fields": ["entity", "location"], "cancellable": True, "desc": "Entity spawns"},
-    "entity_explode": {"fields": ["entity", "location", "blocks"], "cancellable": True, "desc": "Entity explosion"},
-    "entity_target": {"fields": ["entity", "target", "reason"], "cancellable": True, "desc": "Mob targets an entity. Return Entity to override target."},
-    "entity_target_living_entity": {"fields": ["entity", "target", "reason"], "cancellable": True, "desc": "Mob targets a living entity. Return Entity to override."},
-    "entity_combust": {"fields": ["entity"], "cancellable": True, "desc": "Entity starts burning"},
-    "entity_tame": {"fields": ["entity", "owner"], "cancellable": True, "desc": "Entity is tamed"},
-    "entity_regain_health": {"fields": ["entity", "amount", "reason"], "cancellable": True, "desc": "Entity heals"},
-    "entity_change_block": {"fields": ["entity", "block", "to"], "cancellable": True, "desc": "Entity changes a block"},
-    "projectile_hit": {"fields": ["entity", "hit_entity", "hit_block"], "cancellable": True, "desc": "Projectile hits something"},
-    "projectile_launch": {"fields": ["entity"], "cancellable": True, "desc": "Projectile is launched"},
-    "creature_spawn": {"fields": ["entity", "spawn_reason"], "cancellable": True, "desc": "Creature spawns"},
+    # =========================================================
+    # ENTITY EVENTS
+    # =========================================================
+    "area_effect_cloud_apply": {"fields": ["entity", "affected_entities"], "cancellable": False, "desc": "Cloud applies effect"},
+    "bat_toggle_sleep": {"fields": ["entity", "awake"], "cancellable": True, "desc": "Bat toggles sleep"},
+    "creature_spawn": {"fields": ["entity", "reason"], "cancellable": True, "desc": "Creature spawn"},
+    "creeper_power": {"fields": ["entity", "cause"], "cancellable": True, "desc": "Creeper powered"},
+    "entity_air_change": {"fields": ["entity", "amount"], "cancellable": True, "desc": "Air changes"},
+    "entity_break_door": {"fields": ["entity", "block"], "cancellable": True, "desc": "Break door"},
+    "entity_change_block": {"fields": ["entity", "block", "to"], "cancellable": True, "desc": "Entity changes block"},
+    "entity_combust": {"fields": ["entity", "duration"], "cancellable": True, "desc": "Entity combust"},
+    "entity_combust_by_block": {"fields": ["entity", "block", "duration"], "cancellable": True, "desc": "Combust by block"},
+    "entity_combust_by_entity": {"fields": ["entity", "combuster", "duration"], "cancellable": True, "desc": "Combust by entity"},
+    "entity_damage": {"fields": ["entity", "damage", "cause"], "cancellable": True, "desc": "Entity damaged"},
+    "entity_damage_by_block": {"fields": ["entity", "damager", "damage", "cause"], "cancellable": True, "desc": "Damage by block"},
+    "entity_damage_by_entity": {"fields": ["entity", "damager", "damage", "cause"], "cancellable": True, "desc": "Damage by entity"},
+    "entity_death": {"fields": ["entity", "drops"], "cancellable": False, "desc": "Entity death"},
+    "entity_dismount": {"fields": ["entity", "dismounted"], "cancellable": True, "desc": "Entity dismount"},
+    "entity_enter_block": {"fields": ["entity", "block"], "cancellable": False, "desc": "Entity enters block"},
+    "entity_explode": {"fields": ["entity", "location", "blocks"], "cancellable": True, "desc": "Entity explode"},
+    "entity_mount": {"fields": ["entity", "mount"], "cancellable": True, "desc": "Entity mount"},
+    "entity_pickup_item": {"fields": ["entity", "item"], "cancellable": True, "desc": "Entity pickup item"},
+    "entity_portal": {"fields": ["entity", "from", "to"], "cancellable": True, "desc": "Entity portal"},
+    "entity_portal_enter": {"fields": ["entity", "location"], "cancellable": False, "desc": "Portal enter"},
+    "entity_portal_exit": {"fields": ["entity", "from", "to"], "cancellable": True, "desc": "Portal exit"},
+    "entity_regain_health": {"fields": ["entity", "amount", "reason"], "cancellable": True, "desc": "Regain health"},
+    "entity_resurrect": {"fields": ["entity"], "cancellable": True, "desc": "Totem resurrection"},
+    "entity_shoot_bow": {"fields": ["entity", "bow", "projectile", "force"], "cancellable": True, "desc": "Shoot bow"},
+    "entity_spawn": {"fields": ["entity", "location"], "cancellable": True, "desc": "Entity spawn"},
+    "entity_target": {"fields": ["entity", "target", "reason"], "cancellable": True, "desc": "Entity target"},
+    "entity_target_living_entity": {"fields": ["entity", "target", "reason"], "cancellable": True, "desc": "Target living entity"},
+    "entity_teleport": {"fields": ["entity", "from", "to"], "cancellable": True, "desc": "Entity teleport"},
+    "entity_tame": {"fields": ["entity", "owner"], "cancellable": True, "desc": "Entity tamed"},
+    "projectile_hit": {"fields": ["entity", "hit_entity", "hit_block"], "cancellable": True, "desc": "Projectile hit"},
+    "projectile_launch": {"fields": ["entity"], "cancellable": True, "desc": "Projectile launch"},
 
-    # Inventory events
-    "inventory_click": {"fields": ["player", "inventory", "slot", "item", "action"], "cancellable": True, "desc": "Player clicks in an inventory"},
-    "inventory_close": {"fields": ["player", "inventory"], "cancellable": False, "desc": "Player closes an inventory"},
-    "inventory_open": {"fields": ["player", "inventory"], "cancellable": True, "desc": "Player opens an inventory"},
-    "inventory_drag": {"fields": ["player", "inventory", "items"], "cancellable": True, "desc": "Player drags items in inventory"},
+    # =========================================================
+    # INVENTORY EVENTS
+    # =========================================================
+    "inventory_click": {"fields": ["who", "inventory", "slot", "action", "click"], "cancellable": True, "desc": "Inventory click"},
+    "inventory_close": {"fields": ["player", "inventory"], "cancellable": False, "desc": "Inventory close"},
+    "inventory_creative": {"fields": ["who", "inventory", "slot", "item"], "cancellable": True, "desc": "Creative click"},
+    "inventory_drag": {"fields": ["who", "inventory", "new_items"], "cancellable": True, "desc": "Inventory drag"},
+    "inventory_move_item": {"fields": ["source", "destination", "item"], "cancellable": True, "desc": "Move item"},
+    "inventory_open": {"fields": ["player", "inventory"], "cancellable": True, "desc": "Inventory open"},
+    "prepare_anvil": {"fields": ["inventory", "result"], "cancellable": False, "desc": "Prepare anvil"},
+    "prepare_grindstone": {"fields": ["inventory", "result"], "cancellable": False, "desc": "Prepare grindstone"},
+    "prepare_item_craft": {"fields": ["inventory", "recipe"], "cancellable": False, "desc": "Prepare craft"},
+    "prepare_result": {"fields": ["inventory", "result"], "cancellable": False, "desc": "Generic prepare result"},
+    "brew_event": {"fields": ["inventory"], "cancellable": True, "desc": "Brewing complete"},
+    "brewing_stand_fuel": {"fields": ["block", "fuel", "power"], "cancellable": True, "desc": "Brewing fuel"},
 
-    # World events
-    "weather_change": {"fields": ["world", "to_state"], "cancellable": True, "desc": "Weather changes"},
-    "thunder_change": {"fields": ["world", "to_state"], "cancellable": True, "desc": "Thunder state changes"},
-    "world_load": {"fields": ["world"], "cancellable": False, "desc": "World is loaded"},
-    "world_unload": {"fields": ["world"], "cancellable": True, "desc": "World is unloaded"},
-    "chunk_load": {"fields": ["chunk", "world"], "cancellable": False, "desc": "Chunk is loaded"},
-    "chunk_unload": {"fields": ["chunk", "world"], "cancellable": True, "desc": "Chunk is unloaded"},
+    # =========================================================
+    # WORLD EVENTS
+    # =========================================================
+    "chunk_generate": {"fields": ["world", "chunk"], "cancellable": False, "desc": "Chunk generated"},
+    "chunk_load": {"fields": ["world", "chunk"], "cancellable": False, "desc": "Chunk load"},
+    "chunk_unload": {"fields": ["world", "chunk"], "cancellable": True, "desc": "Chunk unload"},
+    "loot_generate": {"fields": ["entity", "inventory", "loot_table"], "cancellable": False, "desc": "Loot generate"},
+    "portal_create": {"fields": ["blocks", "world", "reason"], "cancellable": True, "desc": "Portal create"},
+    "spawn_change": {"fields": ["world", "previous_location"], "cancellable": False, "desc": "Spawn change"},
+    "structure_grow": {"fields": ["location", "species", "blocks"], "cancellable": True, "desc": "Tree grow"},
+    "world_init": {"fields": ["world"], "cancellable": False, "desc": "World init"},
+    "world_load": {"fields": ["world"], "cancellable": False, "desc": "World load"},
+    "world_save": {"fields": ["world"], "cancellable": False, "desc": "World save"},
+    "world_unload": {"fields": ["world"], "cancellable": True, "desc": "World unload"},
 
-    # Server events
-    "server_boot": {"fields": [], "cancellable": False, "desc": "Server finishes loading. Use for initialization."},
-    "shutdown": {"fields": [], "cancellable": False, "desc": "Server is shutting down. Use for cleanup."},
+    # =========================================================
+    # WEATHER EVENTS
+    # =========================================================
+    "thunder_change": {"fields": ["world", "to"], "cancellable": True, "desc": "Thunder change"},
+    "weather_change": {"fields": ["world", "to"], "cancellable": True, "desc": "Weather change"},
+    "lightning_strike": {"fields": ["world", "lightning"], "cancellable": True, "desc": "Lightning strike"},
 
-    # Custom
-    "packet_send": {"fields": ["player", "packet_type", "fields", "direction"], "cancellable": False, "desc": "Outgoing packet (requires ProtocolLib)"},
-    "packet_receive": {"fields": ["player", "packet_type", "fields", "direction"], "cancellable": False, "desc": "Incoming packet (requires ProtocolLib)"},
-    "script_message": {"fields": ["from", "data"], "cancellable": False, "desc": "Message from another script"},
+    # =========================================================
+    # VEHICLE EVENTS
+    # =========================================================
+    "vehicle_create": {"fields": ["vehicle"], "cancellable": False, "desc": "Vehicle create"},
+    "vehicle_damage": {"fields": ["vehicle", "attacker", "damage"], "cancellable": True, "desc": "Vehicle damage"},
+    "vehicle_destroy": {"fields": ["vehicle", "attacker"], "cancellable": True, "desc": "Vehicle destroy"},
+    "vehicle_enter": {"fields": ["vehicle", "entity"], "cancellable": True, "desc": "Vehicle enter"},
+    "vehicle_exit": {"fields": ["vehicle", "entity"], "cancellable": True, "desc": "Vehicle exit"},
+    "vehicle_move": {"fields": ["vehicle", "from", "to"], "cancellable": False, "desc": "Vehicle move"},
+    "vehicle_update": {"fields": ["vehicle"], "cancellable": False, "desc": "Vehicle update"},
+    # =========================================================
+    # HANGING EVENTS
+    # =========================================================
+    "hanging_break": {"fields": ["entity", "cause"], "cancellable": True, "desc": "Hanging break"},
+    "hanging_break_by_entity": {"fields": ["entity", "remover"], "cancellable": True, "desc": "Break by entity"},
+    "hanging_place": {"fields": ["entity", "player", "block"], "cancellable": True, "desc": "Hanging place"},
+    # =========================================================
+    # ENCHANTMENT EVENTS
+    # =========================================================
+    "enchant_item": {"fields": ["player", "item", "enchants"], "cancellable": True, "desc": "Enchant item"},
+    "prepare_item_enchant": {"fields": ["player", "item", "offers"], "cancellable": True, "desc": "Prepare enchant"},
+
+    # =========================================================
+    # SERVER EVENTS
+    # =========================================================
+    "map_initialize": {"fields": ["map_view"], "cancellable": False, "desc": "Map initialize"},
+    "plugin_enable": {"fields": ["plugin"], "cancellable": False, "desc": "Plugin enable"},
+    "plugin_disable": {"fields": ["plugin"], "cancellable": False, "desc": "Plugin disable"},
+    "server_command": {"fields": ["sender", "command"], "cancellable": True, "desc": "Server command"},
+    "server_load": {"fields": ["type"], "cancellable": False, "desc": "Server load"},
+    "service_register": {"fields": ["provider"], "cancellable": False, "desc": "Service register"},
+    "service_unregister": {"fields": ["provider"], "cancellable": False, "desc": "Service unregister"},
+
 }
 
 def find_docs_dir():
@@ -110,7 +217,6 @@ def find_docs_dir():
         if candidate.is_dir():
             return candidate
     return None
-
 
 def build_symbol_index(docs_dir):
     """Build an index of symbols from doc headings.
@@ -189,7 +295,6 @@ def build_symbol_index(docs_dir):
 
     return symbols
 
-
 def _get_desc_after(lines, heading_idx):
     """Get the first meaningful content line after a heading."""
     for j in range(heading_idx + 1, min(heading_idx + 8, len(lines))):
@@ -204,7 +309,6 @@ def _get_desc_after(lines, heading_idx):
             return l.strip()
         return l[:100]
     return ""
-
 
 def _get_signature(lines, heading_idx, member):
     """Extract method signature from the code block after a ### heading."""
@@ -223,7 +327,6 @@ def _get_signature(lines, heading_idx, member):
             if m:
                 return f"({m.group(1)})"
     return None
-
 
 def _strip_md(line):
     """Strip markdown formatting from a line for terminal display."""
@@ -329,7 +432,6 @@ def _highlight_python(line):
 
     return "".join(result)
 
-
 def _get_class_doc(md_path):
     """Extract class-level documentation (before first ### member heading)."""
     content = md_path.read_text(encoding="utf-8")
@@ -398,7 +500,6 @@ def _get_class_doc(md_path):
         collapsed.append(line)
 
     return "\n".join(collapsed)
-
 
 def cmd_search(query):
     docs_dir = find_docs_dir()
@@ -476,7 +577,6 @@ def cmd_search(query):
             for _, s in results:
                 print(f"  \033[90m{s['class_name']}.\033[0m\033[36m{s['name']}\033[0m  \033[90m({s['section'] or 'class'})\033[0m")
 
-
 def cmd_events(filter_str=None):
     filter_lower = filter_str.lower() if filter_str else None
 
@@ -501,7 +601,6 @@ def cmd_events(filter_str=None):
         print(f"      {info['desc']}")
         print(f"      \033[90mfields: {fields}\033[0m")
 
-
 def main():
     if len(sys.argv) < 2:
         print(__doc__)
@@ -523,7 +622,6 @@ def main():
         print(f"Unknown command: {cmd}")
         print(__doc__)
         sys.exit(1)
-
 
 if __name__ == "__main__":
     main()

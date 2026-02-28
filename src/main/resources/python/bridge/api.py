@@ -33,7 +33,6 @@ def has_packet_api() -> BridgeCall:
     """Check if ProtocolLib packet API is available. Returns Awaitable[bool]."""
     return _connection.call("hasPacketApi", target="server")
 
-
 def on_packet_send(packet_type: str):
     """Decorator: listen for outgoing packets of the given type."""
     def decorator(handler: Callable) -> Callable:
@@ -42,7 +41,6 @@ def on_packet_send(packet_type: str):
         _connection.subscribe("packet_send", False)
         return handler
     return decorator
-
 
 def on_packet_receive(packet_type: str):
     """Decorator: listen for incoming packets of the given type."""
@@ -53,29 +51,23 @@ def on_packet_receive(packet_type: str):
         return handler
     return decorator
 
-
 def send_packet(player: Any, packet_type: str, fields: Dict[str, Any] | None = None):
     """Send a raw packet to a player. Requires ProtocolLib."""
     return _connection.call("sendPacket", target="server", args=[player, packet_type, fields or {}])
-
 
 def remove_packet_listener(key: str):
     """Remove a packet listener by key (e.g. 'send:ENTITY_VELOCITY')."""
     return _connection.call("removePacketListener", target="server", args=[key])
 
-
 # --- Inter-script communication ---
-
 def script_send(target: str, data: Any = None):
     """Send a message to another script (or '*' for all scripts)."""
     _connection.send({"type": "script_message", "target": target, "data": data})
-
 
 def on_script_message(handler: Callable[[Any], Any]) -> Callable[[Any], Any]:
     """Decorator: register a handler for messages from other scripts."""
     _connection.on("script_message", handler)
     return handler
-
 
 def get_scripts() -> BridgeCall:
     """Get a list of all running script names. Returns Awaitable[list[str]]."""
@@ -87,7 +79,6 @@ def get_scripts() -> BridgeCall:
 
 
 # --- Raycast ---
-
 async def raycast(
     world: Any,
     start: Any,
