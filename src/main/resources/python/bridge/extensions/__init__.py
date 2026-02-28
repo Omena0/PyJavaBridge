@@ -21,7 +21,7 @@ Import extensions individually::
     from bridge.extensions import Leaderboard
     from bridge.extensions import VisualEffect
     from bridge.extensions import PlayerDataStore
-    from bridge.extensions import Dungeon, DungeonInstance, DungeonRoom, RoomType
+    from bridge.extensions import Dungeon, DungeonInstance, PlacedRoom, RoomTemplate, loot_pool
 """
 
 from bridge.extensions.npc import NPC
@@ -43,7 +43,7 @@ from bridge.extensions.leaderboard import Leaderboard
 from bridge.extensions.custom_item import CustomItem
 from bridge.extensions.visual_effect import VisualEffect
 from bridge.extensions.player_data import PlayerDataStore
-from bridge.extensions.dungeon import Dungeon, DungeonInstance, DungeonRoom, RoomType
+from bridge.extensions.dungeon import Dungeon, DungeonInstance, PlacedRoom, RoomTemplate, Exit, loot_pool
 
 __all__ = [
     "NPC",
@@ -65,5 +65,5 @@ __all__ = [
     "Leaderboard",
     "VisualEffect",
     "PlayerDataStore",
-    "Dungeon", "DungeonInstance", "DungeonRoom", "RoomType",
+    "Dungeon", "DungeonInstance", "PlacedRoom", "RoomTemplate", "Exit", "loot_pool",
 ]

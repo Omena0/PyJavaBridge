@@ -5,7 +5,8 @@ subtitle: Custom item registry
 
 # CustomItem [ext]
 
-`CustomItem` defines reusable item templates stored in a global registry.
+`CustomItem` extends [`ItemBuilder`](itembuilder.html) with a global registry.
+All fluent builder methods (`name()`, `lore()`, `enchant()`, `glow()`, etc.) are inherited.
 
 ```python
 from bridge.extensions import CustomItem
@@ -16,15 +17,12 @@ from bridge.extensions import CustomItem
 ## Constructor
 
 ```python
-CustomItem(item_id, material, name=None, lore=None, custom_model_data=None)
+CustomItem(item_id, material="DIAMOND")
 ```
 
 - **Parameters:**
   - `item_id` (`str`) — Unique ID (e.g. `"magic_sword"`).
   - `material` (`str`) — Material name.
-  - `name` (`str | None`) — Display name.
-  - `lore` (`list[str] | None`) — Lore lines.
-  - `custom_model_data` (`int | None`) — Custom model data.
 
 Automatically registered in the global registry.
 
@@ -32,13 +30,11 @@ Automatically registered in the global registry.
 
 ## Methods
 
-### build() → Item
-
-Create a new `Item` from this template.
+All [`ItemBuilder`](itembuilder.html) methods are available, plus:
 
 ### give(player, amount=1)
 
-Give copies to a player.
+Build and give copies to a player.
 
 ---
 
@@ -59,9 +55,11 @@ Get all registered items.
 ```python
 from bridge.extensions import CustomItem
 
-sword = CustomItem("fire_sword", "DIAMOND_SWORD",
-                   name="§cFire Sword",
-                   lore=["§7Burns on hit"])
+sword = (CustomItem("fire_sword", "DIAMOND_SWORD")
+         .name("§cFire Sword")
+         .lore("§7Burns on hit", "§7+5 Fire Damage")
+         .enchant("fire_aspect", 2)
+         .glow())
 
 @command("Give fire sword")
 async def give_sword(event):

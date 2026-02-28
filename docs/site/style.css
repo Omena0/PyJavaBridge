@@ -685,5 +685,40 @@ li code { font-size: .82em; }
 .no-sidebar .sidebar { display: none; }
 .no-sidebar .content { max-width: 960px; }
 
+/* ===== Extension tag badge ===== */
+.ext-tag {
+  display: inline-block;
+  font-size: .7em;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  padding: 1px 7px;
+  margin-left: 6px;
+  border-radius: 4px;
+  vertical-align: middle;
+  background: var(--primary-soft);
+  color: var(--primary-hover);
+  border: 1px solid rgba(99,102,241,.3);
+  line-height: 1.6;
+}
+h1 .ext-tag {
+  font-size: .4em;
+  padding: 2px 8px;
+  vertical-align: middle;
+}
+.search-hit .ext-tag {
+  display: inline;
+  font-size: .75em;
+  padding: 0 5px;
+  margin-left: 4px;
+  vertical-align: baseline;
+}
+.sidebar-links .ext-tag {
+  font-size: .65em;
+  padding: 0 4px;
+  margin-left: 4px;
+  vertical-align: baseline;
+}
+
 /* ===== Highlight.js overrides ===== */
 .hljs { background: transparent !important; padding: 0 !important; }

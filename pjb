@@ -260,7 +260,7 @@ def build_symbol_index(docs_dir):
                 continue
 
             if stripped.startswith("# ") and not stripped.startswith("## "):
-                class_name = stripped.lstrip("# ").strip()
+                class_name = stripped.lstrip("# ").replace("[ext]", "").strip()
                 desc = _get_desc_after(lines, i)
                 symbols.append({
                     "class_name": class_name,
@@ -335,6 +335,15 @@ def _strip_md(line):
     line = line.replace('**', '').replace('*', '')
     return line
 
+
+# Extension doc file stems (matches Extensions section in docs/build.py)
+_EXT_FILES = {
+    "imagedisplay", "meshdisplay", "quest", "dialog", "bank", "shop",
+    "trade", "ability", "mana", "combat", "levels", "region", "party",
+    "guild", "customitem", "leaderboard", "visualeffect", "playerdatastore",
+    "dungeon",
+}
+_EXT_TAG = " \033[33m[ext]\033[0m"
 
 # ANSI color codes
 _C_KEYWORD = "\033[35m"    # magenta
@@ -432,7 +441,7 @@ def _highlight_python(line):
 
     return "".join(result)
 
-def _get_class_doc(md_path):
+def _get_class_doc(md_path, ext_tag=""):
     """Extract class-level documentation (before first ### member heading)."""
     content = md_path.read_text(encoding="utf-8")
     lines = content.split("\n")
@@ -475,12 +484,13 @@ def _get_class_doc(md_path):
         if in_code_block:
             out.append(f"  {_highlight_python(line.rstrip())}")
         elif stripped.startswith("# "):
-            out.append(f"  \033[36;1m{stripped.lstrip('# ')}\033[0m")
+            title = stripped.lstrip('# ').replace('[ext]', '').strip()
+            out.append(f"  \033[36;1m# {title}\033[0m{ext_tag}")
         elif stripped.startswith("## "):
             heading = stripped.lstrip('# ').strip()
             if heading == "Constructor":
                 continue  # skip Constructor header
-            out.append(f"  \033[1m{heading}\033[0m")
+            out.append(f"  \033[1m## {heading}\033[0m")
         elif stripped.startswith("- "):
             out.append(f"  {_strip_md(line.rstrip())}")
         elif stripped:
@@ -517,16 +527,18 @@ def cmd_search(query):
         if not members:
             print(f"No class '{query[:-1]}' found")
             return
-        print(f"\033[1m{members[0]['class_name']}\033[0m  \033[90m({members[0]['file']}.md)\033[0m")
+        ext = _EXT_TAG if members[0]['file'] in _EXT_FILES else ""
+        print(f"\033[1m{members[0]['class_name']}\033[0m  \033[90m({members[0]['file']}.md)\033[0m{ext}")
         current_section = None
         for s in members:
             section = s['section'] or ''
             if section != current_section:
                 current_section = section
                 if section:
-                    print(f" \033[90m{section}\033[0m")
+                    print(f" \033[90m## {section}\033[0m")
             sig = s.get('sig', '') or ''
-            print(f"  \033[36m.{s['name']}{sig}\033[0m")
+            print(f"  \033[90m###\033[0m \033[36m.{s['name']}{sig}\033[0m")
+
     elif "." in query:
         # "Player.name" → find specific member(s)
         class_q, member_q = query.split(".", 1)
@@ -544,7 +556,9 @@ def cmd_search(query):
             return
         for _, s in results:
             desc = f"  \033[90m{s['desc']}\033[0m" if s["desc"] else ""
-            print(f"  \033[90m{s['class_name']}.\033[0m\033[36m{s['name']}\033[0m  \033[90m({s['section'] or 'class'})\033[0m{desc}")
+            ext = _EXT_TAG if s['file'] in _EXT_FILES else ""
+            print(f"  \033[90m{s['class_name']}.\033[0m\033[36m{s['name']}\033[0m  \033[90m({s['section'] or 'class'})\033[0m{ext}{desc}")
+
     else:
         # "Player" → match class names, or fall back to member names
         q = query.lower()
@@ -552,12 +566,14 @@ def cmd_search(query):
         classes.sort(key=lambda s: (s["class_name"].lower() != q, s["class_name"]))
         if classes:
             for s in classes:
+                ext = _EXT_TAG if s['file'] in _EXT_FILES else ""
                 # Show the class-level doc text (everything before first ### member)
                 md_path = docs_dir / f"{s['file']}.md"
                 if md_path.exists():
-                    print(_get_class_doc(md_path))
+                    print(_get_class_doc(md_path, ext))
                 else:
-                    print(f"  \033[36;1m{s['class_name']}\033[0m")
+                    print(f"  \033[36;1m{s['class_name']}\033[0m{ext}")
+
         else:
             # No class match → search member names across all classes
             results = []
@@ -575,7 +591,8 @@ def cmd_search(query):
                 print(f"No symbols matching '{query}'")
                 return
             for _, s in results:
-                print(f"  \033[90m{s['class_name']}.\033[0m\033[36m{s['name']}\033[0m  \033[90m({s['section'] or 'class'})\033[0m")
+                ext = _EXT_TAG if s['file'] in _EXT_FILES else ""
+                print(f"  \033[90m{s['class_name']}.\033[0m\033[36m{s['name']}\033[0m  \033[90m({s['section'] or 'class'})\033[0m{ext}")
 
 def cmd_events(filter_str=None):
     filter_lower = filter_str.lower() if filter_str else None

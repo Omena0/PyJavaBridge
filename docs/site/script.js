@@ -275,7 +275,8 @@ document.addEventListener('DOMContentLoaded', () => {
     searchResults.innerHTML = unique.map(h => {
       const snippet = h.text ? h.text.substring(0, 100) : '';
       const heading = h.heading ? ` › ${h.heading}` : '';
-      return `<a class="search-hit" href="${h.url}"><strong>${h.title}${heading}</strong><span>${snippet}</span></a>`;
+      const fmtTitle = (h.title + heading).replace(/\[ext\]/g, '<span class="ext-tag">ext</span>');
+      return `<a class="search-hit" href="${h.url}"><strong>${fmtTitle}</strong><span>${snippet}</span></a>`;
     }).join('');
     searchResults.style.display = 'block';
   }

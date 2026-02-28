@@ -1,5 +1,6 @@
 from typing import Any, Callable
 from enum import Enum
+from bridge.wrappers import ItemBuilder
 
 
 # ── NPC ──────────────────────────────────────────────────────────────
@@ -245,14 +246,9 @@ class Guild:
     def get(cls, name: str) -> "Guild | None": ...
 
 # ── CustomItem ───────────────────────────────────────────────────────
-class CustomItem:
+class CustomItem(ItemBuilder):
     item_id: str
-    material: str
-    display_name: str | None
-    lore: list[str]
-    custom_model_data: int | None
-    def __init__(self, item_id: str, material: str = "DIAMOND", name: str | None = None, lore: list[str] | None = None, custom_model_data: int | None = None, **kwargs: Any) -> None: ...
-    def build(self) -> Any: ...
+    def __init__(self, item_id: str, material: str = "DIAMOND") -> None: ...
     def give(self, player: Any, amount: int = 1) -> None: ...
     @classmethod
     def get(cls, item_id: str) -> "CustomItem | None": ...

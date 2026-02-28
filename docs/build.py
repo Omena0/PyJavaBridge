@@ -239,6 +239,12 @@ def process_blockquotes(html_text):
     return re.sub(r'<blockquote>\s*(.*?)\s*</blockquote>', classify, html_text, flags=re.DOTALL)
 
 
+# ── Tag formatting ───────────────────────────────────────────────────────────
+
+def format_ext_tags(html_text):
+    """Replace [ext] with a styled badge span."""
+    return html_text.replace('[ext]', '<span class="ext-tag">ext</span>')
+
 # ── HTML template ────────────────────────────────────────────────────────────
 
 def _section_key(name):
@@ -265,10 +271,12 @@ def build_sidebar_html(current_slug):
                 '  <ul class="sidebar-links">',
             )
         )
+        is_ext = section_name == "Extensions"
         for slug, label in pages:
             active = ' class="active"' if slug == current_slug else ''
             href = "index.html" if slug == "index" else f"{slug}.html"
-            parts.append(f'    <li><a href="{href}"{active}>{label}</a></li>')
+            display = f'{label} <span class="ext-tag">ext</span>' if is_ext else label
+            parts.append(f'    <li><a href="{href}"{active}>{display}</a></li>')
 
         parts.extend(('  </ul>', '</div>'))
     return "\n".join(parts)
@@ -389,8 +397,8 @@ def build_page(slug):
     meta, body_md = parse_frontmatter(raw)
     title = meta.get("title", slug.capitalize())
     subtitle = meta.get("subtitle", "")
-    page_title = meta.get("page_title", title)
-    og_title = meta.get("og_title", title)
+    page_title = meta.get("page_title", title).replace("[ext]", "").strip()
+    og_title = meta.get("og_title", title).replace("[ext]", "").strip()
 
     # Convert markdown to HTML
     body_html, toc_tokens = convert_markdown(body_md)
@@ -399,6 +407,7 @@ def build_page(slug):
     body_html = rewrite_md_links(body_html)
     body_html = highlight_code_blocks(body_html)
     body_html = process_blockquotes(body_html)
+    body_html = format_ext_tags(body_html)
 
     # Build subtitle HTML
     subtitle_html = f'<p class="subtitle">{subtitle}</p>' if subtitle else ""

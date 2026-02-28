@@ -5,6 +5,11 @@ import com.pyjavabridge.util.DebugManager;
 import com.pyjavabridge.util.PlayerUuidResolver;
 
 import org.bukkit.Bukkit;
+import org.bukkit.Material;
+import org.bukkit.World;
+import org.bukkit.block.Block;
+import org.bukkit.block.BlockState;
+import org.bukkit.block.Container;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
@@ -20,6 +25,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -435,7 +441,7 @@ public class PyJavaBridgePlugin extends JavaPlugin {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (args.length == 0) {
-            sender.sendMessage("\u00a7eUsage: /bridge reload [<script>] | /bridge debug | /bridge plugins | /bridge watch");
+            sender.sendMessage("\u00a7eUsage: /bridge reload [<script>] | debug | plugins | watch | schem <x> <y> <z> <w> <h> <d>");
             return true;
         }
 
@@ -503,6 +509,172 @@ public class PyJavaBridgePlugin extends JavaPlugin {
             return true;
         }
 
+        if (args[0].equalsIgnoreCase("schem")) {
+            if (!(sender instanceof Player player)) {
+                sender.sendMessage("\u00a7cThis command can only be used by a player.");
+                return true;
+            }
+            // /bridge schem <x> <y> <z> <width> <height> <depth>
+            if (args.length < 7) {
+                sender.sendMessage("\u00a7eUsage: /bridge schem <x> <y> <z> <width> <height> <depth>");
+                return true;
+            }
+            try {
+                int bx = Integer.parseInt(args[1]);
+                int by = Integer.parseInt(args[2]);
+                int bz = Integer.parseInt(args[3]);
+                int width = Integer.parseInt(args[4]);
+                int height = Integer.parseInt(args[5]);
+                int depth = Integer.parseInt(args[6]);
+
+                if (width <= 0 || height <= 0 || depth <= 0) {
+                    sender.sendMessage("\u00a7cDimensions must be positive.");
+                    return true;
+                }
+                long volume = (long) width * height * depth;
+                if (volume > 100000) {
+                    sender.sendMessage("\u00a7cRegion too large (max 100,000 blocks).");
+                    return true;
+                }
+
+                World world = player.getWorld();
+
+                // First pass: collect unique block strings and loot tags
+                Map<String, String> lootTags = new HashMap<>();
+                // blockDef -> key char (air is always ~)
+                Map<String, Character> keyMap = new LinkedHashMap<>();
+                // Track block data per position in Y->Z->X order
+                List<String> blockDefs = new ArrayList<>();
+                // Key pool: printable non-digit chars excluding ~
+                String keyPool = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz!@#$%^&*()_+-={}|[]:<>?,./";
+                int nextKey = 0;
+
+                for (int y = 0; y < height; y++) {
+                    for (int z = 0; z < depth; z++) {
+                        for (int x = 0; x < width; x++) {
+                            Block block = world.getBlockAt(bx + x, by + y, bz + z);
+
+                            if (block.getType() == Material.AIR) {
+                                blockDefs.add("air");
+                                continue;
+                            }
+
+                            String data = block.getBlockData().getAsString();
+                            // Strip minecraft: prefix
+                            String def = data;
+                            if (def.startsWith("minecraft:")) {
+                                def = def.substring("minecraft:".length());
+                            }
+
+                            // Check for named containers with loot tags
+                            BlockState state = block.getState();
+                            if (state instanceof Container container) {
+                                String customName = null;
+                                try {
+                                    var displayName = container.customName();
+                                    if (displayName != null) {
+                                        customName = net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText().serialize(displayName);
+                                    }
+                                } catch (Exception e) {
+                                    try {
+                                        customName = container.getInventory().getType().name();
+                                    } catch (Exception ignored) {}
+                                }
+                                if (customName != null && customName.contains("[loot:")) {
+                                    java.util.regex.Matcher m = java.util.regex.Pattern.compile("\\[loot:(\\w+)\\]").matcher(customName);
+                                    if (m.find()) {
+                                        String tag = m.group(1);
+                                        lootTags.put(tag, tag);
+                                        // Append container name to block def
+                                        if (def.contains("[")) {
+                                            def = def.substring(0, def.length() - 1) + ",name=[loot:" + tag + "]]";
+                                        } else {
+                                            def = def + "[name=[loot:" + tag + "]]";
+                                        }
+                                    }
+                                }
+                            }
+
+                            // Assign a key if we haven't seen this def before
+                            if (!def.equals("air") && !keyMap.containsKey(def)) {
+                                if (nextKey >= keyPool.length()) {
+                                    sender.sendMessage("\u00a7cToo many unique block types (max " + keyPool.length() + ").");
+                                    return true;
+                                }
+                                keyMap.put(def, keyPool.charAt(nextKey++));
+                            }
+                            blockDefs.add(def);
+                        }
+                    }
+                }
+
+                // Build the key char sequence and apply RLE
+                StringBuilder rle = new StringBuilder();
+                char prev = 0;
+                int run = 0;
+                for (String def : blockDefs) {
+                    char c = def.equals("air") ? '~' : keyMap.get(def);
+                    if (c == prev) {
+                        run++;
+                    } else {
+                        if (run > 0) {
+                            rle.append(prev);
+                            if (run > 1) rle.append(run);
+                        }
+                        prev = c;
+                        run = 1;
+                    }
+                }
+                if (run > 0) {
+                    rle.append(prev);
+                    if (run > 1) rle.append(run);
+                }
+
+                // Build full .droom content
+                StringBuilder droom = new StringBuilder();
+                droom.append("type: generic\n");
+                droom.append("width: ").append(width).append("\n");
+                droom.append("height: ").append(height).append("\n");
+                droom.append("depth: ").append(depth).append("\n");
+                if (!lootTags.isEmpty()) {
+                    droom.append("loot:");
+                    for (var entry : lootTags.entrySet()) {
+                        droom.append(" ").append(entry.getKey()).append("=").append(entry.getValue());
+                    }
+                    droom.append("\n");
+                }
+                droom.append("\n");
+
+                // Key definitions
+                for (var entry : keyMap.entrySet()) {
+                    droom.append(entry.getValue()).append(": ").append(entry.getKey()).append("\n");
+                }
+                droom.append("\n---\n");
+                droom.append(rle);
+                droom.append("\n");
+
+                // Write to file
+                Path outputDir = getDataFolder().toPath().resolve("schematics");
+                Files.createDirectories(outputDir);
+                String filename = "schem_" + bx + "_" + by + "_" + bz + ".droom";
+                Path outputFile = outputDir.resolve(filename);
+                Files.writeString(outputFile, droom.toString(), StandardCharsets.UTF_8);
+
+                sender.sendMessage("\u00a7aSchematic saved to " + outputFile.toAbsolutePath());
+                sender.sendMessage("\u00a77Size: " + width + "x" + height + "x" + depth + " (" + volume + " blocks, " + keyMap.size() + " unique types)");
+                if (!lootTags.isEmpty()) {
+                    sender.sendMessage("\u00a77Loot tags found: " + String.join(", ", lootTags.keySet()));
+                }
+                sender.sendMessage("\u00a77Edit the file to add exit definitions and set type/loot pools.");
+
+            } catch (NumberFormatException e) {
+                sender.sendMessage("\u00a7cCoordinates and dimensions must be integers.");
+            } catch (Exception e) {
+                sender.sendMessage("\u00a7cError: " + e.getMessage());
+            }
+            return true;
+        }
+
         sender.sendMessage("\u00a7cUnknown subcommand.");
         return true;
     }
@@ -510,11 +682,23 @@ public class PyJavaBridgePlugin extends JavaPlugin {
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length == 1) {
-            return List.of("reload", "debug", "plugins", "watch");
+            return List.of("reload", "debug", "plugins", "watch", "schem");
         }
 
         if (args.length == 2 && args[0].equalsIgnoreCase("reload")) {
             return new ArrayList<>(instances.keySet());
+        }
+
+        if (args[0].equalsIgnoreCase("schem") && sender instanceof Player player) {
+            Block target = player.getTargetBlockExact(5);
+            if (target != null) {
+                return switch (args.length) {
+                    case 2 -> List.of(String.valueOf(target.getX()));
+                    case 3 -> List.of(String.valueOf(target.getY()));
+                    case 4 -> List.of(String.valueOf(target.getZ()));
+                    default -> List.of();
+                };
+            }
         }
 
         return List.of();

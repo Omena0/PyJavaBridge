@@ -125,8 +125,8 @@ Extensions are imported separately via `from bridge.extensions import ...`.
 
 | Page | Description |
 | ---- | ----------- |
-| [ImageDisplay](imagedisplay.md) | Pixel art display [ext] |
-| [MeshDisplay](meshdisplay.md) | 3D triangle mesh rendering [ext] |
+| [ImageDisplay](imagedisplay.md) | Pixel art display |
+| [MeshDisplay](meshdisplay.md) | 3D triangle mesh rendering |
 | [Quest](quest.md) | Quest system with progress tracking |
 | [Dialog](dialog.md) | Branching NPC dialog sequences |
 | [Bank](bank.md) | Global currency / bank system |
