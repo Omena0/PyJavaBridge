@@ -97,6 +97,7 @@ Drop your `.py` file into the server's `scripts/` folder and reload. The bridge 
 | [Cooldown](cooldown.md) | Per-player cooldowns |
 | [Hologram](hologram.md) | Floating text entities |
 | [Menu](menu.md) | Chest GUI builder |
+| [Paginator](paginator.md) | Multi-page menu |
 | [ActionBarDisplay](actionbardisplay.md) | Persistent action bar messages |
 | [BossBarDisplay](bossbardisplay.md) | Boss bar wrapper with cooldown linking |
 
@@ -117,6 +118,32 @@ Drop your `.py` file into the server's `scripts/` folder and reload. The bridge 
 | [Chat](chat.md) | Chat broadcast helper |
 | [Reflect](reflect.md) | Java reflection access |
 | [Enums](enums.md) | All enum types |
+
+### Extensions [ext]
+
+Extensions are imported separately via `from bridge.extensions import ...`.
+
+| Page | Description |
+| ---- | ----------- |
+| [ImageDisplay](imagedisplay.md) | Pixel art display [ext] |
+| [MeshDisplay](meshdisplay.md) | 3D triangle mesh rendering [ext] |
+| [Quest](quest.md) | Quest system with progress tracking |
+| [Dialog](dialog.md) | Branching NPC dialog sequences |
+| [Bank](bank.md) | Global currency / bank system |
+| [Shop](shop.md) | Chest-GUI shop with pagination |
+| [TradeWindow](trade.md) | Two-player trade GUI |
+| [Ability](ability.md) | Player abilities with cooldowns and mana |
+| [ManaStore](mana.md) | Per-player mana tracking |
+| [CombatSystem](combat.md) | Combat tagging and logging |
+| [LevelSystem](levels.md) | XP and levelling |
+| [Region](region.md) | Cuboid region with enter/exit events |
+| [Party](party.md) | Temporary player groups |
+| [Guild](guild.md) | Persistent guild system |
+| [CustomItem](customitem.md) | Custom item registry |
+| [Leaderboard](leaderboard.md) | Hologram-based live leaderboard |
+| [VisualEffect](visualeffect.md) | Sequenced particle/sound effects |
+| [PlayerDataStore](playerdatastore.md) | Persistent per-player key/value storage |
+| [Dungeon](dungeon.md) | Instanced dungeon system with WFC generation |
 
 ### Examples
 
