@@ -122,7 +122,7 @@ class NPC:
         _ensure_npc_listener()
 
     def link_player(self, player: Any):
-        """Link a Player — the NPC will use that player's skin (if supported)."""
+        """Link a Player. Used for range check."""
         self._linked_player = player
 
     def set_range(self, distance: float):
@@ -150,7 +150,7 @@ class NPC:
                 if npc_loc is None:
                     await server.after(20)
                     continue
-                online = await server.online_players
+                online = await server.online_players()
                 for p in online:
                     puuid = str(p.uuid)
                     try:
