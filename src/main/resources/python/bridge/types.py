@@ -2,9 +2,10 @@
 from __future__ import annotations
 
 import asyncio
+import functools
 import threading
 from dataclasses import dataclass
-from typing import Any, Awaitable, Optional, TypeVar
+from typing import Any, Awaitable, Callable, Optional, TypeVar
 
 _EV = TypeVar("_EV", bound="EnumValue")
 
@@ -25,7 +26,7 @@ class RaycastResult:
 
 class _EnumMeta(type):
     """Metaclass enabling class-level attribute access (e.g., Material.DIAMOND)."""
-    def __getattr__(cls, name: str) -> "EnumValue":
+    def __getattr__(cls: type[_EV], name: str) -> _EV:
         if name.startswith("_") or not name.isupper():
             raise AttributeError(name)
         return cls.from_name(name)  # type: ignore[attr-defined]
@@ -40,14 +41,41 @@ class EnumValue(metaclass=_EnumMeta):
     def __str__(self) -> str:
         return self.name
 
+    def __eq__(self, other) -> bool:
+        if isinstance(other, EnumValue):
+            return self.name == other.name and self.type == other.type
+        if isinstance(other, str):
+            return self.name == other or self.name.lower() == other.lower()
+        return NotImplemented
+
+    def __hash__(self) -> int:
+        return hash((self.type, self.name))
+
     @classmethod
     def from_name(cls: type[_EV], name: str) -> _EV:
         return cls(cls.TYPE_NAME or cls.__name__, name)
 
+def _bridge_call_done(future: "asyncio.Future[Any]") -> None:
+    """Silently consume exceptions on unawaited bridge futures."""
+    if future.cancelled():
+        return
+    exc = future.exception()
+    if exc is not None:
+        import logging
+        logging.getLogger("bridge").debug("Unawaited bridge call failed: %s", exc)
+
 class BridgeCall(Awaitable[Any]):
-    """Awaitable wrapper for async bridge calls."""
-    def __init__(self, future: "asyncio.Future[Any]"):
-        self._future = future
+    """Awaitable wrapper for async bridge calls.
+
+    Accepts either an ``asyncio.Future`` or a coroutine.  Coroutines are
+    automatically scheduled as tasks so they run in the background even
+    if the caller never ``await``-s the result.
+    """
+    def __init__(self, future_or_coro):
+        if asyncio.iscoroutine(future_or_coro):
+            future_or_coro = asyncio.ensure_future(future_or_coro)
+        self._future = future_or_coro
+        future_or_coro.add_done_callback(_bridge_call_done)
 
     def __await__(self):
         return self._future.__await__()
@@ -56,6 +84,20 @@ class BridgeCall(Awaitable[Any]):
         if self._future.done():
             return f"BridgeCall(result={self._future.result()!r})"
         return "BridgeCall(pending)"
+
+
+def async_task(func: Callable[..., Any]) -> Callable[..., BridgeCall]:
+    """Decorator: makes an ``async def`` fire-and-forget safe.
+
+    The decorated function, when called, immediately schedules the
+    coroutine as a background task and returns a :class:`BridgeCall`.
+    Callers can ``await`` the result or ignore it — either way the
+    work runs.
+    """
+    @functools.wraps(func)
+    def wrapper(*args: Any, **kwargs: Any) -> BridgeCall:
+        return BridgeCall(func(*args, **kwargs))
+    return wrapper
 
 class BridgeMethod:
     """Callable wrapper for late-bound method invocations on proxies."""
@@ -80,7 +122,10 @@ class Material(EnumValue):
 
     def __init__(self, name: str, _name: Optional[str] = None):
         actual = _name if _name is not None else name
-        super().__init__(self.TYPE_NAME, str(actual).upper())
+        actual = str(actual)
+        if actual.lower().startswith("minecraft:"):
+            actual = actual[len("minecraft:"):]
+        super().__init__(self.TYPE_NAME, actual.upper())
 
 class Biome(EnumValue):
     """Minecraft biome, e.g. plains, void, ice_spikes, etc"""

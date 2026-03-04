@@ -88,6 +88,19 @@ public class EventDispatcher {
         tryAddPayload(payload, event, "item", "getItem");
         tryAddPayload(payload, event, "inventory", "getInventory");
         tryAddPayload(payload, event, "chunk", "getChunk");
+        // Common event-specific fields
+        tryAddPayload(payload, event, "action", "getAction");
+        tryAddPayload(payload, event, "hand", "getHand");
+        tryAddPayload(payload, event, "from", "getFrom");
+        tryAddPayload(payload, event, "to", "getTo");
+        tryAddPayload(payload, event, "cause", "getCause");
+        tryAddPayload(payload, event, "velocity", "getVelocity");
+        tryAddPayload(payload, event, "reason", "getReason");
+        tryAddPayload(payload, event, "message", "getMessage");
+        tryAddPrimitive(payload, event, "new_slot", "getNewSlot");
+        tryAddPrimitive(payload, event, "previous_slot", "getPreviousSlot");
+        tryAddPrimitive(payload, event, "amount", "getAmount");
+        tryAddPrimitive(payload, event, "slot", "getSlot");
         if (event instanceof EntityTargetEvent targetEvent) {
             payload.add("target", serializer.serialize(targetEvent.getTarget()));
             payload.add("reason", serializer.serialize(targetEvent.getReason()));
@@ -239,6 +252,7 @@ public class EventDispatcher {
     }
 
     private void tryAddPayload(JsonObject payload, Event event, String key, String... methodNames) {
+        if (payload.has(key)) return;
         for (String methodName : methodNames) {
             try {
                 Method method = event.getClass().getMethod(methodName);
@@ -247,6 +261,27 @@ public class EventDispatcher {
                     payload.add(key, serializer.serialize(value));
                     return;
                 }
+            } catch (Exception ignored) {
+            }
+        }
+    }
+
+    private void tryAddPrimitive(JsonObject payload, Event event, String key, String... methodNames) {
+        if (payload.has(key)) return;
+        for (String methodName : methodNames) {
+            try {
+                Method method = event.getClass().getMethod(methodName);
+                Object value = method.invoke(event);
+                if (value instanceof Number number) {
+                    payload.addProperty(key, number);
+                } else if (value instanceof Boolean bool) {
+                    payload.addProperty(key, bool);
+                } else if (value instanceof String str) {
+                    payload.addProperty(key, str);
+                } else if (value != null) {
+                    payload.add(key, serializer.serialize(value));
+                }
+                return;
             } catch (Exception ignored) {
             }
         }

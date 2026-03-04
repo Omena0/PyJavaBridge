@@ -5,8 +5,8 @@ import math
 from typing import Any
 
 import bridge
-from bridge import (
-    World, Location, EntityType, BridgeError,
+from bridge.wrappers import (
+    World, Location
 )
 from bridge.extensions.image_display import ImageDisplay
 

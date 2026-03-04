@@ -76,10 +76,10 @@ class Region:
 
     @classmethod
     async def _track_loop(cls):
-        from bridge.wrappers import server
+        from bridge import server
         while True:
             try:
-                online = await server.online_players
+                online = await server.players
                 for region in list(cls._all_regions):
                     for p in online:
                         puuid = str(p.uuid)

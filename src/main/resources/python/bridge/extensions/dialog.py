@@ -64,7 +64,7 @@ class Dialog:
         return self._active.get(str(player.uuid), False)
 
     async def _play(self, player: Any, entry: DialogEntry):
-        from bridge.wrappers import server
+        from bridge import server
         puuid = str(player.uuid)
         if not self._active.get(puuid):
             return

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import sys
 from typing import Any, Callable, Dict, cast
+from bridge.types import async_task
 
 __all__ = [
     "has_packet_api",
@@ -79,6 +80,7 @@ def get_scripts() -> BridgeCall:
 
 
 # --- Raycast ---
+@async_task
 async def raycast(
     world: Any,
     start: Any,
@@ -90,7 +92,7 @@ async def raycast(
     ignore_passable: bool = True,
 ):
     """Raycast helper returning RaycastResult or None."""
-    from bridge.wrappers import server
+    from bridge import server
 
     if isinstance(world, str):
         world = await server.world(world)

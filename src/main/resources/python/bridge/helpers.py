@@ -91,7 +91,7 @@ class Sidebar:
     MAX_LINES = len(_ENTRIES)
 
     def __init__(self, title: str = ""):
-        from bridge.wrappers import Scoreboard
+        from bridge import Scoreboard
         self._board = Scoreboard.create()
         self._obj = self._board._call_sync("registerNewObjective", "sidebar", "dummy", title)
         self._obj._call_sync("setDisplaySlot", EnumValue("org.bukkit.scoreboard.DisplaySlot", "SIDEBAR"))
@@ -374,7 +374,7 @@ class Cooldown:
 
     def _start_expire_task(self):
         self._task_started = True
-        from bridge.wrappers import Player, server
+        from bridge import Player, server
 
         async def _check_expiry():
             while _connection is not None:
@@ -402,7 +402,7 @@ class Hologram:
 
     def __init__(self, location: Any, *lines: str,
                  billboard: str = "CENTER"):
-        from bridge.wrappers import World
+        from bridge import World
         self._lines: list[str] = list(lines)
         world: Any = location.world
         if isinstance(world, str):
@@ -528,7 +528,7 @@ class ActionBarDisplay:
 
     def _start_refresh(self):
         self._task_started = True
-        from bridge.wrappers import server
+        from bridge import server
 
         async def _refresh():
             while _connection is not None:
@@ -544,18 +544,19 @@ class ActionBarDisplay:
                 except BridgeError:
                     break
 
-        _connection.on("server_boot", lambda _: asyncio.ensure_future(_refresh()))
+        asyncio.ensure_future(_refresh())
 
 class BossBarDisplay:
     """Convenient boss bar display with value/max support and cooldown linking."""
 
     def __init__(self, title: str = "", color: str = "PINK",
                  style: str = "SOLID"):
-        from bridge.wrappers import BossBar
+        from bridge import BossBar
         self._bar = BossBar.create(title,
                 BarColor.from_name(color.upper()),
                 BarStyle.from_name(style.upper())
         )
+
         self._value: float = 0.0
         self._max: float = 1.0
         self._linked_task_started = False
@@ -575,7 +576,7 @@ class BossBarDisplay:
         self._bar.set_title(value)
 
     @property
-    def color(self) -> str:
+    def color(self) -> BarColor:
         return self._bar.color
 
     @color.setter
@@ -583,7 +584,7 @@ class BossBarDisplay:
         self._bar.set_color(BarColor.from_name(value.upper()))
 
     @property
-    def style(self) -> str:
+    def style(self) -> BarStyle:
         return self._bar.style
 
     @style.setter
@@ -634,7 +635,7 @@ class BossBarDisplay:
 
     def link_to(self, source: Any, player: Any):
         """Link this boss bar to a Cooldown (or any object with .remaining(player) and .seconds)."""
-        from bridge.wrappers import server
+        from bridge import server
         self.show(player)
         self._max = source.seconds
 
@@ -657,7 +658,7 @@ class BlockDisplay:
 
     def __init__(self, location: Any, block_type: str,
                  billboard: str = "FIXED"):
-        from bridge.wrappers import World
+        from bridge import World
         world: Any = location.world
         if isinstance(world, str):
             world = World(name=world)
@@ -687,7 +688,7 @@ class ItemDisplay:
 
     def __init__(self, location: Any, item: Any,
                  billboard: str = "FIXED"):
-        from bridge.wrappers import World, Item
+        from bridge import World, Item
         world: Any = location.world
         if isinstance(world, str):
             world = World(name=world)
@@ -734,7 +735,7 @@ class Menu:
         self._items.pop(slot, None)
 
     def fill_border(self, item: Any):
-        from bridge.wrappers import Item as WItem
+        from bridge import Item as WItem
         size = self._rows * 9
         for slot in range(size):
             row, col = divmod(slot, 9)
@@ -743,12 +744,13 @@ class Menu:
                     self._items[slot] = MenuItem(item)
 
     def open(self, player: Any):
-        from bridge.wrappers import Inventory, Player, Event as WEvent
+        from bridge import Inventory, Player, Event as WEvent
         _register_menu_events()
         inv = Inventory(size=self._rows * 9, title=self._title)
         for slot, menu_item in self._items.items():
             inv.set_item(slot, menu_item.item)
         p_uuid = str(player.uuid)
+        _menu_pending_open.add(p_uuid)
         _open_menus[p_uuid] = self
         inv.open(player)
 
@@ -767,7 +769,7 @@ class MenuItem:
     on_click: Optional[Callable[..., Any]] = None
 
     def __post_init__(self):
-        from bridge.wrappers import Item
+        from bridge import Item
         if isinstance(self.item, str):
             self.item = Item(self.item)
 
@@ -821,7 +823,7 @@ class Paginator(Menu):
         super().open(player)
 
     def _build_page(self, page: int):
-        from bridge.wrappers import Item as WItem
+        from bridge import Item as WItem
         self._items.clear()
         if 0 <= page < len(self._pages):
             self._items.update(self._pages[page])
@@ -843,6 +845,7 @@ class Paginator(Menu):
 
 # Global menu tracking
 _open_menus: Dict[str, Menu] = {}
+_menu_pending_open: set = set()  # player UUIDs with a menu open in progress
 _menu_events_registered = False
 _menu_events_lock = threading.Lock()
 
@@ -853,38 +856,53 @@ def _register_menu_events():
             return
         _menu_events_registered = True
 
-    from bridge.wrappers import Player, Event as WEvent
+    from bridge import Player, Event as WEvent
 
     async def _on_inventory_click(event: Any):
         player = event.fields.get("player")
+
         if player is None:
             return
+
         player_uuid = player.fields.get("uuid") if hasattr(player, "fields") else None
         if player_uuid is None:
             return
         menu = _open_menus.get(player_uuid)
+
         if menu is None:
             return
+
         event.cancel()
         slot = event.fields.get("slot")
+
         if slot is not None and 0 <= slot < menu.rows * 9:
             menu_item = menu[slot]
+
             if menu_item is not None and menu_item.on_click is not None:
-                p = Player(fields=player.fields) if hasattr(player, "fields") else player
                 try:
-                    result = menu_item.on_click(p, event)
+                    result = menu_item.on_click(player, event)
                     if hasattr(result, "__await__"):
                         await result
+
                 except Exception as e:
                     print(f"[PyJavaBridge] Menu click handler error: {e}")
 
     async def _on_inventory_close(event: Any):
         player = event.fields.get("player")
+
         if player is None:
             return
+
         player_uuid = player.fields.get("uuid") if hasattr(player, "fields") else None
+
         if player_uuid is None:
             return
+
+        # If a new menu is being opened, this close is from the old one — skip removal
+        if player_uuid in _menu_pending_open:
+            _menu_pending_open.discard(player_uuid)
+            return
+
         _open_menus.pop(player_uuid, None)
 
     _connection.on("inventory_click", _on_inventory_click)

@@ -70,6 +70,62 @@ arrow = await world.spawn_projectile(
 )
 ```
 
+---
+
+## Arithmetic Operators
+
+Vector supports `+`, `-`, and `*` operators for easy vector math.
+
+### Addition (`+`)
+
+```python
+result = Vector(1, 2, 3) + Vector(4, 5, 6)   # Vector(5, 7, 9)
+result = Vector(1, 2, 3) + [4, 5, 6]          # Vector(5, 7, 9)
+result = Vector(1, 2, 3) + (4, 5, 6)          # Vector(5, 7, 9)
+```
+
+Supports `Vector`, `list[3]`, and `tuple[3]` as the right operand.
+
+### Subtraction (`-`)
+
+```python
+result = Vector(5, 7, 9) - Vector(1, 2, 3)    # Vector(4, 5, 6)
+result = Vector(5, 7, 9) - [1, 2, 3]          # Vector(4, 5, 6)
+```
+
+### Multiplication (`*`)
+
+```python
+# Scalar multiplication
+result = Vector(1, 2, 3) * 2      # Vector(2, 4, 6)
+result = 2 * Vector(1, 2, 3)      # Vector(2, 4, 6)
+
+# Component-wise multiplication
+result = Vector(1, 2, 3) * Vector(4, 5, 6)  # Vector(4, 10, 18)
+result = Vector(1, 2, 3) * [4, 5, 6]        # Vector(4, 10, 18)
+```
+
+Supports `int`, `float`, `Vector`, `list[3]`, and `tuple[3]`. Scalar multiplication works in both directions (`scalar * vec` and `vec * scalar`).
+
+---
+
+## Common Uses
+
+### Setting entity velocity
+
+```python
+# Launch a player upward
+await player.set_velocity(Vector(0, 2.0, 0))
+```
+
+### Spawning projectiles with velocity
+
+```python
+# Shoot a fireball in the player's look direction
+direction = player.look_direction * 2
+arrow = await world.spawn_projectile(player, "ARROW", velocity=direction)
+```
+
 ### As position tuples
 
 Many methods accept `Vector | tuple[int,int,int]` interchangeably:

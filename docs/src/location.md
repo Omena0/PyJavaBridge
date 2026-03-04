@@ -92,6 +92,30 @@ Create a new location with the given offsets added. **This is synchronous** — 
 above = player.location.add(0, 2, 0)
 ```
 
+---
+
+## Arithmetic Operators
+
+Location supports `+` and `-` operators with [`Location`](location.md) or [`Vector`](vector.md) operands.
+
+### Addition (`+`)
+
+```python
+# Location + Location
+new_loc = player.location + Location(1, 0, 0)
+
+# Location + Vector (common for directional offsets)
+spawn_pos = player.location + player.look_direction * 3
+```
+
+### Subtraction (`-`)
+
+```python
+offset = loc_a - loc_b  # Location representing the difference
+```
+
+The result preserves the world, yaw, and pitch of the left-hand operand.
+
 ### clone
 
 ```python
@@ -136,4 +160,26 @@ Calculate the squared distance to another location. **Synchronous.** Faster than
 # More efficient than: if loc.distance(other) < 10
 if loc.distance_squared(other) < 100:
     ...
+```
+
+---
+
+## Indexing & Iteration
+
+`Location` supports indexing, iteration, and unpacking:
+
+```python
+# Index access
+x = loc[0]  # x
+y = loc[1]  # y
+z = loc[2]  # z
+
+# Unpacking
+x, y, z = loc
+
+# Splat
+block = await world.block_at(*loc)
+
+# Length
+len(loc)  # 3
 ```

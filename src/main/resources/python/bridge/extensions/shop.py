@@ -43,7 +43,7 @@ class Shop:
         return list(self._items)
 
     def open(self, player: Any, page: int = 0):
-        from bridge.wrappers import Inventory, Item as WItem
+        from bridge import Inventory, Item as WItem
         from bridge.helpers import _register_menu_events, _open_menus, Menu, MenuItem
 
         usable = (self._rows - 1) * 9
@@ -93,7 +93,7 @@ class Shop:
         self._open_pages.pop(puuid, None)
 
     def _make_display_item(self, item: Any, price: int) -> Any:
-        from bridge.wrappers import Item as WItem
+        from bridge import Item as WItem
         # Create a display copy with price in lore
         lore = list(item.lore) if hasattr(item, "lore") and item.lore else []
         lore.append(f"§ePrice: §f{price} {self._bank.currency if self._bank else 'coins'}")
@@ -115,7 +115,7 @@ class Shop:
             await player.send_message(f"§cNot enough {self._bank.currency}! Need {price}.")
             return
         # Give item to player
-        from bridge.wrappers import Item as WItem
+        from bridge import Item as WItem
         give_item = WItem(
             material=item.type if hasattr(item, "type") else str(item),
             amount=item.amount if hasattr(item, "amount") else 1,

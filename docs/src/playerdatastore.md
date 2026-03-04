@@ -60,3 +60,5 @@ Returns a copy of all stored data for the player.
 ```python
 store[player] = {"kills": 0, "deaths": 0}
 ```
+
+> **Note:** `PlayerDataStore` accepts both `Player` and `Entity` objects — any object with a `.uuid` attribute works as a key.

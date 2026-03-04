@@ -598,6 +598,66 @@ await world.spawn_with_nbt(loc, "ZOMBIE", '{IsBaby:1b,CustomName:\'{"text":"Baby
 
 ---
 
+## World Utilities
+
+### create_explosion
+
+```python
+await world.create_explosion(location, power=4.0, fire=False)
+```
+
+Create an explosion at the given location.
+
+- **Parameters:**
+  - `location` ([`Location`](location.md)) — Center of the explosion.
+  - `power` (`float`) — Explosion power. Default 4.0 (TNT-strength).
+  - `fire` (`bool`) — Whether the explosion sets fire. Default `False`.
+- **Returns:** `Awaitable[None]`
+
+```python
+await world.create_explosion(player.location, power=2.0, fire=True)
+```
+
+### entities_near
+
+```python
+entities = await world.entities_near(location, radius)
+```
+
+Get all entities within a radius of the location.
+
+- **Parameters:**
+  - `location` ([`Location`](location.md)) — Center position.
+  - `radius` (`float`) — Search radius in blocks.
+- **Returns:** `Awaitable[list[`[`Entity`](entity.md)`]]`
+
+```python
+nearby = await world.entities_near(player.location, 10)
+for e in nearby:
+    await e.set_fire_ticks(100)
+```
+
+### blocks_near
+
+```python
+blocks = world.blocks_near(location, radius)
+```
+
+Get all blocks within a cubic radius of the location. **Synchronous** — returns a pre-built list of [`Block`](block.md) proxies.
+
+- **Parameters:**
+  - `location` ([`Location`](location.md)) — Center position.
+  - `radius` (`int`) — Cubic radius in blocks.
+- **Returns:** `list[`[`Block`](block.md)`]`
+
+```python
+for block in world.blocks_near(player.location, 3):
+    if block.type.name == "DIAMOND_ORE":
+        await player.send_message("Diamond nearby!")
+```
+
+---
+
 ## Dimension
 
 The `Dimension` type represents a world's dimension. It's available as a property on `World` objects.

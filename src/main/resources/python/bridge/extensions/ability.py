@@ -101,7 +101,7 @@ class Ability:
         self._bar.show(player)
 
         async def _update():
-            from bridge.wrappers import server
+            from bridge import server
             while True:
                 remaining = self.remaining_cooldown(player)
                 if remaining <= 0:

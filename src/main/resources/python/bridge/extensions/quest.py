@@ -105,7 +105,7 @@ class Quest:
             self._bar.hide(player)
 
     async def _bar_update_task(self, player: Any):
-        from bridge.wrappers import server
+        from bridge import server
         while self.status(player) == "active":
             prog = self.progress(player)
             if self._bar is not None:
@@ -125,7 +125,7 @@ class Quest:
                 break
 
     async def _time_limit_task(self, player: Any):
-        from bridge.wrappers import server
+        from bridge import server
         puuid = str(player.uuid)
         start = self._start_times.get(puuid, time.time())
         while self._status.get(puuid) == "active":

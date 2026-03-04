@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import asyncio
 from typing import Any, Callable, List, Optional
-
+from bridge.types import async_task
 
 class VisualEffect:
     """A reusable sequence of particle effects, sounds, and delays.
@@ -37,6 +37,7 @@ class VisualEffect:
         """Imperatively add a step."""
         self._steps.append(func)
 
+    @async_task
     async def trigger(self, location: Any):
         """Play the full effect sequence at *location*."""
         for step in self._steps:

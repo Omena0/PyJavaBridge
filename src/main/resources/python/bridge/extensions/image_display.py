@@ -5,8 +5,11 @@ import math
 from typing import Any
 
 import bridge
-from bridge import (
-    World, Location, EntityType, EntityGoneException, BridgeError,
+from bridge.wrappers import (
+    World, Location
+)
+from bridge.errors import (
+    EntityGoneException, BridgeError,
 )
 
 

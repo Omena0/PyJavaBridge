@@ -1,6 +1,6 @@
-from typing import Any, Callable
+from typing import Any, Awaitable, Callable
 from enum import Enum
-from bridge.wrappers import ItemBuilder
+from bridge import ItemBuilder, BridgeCall
 
 
 # ── NPC ──────────────────────────────────────────────────────────────
@@ -292,57 +292,96 @@ class PlayerDataStore:
     def all_data(self, player: Any) -> dict[str, Any]: ...
 
 # ── Dungeon ──────────────────────────────────────────────────────────
-class RoomType(Enum):
-    HALLWAY = "hallway"
-    COMBAT = "combat"
-    PUZZLE = "puzzle"
-    TREASURE = "treasure"
-    TRAP = "trap"
-    BOSS = "boss"
+class Exit:
+    x: int
+    y: int
+    z: int
+    facing: tuple[int, int, int]
+    width: int
+    height: int
+    tag: str
+    def __init__(self, x: int, y: int, z: int, facing: tuple[int, int, int], width: int, height: int, tag: str | None = None) -> None: ...
+    def can_connect(self, other: "Exit") -> bool: ...
 
-class DungeonRoom:
-    CONSTRAINTS: dict[RoomType, dict[str, Any]]
-    room_type: RoomType
-    mobs: list[Any]
+class RoomTemplate:
+    name: str
+    path: str
+    type: str
+    exits: list[Exit]
+    weight: int
+    loot: dict[str, str]
+    key_map: dict[str, str]
+    width: int
+    height: int
+    depth: int
+    blocks: list[list[list[str]]]
+    spawns: list[dict[str, Any]]
+    @classmethod
+    def load(cls, path: str) -> "RoomTemplate": ...
+    def to_droom(self) -> str: ...
+    def transformed(self, transform: str) -> "RoomTemplate": ...
+
+class PlacedRoom:
+    template: RoomTemplate
+    origin: tuple[int, int, int]
+    world_name: str
+    connected_exits: dict[int, "PlacedRoom | None"]
     cleared: bool
-    grid_x: int
-    grid_z: int
-    def __init__(self, room_type: RoomType = RoomType.HALLWAY, mobs: list[Any] | None = None) -> None: ...
+    original_blocks: dict[tuple[int, int, int], str]
+    aabb: tuple[tuple[int, int, int], tuple[int, int, int]]
+    center: tuple[int, int, int]
     def on_enter(self, handler: Callable[..., Any]) -> Callable[..., Any]: ...
     def on_clear(self, handler: Callable[..., Any]) -> Callable[..., Any]: ...
     def mark_cleared(self) -> None: ...
+    def paste(self, world: Any) -> BridgeCall: ...
+    def restore(self, world: Any) -> BridgeCall: ...
+
+def loot_pool(name: str) -> Callable[..., Any]: ...
 
 class DungeonInstance:
     dungeon: "Dungeon"
     players: list[Any]
     instance_id: int
-    rooms: list[DungeonRoom]
+    rooms: list[PlacedRoom]
+    world_name: str
     progress: float
     is_complete: bool
-    def __init__(self, dungeon: "Dungeon", players: list[Any], instance_id: int) -> None: ...
-    def on_enter(self, handler: Callable[..., Any]) -> Callable[..., Any]: ...
-    def on_exit(self, handler: Callable[..., Any]) -> Callable[..., Any]: ...
-    def on_complete(self, handler: Callable[..., Any]) -> Callable[..., Any]: ...
-    def generate(self, room_count: int = 12, grid_size: int = 8) -> None: ...
-    async def complete(self) -> None: ...
-    def destroy(self) -> None: ...
+    def paste_all(self) -> BridgeCall: ...
+    def complete(self) -> BridgeCall: ...
+    def destroy(self) -> BridgeCall: ...
+    def start_tracking(self) -> None: ...
 
 class Dungeon:
     name: str
+    rooms_dir: str
+    room_count: int
+    branch_factor: float
+    min_candidates: int
     description: str
     difficulty: int
-    recommended_level: int
-    room_count: int
-    grid_size: int
+    start_room_name: str | None
+    type_limits: dict[str, int]
+    templates: list[RoomTemplate]
     instances: list[DungeonInstance]
-    def __init__(self, name: str, description: str = "", difficulty: int = 1, recommended_level: int = 1, room_count: int = 12, grid_size: int = 8) -> None: ...
+    def __init__(self, name: str, rooms_dir: str, room_count: int = 12, branch_factor: float = 0.5, min_candidates: int = 5, description: str = "", difficulty: int = 1, start_room: str | None = None) -> None: ...
+    def reload_templates(self) -> None: ...
+    def add_template(self, template: RoomTemplate) -> None: ...
     def on_enter(self, handler: Callable[..., Any]) -> Callable[..., Any]: ...
-    def on_exit(self, handler: Callable[..., Any]) -> Callable[..., Any]: ...
     def on_complete(self, handler: Callable[..., Any]) -> Callable[..., Any]: ...
     def on_room_enter(self, handler: Callable[..., Any]) -> Callable[..., Any]: ...
     def on_room_clear(self, handler: Callable[..., Any]) -> Callable[..., Any]: ...
+    def on_room_generate(self, handler: Callable[..., Any]) -> Callable[..., Any]: ...
     def reward(self, handler: Callable[..., Any]) -> Callable[..., Any]: ...
-    def create_instance(self, players: list[Any], room_count: int | None = None, grid_size: int | None = None) -> DungeonInstance: ...
+    async def create_instance(self, players: list[Any], origin: tuple[int, int, int], world: Any = "world", room_count: int | None = None, branch_factor: float | None = None) -> DungeonInstance: ...
+
+# ── Dungeon Transforms ───────────────────────────────────────────────
+TRANSFORM_NONE: str
+TRANSFORM_CW_90: str
+TRANSFORM_CW_180: str
+TRANSFORM_CW_270: str
+TRANSFORM_MIRROR_X: str
+TRANSFORM_MIRROR_Z: str
+ALL_TRANSFORMS: list[str]
 
 
 

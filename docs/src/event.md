@@ -39,13 +39,13 @@ The block involved in the event. Available for block events (`block_break`, `blo
 
 - **Type:** [`World`](world.md) | `None`
 
-The world where the event occurred.
+The world where the event occurred. If the event doesn't directly provide a world, it is automatically derived from the event's `location`, `entity`, or `player` — so `event.world` works reliably for most events.
 
 ### location
 
 - **Type:** [`Location`](location.md) | `None`
 
-The location relevant to the event.
+The location relevant to the event. If the event doesn't directly provide a location, it is derived from the event's `entity` or `player`.
 
 ### item
 
@@ -94,6 +94,66 @@ The final damage after all modifiers for `entity_damage` events.
 - **Type:** `str | None`
 
 The [DamageCause](https://hub.spigotmc.org/javadocs/spigot/org/bukkit/event/entity/EntityDamageEvent.DamageCause.html) for damage events (e.g. `"ENTITY_ATTACK"`, `"FALL"`, `"FIRE"`).
+
+### action
+
+- **Type:** `str | None`
+
+The action for interact events (e.g. `"RIGHT_CLICK_BLOCK"`, `"LEFT_CLICK_AIR"`). Available on `player_interact`.
+
+### hand
+
+- **Type:** `str | None`
+
+Which hand was used (`"HAND"` or `"OFF_HAND"`). Available on `player_interact` and similar events.
+
+### cause
+
+- **Type:** `str | None`
+
+A general cause string for events that have one (e.g. death cause, ignite cause).
+
+### reason
+
+- **Type:** `str | None`
+
+The reason string for events like `player_kick`.
+
+### message
+
+- **Type:** `str | None`
+
+The chat message for `player_chat`, join/quit message for `player_join`/`player_quit`, or death message for `entity_death`.
+
+### velocity
+
+- **Type:** [`Vector`](vector.md) | `None`
+
+The velocity involved in the event (e.g. for projectile launch events).
+
+### from_location / to_location
+
+- **Type:** [`Location`](location.md) | `None`
+
+For movement events (`player_move`, `player_teleport`): the start (`from`) and end (`to`) locations.
+
+### new_slot
+
+- **Type:** `int | None`
+
+The new hotbar slot for `player_item_held` events (0–8).
+
+### previous_slot
+
+- **Type:** `int | None`
+
+The previous hotbar slot for `player_item_held` events (0–8).
+
+### amount
+
+- **Type:** `int | None`
+
+The amount for events that involve a quantity (e.g. experience gain).
 
 ---
 
@@ -163,6 +223,8 @@ async def player_respawn(e):
 ## Event Type Mapping
 
 Events are resolved from handler function names: `snake_case` → `PascalCase` + `Event`.
+
+> **Tip:** Event fields are accessed in `snake_case`. The bridge automatically converts to the matching Java getter (`getNewSlot`, `getPreviousSlot`, `isFlying`, etc.), so you can use natural Python naming: `event.new_slot`, `event.previous_slot`, `event.action`.
 
 | Function name | Bukkit event |
 | ------------- | ------------ |

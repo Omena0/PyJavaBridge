@@ -49,6 +49,39 @@ public class BridgeSerializer {
 
     static final Object CONVERSION_FAIL = new Object();
 
+    /**
+     * Return a stable Bukkit-API type name instead of the CraftBukkit
+     * implementation class name.  Order matters: more specific interfaces
+     * (Player) must be checked before less specific ones (Entity).
+     */
+    private static String getLogicalTypeName(Object value) {
+        // Events
+        if (value instanceof org.bukkit.event.Event) {
+            return value.getClass().getSimpleName();          // keep event names as-is
+        }
+        // Order: most specific first
+        if (value instanceof Player)              return "Player";
+        if (value instanceof Entity)              return "Entity";
+        if (value instanceof org.bukkit.World)    return "World";
+        if (value instanceof Block)               return "Block";
+        if (value instanceof Location)            return "Location";
+        if (value instanceof org.bukkit.Chunk)    return "Chunk";
+        if (value instanceof Vector)              return "Vector";
+        if (value instanceof org.bukkit.inventory.Inventory) return "Inventory";
+        if (value instanceof ItemStack)           return "ItemStack";
+        if (value instanceof org.bukkit.potion.PotionEffect) return "PotionEffect";
+        if (value instanceof org.bukkit.boss.BossBar)        return "BossBar";
+        if (value instanceof org.bukkit.scoreboard.Scoreboard) return "Scoreboard";
+        if (value instanceof org.bukkit.scoreboard.Team)     return "Team";
+        if (value instanceof org.bukkit.scoreboard.Objective) return "Objective";
+        if (value instanceof org.bukkit.advancement.Advancement) return "Advancement";
+        if (value instanceof org.bukkit.advancement.AdvancementProgress) return "AdvancementProgress";
+        if (value instanceof org.bukkit.attribute.AttributeInstance) return "AttributeInstance";
+        if (value instanceof org.bukkit.Server)   return "Server";
+        // Fallback to implementation name
+        return value.getClass().getSimpleName();
+    }
+
     public BridgeSerializer(ObjectRegistry registry, Gson gson, PyJavaBridgePlugin plugin) {
         this.registry = registry;
         this.gson = gson;
@@ -104,7 +137,7 @@ public class BridgeSerializer {
             JsonObject obj = new JsonObject();
 
             obj.addProperty("__handle__", handle);
-            obj.addProperty("__type__", value.getClass().getSimpleName());
+            obj.addProperty("__type__", getLogicalTypeName(value));
 
             JsonObject fields = new JsonObject();
 
@@ -146,7 +179,7 @@ public class BridgeSerializer {
         JsonObject obj = new JsonObject();
 
         obj.addProperty("__handle__", handle);
-        obj.addProperty("__type__", value.getClass().getSimpleName());
+        obj.addProperty("__type__", getLogicalTypeName(value));
 
         JsonObject fields = new JsonObject();
 
@@ -931,9 +964,14 @@ public class BridgeSerializer {
             }
             if (matName != null) {
                 try {
-                    return Bukkit.createBlockData(Material.valueOf(matName.toUpperCase()));
+                    // Try full block data string first (e.g. "minecraft:water[level=1]")
+                    return Bukkit.createBlockData(matName.toLowerCase());
                 } catch (IllegalArgumentException e) {
-                    return CONVERSION_FAIL;
+                    try {
+                        return Bukkit.createBlockData(Material.valueOf(matName.toUpperCase()));
+                    } catch (IllegalArgumentException e2) {
+                        return CONVERSION_FAIL;
+                    }
                 }
             }
         }

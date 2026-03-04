@@ -21,7 +21,7 @@ from bridge.extensions import Dungeon, DungeonInstance, PlacedRoom, RoomTemplate
 Room blueprints are `.droom` text files with a metadata header and
 block data separated by `---`:
 
-```
+```droom
 type: combat
 weight: 10
 width: 9
@@ -55,7 +55,7 @@ S9~7S~~7S~S3~S~S3~~7SS9~7S~~7S~SCS~S3~~7SS9~7S~~7S~S3~S~S3~~7SS9
 
 Each exit is a connection point (like a Minecraft jigsaw block):
 
-```
+```droom
 exit: <x>,<y>,<z> <facing> <width>x<height> [tag]
 ```
 
@@ -74,7 +74,7 @@ so the openings align block-by-block.
 
 Single-character definitions map to block data (without `minecraft:` prefix):
 
-```
+```droom
 S: stone_bricks
 C: chest[facing=north,name=[loot:chest1]]
 ```
@@ -83,19 +83,27 @@ C: chest[facing=north,name=[loot:chest1]]
 
 ### Block data
 
-After the `---` separator, a **single line** of RLE-encoded block keys.
-Blocks are stored in **Y → Z → X** order.  `S3` = `SSS`, `~5` = `~~~~~`.
+After the `---` separator, one operation per line using `fill` and `set` commands.
+Coordinates are local to the room (0-indexed).
+
+- `fill x1 y1 z1 x2 y2 z2 KEY` — fill a rectangular region with KEY.
+- `set x y z KEY` — place a single block.
+
+Air blocks are omitted unless needed for overwriting.  Operations may
+**overwrite** previous results — for example a hollow room is encoded as
+a solid `fill` followed by an air `fill` for the interior.  Each `fill`
+maps to a single `world.fill()` call for fast pasting.
 
 ### Capturing with /bridge schem
 
 Stand in-game and run:
 
-```
+```command
 /bridge schem <x> <y> <z> <width> <height> <depth>
 ```
 
 This saves a `.droom` file to `plugins/PyJavaBridge/schematics/` with
-auto-generated single-char keys and RLE compression.  Chests named
+auto-generated single-char keys and fill/set operations.  Chests named
 `[loot:tag]` are detected automatically.  Edit the file to add exit
 definitions, set the room type, and configure loot pools.
 

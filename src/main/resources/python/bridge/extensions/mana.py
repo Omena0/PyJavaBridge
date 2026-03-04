@@ -32,53 +32,91 @@ class ManaStore:
         self._regen_rate: Dict[str, float] = {}
         self._bars: Dict[str, bridge.BossBarDisplay] = {}
         self._regen_started = False
+        self._setup_hooks(display_bossbar)
+
+    def _setup_hooks(self, display_bossbar: bool):
+        """Register event hooks that run after the connection is ready."""
+        store = self
+
+        @bridge.event
+        def server_boot(event):
+            store.start_regen()
+            if display_bossbar:
+                # Show bar to all already-online players (e.g. after /bridge reload)
+                for player in bridge.server.players:
+                    store._ensure(player)
+                    store._update_bar(player)
+
+        if display_bossbar:
+            @bridge.event
+            def player_join(event):
+                player = event.fields.get("player")
+                if player is not None:
+                    store._ensure(player)
+                    store._update_bar(player)
+
+            @bridge.event
+            def player_quit(event):
+                player = event.fields.get("player")
+                if player is not None:
+                    puuid = store._puuid(player)
+                    bar = store._bars.pop(puuid, None)
+                    if bar is not None:
+                        try:
+                            bar.hide(player)
+                        except Exception:
+                            pass
 
     def _puuid(self, player: Any) -> str:
         if isinstance(player, str):
             return player
         return str(player.uuid)
 
-    def _ensure(self, puuid: str):
+    def _ensure(self, player: Any, puuid: str | None = None):
+        if puuid is None:
+            puuid = self._puuid(player)
         if puuid not in self._mana:
             self._mana[puuid] = self.default_mana
             self._max_mana[puuid] = self.default_max_mana
             self._regen_rate[puuid] = self.default_regen_rate
+            if self.display_bossbar and not isinstance(player, str):
+                self._update_bar(player)
 
     def __getitem__(self, player: Any) -> float:
         puuid = self._puuid(player)
-        self._ensure(puuid)
+        self._ensure(player, puuid)
         return self._mana[puuid]
 
     def __setitem__(self, player: Any, value: float):
         puuid = self._puuid(player)
-        self._ensure(puuid)
+        self._ensure(player, puuid)
         self._mana[puuid] = max(0.0, min(value, self._max_mana[puuid]))
         self._update_bar(player)
 
     def max_mana(self, player: Any) -> float:
         puuid = self._puuid(player)
-        self._ensure(puuid)
+        self._ensure(player, puuid)
         return self._max_mana[puuid]
 
     def set_max_mana(self, player: Any, value: float):
         puuid = self._puuid(player)
-        self._ensure(puuid)
+        self._ensure(player, puuid)
         self._max_mana[puuid] = max(0.0, value)
         self._mana[puuid] = min(self._mana[puuid], value)
 
     def regen_rate(self, player: Any) -> float:
         puuid = self._puuid(player)
-        self._ensure(puuid)
+        self._ensure(player, puuid)
         return self._regen_rate[puuid]
 
     def set_regen_rate(self, player: Any, value: float):
         puuid = self._puuid(player)
-        self._ensure(puuid)
+        self._ensure(player, puuid)
         self._regen_rate[puuid] = value
 
     def consume(self, player: Any, amount: float) -> bool:
         puuid = self._puuid(player)
-        self._ensure(puuid)
+        self._ensure(player, puuid)
         if self._mana[puuid] < amount:
             return False
         self._mana[puuid] -= amount
@@ -87,7 +125,7 @@ class ManaStore:
 
     def restore(self, player: Any, amount: float):
         puuid = self._puuid(player)
-        self._ensure(puuid)
+        self._ensure(player, puuid)
         self._mana[puuid] = min(self._mana[puuid] + amount, self._max_mana[puuid])
         self._update_bar(player)
 
@@ -99,7 +137,7 @@ class ManaStore:
         asyncio.ensure_future(self._regen_loop())
 
     async def _regen_loop(self):
-        from bridge.wrappers import server
+        from bridge import server
         while True:
             for puuid in list(self._mana.keys()):
                 rate = self._regen_rate.get(puuid, self.default_regen_rate)
@@ -107,6 +145,14 @@ class ManaStore:
                 cap = self._max_mana.get(puuid, self.default_max_mana)
                 if current < cap:
                     self._mana[puuid] = min(current + rate, cap)
+                    if puuid in self._bars:
+                        try:
+                            bar = self._bars[puuid]
+                            bar.max = cap
+                            bar.value = self._mana[puuid]
+                            bar.text = f"§bMana: {int(self._mana[puuid])}/{int(cap)}"
+                        except Exception:
+                            self._bars.pop(puuid, None)
             try:
                 await server.after(20)  # tick every second
             except Exception:
@@ -116,12 +162,13 @@ class ManaStore:
         if not self.display_bossbar:
             return
         puuid = self._puuid(player)
-        self._ensure(puuid)
         if puuid not in self._bars:
             bar = bridge.BossBarDisplay("Mana", color="BLUE", style="SEGMENTED_10")
             bar.show(player)
             self._bars[puuid] = bar
         bar = self._bars[puuid]
-        bar.max = self._max_mana[puuid]
-        bar.value = self._mana[puuid]
-        bar.text = f"§bMana: {int(self._mana[puuid])}/{int(self._max_mana[puuid])}"
+        mana = self._mana.get(puuid, self.default_mana)
+        cap = self._max_mana.get(puuid, self.default_max_mana)
+        bar.max = cap
+        bar.value = mana
+        bar.text = f"§bMana: {int(mana)}/{int(cap)}"

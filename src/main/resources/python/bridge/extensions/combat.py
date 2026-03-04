@@ -51,11 +51,9 @@ class CombatSystem:
             if player and hasattr(player, "fields"):
                 puuid = player.fields.get("uuid")
                 if puuid and self.in_combat_by_uuid(puuid):
-                    from bridge.wrappers import Player
-                    p = Player(fields=player.fields)
                     for handler in self._combat_log_handlers:
                         try:
-                            result = handler(p)
+                            result = handler(player)
                             if asyncio.iscoroutine(result):
                                 await result
                         except Exception:
@@ -107,7 +105,7 @@ class CombatSystem:
         bar.value = self.combat_timeout
 
         async def _update():
-            from bridge.wrappers import server
+            from bridge import server
             while self.in_combat_by_uuid(puuid):
                 remaining = self.remaining(player)
                 bar.value = remaining

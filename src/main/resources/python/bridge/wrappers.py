@@ -17,6 +17,38 @@ from bridge.connection import BridgeConnection
 _connection:BridgeConnection = None  # type: ignore[assignment]
 _player_uuid_cache: Dict[str, str] = {}
 
+# Handle reference counting: track how many Python proxy objects share each Java handle.
+# Only release a handle when the last proxy referencing it is garbage collected.
+_handle_refcounts: Dict[int, int] = {}
+
+def _handle_acquire(handle: Optional[int]) -> None:
+    """Increment the reference count for a Java handle."""
+    if handle is not None:
+        old = _handle_refcounts.get(handle, 0)
+        _handle_refcounts[handle] = old + 1
+        if old == 0 and _connection is not None:
+            try:
+                _connection._cancel_release(handle)
+            except Exception:
+                pass
+
+def _handle_release(handle: Optional[int]) -> None:
+    """Decrement the reference count; queue a Java-side release when it hits zero."""
+    if handle is None:
+        return
+    count = _handle_refcounts.get(handle, 0)
+    if count <= 0:
+        return
+    if count == 1:
+        _handle_refcounts.pop(handle, None)
+        if _connection is not None:
+            try:
+                _connection._queue_release(handle)
+            except Exception:
+                pass
+    else:
+        _handle_refcounts[handle] = count - 1
+
 _print = __builtins__["print"] if isinstance(__builtins__, dict) else __builtins__.print  # type: ignore[index]
 def print(*args):
     _print(*args, file=sys.stderr)
@@ -30,6 +62,7 @@ class ProxyBase:
             else:
                 fields.update(kwargs)
         self._handle = handle
+        _handle_acquire(handle)
         self._type_name = type_name
         self.fields = fields or {}
         self._target = target
@@ -38,11 +71,7 @@ class ProxyBase:
 
     def __del__(self):
         handle = self.__dict__.get("_handle")
-        if handle is not None and _connection is not None:
-            try:
-                _connection._queue_release(handle)
-            except Exception:
-                pass
+        _handle_release(handle)
 
     def _call(self, method: str, *args: Any, **kwargs: Any) -> BridgeCall:
         if _connection is None:
@@ -86,6 +115,30 @@ class ProxyBase:
             return self.fields[field]
         return self._call_sync(method)
 
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, ProxyBase):
+            return NotImplemented
+        # Compare by UUID if both have one (entities/players)
+        s_uuid = self.fields.get("uuid")
+        o_uuid = other.fields.get("uuid")
+        if s_uuid is not None and o_uuid is not None:
+            return s_uuid == o_uuid
+        # Compare by handle if both have one
+        if self._handle is not None and other._handle is not None:
+            return self._handle == other._handle
+        # Compare by ref identity
+        if self._ref_type is not None and self._ref_type == other._ref_type:
+            return self._ref_id == other._ref_id
+        return self is other
+
+    def __hash__(self) -> int:
+        s_uuid = self.fields.get("uuid")
+        if s_uuid is not None:
+            return hash(s_uuid)
+        if self._handle is not None:
+            return hash(self._handle)
+        return id(self)
+
 class Event(ProxyBase):
     """Base event proxy."""
     def cancel(self):
@@ -94,6 +147,29 @@ class Event(ProxyBase):
             _connection.send({"type": "event_cancel", "id": event_id})
             return _connection.completed_call(None)
         return self._call("setCancelled", True)
+
+    @property
+    def world(self):
+        """World from fields, or derived from location/entity/player."""
+        if "world" in self.fields:
+            return self.fields["world"]
+        loc = self.fields.get("location")
+        if loc is not None and hasattr(loc, "world") and loc.world is not None:
+            return loc.world
+        entity = self.fields.get("entity") or self.fields.get("player")
+        if entity is not None:
+            return entity.world
+        return BridgeMethod(self, "world")
+
+    @property
+    def location(self):
+        """Location from fields, or derived from entity/player."""
+        if "location" in self.fields:
+            return self.fields["location"]
+        entity = self.fields.get("entity") or self.fields.get("player")
+        if entity is not None:
+            return entity.location
+        return BridgeMethod(self, "location")
 
 class WorldTime:
     """Represents a Minecraft world time of day (0-24000 ticks).
@@ -233,6 +309,7 @@ class Server(ProxyBase):
     def scheduler(self):
         return self._call_sync("getScheduler")
 
+    @async_task
     async def after(self, ticks: int = 1, after: Optional[Callable[[], Any]] = None):
         await _connection.wait(ticks)
         if after is not None:
@@ -247,6 +324,7 @@ class Server(ProxyBase):
     def atomic(self):
         return _connection.atomic()
 
+    @async_task
     async def flush(self):
         return await _connection.flush()
 
@@ -281,6 +359,9 @@ class Server(ProxyBase):
     @property
     def max_players(self):
         return self._call_sync("getMaxPlayers")
+
+# Per-entity tags keyed by UUID, shared across all instances of the same entity.
+_entity_tags: Dict[str, set] = {}
 
 class Entity(ProxyBase):
     """Base entity proxy."""
@@ -396,8 +477,48 @@ class Entity(ProxyBase):
         return self._call_sync("getLocation")
 
     @property
+    def yaw(self) -> float:
+        loc = self.location
+        return float(loc.yaw) if loc else 0.0
+
+    @property
+    def pitch(self) -> float:
+        loc = self.location
+        return float(loc.pitch) if loc else 0.0
+
+    @property
+    def look_direction(self) -> Vector:
+        """Normalized direction vector from the entity's yaw and pitch."""
+        import math
+        loc = self.location
+        yaw = math.radians(float(loc.yaw)) if loc else 0.0
+        pitch = math.radians(float(loc.pitch)) if loc else 0.0
+        x = -math.sin(yaw) * math.cos(pitch)
+        y = -math.sin(pitch)
+        z = math.cos(yaw) * math.cos(pitch)
+        return Vector(x=x, y=y, z=z)
+
+    @property
     def world(self):
         return self._call_sync("getWorld")
+
+    @property
+    def equipment(self):
+        """The entity's equipment (armor, held items)."""
+        return self._call_sync("getEquipment")
+
+    @property
+    def inventory(self):
+        """Entity inventory — returns equipment for mobs, inventory for players."""
+        return self._call_sync("getEquipment")
+
+    @property
+    def held_item(self):
+        """The item in the entity's main hand (equipment slot)."""
+        equipment = self.equipment
+        if equipment is None:
+            return None
+        return equipment._call_sync("getItemInMainHand")
 
     @property
     def target(self):
@@ -424,6 +545,29 @@ class Entity(ProxyBase):
 
     def look_at(self, location: Location):
         return self._call("lookAt", location)
+
+    def damage(self, amount: float):
+        return self._call("damage", amount)
+
+    def add_tag(self, tag: str):
+        """Add a tag to this entity (shared across all instances with the same UUID)."""
+        _entity_tags.setdefault(self.uuid, set()).add(tag)
+
+    def remove_tag(self, tag: str):
+        """Remove a tag from this entity."""
+        tags = _entity_tags.get(self.uuid)
+        if tags:
+            tags.discard(tag)
+
+    @property
+    def tags(self) -> set:
+        """All tags on this entity."""
+        return set(_entity_tags.get(self.uuid, set()))
+
+    def is_tagged(self, tag: str) -> bool:
+        """Check if this entity has a tag."""
+        tags = _entity_tags.get(self.uuid)
+        return tag in tags if tags else False
 
 class Player(Entity):
     """Player API (inherits Entity)."""
@@ -682,24 +826,50 @@ class Player(Entity):
                 return Inventory(handle=None, target="ref", ref_type="player_inventory", ref_id=str(ref_id))
         return self._call_sync("getInventory")
 
+    @property
+    def held_item(self):
+        """The item in the player's main hand."""
+        return self.inventory._call_sync("getItemInMainHand")
+
+    @property
+    def selected_slot(self) -> int:
+        """The player's currently selected hotbar slot (0-8)."""
+        return self.inventory._call_sync("getHeldItemSlot")
+
     # -- freeze / vanish helpers (client-side only, no Java counterpart) ------
-    _frozen_players: set = set()
+    _frozen_players: Dict[str, Any] = {}  # uuid -> frozen Location
+    _freeze_loop_started: bool = False
     _vanished_players: set = set()
 
     def freeze(self):
-        """Prevent the player from moving (sets walk/fly speed to 0)."""
-        Player._frozen_players.add(self.uuid)
-        self.set_walk_speed(0.0)
-        self.set_fly_speed(0.0)
+        """Prevent the player from moving by locking their position."""
+        Player._frozen_players[self.uuid] = self.location
+        Player._start_freeze_loop()
 
     def unfreeze(self):
-        Player._frozen_players.discard(self.uuid)
-        self.set_walk_speed(0.2)
-        self.set_fly_speed(0.1)
+        Player._frozen_players.pop(self.uuid, None)
 
     @property
     def is_frozen(self) -> bool:
         return self.uuid in Player._frozen_players
+
+    @staticmethod
+    def _start_freeze_loop():
+        if Player._freeze_loop_started:
+            return
+        Player._freeze_loop_started = True
+
+        async def _loop():
+            while _connection is not None and _connection._thread.is_alive():
+                for uuid, loc in list(Player._frozen_players.items()):
+                    try:
+                        p = Player(uuid=uuid)
+                        p.teleport(loc)
+                    except Exception:
+                        pass
+                await _connection.wait(1)
+
+        asyncio.ensure_future(_loop())
 
     def vanish(self):
         """Hide this player from all others."""
@@ -991,6 +1161,24 @@ class World(ProxyBase):
         kwargs["nbt"] = nbt
         return self.spawn_entity(location, entity_type, **kwargs)
 
+    def create_explosion(self, location: Location, power: float = 4.0, fire: bool = False):
+        """Create an explosion at the given location."""
+        return self._call("createExplosion", location, float(power), fire)
+
+    def entities_near(self, location: Location, radius: float):
+        """Get all entities within radius of the location."""
+        return self._call_sync("getNearbyEntities", location, float(radius), float(radius), float(radius))
+
+    def blocks_near(self, location: Location, radius: int) -> list:
+        """Get all blocks within a cubic radius of the location."""
+        blocks = []
+        cx, cy, cz = int(location.x), int(location.y), int(location.z)
+        for dx in range(-radius, radius + 1):
+            for dy in range(-radius, radius + 1):
+                for dz in range(-radius, radius + 1):
+                    blocks.append(Block(world=self, x=cx + dx, y=cy + dy, z=cz + dz))
+        return blocks
+
 class Firework:
     """Launch fireworks with custom effects."""
 
@@ -1203,6 +1391,31 @@ class Location(ProxyBase):
         dy = self.y - other.y
         dz = self.z - other.z
         return dx * dx + dy * dy + dz * dz
+
+    def __getitem__(self, index: int) -> float:
+        return (self.x, self.y, self.z)[index]
+
+    def __add__(self, other):
+        if isinstance(other, Location):
+            return Location(self.x + other.x, self.y + other.y, self.z + other.z, self.world, self.yaw, self.pitch)
+        if isinstance(other, Vector):
+            return Location(self.x + other.x, self.y + other.y, self.z + other.z, self.world, self.yaw, self.pitch)
+        return NotImplemented
+
+    def __sub__(self, other):
+        if isinstance(other, Location):
+            return Location(self.x - other.x, self.y - other.y, self.z - other.z, self.world, self.yaw, self.pitch)
+        if isinstance(other, Vector):
+            return Location(self.x - other.x, self.y - other.y, self.z - other.z, self.world, self.yaw, self.pitch)
+        return NotImplemented
+
+    def __iter__(self):
+        yield self.x
+        yield self.y
+        yield self.z
+
+    def __len__(self) -> int:
+        return 3
 
 class Block(ProxyBase):
     """Block in the world."""
@@ -1971,6 +2184,32 @@ class Vector(ProxyBase):
     @property
     def z(self) -> float:
         return self.fields.get("z", 0.0)
+
+    def __add__(self, other):
+        if isinstance(other, Vector):
+            return Vector(self.x + other.x, self.y + other.y, self.z + other.z)
+        if isinstance(other, (list, tuple)) and len(other) == 3:
+            return Vector(self.x + other[0], self.y + other[1], self.z + other[2])
+        return NotImplemented
+
+    def __sub__(self, other):
+        if isinstance(other, Vector):
+            return Vector(self.x - other.x, self.y - other.y, self.z - other.z)
+        if isinstance(other, (list, tuple)) and len(other) == 3:
+            return Vector(self.x - other[0], self.y - other[1], self.z - other[2])
+        return NotImplemented
+
+    def __mul__(self, other):
+        if isinstance(other, (int, float)):
+            return Vector(self.x * other, self.y * other, self.z * other)
+        if isinstance(other, Vector):
+            return Vector(self.x * other.x, self.y * other.y, self.z * other.z)
+        if isinstance(other, (list, tuple)) and len(other) == 3:
+            return Vector(self.x * other[0], self.y * other[1], self.z * other[2])
+        return NotImplemented
+
+    def __rmul__(self, other):
+        return self.__mul__(other)
 
 class ChatFacade(ProxyBase):
     """Chat helper facade."""

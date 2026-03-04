@@ -189,6 +189,15 @@ public class BridgeInstance {
     private void shutdownInternal() {
         running = false;
 
+        // Remove all boss bars so they disappear from players' screens
+        for (Object obj : registry.getAll()) {
+            if (obj instanceof org.bukkit.boss.BossBar bar) {
+                try {
+                    bar.removeAll();
+                } catch (Exception ignored) {}
+            }
+        }
+
         for (EventSubscription subscription : subscriptions.values()) {
             subscription.unregister();
         }
@@ -1250,6 +1259,26 @@ public class BridgeInstance {
             }
             return null;
         }
+        if ("setBlockData".equals(method) && args.size() >= 1) {
+            String dataStr = null;
+            if (args.get(0) instanceof String str) {
+                dataStr = str;
+            } else if (args.get(0) instanceof EnumValue enumValue) {
+                dataStr = enumValue.name;
+            }
+            if (dataStr != null) {
+                try {
+                    block.setBlockData(Bukkit.createBlockData(dataStr.toLowerCase()));
+                    return null;
+                } catch (IllegalArgumentException e) {
+                    try {
+                        block.setBlockData(Bukkit.createBlockData(Material.valueOf(dataStr.toUpperCase())));
+                        return null;
+                    } catch (IllegalArgumentException ignored) {
+                    }
+                }
+            }
+        }
         return UNHANDLED;
     }
 
@@ -1703,24 +1732,72 @@ public class BridgeInstance {
     }
 
     private Object invokeReflective(Object target, String method, List<Object> args) throws Exception {
-        for (Method candidate : target.getClass().getMethods()) {
-            if (!candidate.getName().equals(method) || candidate.getParameterCount() != args.size()) {
-                continue;
-            }
-            Object[] converted = serializer.convertArgs(candidate.getParameterTypes(), args);
-            if (converted != null) {
-                try {
-                    return candidate.invoke(target, converted);
-                } catch (InvocationTargetException ex) {
-                    Throwable cause = ex.getCause();
-                    if (cause instanceof Exception exception) {
-                        throw exception;
+        // Try exact name first, then snake_case → camelCase variants (get prefix, is prefix, plain)
+        String[] candidates = methodNameCandidates(method);
+        for (String name : candidates) {
+            for (Method candidate : target.getClass().getMethods()) {
+                if (!candidate.getName().equals(name)) {
+                    continue;
+                }
+                int paramCount = candidate.getParameterCount();
+                boolean isVarArgs = candidate.isVarArgs();
+                // Match exact count, or varargs where args cover all fixed params
+                if (!isVarArgs && paramCount != args.size()) {
+                    continue;
+                }
+                if (isVarArgs && args.size() < paramCount - 1) {
+                    continue;
+                }
+                // For varargs with fewer args than params, pad with empty varargs array
+                List<Object> effectiveArgs = args;
+                if (isVarArgs && args.size() < paramCount) {
+                    effectiveArgs = new java.util.ArrayList<>(args);
+                    Class<?> componentType = candidate.getParameterTypes()[paramCount - 1].getComponentType();
+                    effectiveArgs.add(java.lang.reflect.Array.newInstance(componentType, 0));
+                }
+                Object[] converted = serializer.convertArgs(candidate.getParameterTypes(), effectiveArgs);
+                if (converted != null) {
+                    try {
+                        return candidate.invoke(target, converted);
+                    } catch (InvocationTargetException ex) {
+                        Throwable cause = ex.getCause();
+                        if (cause instanceof Exception exception) {
+                            throw exception;
+                        }
+                        throw ex;
                     }
-                    throw ex;
                 }
             }
         }
         throw new NoSuchMethodException("Method not found: " + method + " on " + target.getClass().getName());
+    }
+
+    /**
+     * Build candidate Java method names from a Python-style name.
+     * e.g. "new_slot" → ["new_slot", "getNewSlot", "isNewSlot", "newSlot"]
+     */
+    private static String[] methodNameCandidates(String pythonName) {
+        if (!pythonName.contains("_")) {
+            return new String[] { pythonName };
+        }
+        String camel = snakeToCamel(pythonName);
+        String pascal = Character.toUpperCase(camel.charAt(0)) + camel.substring(1);
+        return new String[] { pythonName, "get" + pascal, "is" + pascal, camel };
+    }
+
+    private static String snakeToCamel(String snake) {
+        StringBuilder sb = new StringBuilder();
+        boolean upper = false;
+        for (int i = 0; i < snake.length(); i++) {
+            char c = snake.charAt(i);
+            if (c == '_') {
+                upper = true;
+            } else {
+                sb.append(upper ? Character.toUpperCase(c) : c);
+                upper = false;
+            }
+        }
+        return sb.toString();
     }
 
     private Object resolveTarget(String targetName, JsonObject argsObj) throws Exception {
@@ -1945,7 +2022,7 @@ public class BridgeInstance {
     }
 
     public void send(JsonObject response) {
-        if (writer == null) {
+        if (writer == null || !running) {
             return;
         }
         try {
@@ -1965,7 +2042,7 @@ public class BridgeInstance {
     }
 
     private void sendWithTiming(JsonObject response, long startNano) {
-        if (writer == null) {
+        if (writer == null || !running) {
             return;
         }
         try {

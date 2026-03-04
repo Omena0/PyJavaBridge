@@ -79,6 +79,11 @@ tasks.register('copyReleaseJar', Copy) {
     }
 }
 
+tasks.register('copyBridgePython', Copy) {
+    from "${rootDir}/src/main/resources/python/bridge"
+    into "${rootDir}/server/plugins/PyJavaBridge/scripts/bridge"
+}
+
 tasks.named('build') {
-    finalizedBy tasks.named('copyPluginJar'), tasks.named('copyReleaseJar')
+    finalizedBy tasks.named('copyPluginJar'), tasks.named('copyReleaseJar'), tasks.named('copyBridgePython')
 }

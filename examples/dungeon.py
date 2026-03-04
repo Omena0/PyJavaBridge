@@ -12,6 +12,8 @@ Setup:
 
 from bridge import *
 from bridge.extensions import Dungeon, loot_pool
+import random
+import inspect
 
 # ── Register loot generators ────────────────────────────────────────
 # These fill chests tagged with [loot:<pool>] in the room template.
@@ -59,17 +61,13 @@ def fill_boss(inventory, room):
 
 crypt = Dungeon(
     name="Ancient Crypt",
-    rooms_dir="plugins/PyJavaBridge/scripts/crypt_rooms",
-    room_count=10,
-    branch_factor=0.5,  # 0=depth-first, 1=breadth-first, 0.5=balanced
+    rooms_dir="crypt_rooms",
+    room_count=50,
+    branch_factor=0.8,  # 0=depth-first, 1=breadth-first, 0.5=balanced
     description="A crumbling crypt filled with undead horrors.",
     difficulty=3,
     start_room="entrance",  # entrance.droom
 )
-
-# Optional: limit how many rooms of a given type can appear
-crypt.type_limits["boss"] = 1
-crypt.type_limits["treasure"] = 2
 
 # ── Dungeon event handlers ──────────────────────────────────────────
 
@@ -96,8 +94,25 @@ async def on_room_enter(player, room):
 async def on_room_clear(room):
     print(f"Room {room.template.name} at {room.origin} cleared!")
 
-# ── Commands ─────────────────────────────────────────────────────────
 
+# Spawn mobs when a room is generated. Handlers receive (room, world).
+@crypt.on_room_generate
+async def spawn_room_mobs(room, world):
+    area = max(1, room.template.width * room.template.depth)
+    count = max(1, area // 25)
+    cx, cy, cz = room.center
+
+    for _ in range(count):
+        loc = (cx + random.uniform(-1, 1), cy, cz + random.uniform(-1, 1))
+        try:
+            r = world.spawn_entity(loc, "zombie")
+            if inspect.isawaitable(r):
+                await r
+        except Exception:
+            pass
+
+
+# ── Commands ─────────────────────────────────────────────────────────
 @command("Start a dungeon run")
 async def dungeon(event: Event):
     player = event.player

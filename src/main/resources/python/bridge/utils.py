@@ -9,26 +9,30 @@ import uuid
 from types import SimpleNamespace
 from typing import Any, Callable, Dict, List, Optional, cast
 
+from bridge.connection import BridgeConnection
 from bridge.errors import BridgeError
 from bridge.types import (
     EnumValue, Material, Biome, EffectType, AttributeType, GameMode, Sound,
     Particle, Difficulty, DamageCause, Enchantment, ItemFlag, EquipmentSlot,
     DyeColor, SpawnReason, EntityCategory, EntityPose, BlockFace, TreeType,
     WeatherType, WorldType, Action, ChatColor, EventPriority, TeleportCause,
-    InventoryType, Billboard, BarFlag, BarColor, BarStyle, EntityType,
+    InventoryType, Billboard, BarFlag, BarColor, BarStyle, EntityType
 )
 
 # Injected by bridge.__init__ during _bootstrap()
-_connection = None  # type: ignore[assignment]
+_connection:BridgeConnection = None  # type: ignore[assignment]
 _player_uuid_cache: Dict[str, str] = {}
 
 
-def _extract_xyz(pos: Any) -> tuple:
+def _extract_xyz(pos: tuple[int] | Any) -> tuple:
     """Extract (x, y, z) from a Location, Vector, tuple, list, or namespace."""
     if isinstance(pos, (list, tuple)) and len(pos) >= 3:
         return float(pos[0]), float(pos[1]), float(pos[2])
-    if hasattr(pos, "x") and hasattr(pos, "y") and hasattr(pos, "z"):
+
+    from bridge.wrappers import Vector
+    if isinstance(pos, Vector):
         return float(pos.x), float(pos.y), float(pos.z)
+
     raise BridgeError(f"Cannot extract (x, y, z) from {type(pos).__name__}")
 
 
@@ -138,6 +142,10 @@ def _proxy_from(raw: Dict[str, Any]) -> Any:
                 proxy_cls = Item
             elif "PotionEffect" in type_name:
                 proxy_cls = Effect
+
+        # Last-resort heuristic: if fields look like an entity, treat as Entity
+        if proxy_cls is ProxyBase and "uuid" in fields and "type" in fields:
+            proxy_cls = Entity
 
     return proxy_cls(handle=handle, type_name=type_name, fields=fields)
 
@@ -357,7 +365,7 @@ def _deep_merge(base: Dict[str, Any], override: Dict[str, Any]):
 
 
 async def _prime_player_cache():
-    from bridge.wrappers import Player, server
+    from bridge import Player, server
     try:
         players: Any = server.players
         if isinstance(players, list):

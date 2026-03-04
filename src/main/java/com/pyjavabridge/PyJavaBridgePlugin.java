@@ -23,11 +23,14 @@ import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -280,17 +283,9 @@ public class PyJavaBridgePlugin extends JavaPlugin {
             }
         };
 
-        // Use MinecraftServer.execute() for immediate processing (wakes main thread between ticks)
-        if (serverExecuteMethod != null) {
-            try {
-                serverExecuteMethod.invoke(minecraftServer, wrapped);
-            } catch (Exception e) {
-                // Fall back to queue
-                mainThreadQueue.add(wrapped);
-            }
-        } else {
-            mainThreadQueue.add(wrapped);
-        }
+        // Always use mainThreadQueue so drainMainThreadQueue() can process
+        // tasks during event dispatch wait loops (avoids deadlock).
+        mainThreadQueue.add(wrapped);
 
         return future;
     }
@@ -549,13 +544,34 @@ public class PyJavaBridgePlugin extends JavaPlugin {
                 String keyPool = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz!@#$%^&*()_+-={}|[]:<>?,./";
                 int nextKey = 0;
 
+                // Track concrete positions for exit/marker auto-detection
+                Set<Integer> limeConcretePos = new HashSet<>();
+                Map<String, Set<Integer>> otherConcretePos = new LinkedHashMap<>();
+                Map<String, Integer> blockCounts = new HashMap<>();
+
                 for (int y = 0; y < height; y++) {
                     for (int z = 0; z < depth; z++) {
                         for (int x = 0; x < width; x++) {
                             Block block = world.getBlockAt(bx + x, by + y, bz + z);
+                            Material mat = block.getType();
 
-                            if (block.getType() == Material.AIR) {
+                            if (mat == Material.AIR) {
                                 blockDefs.add("air");
+                                continue;
+                            }
+
+                            // Detect concrete for exit/marker auto-detection
+                            String matName = mat.name();
+                            if (matName.endsWith("_CONCRETE")) {
+                                int flatIdx = y * depth * width + z * width + x;
+                                if (mat == Material.LIME_CONCRETE) {
+                                    limeConcretePos.add(flatIdx);
+                                    blockDefs.add("air");
+                                } else {
+                                    String color = matName.substring(0, matName.length() - 9).toLowerCase();
+                                    otherConcretePos.computeIfAbsent(color, k -> new HashSet<>()).add(flatIdx);
+                                    blockDefs.add(null);
+                                }
                                 continue;
                             }
 
@@ -603,32 +619,105 @@ public class PyJavaBridgePlugin extends JavaPlugin {
                                 }
                                 keyMap.put(def, keyPool.charAt(nextKey++));
                             }
+                            if (!def.equals("air")) blockCounts.merge(def, 1, (a, b) -> a + b);
                             blockDefs.add(def);
                         }
                     }
                 }
 
-                // Build the key char sequence and apply RLE
-                StringBuilder rle = new StringBuilder();
-                char prev = 0;
-                int run = 0;
-                for (String def : blockDefs) {
-                    char c = def.equals("air") ? '~' : keyMap.get(def);
-                    if (c == prev) {
-                        run++;
-                    } else {
-                        if (run > 0) {
-                            rle.append(prev);
-                            if (run > 1) rle.append(run);
+                // Compute main block(s) — most common non-air, non-concrete blocks
+                int totalNonAir = blockCounts.values().stream().mapToInt(Integer::intValue).sum();
+                List<String> mainBlockDefs = new ArrayList<>();
+                List<Integer> mainBlockWeights = new ArrayList<>();
+                if (totalNonAir > 0) {
+                    List<Map.Entry<String, Integer>> sorted = blockCounts.entrySet().stream()
+                        .sorted(Map.Entry.<String, Integer>comparingByValue().reversed())
+                        .toList();
+                    for (var entry : sorted) {
+                        double pct = (double) entry.getValue() / totalNonAir * 100;
+                        if (pct >= 35.0) {
+                            mainBlockDefs.add(entry.getKey());
+                            mainBlockWeights.add(entry.getValue());
                         }
-                        prev = c;
-                        run = 1;
+                    }
+                    if (mainBlockDefs.isEmpty()) {
+                        mainBlockDefs.add(sorted.get(0).getKey());
+                        mainBlockWeights.add(sorted.get(0).getValue());
+                    }
+                } else {
+                    mainBlockDefs.add("stone");
+                    mainBlockWeights.add(1);
+                }
+
+                // Ensure main blocks have key assignments
+                for (String mainDef : mainBlockDefs) {
+                    if (!mainDef.equals("air") && !keyMap.containsKey(mainDef)) {
+                        if (nextKey >= keyPool.length()) {
+                            sender.sendMessage("\u00a7cToo many unique block types.");
+                            return true;
+                        }
+                        keyMap.put(mainDef, keyPool.charAt(nextKey++));
                     }
                 }
-                if (run > 0) {
-                    rle.append(prev);
-                    if (run > 1) rle.append(run);
+
+                // Replace concrete marker placeholders with main block(s)
+                if (!otherConcretePos.isEmpty()) {
+                    int totalWeight = mainBlockWeights.stream().mapToInt(Integer::intValue).sum();
+                    for (int i = 0; i < blockDefs.size(); i++) {
+                        if (blockDefs.get(i) == null) {
+                            if (mainBlockDefs.size() == 1) {
+                                blockDefs.set(i, mainBlockDefs.get(0));
+                            } else {
+                                int px = i % width;
+                                int pz = (i / width) % depth;
+                                int py = i / (width * depth);
+                                int hash = (px * 73856093) ^ (py * 19349669) ^ (pz * 83492791);
+                                int pick = (hash & 0x7FFFFFFF) % totalWeight;
+                                int cumulative = 0;
+                                String chosen = mainBlockDefs.get(0);
+                                for (int j = 0; j < mainBlockDefs.size(); j++) {
+                                    cumulative += mainBlockWeights.get(j);
+                                    if (pick < cumulative) {
+                                        chosen = mainBlockDefs.get(j);
+                                        break;
+                                    }
+                                }
+                                blockDefs.set(i, chosen);
+                            }
+                        }
+                    }
                 }
+
+                // Detect exits from lime concrete groups
+                List<String> exitDefs = new ArrayList<>();
+                if (!limeConcretePos.isEmpty()) {
+                    for (Set<Integer> group : schemConnectedComponents(limeConcretePos, width, height, depth)) {
+                        String exitDef = schemExitFromGroup(group, width, height, depth);
+                        if (exitDef != null) exitDefs.add(exitDef);
+                    }
+                }
+
+                // Detect markers from other concrete groups
+                List<String> markerDefs = new ArrayList<>();
+                for (var colorEntry : otherConcretePos.entrySet()) {
+                    for (Set<Integer> group : schemConnectedComponents(colorEntry.getValue(), width, height, depth)) {
+                        String mDef = schemMarkerFromGroup(colorEntry.getKey(), group, width, height, depth);
+                        if (mDef != null) markerDefs.add(mDef);
+                    }
+                }
+
+                // Build a 3-D key char array [y][z][x] for encoding
+                char[][][] grid = new char[height][depth][width];
+                int idx = 0;
+                for (int y = 0; y < height; y++)
+                    for (int z = 0; z < depth; z++)
+                        for (int x = 0; x < width; x++)
+                            grid[y][z][x] = blockDefs.get(idx++).equals("air") ? '~' : keyMap.get(blockDefs.get(idx - 1));
+
+                // Encode with multi-phase algorithm (volumetric fills + greedy mesh)
+                List<String> opsList = encodeSchemOps(grid, width, height, depth);
+                StringBuilder ops = new StringBuilder();
+                for (String op : opsList) ops.append(op).append('\n');
 
                 // Build full .droom content
                 StringBuilder droom = new StringBuilder();
@@ -645,13 +734,22 @@ public class PyJavaBridgePlugin extends JavaPlugin {
                 }
                 droom.append("\n");
 
+                // Exit definitions (auto-detected from lime concrete)
+                for (String exitDef : exitDefs) {
+                    droom.append("exit: ").append(exitDef).append("\n");
+                }
+                // Marker definitions (auto-detected from other concrete)
+                for (String markerDef : markerDefs) {
+                    droom.append("marker: ").append(markerDef).append("\n");
+                }
+                if (!exitDefs.isEmpty() || !markerDefs.isEmpty()) droom.append("\n");
+
                 // Key definitions
                 for (var entry : keyMap.entrySet()) {
                     droom.append(entry.getValue()).append(": ").append(entry.getKey()).append("\n");
                 }
                 droom.append("\n---\n");
-                droom.append(rle);
-                droom.append("\n");
+                droom.append(ops);
 
                 // Write to file
                 Path outputDir = getDataFolder().toPath().resolve("schematics");
@@ -665,7 +763,15 @@ public class PyJavaBridgePlugin extends JavaPlugin {
                 if (!lootTags.isEmpty()) {
                     sender.sendMessage("\u00a77Loot tags found: " + String.join(", ", lootTags.keySet()));
                 }
-                sender.sendMessage("\u00a77Edit the file to add exit definitions and set type/loot pools.");
+                if (!exitDefs.isEmpty()) {
+                    sender.sendMessage("\u00a77Exits detected: " + exitDefs.size());
+                }
+                if (!markerDefs.isEmpty()) {
+                    sender.sendMessage("\u00a77Markers detected: " + markerDefs.size());
+                }
+                if (!mainBlockDefs.isEmpty() && !otherConcretePos.isEmpty()) {
+                    sender.sendMessage("\u00a77Main block(s): " + String.join(", ", mainBlockDefs));
+                }
 
             } catch (NumberFormatException e) {
                 sender.sendMessage("\u00a7cCoordinates and dimensions must be integers.");
@@ -753,5 +859,254 @@ public class PyJavaBridgePlugin extends JavaPlugin {
             getLogger().fine("Could not read script description: " + e.getMessage());
         }
         return "";
+    }
+
+    // -- Schematic encoding helpers -----------------------------------------------
+
+    /**
+     * Encode a 3-D char grid into fill/set operations using a two-phase
+     * algorithm: volumetric fills with overwriting, then greedy meshing.
+     */
+    private static List<String> encodeSchemOps(char[][][] target, int w, int h, int d) {
+        char[][][] state = new char[h][d][w];
+        for (int y = 0; y < h; y++)
+            for (int z = 0; z < d; z++)
+                java.util.Arrays.fill(state[y][z], '~');
+
+        List<String> phase1 = new ArrayList<>();
+        List<String> baseline = Objects.requireNonNull(schemGreedyMesh(target, state, w, h, d));
+
+        // Phase 1: volumetric fills
+        while (true) {
+            List<Object[]> candidates = schemDiffCandidates(target, state, w, h, d);
+            if (candidates.isEmpty()) break;
+
+            int currentTotal = phase1.size() + baseline.size();
+            String bestOp = null;
+            char[][][] bestState = null;
+            List<String> bestCorr = null;
+            int bestTotal = currentTotal;
+
+            for (Object[] cand : candidates) {
+                char key = (char) cand[0];
+                int[] b = (int[]) cand[1];
+                int vol = (b[3]-b[0]+1) * (b[4]-b[1]+1) * (b[5]-b[2]+1);
+                if (vol <= 1) continue;
+
+                char[][][] trial = schemCopyState(state, h, d, w);
+                for (int y = b[1]; y <= b[4]; y++)
+                    for (int z = b[2]; z <= b[5]; z++)
+                        for (int x = b[0]; x <= b[3]; x++)
+                            trial[y][z][x] = key;
+
+                List<String> trialCorr = schemGreedyMesh(target, trial, w, h, d);
+                int trialTotal = phase1.size() + 1 + trialCorr.size();
+                if (trialTotal < bestTotal) {
+                    bestTotal = trialTotal;
+                    bestOp = "fill " + b[0] + " " + b[1] + " " + b[2] + " " + b[3] + " " + b[4] + " " + b[5] + " " + key;
+                    bestState = trial;
+                    bestCorr = trialCorr;
+                }
+            }
+
+            if (bestOp == null) break;
+            phase1.add(bestOp);
+            state = bestState;
+            baseline = Objects.requireNonNull(bestCorr);
+        }
+
+        List<String> result = new ArrayList<>(phase1);
+        result.addAll(baseline);
+        return result;
+    }
+
+    private static List<Object[]> schemDiffCandidates(char[][][] target, char[][][] state, int w, int h, int d) {
+        Map<Character, int[]> bboxes = new HashMap<>();
+        for (int y = 0; y < h; y++)
+            for (int z = 0; z < d; z++)
+                for (int x = 0; x < w; x++) {
+                    if (state[y][z][x] != target[y][z][x]) {
+                        char k = target[y][z][x];
+                        int[] b = bboxes.computeIfAbsent(k, c -> new int[]{w, h, d, -1, -1, -1});
+                        if (x < b[0]) b[0] = x; if (y < b[1]) b[1] = y; if (z < b[2]) b[2] = z;
+                        if (x > b[3]) b[3] = x; if (y > b[4]) b[4] = y; if (z > b[5]) b[5] = z;
+                    }
+                }
+        List<Object[]> result = new ArrayList<>();
+        java.util.Set<Long> seen = new java.util.HashSet<>();
+        for (var entry : bboxes.entrySet()) {
+            char k = entry.getKey();
+            int[] b = entry.getValue();
+            if (b[3] < 0) continue;
+            int x1 = b[0], y1 = b[1], z1 = b[2], x2 = b[3], y2 = b[4], z2 = b[5];
+            // Per-axis insets: xz symmetric, y_bot and y_top independent
+            for (int xz = 0; xz < 3; xz++) {
+                for (int yb = 0; yb < 3; yb++) {
+                    for (int yt = 0; yt < 3; yt++) {
+                        int nx1 = x1+xz, nz1 = z1+xz, nx2 = x2-xz, nz2 = z2-xz;
+                        int ny1 = y1+yb, ny2 = y2-yt;
+                        if (nx1 > nx2 || ny1 > ny2 || nz1 > nz2) continue;
+                        // Pack into long for dedup: k(16) + coords(8 bits each × 6)
+                        long key = ((long)k << 48) | ((long)nx1<<40) | ((long)ny1<<32) |
+                                   ((long)nz1<<24) | ((long)nx2<<16) | ((long)ny2<<8) | nz2;
+                        if (seen.add(key))
+                            result.add(new Object[]{k, new int[]{nx1, ny1, nz1, nx2, ny2, nz2}});
+                    }
+                }
+            }
+        }
+        return result;
+    }
+
+    private static final int[][] SWEEP_PERMS = {{1,2,0}, {0,2,1}, {2,0,1}};
+
+    private static List<String> schemGreedyMesh(char[][][] target, char[][][] state, int w, int h, int d) {
+        List<String> best = null;
+        for (int[] perm : SWEEP_PERMS) {
+            List<String> ops = schemGreedySweep(target, state, w, h, d, perm);
+            if (best == null || ops.size() < best.size()) best = ops;
+        }
+        return best;
+    }
+
+    private static List<String> schemGreedySweep(char[][][] target, char[][][] state, int w, int h, int d, int[] perm) {
+        int[] dims = {w, h, d};
+        int s0 = dims[perm[0]], s1 = dims[perm[1]], s2 = dims[perm[2]];
+        int p0 = perm[0], p1 = perm[1], p2 = perm[2];
+        boolean[][][] visited = new boolean[s0][s1][s2];
+        List<String> ops = new ArrayList<>();
+
+        for (int a = 0; a < s0; a++) {
+            for (int b = 0; b < s1; b++) {
+                for (int c = 0; c < s2; c++) {
+                    if (visited[a][b][c]) continue;
+                    int[] r = new int[3];
+                    r[p0] = a; r[p1] = b; r[p2] = c;
+                    int cx = r[0], cy = r[1], cz = r[2];
+                    if (state[cy][cz][cx] == target[cy][cz][cx]) continue;
+                    char key = target[cy][cz][cx];
+
+                    // Expand inner (c)
+                    int ec = c;
+                    while (ec+1 < s2) {
+                        int[] r2 = new int[3]; r2[p0]=a; r2[p1]=b; r2[p2]=ec+1;
+                        int nx=r2[0], ny=r2[1], nz=r2[2];
+                        if (visited[a][b][ec+1] || state[ny][nz][nx]==target[ny][nz][nx] || target[ny][nz][nx]!=key) break;
+                        ec++;
+                    }
+                    // Expand mid (b)
+                    int eb = b;
+                    boolean exp = true;
+                    while (exp && eb+1 < s1) {
+                        for (int jc = c; jc <= ec; jc++) {
+                            int[] r2 = new int[3]; r2[p0]=a; r2[p1]=eb+1; r2[p2]=jc;
+                            int nx=r2[0], ny=r2[1], nz=r2[2];
+                            if (visited[a][eb+1][jc] || state[ny][nz][nx]==target[ny][nz][nx] || target[ny][nz][nx]!=key) { exp=false; break; }
+                        }
+                        if (exp) eb++;
+                    }
+                    // Expand outer (a)
+                    int ea = a;
+                    exp = true;
+                    while (exp && ea+1 < s0) {
+                        for (int jb = b; jb <= eb && exp; jb++)
+                            for (int jc = c; jc <= ec; jc++) {
+                                int[] r2 = new int[3]; r2[p0]=ea+1; r2[p1]=jb; r2[p2]=jc;
+                                int nx=r2[0], ny=r2[1], nz=r2[2];
+                                if (visited[ea+1][jb][jc] || state[ny][nz][nx]==target[ny][nz][nx] || target[ny][nz][nx]!=key) { exp=false; break; }
+                            }
+                        if (exp) ea++;
+                    }
+
+                    for (int ja = a; ja <= ea; ja++)
+                        for (int jb = b; jb <= eb; jb++)
+                            for (int jc = c; jc <= ec; jc++)
+                                visited[ja][jb][jc] = true;
+
+                    int[] rs = new int[3]; rs[p0]=a; rs[p1]=b; rs[p2]=c;
+                    int[] re = new int[3]; re[p0]=ea; re[p1]=eb; re[p2]=ec;
+                    int x1=rs[0], y1=rs[1], z1=rs[2], x2=re[0], y2=re[1], z2=re[2];
+
+                    if (x1==x2 && y1==y2 && z1==z2)
+                        ops.add("set " + x1 + " " + y1 + " " + z1 + " " + key);
+                    else
+                        ops.add("fill " + x1 + " " + y1 + " " + z1 + " " + x2 + " " + y2 + " " + z2 + " " + key);
+                }
+            }
+        }
+        return ops;
+    }
+
+    private static char[][][] schemCopyState(char[][][] state, int h, int d, int w) {
+        char[][][] copy = new char[h][d][w];
+        for (int y = 0; y < h; y++)
+            for (int z = 0; z < d; z++)
+                System.arraycopy(state[y][z], 0, copy[y][z], 0, w);
+        return copy;
+    }
+
+    /** Find connected components via BFS in a set of flat-indexed positions. */
+    private static List<Set<Integer>> schemConnectedComponents(Set<Integer> positions, int w, int h, int d) {
+        List<Set<Integer>> components = new ArrayList<>();
+        Set<Integer> remaining = new HashSet<>(positions);
+        while (!remaining.isEmpty()) {
+            int start = remaining.iterator().next();
+            Set<Integer> comp = new HashSet<>();
+            ArrayDeque<Integer> queue = new ArrayDeque<>();
+            queue.add(start);
+            remaining.remove(start);
+            while (!queue.isEmpty()) {
+                int pos = queue.poll();
+                comp.add(pos);
+                int px = pos % w, pz = (pos / w) % d, py = pos / (w * d);
+                int[][] nbrs = {{px-1,py,pz},{px+1,py,pz},{px,py-1,pz},{px,py+1,pz},{px,py,pz-1},{px,py,pz+1}};
+                for (int[] n : nbrs) {
+                    if (n[0] >= 0 && n[0] < w && n[1] >= 0 && n[1] < h && n[2] >= 0 && n[2] < d) {
+                        int nIdx = n[1] * d * w + n[2] * w + n[0];
+                        if (remaining.remove(nIdx)) queue.add(nIdx);
+                    }
+                }
+            }
+            components.add(comp);
+        }
+        return components;
+    }
+
+    /** Determine an exit definition from a connected group of lime concrete positions. */
+    private static String schemExitFromGroup(Set<Integer> group, int w, int h, int d) {
+        int minX = w, maxX = -1, minY = h, maxY = -1, minZ = d, maxZ = -1;
+        for (int pos : group) {
+            int px = pos % w, pz = (pos / w) % d, py = pos / (w * d);
+            if (px < minX) minX = px; if (px > maxX) maxX = px;
+            if (py < minY) minY = py; if (py > maxY) maxY = py;
+            if (pz < minZ) minZ = pz; if (pz > maxZ) maxZ = pz;
+        }
+        String facing; int ew, eh;
+        if (minX == maxX) {
+            facing = (minX == 0) ? "-x" : "+x";
+            ew = maxZ - minZ + 1; eh = maxY - minY + 1;
+        } else if (minZ == maxZ) {
+            facing = (minZ == 0) ? "-z" : "+z";
+            ew = maxX - minX + 1; eh = maxY - minY + 1;
+        } else if (minY == maxY) {
+            facing = (minY == 0) ? "-y" : "+y";
+            ew = maxX - minX + 1; eh = maxZ - minZ + 1;
+        } else {
+            return null;
+        }
+        return minX + "," + minY + "," + minZ + " " + facing + " " + ew + "x" + eh;
+    }
+
+    /** Determine a marker definition from a connected group of concrete positions. */
+    private static String schemMarkerFromGroup(String color, Set<Integer> group, int w, int h, int d) {
+        int minX = w, maxX = -1, minY = h, maxY = -1, minZ = d, maxZ = -1;
+        for (int pos : group) {
+            int px = pos % w, pz = (pos / w) % d, py = pos / (w * d);
+            if (px < minX) minX = px; if (px > maxX) maxX = px;
+            if (py < minY) minY = py; if (py > maxY) maxY = py;
+            if (pz < minZ) minZ = pz; if (pz > maxZ) maxZ = pz;
+        }
+        return color + " " + minX + "," + minY + "," + minZ + " " +
+               (maxX - minX + 1) + "x" + (maxY - minY + 1) + "x" + (maxZ - minZ + 1);
     }
 }

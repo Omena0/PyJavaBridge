@@ -22,6 +22,8 @@ from bridge.errors import *
 from bridge.types import *
 from bridge.api import *
 
+from bridge.types import async_task
+
 # ── Module-level globals ──────────────────────────────────────────────
 _connection: BridgeConnection = None  # type: ignore[assignment]
 _player_uuid_cache: Dict[str, str] = {}
@@ -76,3 +78,5 @@ def _bootstrap(script_path: str):
         asyncio.get_event_loop().run_forever()
     except KeyboardInterrupt:
         pass
+    finally:
+        _connection._stop_reader()

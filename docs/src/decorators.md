@@ -126,13 +126,20 @@ async def spawn(e):
 - **Type:** `str | None`
 - **Default:** `None` (uses function name)
 
-Override the command name. By default the function name is used.
+Override the command name. By default the function name is used. If the function name starts with `cmd_`, the prefix is automatically stripped.
 
 ```python
 @command("Teleport home", name="home")
 async def teleport_home(e):
     # Registered as /home, not /teleport_home
     ...
+```
+
+```python
+@command("Greet a player")
+async def cmd_greet(e):
+    # Registered as /greet, not /cmd_greet
+    await e.player.send_message("Hello!")
 ```
 
 #### permission
@@ -290,3 +297,45 @@ async def auto_save():
 - Task functions take **no arguments** (unlike event/command handlers).
 - The task is cancelled automatically when the script is unloaded.
 - If the function is still running when the next invocation is due, the next invocation is skipped.
+
+---
+
+## @async_task
+
+```python
+from bridge import async_task
+
+@async_task
+async def do_work():
+    await something()
+```
+
+Make an `async def` fire-and-forget safe. The decorated function returns a `BridgeCall` when called — the coroutine is immediately scheduled as a background task.
+
+Callers can `await` the result to wait for completion, or ignore it to let it run in the background. This matches the behaviour of built-in bridge API calls.
+
+### Signature
+
+```py
+@async_task
+```
+
+### Usage
+
+```python
+@async_task
+async def build_arena():
+    await world.fill(x1, y1, z1, x2, y2, z2, "stone")
+
+# Fire-and-forget:
+build_arena()
+
+# Or await:
+await build_arena()
+```
+
+### Notes
+
+- Works on both module-level functions and methods.
+- The return value is a `BridgeCall`, which is an `Awaitable`.
+- Unawaited errors are silently logged (same as unawaited bridge API calls).

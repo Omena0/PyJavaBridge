@@ -69,6 +69,7 @@ EVENTS = {
     "player_shear_entity": {"fields": ["player", "entity"], "cancellable": True, "desc": "Shears entity"},
     "player_statistic_increment": {"fields": ["player", "statistic", "amount"], "cancellable": False, "desc": "Statistic increment"},
     "player_swap_hand_items": {"fields": ["player", "main_hand_item", "off_hand_item"], "cancellable": True, "desc": "Swap hands"},
+    "player_item_held": {"fields": ["player", "new_slot", "previous_slot"], "cancellable": True, "desc": "Hotbar slot change"},
     "player_take_lectern_book": {"fields": ["player", "lectern"], "cancellable": True, "desc": "Take lectern book"},
     "player_teleport": {"fields": ["player", "from", "to", "cause"], "cancellable": True, "desc": "Teleport"},
     "player_toggle_flight": {"fields": ["player", "is_flying"], "cancellable": True, "desc": "Toggle flight"},

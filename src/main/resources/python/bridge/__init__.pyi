@@ -1,5 +1,14 @@
-from typing import Any, Awaitable, Callable, Optional
-from connection import BridgeConnection
+from typing import Any, Awaitable, Callable, Iterator, Optional
+from bridge.connection import BridgeConnection
+from bridge.wrappers import ProxyBase
+from bridge.types import EnumValue as EnumValue, BarColor as BarColor, BarStyle as BarStyle, EntityType as EntityType
+
+class BridgeCall(Awaitable[Any]):
+    """Awaitable wrapper — can be awaited or fire-and-forget."""
+    def __init__(self, future_or_coro: Any) -> None: ...
+    def __await__(self) -> Any: ...
+
+def async_task(func: Callable[..., Any]) -> Callable[..., "BridgeCall"]: ...
 
 class BridgeError(Exception): ...
 class EntityGoneException(BridgeError): ...
@@ -18,31 +27,121 @@ class RaycastResult:
     distance: float
     hit_face: str | None
 
-class EnumValue:
-    type: str
-    name: str
-    def __init__(self, type: str, name: str) -> None: ...
-    def __class_getattr__(self, name: str) -> "EnumValue": ...
-    @classmethod
-    def from_name(cls, name: str) -> "EnumValue": ...
+
 
 class Event:
+    fields: dict[str, Any]
     def cancel(self) -> Awaitable[None]: ...
+    # Common fields (extracted by baseEventPayload)
     player: "Player"
     entity: "Entity"
     damager: "Entity" | "Block" | None
-    damage: float
-    final_damage: float
-    damage_cause: Any
     block: "Block"
     world: "World"
     location: "Location"
     item: "Item"
     inventory: "Inventory"
     chunk: "Chunk"
-    slot: int
 
-class Entity:
+    # Damage fields
+    damage: float
+    final_damage: float
+    damage_cause: Any
+
+    # Movement / teleport / portal
+    to: "Location" | Any
+    source: Any
+    cause: Any
+    reason: Any
+
+    # Interaction
+    action: Any
+    hand: Any
+    click: Any
+
+    # Slot fields
+    slot: int
+    new_slot: int
+    previous_slot: int
+
+    # Velocity
+    velocity: "Vector"
+
+    # Chat / command
+    message: str
+    recipients: Any
+
+    # Player status
+    is_flying: bool
+    is_sneaking: bool
+    is_sprinting: bool
+
+    # Target
+    target: "Entity" | None
+
+    # Death / drops
+    drops: list[Any]
+    death_message: str
+
+    # Join / quit
+    join_message: str
+    quit_message: str
+
+    # Level / exp
+    amount: float | int
+    old_level: int
+    new_level: int
+
+    # Entity-specific
+    owner: "Player" | None
+    mount: "Entity"
+    dismounted: "Entity"
+    combuster: "Entity"
+    duration: float
+    force: float
+    bow: "Item"
+    projectile: "Entity"
+    hit_entity: "Entity" | None
+    hit_block: "Block" | None
+
+    # Block-specific
+    blocks: list["Block"]
+    new_state: Any
+    to_block: "Block"
+    direction: Any
+    old_current: int
+    new_current: int
+    material: Any
+    insta_break: bool
+
+    # Vehicle
+    vehicle: "Entity"
+    attacker: "Entity" | None
+
+    # Misc
+    advancement: Any
+    animation: Any
+    new_game_mode: Any
+    repair_amount: int
+    statistic: Any
+    locale: str
+    hostname: str
+    address: Any
+    remover: "Entity" | None
+    lightning: "Entity"
+    previous_location: "Location"
+    species: Any
+    fuel: Any
+    power: int
+    result: Any
+    recipe: Any
+    enchants: Any
+    offers: Any
+    lines: list[str]
+    sender: Any
+    command: str
+
+class Entity(ProxyBase):
     def __init__(self, uuid: str | None = None) -> None: ...
     @classmethod
     def spawn(cls, entity_type: "EntityType" | str, location: "Location", **kwargs: Any) -> Awaitable["Entity"]: ...
@@ -50,6 +149,8 @@ class Entity:
     type: "EntityType"
     location: "Location"
     world: "World"
+    inventory: "Inventory"
+    held_item: "Item"
     is_projectile: bool
     shooter: "Entity" | "Player" | "Block" | None
     is_tamed: bool
@@ -57,8 +158,12 @@ class Entity:
     owner_uuid: str | None
     owner_name: str | None
     source: "Entity" | "Player" | None
+    yaw: float
+    pitch: float
+    look_direction: "Vector"
     def teleport(self, location: "Location") -> Awaitable[None]: ...
     def remove(self) -> Awaitable[None]: ...
+    def damage(self, amount: float) -> Awaitable[None]: ...
     def set_velocity(self, vector: "Vector") -> Awaitable[None]: ...
     velocity: "Vector"
     is_dead: bool
@@ -72,9 +177,15 @@ class Entity:
     custom_name: Any
     def set_custom_name(self, name: str) -> Awaitable[None]: ...
     def set_custom_name_visible(self, value: bool) -> Awaitable[None]: ...
+    def __eq__(self, other: object) -> bool: ...
+    def __hash__(self) -> int: ...
+    def add_tag(self, tag: str) -> None: ...
+    def remove_tag(self, tag: str) -> None: ...
+    tags: set[str]
+    def is_tagged(self, tag: str) -> bool: ...
 
 class Player(Entity):
-    def __init__(self, uuid: str | None = None, name: str | None = None) -> None: ...
+    def __init__(self, uuid: str | None = None, name: str | None = None, fields: dict[str, Any] | None = None) -> None: ...
     name: str
     uuid: str
     location: "Location"
@@ -83,6 +194,8 @@ class Player(Entity):
     health: float
     food_level: int
     inventory: "Inventory"
+    held_item: "Item"
+    selected_slot: int
     def send_message(self, message: str) -> Awaitable[None]: ...
     def chat(self, message: str) -> Awaitable[None]: ...
     def kick(self, reason: str = "") -> Awaitable[None]: ...
@@ -146,10 +259,9 @@ class Player(Entity):
     xp: float
     player_level: int
 
-class EntityType(EnumValue):
-    def __class_getattr__(self, name: str) -> "EntityType": ...
 
-class World:
+
+class World(ProxyBase):
     def __init__(self, name: str | None = None) -> None: ...
     name: str
     uuid: str
@@ -196,10 +308,13 @@ class World:
     def spawn_at_player(self, player: "Player", entity_type: "EntityType" | str, offset: "Vector" | tuple[int,int,int] | None = None, **kwargs: Any) -> Awaitable["Entity"]: ...
     def spawn_projectile(self, shooter: "Entity", entity_type: "EntityType" | str, velocity: "Vector" | tuple[int,int,int] | None = None, **kwargs: Any) -> Awaitable["Entity"]: ...
     def spawn_with_nbt(self, location: "Location", entity_type: "EntityType" | str, nbt: str, **kwargs: Any) -> Awaitable["Entity"]: ...
+    def create_explosion(self, location: "Location", power: float = 4.0, fire: bool = False) -> Awaitable[None]: ...
+    def entities_near(self, location: "Location", radius: float) -> list["Entity"]: ...
+    def blocks_near(self, location: "Location", radius: int) -> list["Block"]: ...
 
 class Dimension: ...
 
-class Location:
+class Location(ProxyBase):
     def __init__(self, x: float = 0.0, y: float = 0.0, z: float = 0.0, world: "World" | str | None = None, yaw: float = 0.0, pitch: float = 0.0) -> None: ...
 
     x: float
@@ -212,8 +327,13 @@ class Location:
     def clone(self) -> "Location": ...
     def distance(self, other: "Location") -> float: ...
     def distance_squared(self, other: "Location") -> float: ...
+    def __add__(self, other: "Location | Vector") -> "Location": ...
+    def __sub__(self, other: "Location | Vector") -> "Location": ...
+    def __getitem__(self, index: int) -> float: ...
+    def __iter__(self) -> "Iterator[float]": ...
+    def __len__(self) -> int: ...
 
-class Block:
+class Block(ProxyBase):
     def __init__(self, world: "World" | str | None = None, x: int | None = None, y: int | None = None, z: int | None = None, material: "Material" | str | None = None) -> None: ...
     @classmethod
     def create(cls, location: "Location", material: "Material" | str) -> Awaitable["Block"]: ...
@@ -232,7 +352,7 @@ class Block:
     biome: "Biome"
     def set_biome(self, biome: "Biome") -> Awaitable[None]: ...
 
-class Chunk:
+class Chunk(ProxyBase):
     def __init__(self, world: "World" | str | None = None, x: int | None = None, z: int | None = None) -> None: ...
     x: int
     z: int
@@ -241,7 +361,7 @@ class Chunk:
     def unload(self) -> Awaitable[bool]: ...
     is_loaded: bool
 
-class Inventory:
+class Inventory(ProxyBase):
     def __init__(self, size: int = 9, title: str = "", contents: list["Item"] | None = None) -> None: ...
     size: int
     contents: list["Item"]
@@ -257,7 +377,7 @@ class Inventory:
     def set_item(self, slot: int, item: "Item") -> Awaitable[None]: ...
     def contains(self, material: "Material", amount: int = 1) -> Awaitable[bool]: ...
 
-class Item:
+class Item(ProxyBase):
     def __init__(self, material: "Material" | str | None = None, amount: int = 1, name: str | None = None, lore: list[str] | None = None, custom_model_data: int | None = None, attributes: list[dict[str, Any]] | None = None, nbt: dict[str, Any] | None = None) -> None: ...
     @classmethod
     def drop(cls, material: "Material" | str, location: "Location", amount: int = 1, **kwargs: Any) -> Awaitable["Entity"]: ...
@@ -304,7 +424,7 @@ class Material(EnumValue):
 class Biome(EnumValue):
     def __class_getattr__(self, name: str) -> "Biome": ...
 
-class Effect:
+class Effect(ProxyBase):
     @classmethod
     def apply(cls, player: "Player", effect_type: "EffectType" | str | None = None, duration: int = 0, amplifier: int = 0, ambient: bool = False, particles: bool = True, icon: bool = True) -> Awaitable[Any]: ...
     def __init__(self, effect_type: "EffectType" | str | None = None, duration: int = 0, amplifier: int = 0, ambient: bool = False, particles: bool = True, icon: bool = True) -> None: ...
@@ -323,7 +443,7 @@ class EffectType(EnumValue):
 class AttributeType(EnumValue):
     def __class_getattr__(self, name: str) -> "AttributeType": ...
 
-class Attribute:
+class Attribute(ProxyBase):
     @classmethod
     def apply(cls, player: "Player", attribute_type: "AttributeType" | str, base_value: float) -> Awaitable[Any]: ...
     attribute_type: "AttributeType"
@@ -343,21 +463,19 @@ class Particle(EnumValue):
 class Difficulty(EnumValue):
     def __class_getattr__(self, name: str) -> "Difficulty": ...
 
-class Vector:
+class Vector(ProxyBase):
     def __init__(self, x: float = 0.0, y: float = 0.0, z: float = 0.0) -> None: ...
     x: float
     y: float
     z: float
+    def __add__(self, other: "Vector | list[float] | tuple[float, float, float]") -> "Vector": ...
+    def __sub__(self, other: "Vector | list[float] | tuple[float, float, float]") -> "Vector": ...
+    def __mul__(self, other: "int | float | Vector | list[float] | tuple[float, float, float]") -> "Vector": ...
+    def __rmul__(self, other: "int | float | Vector | list[float] | tuple[float, float, float]") -> "Vector": ...
 
-class BarColor(EnumValue):
-    def __class_getattr__(self, name: str) -> "BarColor": ...
-
-class BarStyle(EnumValue):
-    def __class_getattr__(self, name: str) -> "BarStyle": ...
-
-class BossBar:
+class BossBar(ProxyBase):
     @classmethod
-    def create(cls, title: str, color: BarColor | EnumValue | None = None, style: BarStyle | EnumValue | None = None, players: list["Player"] | None = None) -> "BossBar": ...
+    def create(cls, title: str, color: "BarColor | None" = None, style: "BarStyle | None" = None, players: list["Player"] | None = None) -> "BossBar": ...
     def add_player(self, player: "Player") -> Awaitable[None]: ...
     def remove_player(self, player: "Player") -> Awaitable[None]: ...
     title: str
@@ -371,7 +489,7 @@ class BossBar:
     visible: bool
     def set_visible(self, value: bool) -> Awaitable[None]: ...
 
-class Scoreboard:
+class Scoreboard(ProxyBase):
     @classmethod
     def create(cls) -> "Scoreboard": ...
     def register_objective(self, name: str, criteria: str, display_name: str = "") -> "Objective": ...
@@ -382,7 +500,7 @@ class Scoreboard:
     teams: list["Team"]
     def clear_slot(self, slot: Any) -> Awaitable[None]: ...
 
-class Team:
+class Team(ProxyBase):
     @classmethod
     def create(cls, name: str, scoreboard: "Scoreboard" | None = None) -> "Team": ...
     def add_entry(self, entry: str) -> Awaitable[None]: ...
@@ -393,7 +511,7 @@ class Team:
     def set_color(self, color: Any) -> Awaitable[None]: ...
     entries: set[str]
 
-class Objective:
+class Objective(ProxyBase):
     @classmethod
     def create(cls, name: str, criteria: str, display_name: str = "", scoreboard: "Scoreboard" | None = None) -> "Objective": ...
     def set_display_name(self, name: str) -> Awaitable[None]: ...
@@ -403,7 +521,7 @@ class Objective:
     display_slot: Any
     def set_display_slot(self, slot: Any) -> Awaitable[None]: ...
 
-class Sidebar:
+class Sidebar(ProxyBase):
     MAX_LINES: int
     def __init__(self, title: str = "") -> None: ...
     def __setitem__(self, slot: int, text: str) -> None: ...
@@ -541,8 +659,8 @@ class Config:
 class Server:
     def broadcast(self, message: str) -> Awaitable[None]: ...
     def execute(self, command: str) -> Awaitable[bool]: ...
-    players: list["Player"]
-    worlds: list["World"]
+    players: Awaitable[list["Player"]]
+    worlds: Awaitable[list["World"]]
     def world(self, name: str) -> Awaitable["World"]: ...
     scoreboard_manager: Any
     def create_boss_bar(self, title: str, color: "BarColor", style: "BarStyle") -> Awaitable["BossBar"]: ...

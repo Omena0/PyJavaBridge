@@ -2,5 +2,7 @@
     "yaml.schemas": {
         "https://www.schemastore.org/bukkit-plugin.json": "file:///home/omena0/Github/PyJavaBridge/src/main/resources/plugin.yml"
     },
-    "java.compile.nullAnalysis.mode": "automatic"
+    "java.compile.nullAnalysis.mode": "automatic",
+    "python-envs.defaultEnvManager": "ms-python.python:venv",
+    "java.configuration.updateBuildConfiguration": "interactive"
 }

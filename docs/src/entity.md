@@ -75,11 +75,54 @@ The entity's current location. Re-fetched each access.
 
 The world the entity is in.
 
+### inventory
+
+- **Type:** [`Inventory`](inventory.md)
+
+The entity's inventory / equipment. For mobs, this is their equipment slots.
+
+### held_item
+
+- **Type:** [`Item`](item.md)
+
+The item in the entity's main hand equipment slot.
+
+### yaw
+
+- **Type:** `float`
+
+The entity's horizontal rotation in degrees (from its location).
+
+### pitch
+
+- **Type:** `float`
+
+The entity's vertical rotation in degrees (from its location).
+
+### look_direction
+
+- **Type:** [`Vector`](vector.md)
+
+Normalized direction vector computed from the entity's yaw and pitch. Useful for spawning projectiles or offsetting positions in front of the entity.
+
+```python
+# Spawn a fireball 2 blocks ahead of the player
+direction = player.look_direction * 2
+fireball = await Entity.spawn("FIREBALL", player.location + direction)
+await fireball.set_velocity(direction)
+```
+
 ### velocity
 
 - **Type:** [`Vector`](vector.md)
 
 The entity's current velocity vector.
+
+### equipment
+
+- **Type:** `Inventory | None`
+
+The entity's equipment (armor slots and held items). For mobs this is their equipment; for players use `inventory` instead.
 
 ### is_dead
 
@@ -296,6 +339,22 @@ Show or hide the custom name tag. When `True`, the name is visible through walls
   - `value` (`bool`) — Whether the name should be visible.
 - **Returns:** `Awaitable[None]`
 
+### damage
+
+```python
+await entity.damage(amount)
+```
+
+Deal damage to the entity.
+
+- **Parameters:**
+  - `amount` (`float`) — Damage amount in half-hearts (1.0 = half a heart).
+- **Returns:** `Awaitable[None]`
+
+```python
+await zombie.damage(10.0)  # 5 hearts of damage
+```
+
 ---
 
 ## Mob AI
@@ -413,4 +472,65 @@ Make the mob face a location.
 
 ```python
 await zombie.look_at(player.location)
+```
+
+---
+
+## Tags
+
+Entities support Python-side tags — string labels shared across all instances that reference the same entity UUID. Tags are stored in memory (not persisted to disk) and are useful for marking entities across different event handlers.
+
+### add_tag
+
+```python
+entity.add_tag(tag)
+```
+
+Add a tag to this entity. **Synchronous.**
+
+- **Parameters:**
+  - `tag` (`str`) — The tag string.
+
+```python
+zombie.add_tag("boss")
+```
+
+### remove_tag
+
+```python
+entity.remove_tag(tag)
+```
+
+Remove a tag. **Synchronous.**
+
+- **Parameters:**
+  - `tag` (`str`) — The tag to remove.
+
+### tags
+
+```python
+all_tags = entity.tags
+```
+
+Get all tags on this entity.
+
+- **Type:** `set[str]`
+
+### is_tagged
+
+```python
+result = entity.is_tagged(tag)
+```
+
+Check if the entity has a specific tag. **Synchronous.**
+
+- **Parameters:**
+  - `tag` (`str`) — The tag to check.
+- **Returns:** `bool`
+
+```python
+@event
+async def entity_damage(e):
+    if e.entity.is_tagged("boss"):
+        await e.entity.set_custom_name(f"§c Boss HP: {e.entity.health}")
 ```

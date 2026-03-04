@@ -48,7 +48,7 @@ class Leaderboard:
         return func
 
     async def _update_loop(self):
-        from bridge.wrappers import server
+        from bridge import server
         while self._running:
             try:
                 await self._refresh()
@@ -57,10 +57,10 @@ class Leaderboard:
                 break
 
     async def _refresh(self):
-        from bridge.wrappers import server
+        from bridge import server
         if self._hologram is None or self._get_metric is None:
             return
-        online = await server.online_players
+        online = await server.players
         scores: List[tuple[str, float]] = []
         for p in online:
             try:

@@ -60,6 +60,27 @@ public class RefFacade {
             }
             return null;
         }
+        if (target instanceof Block blockTarget && "setBlockData".equals(method) && args.size() >= 1) {
+            String dataStr = null;
+            if (args.get(0) instanceof String str) {
+                dataStr = str;
+            } else if (args.get(0) instanceof EnumValue enumValue) {
+                dataStr = enumValue.name;
+            }
+            if (dataStr != null) {
+                try {
+                    blockTarget.setBlockData(org.bukkit.Bukkit.createBlockData(dataStr.toLowerCase()));
+                    return null;
+                } catch (IllegalArgumentException e) {
+                    try {
+                        blockTarget.setBlockData(org.bukkit.Bukkit.createBlockData(
+                                org.bukkit.Material.valueOf(dataStr.toUpperCase())));
+                        return null;
+                    } catch (IllegalArgumentException ignored) {
+                    }
+                }
+            }
+        }
         if ("getUniqueId".equals(method) && target instanceof org.bukkit.entity.Entity entity) {
             return entity.getUniqueId();
         }

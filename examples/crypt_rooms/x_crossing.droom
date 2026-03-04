@@ -1,0 +1,52 @@
+type: generic
+width: 15
+height: 10
+depth: 15
+loot: rare=rare
+
+exit: 6,1,0 -z 3x3
+exit: 14,1,6 +x 3x3
+exit: 0,1,6 -x 3x3
+exit: 6,1,14 +z 3x3
+marker: red 6,0,1 3x1x1
+marker: red 13,0,6 1x1x3
+marker: red 1,0,6 1x1x3
+marker: red 6,0,13 3x1x1
+
+A: stone_bricks
+B: chest[facing=west,type=single,waterlogged=false,name=[loot:rare]]
+C: water[level=1]
+D: water[level=8]
+E: water[level=0]
+
+---
+fill 6 1 6 8 4 8 C
+fill 0 0 0 14 0 14 A
+fill 0 1 0 5 9 0 A
+fill 9 1 0 14 9 0 A
+fill 0 1 1 0 9 5 A
+fill 14 1 1 14 9 5 A
+set 13 1 2 B
+fill 6 1 5 8 1 5 A
+fill 5 1 6 5 1 8 A
+fill 7 1 6 7 3 6 D
+fill 9 1 6 9 1 8 A
+fill 6 1 7 6 3 7 D
+fill 7 1 7 7 3 7 A
+fill 8 1 7 8 3 7 D
+fill 7 1 8 7 3 8 D
+fill 0 1 9 0 9 14 A
+fill 6 1 9 8 1 9 A
+fill 14 1 9 14 9 14 A
+fill 1 1 14 5 9 14 A
+fill 9 1 14 13 9 14 A
+fill 6 2 6 6 4 6 ~
+fill 8 2 6 8 4 6 ~
+fill 6 2 8 6 4 8 ~
+fill 8 2 8 8 4 8 ~
+fill 6 4 0 8 9 0 A
+fill 0 4 6 0 9 8 A
+fill 14 4 6 14 9 8 A
+set 7 4 7 E
+fill 6 4 14 8 9 14 A
+fill 1 9 1 13 9 13 A

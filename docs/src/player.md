@@ -78,6 +78,25 @@ Current game mode (e.g. `GameMode.SURVIVAL`, `GameMode.CREATIVE`).
 
 The player's inventory (36 slots + armor + offhand).
 
+### held_item
+
+- **Type:** [`Item`](item.md)
+
+The item currently in the player's main hand. Returns an `Item` proxy (may be air if the hand is empty).
+
+### selected_slot
+
+- **Type:** `int`
+
+The player's currently selected hotbar slot (0–8).
+
+```python
+@event
+async def player_item_held(e):
+    slot = e.player.selected_slot
+    await e.player.send_message(f"Switched to slot {slot}")
+```
+
 ### level
 
 - **Type:** `int`
@@ -629,3 +648,93 @@ Remove the player from a permission group. **LuckPerms only.**
 - **Parameters:**
   - `group` (`str`) — The group name.
 - **Returns:** `Awaitable[bool]`
+
+---
+
+## Freeze & Vanish
+
+Utility helpers for freezing and hiding players.
+
+### freeze
+
+```python
+player.freeze()
+```
+
+Lock the player's position. The player is teleported back to their frozen location every tick until unfrozen. **Synchronous.**
+
+### unfreeze
+
+```python
+player.unfreeze()
+```
+
+Release the player, allowing movement again. **Synchronous.**
+
+### is_frozen
+
+- **Type:** `bool`
+
+Whether the player is currently frozen.
+
+### vanish
+
+```python
+player.vanish()
+```
+
+Hide this player from all other players. **Synchronous.**
+
+### unvanish
+
+```python
+player.unvanish()
+```
+
+Make the player visible again. **Synchronous.**
+
+### is_vanished
+
+- **Type:** `bool`
+
+Whether the player is currently vanished.
+
+---
+
+## Extension Shortcuts
+
+These properties require a default extension instance to be assigned on the `Player` class. They provide convenient syntax for accessing extension data.
+
+### balance / deposit / withdraw
+
+```python
+Player._default_bank = my_bank  # Set once at startup
+
+bal = player.balance
+player.deposit(100)
+player.withdraw(50)
+```
+
+Requires `Player._default_bank` to be set to a [`Bank`](bank.md) instance.
+
+### mana
+
+```python
+Player._default_mana_store = my_mana  # Set once at startup
+
+current = player.mana
+player.mana = 50
+```
+
+Requires `Player._default_mana_store` to be set to a [`ManaStore`](mana.md) instance.
+
+### xp / player_level
+
+```python
+Player._default_level_system = my_levels  # Set once at startup
+
+xp = player.xp
+lvl = player.player_level
+```
+
+Requires `Player._default_level_system` to be set to a [`LevelSystem`](levels.md) instance.

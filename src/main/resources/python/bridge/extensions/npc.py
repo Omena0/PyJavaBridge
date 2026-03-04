@@ -6,6 +6,7 @@ import inspect
 import sys
 from typing import Any, Callable, Dict, List, Optional
 from bridge.connection import BridgeConnection
+from bridge.types import async_task
 
 # Injected by bridge.__init__ during _bootstrap()
 _connection:BridgeConnection = None  # type: ignore[assignment]
@@ -22,7 +23,7 @@ class NPC:
     """Fake NPC helper — spawns a mob with AI disabled, click handlers, dialog, and movement paths."""
 
     def __init__(self, entity: Any, name: str | None = None):
-        from bridge.wrappers import Location
+        from bridge import Location
         self._entity = entity
         self._name = name
         self._click_handlers: List[Callable] = []
@@ -43,11 +44,12 @@ class NPC:
         if uuid:
             _npc_registry[str(uuid)] = self
 
+    @async_task
     @classmethod
     async def spawn(cls, location: Any, entity_type: Any = "VILLAGER",
                     name: str | None = None, **kwargs: Any) -> NPC:
         """Spawn an NPC at a location. AI is disabled automatically."""
-        from bridge.wrappers import Entity
+        from bridge import Entity
         entity = await Entity.spawn(entity_type, location, **kwargs)
         if name:
             await entity.set_custom_name(name)
@@ -87,11 +89,13 @@ class NPC:
         self._dialog_loop = loop
         _ensure_npc_listener()
 
+    @async_task
     async def move_to(self, location: Any, speed: float = 1.0):
         """Move the NPC to a location using pathfinding."""
         await self._entity.set_aware(True)
         return self._entity.pathfind_to(location, speed)
 
+    @async_task
     async def follow_path(self, waypoints: list, loop: bool = False,
                           speed: float = 1.0, delay: float = 0.5):
         """Make the NPC follow a path of waypoints."""
@@ -143,14 +147,14 @@ class NPC:
         return handler
 
     async def _range_check_loop(self):
-        from bridge.wrappers import server, Player
+        from bridge import server, Player
         while self._range is not None:
             try:
                 npc_loc = self._entity.location
                 if npc_loc is None:
                     await server.after(20)
                     continue
-                online = await server.online_players()
+                online = await server.players
                 for p in online:
                     puuid = str(p.uuid)
                     try:
@@ -184,6 +188,7 @@ class NPC:
             except Exception:
                 break
 
+    @async_task
     async def remove(self):
         """Remove the NPC entity and unregister."""
         uuid = self.uuid
@@ -219,7 +224,7 @@ def _ensure_npc_listener():
         return
     _npc_listener_registered = True
 
-    from bridge.wrappers import Player, Event
+    from bridge import Player, Event
 
     async def _on_npc_interact(event: Event):
         entity = event.fields.get("entity")

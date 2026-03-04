@@ -36,6 +36,11 @@ def event(func: Optional[Callable] = None, *, once_per_tick: bool = False, prior
         event_name = handler.__name__
         _connection.on(event_name, handler)
         _connection.subscribe(event_name, once_per_tick, priority, throttle_ms)
+
+        def _unregister():
+            _connection.off(event_name, handler)
+
+        handler.unregister = _unregister
         return handler
 
     if func is None:
@@ -52,7 +57,7 @@ def task(func: Optional[Callable] = None, *, interval: int = 20, delay: int = 0)
         delay: Ticks to wait before the first call (default 0).
     """
     def decorator(handler: Callable) -> Callable:
-        from bridge.wrappers import server
+        from bridge import server
 
         async def _loop():
             try:
@@ -125,7 +130,10 @@ def command(description: Optional[str] = None, *, name: Optional[str] = None, pe
             args_text = " ".join(parts)
             return f"Usage: /{cmd_name}" + (f" {args_text}" if args_text else "")
 
-        command_name = (name or handler.__name__).lower()
+        func_name = handler.__name__
+        if func_name.startswith("cmd_"):
+            func_name = func_name[4:]
+        command_name = (name or func_name).lower()
 
         @wraps(handler)
         async def wrapper(event_obj: Any) -> None:
@@ -203,7 +211,10 @@ def command(description: Optional[str] = None, *, name: Optional[str] = None, pe
                     print(f"[PyJavaBridge] {usage}")
                 return None
 
-            return await handler(event_obj, *pos_args, *var_args, **kwargs)
+            result = handler(event_obj, *pos_args, *var_args, **kwargs)
+            if hasattr(result, "__await__"):
+                return await result
+            return result
 
         event_name = f"command_{command_name}"
         _connection.on(event_name, wrapper)

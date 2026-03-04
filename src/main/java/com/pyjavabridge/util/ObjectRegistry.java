@@ -46,4 +46,8 @@ public class ObjectRegistry {
             release(id);
         }
     }
+
+    public Collection<Object> getAll() {
+        return objects.values();
+    }
 }

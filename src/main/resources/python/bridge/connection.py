@@ -5,11 +5,13 @@ import asyncio
 import inspect
 import itertools
 import json
+import os
 import struct
 import threading
 import sys
 from types import SimpleNamespace
 from typing import Any, Awaitable, Callable, Dict, List, Optional, cast
+from bridge.types import async_task
 
 from bridge.errors import (
     BridgeError, ConnectionError, _make_bridge_error,
@@ -45,6 +47,14 @@ class _BatchContext:
     def __init__(self, connection: BridgeConnection, mode: str):
         self._connection = connection
         self._mode = mode
+
+    def __enter__(self):
+        self._connection._begin_batch(self._mode)
+        return self
+
+    def __exit__(self, exc_type: Any, exc: Any, tb: Any):
+        self._connection._end_batch()
+        return False
 
     async def __aenter__(self):
         self._connection._begin_batch(self._mode)
@@ -83,6 +93,7 @@ class BridgeConnection:
         self._release_queue: List[int] = []
         self._release_lock = threading.Lock()
 
+        self._stdin_fd = sys.stdin.fileno()
         self._thread = threading.Thread(target=self._reader, daemon=True)
         self._thread.start()
         print(f"[PyJavaBridge] Connected via stdin/stdout")
@@ -104,6 +115,14 @@ class BridgeConnection:
 
     def on(self, event_name: str, handler: Callable[[Any], Awaitable[None]]):
         self._handlers.setdefault(event_name, []).append(handler)
+
+    def off(self, event_name: str, handler: Callable[[Any], Awaitable[None]]):
+        handlers = self._handlers.get(event_name)
+        if handlers:
+            try:
+                handlers.remove(handler)
+            except ValueError:
+                pass
 
     def call(self, method: str, args: Optional[List[Any]] = None, handle: Optional[int] = None, target: Optional[str] = None, **kwargs: Any) -> BridgeCall:
         self._flush_releases()
@@ -199,6 +218,7 @@ class BridgeConnection:
             return None
         return "atomic" if "atomic" in self._batch_stack else "frame"
 
+    @async_task
     async def flush(self):
         if not self._batch_messages:
             return None
@@ -228,6 +248,14 @@ class BridgeConnection:
             self._stdout.write(data)
             self._stdout.flush()
 
+    def _cancel_release(self, handle: int):
+        """Remove a handle from the pending release queue (re-acquired before flush)."""
+        with self._release_lock:
+            try:
+                self._release_queue.remove(handle)
+            except ValueError:
+                pass
+
     def _queue_release(self, handle: int):
         with self._release_lock:
             self._release_queue.append(handle)
@@ -255,20 +283,25 @@ class BridgeConnection:
         future.set_result(result)
         return BridgeCall(future)
 
-    def _read_exact(self, size: int) -> Optional[bytes]:
-        data = bytearray(size)
-        view = memoryview(data)
-        offset = 0
+    def _stop_reader(self):
+        """Interrupt the reader thread and wait for it to exit."""
         try:
-            while offset < size:
-                chunk = self._stdin.read(size - offset)
+            os.close(self._stdin_fd)
+        except OSError:
+            pass
+        self._thread.join(timeout=2)
+
+    def _read_exact(self, size: int) -> Optional[bytes]:
+        buf = bytearray()
+        try:
+            while len(buf) < size:
+                chunk = os.read(self._stdin_fd, size - len(buf))
                 if not chunk:
                     return None
-                view[offset:offset + len(chunk)] = chunk
-                offset += len(chunk)
-        except (OSError, ValueError):
+                buf.extend(chunk)
+        except OSError:
             return None
-        return bytes(data)
+        return bytes(buf)
 
     def _reader(self):
         try:
@@ -314,12 +347,12 @@ class BridgeConnection:
         if msg_type == "return":
             msg_id: int = message.get("id")  # type: ignore[assignment]
             future = self._pending.pop(msg_id, None)
-            if future is not None:
+            if future is not None and not future.done():
                 future.set_result(self._deserialize(message.get("result")))
         elif msg_type == "error":
             msg_id: int = message.get("id")  # type: ignore[assignment]
             future = self._pending.pop(msg_id, None)
-            if future is not None:
+            if future is not None and not future.done():
                 future.set_exception(_make_bridge_error(message))
         elif msg_type == "event":
             event_name = message.get("event")
@@ -329,6 +362,7 @@ class BridgeConnection:
                 p = cast(Dict[str, Any], payload)
                 event_obj = p.get("event")
                 from bridge.wrappers import ProxyBase
+
                 if isinstance(event_obj, ProxyBase):
                     if "id" in p:
                         event_obj.fields["__event_id__"] = p.get("id")
@@ -336,8 +370,10 @@ class BridgeConnection:
                         if key != "event":
                             event_obj.fields[key] = value
                     payload = event_obj
+
             if event_name is not None:
                 asyncio.create_task(self._dispatch_event(event_name, payload))
+
         elif msg_type == "event_batch":
             event_name = message.get("event")
             payloads = message.get("payloads", [])
@@ -376,7 +412,6 @@ class BridgeConnection:
 
     async def _dispatch_event(self, event_name: str, payload: Any):
         from bridge.wrappers import ProxyBase
-        from bridge.helpers import State
 
         handlers = list(self._handlers.get(event_name, []))
         results: List[Any] = []
@@ -404,7 +439,7 @@ class BridgeConnection:
                 event_id = payload.fields.get("__event_id__")
             if event_id is not None:
                 if handlers:
-                    from bridge.wrappers import Entity, Location
+                    from bridge import Entity, Location
 
                     override_text = None
                     override_damage = None
@@ -451,10 +486,7 @@ class BridgeConnection:
                 self.send({"type": "shutdown_ack"})
             except Exception:
                 pass
-            try:
-                self._stdin.close()
-            except Exception:
-                pass
+            self._stop_reader()
             self._loop.stop()
 
     def _handle_reader_error(self, exc: Exception):

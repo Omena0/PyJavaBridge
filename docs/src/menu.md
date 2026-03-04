@@ -102,4 +102,15 @@ Open this menu for a player. This is synchronous.
 - **Parameters:**
   - `player` ([`Player`](player.md)) — Player to show the menu to.
 
+> **Tip:** You can safely open a new menu from inside a click handler. The bridge handles the close/re-open race condition automatically.
+
+```python
+# Opening a sub-menu from a click handler
+def on_settings_click(player, event):
+    settings_menu.open(player)  # Works correctly
+
+main = Menu("§6Main Menu", rows=1)
+main[0] = MenuItem(Item("REDSTONE", name="§cSettings"), on_click=on_settings_click)
+```
+
 > **Tip:** See [`MenuItem`](menuitem.md) for click handler details and examples.

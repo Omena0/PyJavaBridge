@@ -1,0 +1,17 @@
+type: generic
+width: 15
+height: 10
+depth: 15
+
+exit: 6,1,0 -z 3x3
+exit: 0,1,6 -x 3x3
+
+A: stone_bricks
+
+---
+fill 0 0 0 14 9 14 A
+fill 6 1 0 8 3 13 ~
+fill 1 1 1 5 8 13 ~
+fill 9 1 1 13 8 13 ~
+fill 0 1 6 0 3 8 ~
+fill 6 4 1 8 8 13 ~

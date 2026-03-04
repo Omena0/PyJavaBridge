@@ -68,7 +68,7 @@ class _TradeSession:
         self._show_for(self.p2, 1)
 
     def _show_for(self, player: Any, player_idx: int):
-        from bridge.wrappers import Inventory, Item as WItem
+        from bridge import Inventory, Item as WItem
         from bridge.helpers import Menu, MenuItem, _register_menu_events, _open_menus
 
         menu = Menu(f"Trade: {self.p1.name} <-> {self.p2.name}", 6)
@@ -143,7 +143,7 @@ class _TradeSession:
         menu.open(player)
 
     async def _execute(self):
-        from bridge.wrappers import server
+        from bridge import server
         self._executing = True
         # Countdown
         for p in (self.p1, self.p2):
