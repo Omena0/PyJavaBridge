@@ -137,23 +137,20 @@ def command(description: Optional[str] = None, *, name: Optional[str] = None, pe
 
         @wraps(handler)
         async def wrapper(event_obj: Any) -> None:
+            raw_args: List[str] = []
             if isinstance(event_obj, ProxyBase):
                 player = event_obj.fields.get("player")
                 sender_obj = event_obj.fields.get("sender")
                 if player is None and sender_obj is not None and not isinstance(sender_obj, Player):
                     event_obj.fields["player"] = ConsolePlayer(sender_obj)
+                raw_args = event_obj.fields.get("args", []) or []
             elif isinstance(event_obj, dict):
                 evt = cast(Dict[str, Any], event_obj)
                 player_d: Any = evt.get("player")
                 sender_d: Any = evt.get("sender")
                 if player_d is None and sender_d is not None and not isinstance(sender_d, Player):
                     evt["player"] = ConsolePlayer(sender_d)
-
-            raw_args: List[str] = []
-            if isinstance(event_obj, ProxyBase):
-                raw_args = event_obj.fields.get("args", []) or []
-            elif isinstance(event_obj, dict):
-                raw_args = list(cast(Dict[str, Any], event_obj).get("args", []) or [])
+                raw_args = list(evt.get("args", []) or [])
 
             pos_args, var_args, kwargs, positional_tokens, allowed_kw_names = _parse_command_tokens(
                 raw_args,

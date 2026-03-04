@@ -21,6 +21,8 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
 public class EventDispatcher {
@@ -30,6 +32,9 @@ public class EventDispatcher {
     private final Map<Integer, PendingEvent> pendingEvents;
     private final Consumer<JsonObject> sender;
     private final Gson gson;
+
+    // Cache: (eventClass, methodName) -> Optional<Method> (empty = known-missing)
+    private final ConcurrentHashMap<String, Optional<Method>> methodCache = new ConcurrentHashMap<>();
 
     EventDispatcher(PyJavaBridgePlugin plugin, BridgeSerializer serializer, String name,
                     Map<Integer, PendingEvent> pendingEvents, Consumer<JsonObject> sender, Gson gson) {
@@ -192,8 +197,13 @@ public class EventDispatcher {
         }
         List<PendingEvent> batch = new ArrayList<>();
         List<JsonObject> payloads = new ArrayList<>();
+        // Compute the base event payload once and clone per-block
+        JsonObject basePayload = baseEventPayload(event, eventName);
         for (org.bukkit.block.Block block : blocks) {
-            JsonObject payload = baseEventPayload(event, eventName);
+            JsonObject payload = new JsonObject();
+            for (Map.Entry<String, JsonElement> e : basePayload.entrySet()) {
+                payload.add(e.getKey(), e.getValue());
+            }
             int eventId = plugin.nextEventId();
             payload.addProperty("id", eventId);
             payload.add("block", serializer.serialize(block));
@@ -225,16 +235,17 @@ public class EventDispatcher {
             Thread.currentThread().interrupt();
         }
         java.util.Iterator<org.bukkit.block.Block> iterator = blocks.iterator();
+        // Build identity map for O(1) lookup instead of O(n*m) nested loop
+        java.util.IdentityHashMap<org.bukkit.block.Block, PendingEvent> blockToPending = new java.util.IdentityHashMap<>();
+        for (PendingEvent pending : batch) {
+            if (pending.block != null) {
+                blockToPending.put(pending.block, pending);
+            }
+        }
         while (iterator.hasNext()) {
             org.bukkit.block.Block block = iterator.next();
-            boolean cancel = false;
-            for (PendingEvent pending : batch) {
-                if (pending.block == block) {
-                    cancel = pending.cancelRequested.get();
-                    break;
-                }
-            }
-            if (cancel) {
+            PendingEvent pending = blockToPending.get(block);
+            if (pending != null && pending.cancelRequested.get()) {
                 iterator.remove();
             }
         }
@@ -251,11 +262,25 @@ public class EventDispatcher {
         sender.accept(message);
     }
 
+    private Method getCachedMethod(Class<?> eventClass, String methodName) {
+        String key = eventClass.getName() + "." + methodName;
+        Optional<Method> cached = methodCache.computeIfAbsent(key, k -> {
+            try {
+                return Optional.of(eventClass.getMethod(methodName));
+            } catch (Exception e) {
+                return Optional.empty();
+            }
+        });
+        return cached.orElse(null);
+    }
+
     private void tryAddPayload(JsonObject payload, Event event, String key, String... methodNames) {
         if (payload.has(key)) return;
+        Class<?> eventClass = event.getClass();
         for (String methodName : methodNames) {
+            Method method = getCachedMethod(eventClass, methodName);
+            if (method == null) continue;
             try {
-                Method method = event.getClass().getMethod(methodName);
                 Object value = method.invoke(event);
                 if (value != null) {
                     payload.add(key, serializer.serialize(value));
@@ -268,9 +293,11 @@ public class EventDispatcher {
 
     private void tryAddPrimitive(JsonObject payload, Event event, String key, String... methodNames) {
         if (payload.has(key)) return;
+        Class<?> eventClass = event.getClass();
         for (String methodName : methodNames) {
+            Method method = getCachedMethod(eventClass, methodName);
+            if (method == null) continue;
             try {
-                Method method = event.getClass().getMethod(methodName);
                 Object value = method.invoke(event);
                 if (value instanceof Number number) {
                     payload.addProperty(key, number);

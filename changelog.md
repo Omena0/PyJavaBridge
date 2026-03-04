@@ -1,6 +1,65 @@
 
 # Changelog
 
+## 3B
+
+Performance optimization pass — caching, data structures, and hot-path improvements across Java and Python.
+
+### Changes
+
+#### Java — Reflection & Caching
+
+- Cache `getMethods()` per class in `BridgeInstance` and `RefFacade` — avoids repeated reflection on every reflective invoke
+- Cache NMS reflection handles (`parseTag`, `getHandle`, `spawnNonLivingNms` helpers) in `EntitySpawner` static fields
+- Cache LuckPerms API instance and `Node`/`InheritanceNode` class objects in `PermissionsFacade`
+- Cache resolved event classes across 13 Bukkit packages in `EventSubscription` — avoids repeated `Class.forName()` for known events
+- Build static `Map<String, PacketType>` lookup tables in `PacketBridge` — O(1) packet type resolution
+- Merge dual method+miss cache into single `ConcurrentHashMap<String, Optional<Method>>` in `EventDispatcher` and `BridgeSerializer`
+- Cache `getLogicalTypeName()` per concrete class in `BridgeSerializer` — avoids repeated instanceof chains on every serialize
+
+#### Java — Serialization & I/O
+
+- ThreadLocal `ByteArrayOutputStream` for `send()` — avoids allocation per outgoing message
+- ThreadLocal identity-hash set for cyclic reference detection in `serialize()` — reused across calls
+- New `sendAll()` method batches multiple responses under a single lock + flush for batch/frame calls
+- ItemStack meta: call `displayName()`/`lore()` once with null check instead of `has*()`+`get*()` pairs
+- Shallow top-level entry copy instead of `deepCopy()` for per-block event payloads in `EventDispatcher`
+- Reduce per-pixel overhead in `spawnImagePixels` — single `get()` + null check replaces `has()`+`get()` pairs
+
+#### Java — Data Structures & Dispatch
+
+- `BridgeInstance.invoke()`: else-if dispatch chain replaces sequential instanceof checks — first match wins
+- `ObjectRegistry`: `StampedLock` replaces `synchronized` block — lock-free reads via `ConcurrentHashMap`, write lock only for register/release
+- `DebugManager`: `CopyOnWriteArraySet` replaces `synchronizedSet` — writes are rare (toggle), reads (broadcast) are frequent
+- `PlayerUuidResolver`: static `HttpClient` singleton, LRU eviction via `LinkedHashMap`, cached `usercache.json` parse with timestamp
+- `ScriptCommand`: pre-lowercase tab completions at registration — avoids `toLowerCase()` on every keystroke
+- `EventSubscription.lastDispatchNano` marked `volatile` for safe cross-thread reads
+- Expanded thread-safe method sets for `Server`, `OfflinePlayer`, and `Entity` — more calls skip main-thread dispatch
+- Static empty `JsonObject` sentinel for missing `args` in `invoke()`
+
+#### Python — Connection & Dispatch
+
+- Lazy module-level imports in `connection.py` — `_ensure_lazy_imports()` populates references once, avoids per-call `import`/`from` overhead
+- Single-handler fast path in `_dispatch_event` — when only 1 handler, directly call+await without list/gather overhead
+- `_build_call_message()` extracted — shared between `call()` and `call_sync()`, eliminates duplicated message construction
+- Release queue changed from `list` to `set` — O(1) `discard()` replaces O(n) `list.remove()`
+- `_maybe_flush_releases()` avoids unnecessary flushes on every call — only flushes when queue ≥ 16
+- `_read_exact()` optimistic fast path — single `os.read()` often returns full message, skips `bytearray` accumulation
+- `send()` writes header+data in one `write()` call instead of two
+
+#### Python — Proxy & Types
+
+- Lazy module-level dispatch table for `_proxy_from()` — suffix/contains lookup tables built once, avoids per-call dict literal and import
+- Handle-first fast path in `ProxyBase.__eq__` — same handle means same Java object, skip field comparison
+- `EnumValue.from_name()` dict cache — returns cached instances for repeated enum lookups
+- Bounded `_player_uuid_cache` (max 1000, evict oldest quarter) in both `wrappers.py` and `utils.py`
+- Consolidated `isinstance` checks in `decorators.py` command wrapper — merged two separate branches into one
+
+#### Python — Helpers
+
+- `State._instances` uses `weakref.ref` — allows garbage collection of unreferenced State objects
+- Shutdown handler updated to dereference weakrefs
+
 ## 3A
 
 Major expansion — extensions, tooling, networking overhaul.

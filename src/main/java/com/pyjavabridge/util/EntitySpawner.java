@@ -1,5 +1,6 @@
 package com.pyjavabridge.util;
 
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 import net.kyori.adventure.text.Component;
@@ -231,21 +232,22 @@ public class EntitySpawner {
             int argb;
 
             if (entryObj instanceof JsonObject entryJson) {
-                baseXShift = entryJson.has("baseXShift") ? entryJson.get("baseXShift").getAsFloat() : 0f;
-                baseYShift = entryJson.has("baseYShift") ? entryJson.get("baseYShift").getAsFloat() : 0f;
-                xOffset = entryJson.has("xOffset") ? entryJson.get("xOffset").getAsFloat() : 0f;
-                yOffset = entryJson.has("yOffset") ? entryJson.get("yOffset").getAsFloat() : 0f;
-                zOffset = entryJson.has("zOffset") ? entryJson.get("zOffset").getAsFloat() : 0f;
-                baseZShift = entryJson.has("baseZShift") ? entryJson.get("baseZShift").getAsFloat() : 0f;
+                JsonElement e;
+                baseXShift = (e = entryJson.get("baseXShift")) != null ? e.getAsFloat() : 0f;
+                baseYShift = (e = entryJson.get("baseYShift")) != null ? e.getAsFloat() : 0f;
+                xOffset = (e = entryJson.get("xOffset")) != null ? e.getAsFloat() : 0f;
+                yOffset = (e = entryJson.get("yOffset")) != null ? e.getAsFloat() : 0f;
+                zOffset = (e = entryJson.get("zOffset")) != null ? e.getAsFloat() : 0f;
+                baseZShift = (e = entryJson.get("baseZShift")) != null ? e.getAsFloat() : 0f;
 
-                scaleX = entryJson.has("scaleX") ? entryJson.get("scaleX").getAsFloat() : 1f;
-                scaleY = entryJson.has("scaleY") ? entryJson.get("scaleY").getAsFloat() : 1f;
-                scaleZ = entryJson.has("scaleZ") ? entryJson.get("scaleZ").getAsFloat() : 1f;
+                scaleX = (e = entryJson.get("scaleX")) != null ? e.getAsFloat() : 1f;
+                scaleY = (e = entryJson.get("scaleY")) != null ? e.getAsFloat() : 1f;
+                scaleZ = (e = entryJson.get("scaleZ")) != null ? e.getAsFloat() : 1f;
 
-                yaw = entryJson.has("yaw") ? entryJson.get("yaw").getAsFloat() : baseLocation.getYaw();
-                pitch = entryJson.has("pitch") ? entryJson.get("pitch").getAsFloat() : baseLocation.getPitch();
-                lineWidth = entryJson.has("lineWidth") ? entryJson.get("lineWidth").getAsInt() : 1;
-                argb = entryJson.has("argb") ? entryJson.get("argb").getAsInt() : 0x00000000;
+                yaw = (e = entryJson.get("yaw")) != null ? e.getAsFloat() : baseLocation.getYaw();
+                pitch = (e = entryJson.get("pitch")) != null ? e.getAsFloat() : baseLocation.getPitch();
+                lineWidth = (e = entryJson.get("lineWidth")) != null ? e.getAsInt() : 1;
+                argb = (e = entryJson.get("argb")) != null ? e.getAsInt() : 0x00000000;
 
             } else if (entryObj instanceof Map<?, ?> rawMap) {
                 Map<String, Object> entry = (Map<String, Object>) rawMap;
@@ -386,6 +388,10 @@ public class EntitySpawner {
         return null;
     }
 
+    // #14: Cached NMS reflection handles
+    private static volatile Method cachedParseTag;
+    private static volatile Method cachedGetHandle;
+
     private void applyEntityNbt(Entity entity, Object nbtObj) throws Exception {
         if (entity == null || nbtObj == null) {
             return;
@@ -394,14 +400,22 @@ public class EntitySpawner {
             throw new IllegalArgumentException("nbt must be an SNBT string");
         }
 
-        Class<?> tagParserClass = Class.forName("net.minecraft.nbt.TagParser");
-        Method parseTag = tagParserClass.getMethod("parseTag", String.class);
+        Method parseTag = cachedParseTag;
+        if (parseTag == null) {
+            Class<?> tagParserClass = Class.forName("net.minecraft.nbt.TagParser");
+            parseTag = tagParserClass.getMethod("parseTag", String.class);
+            cachedParseTag = parseTag;
+        }
         Object compoundTag = parseTag.invoke(null, snbt);
 
         Method remove = compoundTag.getClass().getMethod("remove", String.class);
         remove.invoke(compoundTag, "id");
 
-        Method getHandle = entity.getClass().getMethod("getHandle");
+        Method getHandle = cachedGetHandle;
+        if (getHandle == null || getHandle.getDeclaringClass() != entity.getClass()) {
+            getHandle = entity.getClass().getMethod("getHandle");
+            cachedGetHandle = getHandle;
+        }
         Object nmsEntity = getHandle.invoke(entity);
 
         Method load = nmsEntity.getClass().getMethod("load", compoundTag.getClass());
@@ -489,35 +503,59 @@ public class EntitySpawner {
         return spawnNonLivingNms(world, location, entityType);
     }
 
+    // #14: Cached NMS reflection handles for spawnNonLivingNms
+    private static volatile Method cachedCraftWorldGetHandle;
+    private static volatile Method cachedBukkitToMinecraft;
+    private static volatile Method cachedBlockPosContaining;
+    private static volatile Class<?> cachedServerLevelClass;
+    private static volatile Class<?> cachedNmsEntityClass;
+
     private static Entity spawnNonLivingNms(World world, Location location, EntityType entityType) throws Exception {
         Object craftWorld = world;
         Class<?> craftWorldClass = craftWorld.getClass();
 
-        Method getHandle = craftWorldClass.getMethod("getHandle");
+        Method getHandle = cachedCraftWorldGetHandle;
+        if (getHandle == null) {
+            getHandle = craftWorldClass.getMethod("getHandle");
+            cachedCraftWorldGetHandle = getHandle;
+        }
         Object serverLevel = getHandle.invoke(craftWorld);
 
-        Class<?> craftEntityTypeClass = Class.forName("org.bukkit.craftbukkit.entity.CraftEntityType");
-        Method bukkitToMinecraft = craftEntityTypeClass.getMethod("bukkitToMinecraft", EntityType.class);
+        Method bukkitToMinecraft = cachedBukkitToMinecraft;
+        if (bukkitToMinecraft == null) {
+            Class<?> craftEntityTypeClass = Class.forName("org.bukkit.craftbukkit.entity.CraftEntityType");
+            bukkitToMinecraft = craftEntityTypeClass.getMethod("bukkitToMinecraft", EntityType.class);
+            cachedBukkitToMinecraft = bukkitToMinecraft;
+        }
         Object nmsEntityType = bukkitToMinecraft.invoke(null, entityType);
 
         if (nmsEntityType == null) {
             return null;
         }
 
-        Class<?> blockPosClass = Class.forName("net.minecraft.core.BlockPos");
-        Method containing = blockPosClass.getMethod("containing", double.class, double.class, double.class);
+        Method containing = cachedBlockPosContaining;
+        if (containing == null) {
+            Class<?> blockPosClass = Class.forName("net.minecraft.core.BlockPos");
+            containing = blockPosClass.getMethod("containing", double.class, double.class, double.class);
+            cachedBlockPosContaining = containing;
+        }
         Object blockPos = containing.invoke(null, location.getX(), location.getY(), location.getZ());
 
-        // EntitySpawnReason (1.21.2+) or MobSpawnType (1.21-1.21.1)
         Class<?> spawnReasonClass = resolveSpawnReasonClass();
+
+        Class<?> serverLevelClass = cachedServerLevelClass;
+        if (serverLevelClass == null) {
+            serverLevelClass = Class.forName("net.minecraft.server.level.ServerLevel");
+            cachedServerLevelClass = serverLevelClass;
+        }
         @SuppressWarnings({ "rawtypes", "unchecked" })
         Object spawnReason = Enum.valueOf((Class) spawnReasonClass, "COMMAND");
 
         Method create = nmsEntityType.getClass().getMethod(
                 "create",
-                Class.forName("net.minecraft.server.level.ServerLevel"),
+                serverLevelClass,
                 java.util.function.Consumer.class,
-                blockPosClass,
+                containing.getDeclaringClass(),
                 spawnReasonClass,
                 boolean.class,
                 boolean.class);
@@ -536,9 +574,15 @@ public class EntitySpawner {
             return null;
         }
 
+        Class<?> nmsEntityClass = cachedNmsEntityClass;
+        if (nmsEntityClass == null) {
+            nmsEntityClass = Class.forName("net.minecraft.world.entity.Entity");
+            cachedNmsEntityClass = nmsEntityClass;
+        }
+
         Method addEntityToWorld = craftWorldClass.getMethod(
                 "addEntityToWorld",
-                Class.forName("net.minecraft.world.entity.Entity"),
+                nmsEntityClass,
                 CreatureSpawnEvent.SpawnReason.class);
 
         addEntityToWorld.invoke(craftWorld, nmsEntity, CreatureSpawnEvent.SpawnReason.CUSTOM);

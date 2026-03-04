@@ -7,6 +7,7 @@ import os
 import sys
 import threading
 import time
+import weakref
 from dataclasses import dataclass
 
 __all__ = [
@@ -266,7 +267,7 @@ class Config:
 class State:
     """Simple persistent key-value store that survives script reloads."""
 
-    _instances: list = []
+    _instances: list[weakref.ref] = []
 
     def __init__(self, name: Optional[str] = None):
         script_path = os.environ.get("PYJAVABRIDGE_SCRIPT", "")
@@ -279,7 +280,7 @@ class State:
         self._path = os.path.join(state_dir, f"{name}.json")
         self._data: Dict[str, Any] = {}
         self.load()
-        State._instances.append(self)
+        State._instances.append(weakref.ref(self))
 
     def load(self):
         if os.path.exists(self._path):

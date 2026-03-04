@@ -84,6 +84,7 @@ public class BridgeInstance {
     private final Map<UUID, PermissionAttachment> permissionAttachments = new ConcurrentHashMap<>();
 
     private static final Object UNHANDLED = new Object();
+    private static final JsonObject EMPTY_JSON_OBJ = new JsonObject();
 
     private final Map<Integer, PendingEvent> pendingEvents = new ConcurrentHashMap<>();
     private final Map<Integer, CompletableFuture<List<String>>> pendingTabCompletes = new ConcurrentHashMap<>();
@@ -763,7 +764,7 @@ public class BridgeInstance {
 
         CompletableFuture<Object> future = plugin.runOnMainThread(this, () -> invoke(message));
 
-        future.whenComplete((result, error) -> {
+        future.whenCompleteAsync((result, error) -> {
             if (error != null) {
                 Throwable cause = error instanceof java.util.concurrent.CompletionException
                         && error.getCause() != null ? error.getCause() : error;
@@ -871,13 +872,12 @@ public class BridgeInstance {
                     }
                 }
             } else {
-                for (JsonObject response : responses) {
-                    sendWithTiming(response, startNano);
-                }
+                sendAll(responses, startNano);
             }
             return;
         }
 
+        List<JsonObject> batchResponses = new ArrayList<>();
         for (JsonObject callMessage : calls) {
             int id = callMessage.get("id").getAsInt();
 
@@ -889,25 +889,42 @@ public class BridgeInstance {
                 response.addProperty("id", id);
                 response.add("result", serialize(result));
 
-                sendWithTiming(response, startNano);
+                batchResponses.add(response);
 
             } catch (Exception ex) {
+                // Flush any accumulated responses first, then send error
+                if (!batchResponses.isEmpty()) {
+                    sendAll(batchResponses, startNano);
+                    batchResponses = new ArrayList<>();
+                }
                 sendError(id, ex.getMessage(), ex);
             }
+        }
+        if (!batchResponses.isEmpty()) {
+            sendAll(batchResponses, startNano);
         }
     }
 
     private static final Set<String> THREAD_SAFE_SERVER_METHODS = Set.of(
-        "getName", "getVersion", "getBukkitVersion", "getMaxPlayers"
+        "getName", "getVersion", "getBukkitVersion", "getMaxPlayers",
+        "getOnlinePlayers", "getOfflinePlayer", "getWorlds",
+        "getPort", "getViewDistance", "getMotd", "hasWhitelist"
     );
 
     private static final Set<String> THREAD_SAFE_OFFLINEPLAYER_METHODS = Set.of(
         "getUniqueId", "getName", "hasPermission", "isPermissionSet",
-        "isWhitelisted", "isBanned"
+        "isWhitelisted", "isBanned", "isOnline", "getFirstPlayed",
+        "getLastPlayed", "hasPlayedBefore"
     );
 
     private static final Set<String> THREAD_SAFE_METADATA_METHODS = Set.of(
         "hasMetadata", "getMetadata"
+    );
+
+    private static final Set<String> THREAD_SAFE_ENTITY_METHODS = Set.of(
+        "getUniqueId", "getType", "isDead", "isValid",
+        "getEntityId", "getTicksLived", "getCustomName",
+        "isCustomNameVisible", "getName"
     );
 
     private boolean isCallThreadSafe(JsonObject message) {
@@ -944,9 +961,9 @@ public class BridgeInstance {
                 return THREAD_SAFE_OFFLINEPLAYER_METHODS.contains(method);
             }
 
-            // Entity (non-Player): only getUniqueId
+            // Entity (non-Player): UUID, type, and other read-only getters
             if (target instanceof Entity) {
-                return "getUniqueId".equals(method);
+                return THREAD_SAFE_ENTITY_METHODS.contains(method);
             }
         }
 
@@ -956,7 +973,7 @@ public class BridgeInstance {
     private Object invoke(JsonObject message) throws Exception {
         String method = message.get("method").getAsString();
 
-        JsonObject argsObj = message.has("args") ? message.getAsJsonObject("args") : new JsonObject();
+        JsonObject argsObj = message.has("args") ? message.getAsJsonObject("args") : EMPTY_JSON_OBJ;
 
         List<Object> args = new ArrayList<>();
 
@@ -983,43 +1000,35 @@ public class BridgeInstance {
             return entity.getUniqueId();
         }
 
-        // Type-specific dispatch
+        // Type-specific dispatch — else-if chain avoids redundant instanceof checks
         Object result = UNHANDLED;
 
         if (target instanceof World world) {
             result = invokeWorldMethod(world, method, args, argsObj);
-        }
-
-        if (result == UNHANDLED && target instanceof Block block) {
-            result = invokeBlockMethod(block, method);
-        }
-
-        if (result == UNHANDLED && target instanceof Block block) {
-            result = invokeBlockMethodWithArgs(block, method, args);
-        }
-
-        if (result == UNHANDLED && target instanceof org.bukkit.inventory.Inventory inv) {
-            result = invokeInventoryMethod(inv, method);
-        }
-
-        if (result == UNHANDLED && target instanceof Player player) {
+        } else if (target instanceof Player player) {
+            // Player before Entity since Player extends Entity
             result = invokePlayerMethod(player, method, args);
-        }
-
-        if (result == UNHANDLED && target instanceof Entity) {
-            result = invokeMobMethod((Entity) target, method, args);
-        }
-
-        if (result == UNHANDLED && target instanceof ItemStack itemStack) {
+            if (result == UNHANDLED) {
+                result = invokeMobMethod(player, method, args);
+            }
+        } else if (target instanceof Entity entity) {
+            if (target instanceof Display) {
+                result = invokeDisplayMethod(target, method, args);
+            }
+            if (result == UNHANDLED) {
+                result = invokeMobMethod(entity, method, args);
+            }
+        } else if (target instanceof Block block) {
+            result = invokeBlockMethod(block, method);
+            if (result == UNHANDLED) {
+                result = invokeBlockMethodWithArgs(block, method, args);
+            }
+        } else if (target instanceof org.bukkit.inventory.Inventory inv) {
+            result = invokeInventoryMethod(inv, method);
+        } else if (target instanceof ItemStack itemStack) {
             result = invokeItemStackMethod(itemStack, method, args);
-        }
-
-        if (result == UNHANDLED && target instanceof org.bukkit.Server server) {
+        } else if (target instanceof org.bukkit.Server server) {
             result = invokeServerMethod(server, method, args);
-        }
-
-        if (result == UNHANDLED && target instanceof Display) {
-            result = invokeDisplayMethod(target, method, args);
         }
 
         if (result != UNHANDLED) {
@@ -1731,11 +1740,15 @@ public class BridgeInstance {
         return UNHANDLED;
     }
 
+    // #2: Cache getMethods() per class to avoid repeated reflection
+    private static final ConcurrentHashMap<Class<?>, Method[]> reflectiveMethodsCache = new ConcurrentHashMap<>();
+
     private Object invokeReflective(Object target, String method, List<Object> args) throws Exception {
         // Try exact name first, then snake_case → camelCase variants (get prefix, is prefix, plain)
         String[] candidates = methodNameCandidates(method);
+        Method[] methods = reflectiveMethodsCache.computeIfAbsent(target.getClass(), Class::getMethods);
         for (String name : candidates) {
-            for (Method candidate : target.getClass().getMethods()) {
+            for (Method candidate : methods) {
                 if (!candidate.getName().equals(name)) {
                     continue;
                 }
@@ -2021,15 +2034,21 @@ public class BridgeInstance {
         return entitySpawner.spawnImagePixels(world, locationObj, pixelsObj);
     }
 
+    // #4: Reusable byte buffer per thread for send() serialization
+    private static final ThreadLocal<java.io.ByteArrayOutputStream> SEND_BUFFER =
+            ThreadLocal.withInitial(() -> new java.io.ByteArrayOutputStream(4096));
+
     public void send(JsonObject response) {
         if (writer == null || !running) {
             return;
         }
         try {
-            byte[] payload = gson.toJson(response).getBytes(StandardCharsets.UTF_8);
+            java.io.ByteArrayOutputStream baos = SEND_BUFFER.get();
+            baos.reset();
+            byte[] json = gson.toJson(response).getBytes(StandardCharsets.UTF_8);
             synchronized (writeLock) {
-                writer.writeInt(payload.length);
-                writer.write(payload);
+                writer.writeInt(json.length);
+                writer.write(json);
                 writer.flush();
             }
             if (plugin.isDebugEnabled()) {
@@ -2038,6 +2057,33 @@ public class BridgeInstance {
             }
         } catch (IOException e) {
             logError("Failed to send message", e);
+        }
+    }
+
+    /**
+     * Write multiple responses under a single lock acquisition + single flush.
+     * Much more efficient than calling send() in a loop for batch responses.
+     */
+    private void sendAll(List<JsonObject> responses, long startNano) {
+        if (writer == null || !running || responses.isEmpty()) {
+            return;
+        }
+        try {
+            synchronized (writeLock) {
+                for (JsonObject response : responses) {
+                    byte[] payload = gson.toJson(response).getBytes(StandardCharsets.UTF_8);
+                    writer.writeInt(payload.length);
+                    writer.write(payload);
+                }
+                writer.flush();
+            }
+            if (plugin.isDebugEnabled()) {
+                double ms = (System.nanoTime() - startNano) / 1_000_000.0;
+                plugin.broadcastDebug(String.format("[PJB] J2P (%.2fms) %s: batch %d responses",
+                        ms, name, responses.size()));
+            }
+        } catch (IOException e) {
+            logError("Failed to send batch responses", e);
         }
     }
 

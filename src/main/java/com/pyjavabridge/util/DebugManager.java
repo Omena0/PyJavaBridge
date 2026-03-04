@@ -3,14 +3,14 @@ package com.pyjavabridge.util;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.logging.Logger;
 
 public class DebugManager {
-    private final Set<UUID> debugPlayers = Collections.synchronizedSet(new HashSet<>());
+    // #23: CopyOnWriteArraySet — writes are rare (toggle debug), reads (broadcast) are frequent
+    private final Set<UUID> debugPlayers = new CopyOnWriteArraySet<>();
     private volatile boolean consoleDebug = false;
     private volatile Logger logger;
 

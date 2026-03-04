@@ -212,10 +212,35 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  // ── Decompress zstd search index (async, non-blocking) ──────
+  let searchIndex = [];
+
+  function loadSearchIndex() {
+    const el = document.getElementById('zstd-data');
+    if (!el || !el.textContent.trim()) return;
+    function tryLoad() {
+      if (typeof fzstd === 'undefined') return false;
+      try {
+        const b64 = el.textContent.trim();
+        const compressed = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+        const decompressed = fzstd.decompress(compressed);
+        const json = new TextDecoder().decode(decompressed);
+        searchIndex = JSON.parse(json);
+      } catch (e) {
+        console.error('Failed to decompress search index:', e);
+      }
+      return true;
+    }
+    if (!tryLoad()) {
+      // fzstd not yet loaded — poll until available
+      const iv = setInterval(() => { if (tryLoad()) clearInterval(iv); }, 50);
+    }
+  }
+  loadSearchIndex();
+
   // ── Header full-text search ─────────────────────────────────
   const headerSearch = document.getElementById('header-search');
   const searchResults = document.getElementById('search-results');
-  let searchIndex = window.SEARCH_INDEX || [];
 
   function doSearch(query) {
     if (!searchIndex || !query.trim()) {

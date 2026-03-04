@@ -16,6 +16,7 @@ from bridge.connection import BridgeConnection
 # Injected by bridge.__init__ during _bootstrap()
 _connection:BridgeConnection = None  # type: ignore[assignment]
 _player_uuid_cache: Dict[str, str] = {}
+_PLAYER_UUID_CACHE_MAX = 1000
 
 # Handle reference counting: track how many Python proxy objects share each Java handle.
 # Only release a handle when the last proxy referencing it is garbage collected.
@@ -118,14 +119,14 @@ class ProxyBase:
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, ProxyBase):
             return NotImplemented
+        # Fast path: same handle means same Java object
+        if self._handle is not None and self._handle == other._handle:
+            return True
         # Compare by UUID if both have one (entities/players)
         s_uuid = self.fields.get("uuid")
         o_uuid = other.fields.get("uuid")
         if s_uuid is not None and o_uuid is not None:
             return s_uuid == o_uuid
-        # Compare by handle if both have one
-        if self._handle is not None and other._handle is not None:
-            return self._handle == other._handle
         # Compare by ref identity
         if self._ref_type is not None and self._ref_type == other._ref_type:
             return self._ref_id == other._ref_id
@@ -438,11 +439,11 @@ class Entity(ProxyBase):
 
     @property
     def uuid(self):
-        return self.fields.get("uuid")
+        return self._field_or_call_sync("uuid", "getUniqueId")
 
     @property
     def type(self):
-        return self.fields.get("type")
+        return self._field_or_call_sync("type", "getType")
 
     @property
     def is_projectile(self):
@@ -450,7 +451,7 @@ class Entity(ProxyBase):
 
     @property
     def shooter(self):
-        return self.fields.get("shooter")
+        return self._field_or_call_sync("shooter", "getShooter")
 
     @property
     def is_tamed(self):
@@ -458,7 +459,7 @@ class Entity(ProxyBase):
 
     @property
     def owner(self):
-        return self.fields.get("owner")
+        return self._field_or_call_sync("owner", "getOwner")
 
     @property
     def owner_uuid(self):
@@ -470,7 +471,7 @@ class Entity(ProxyBase):
 
     @property
     def source(self):
-        return self.fields.get("source")
+        return self._field_or_call_sync("source", "getSource")
 
     @property
     def location(self):
@@ -478,19 +479,19 @@ class Entity(ProxyBase):
 
     @property
     def yaw(self) -> float:
-        loc = self.location
+        loc = self._call_sync("getLocation")
         return float(loc.yaw) if loc else 0.0
 
     @property
     def pitch(self) -> float:
-        loc = self.location
+        loc = self._call_sync("getLocation")
         return float(loc.pitch) if loc else 0.0
 
     @property
     def look_direction(self) -> Vector:
         """Normalized direction vector from the entity's yaw and pitch."""
         import math
-        loc = self.location
+        loc = self._call_sync("getLocation")
         yaw = math.radians(float(loc.yaw)) if loc else 0.0
         pitch = math.radians(float(loc.pitch)) if loc else 0.0
         x = -math.sin(yaw) * math.cos(pitch)
@@ -788,6 +789,11 @@ class Player(Entity):
                 result_text = str(result)
                 self.fields["uuid"] = result_text
                 if ref_type == "player_name" and ref_id:
+                    if len(_player_uuid_cache) >= _PLAYER_UUID_CACHE_MAX:
+                        # Evict oldest quarter
+                        keys = list(_player_uuid_cache.keys())
+                        for k in keys[:len(keys) // 4]:
+                            del _player_uuid_cache[k]
                     _player_uuid_cache[str(ref_id)] = result_text
                 return result_text
             return None

@@ -15,6 +15,12 @@ public class PermissionsFacade {
     private final PyJavaBridgePlugin plugin;
     private final Map<UUID, PermissionAttachment> permissionAttachments;
 
+    // #15: Cached LuckPerms reflection handles
+    private volatile Object cachedLpApi;
+    private volatile boolean lpApiChecked;
+    private volatile Class<?> cachedNodeClass;
+    private volatile Class<?> cachedInheritanceNodeClass;
+
     public PermissionsFacade(PyJavaBridgePlugin plugin, Map<UUID, PermissionAttachment> permissionAttachments) {
         this.plugin = plugin;
         this.permissionAttachments = permissionAttachments;
@@ -67,13 +73,17 @@ public class PermissionsFacade {
     }
 
     private Object luckPermsApi() {
+        if (lpApiChecked) return cachedLpApi;
         try {
             Class<?> apiClass = Class.forName("net.luckperms.api.LuckPerms");
             Object registration = Bukkit.getServicesManager().getRegistration(apiClass);
-            if (registration == null) { return null; }
+            if (registration == null) { lpApiChecked = true; return null; }
             Method getProvider = registration.getClass().getMethod("getProvider");
-            return getProvider.invoke(registration);
+            cachedLpApi = getProvider.invoke(registration);
+            lpApiChecked = true;
+            return cachedLpApi;
         } catch (Exception e) {
+            lpApiChecked = true;
             return null;
         }
     }
@@ -106,7 +116,11 @@ public class PermissionsFacade {
         Object user = luckPermsUser(api, player.getUniqueId());
         if (user == null) { return false; }
         try {
-            Class<?> nodeClass = Class.forName("net.luckperms.api.node.Node");
+            Class<?> nodeClass = cachedNodeClass;
+            if (nodeClass == null) {
+                nodeClass = Class.forName("net.luckperms.api.node.Node");
+                cachedNodeClass = nodeClass;
+            }
             Object builder = nodeClass.getMethod("builder", String.class).invoke(null, permission);
             builder.getClass().getMethod("value", boolean.class).invoke(builder, value);
             Object node = builder.getClass().getMethod("build").invoke(builder);
@@ -124,7 +138,11 @@ public class PermissionsFacade {
         Object user = luckPermsUser(api, player.getUniqueId());
         if (user == null) { return false; }
         try {
-            Class<?> nodeClass = Class.forName("net.luckperms.api.node.Node");
+            Class<?> nodeClass = cachedNodeClass;
+            if (nodeClass == null) {
+                nodeClass = Class.forName("net.luckperms.api.node.Node");
+                cachedNodeClass = nodeClass;
+            }
             Object builder = nodeClass.getMethod("builder", String.class).invoke(null, permission);
             Object node = builder.getClass().getMethod("build").invoke(builder);
             Object data = user.getClass().getMethod("data").invoke(user);
@@ -141,7 +159,11 @@ public class PermissionsFacade {
         Object user = luckPermsUser(api, player.getUniqueId());
         if (user == null) { return false; }
         try {
-            Class<?> nodeClass = Class.forName("net.luckperms.api.node.types.InheritanceNode");
+            Class<?> nodeClass = cachedInheritanceNodeClass;
+            if (nodeClass == null) {
+                nodeClass = Class.forName("net.luckperms.api.node.types.InheritanceNode");
+                cachedInheritanceNodeClass = nodeClass;
+            }
             Object builder = nodeClass.getMethod("builder", String.class).invoke(null, group);
             Object node = builder.getClass().getMethod("build").invoke(builder);
             Object data = user.getClass().getMethod("data").invoke(user);
@@ -162,7 +184,11 @@ public class PermissionsFacade {
         Object user = luckPermsUser(api, player.getUniqueId());
         if (user == null) { return null; }
         try {
-            Class<?> inheritanceNodeClass = Class.forName("net.luckperms.api.node.types.InheritanceNode");
+            Class<?> inheritanceNodeClass = cachedInheritanceNodeClass;
+            if (inheritanceNodeClass == null) {
+                inheritanceNodeClass = Class.forName("net.luckperms.api.node.types.InheritanceNode");
+                cachedInheritanceNodeClass = inheritanceNodeClass;
+            }
             Object nodes = user.getClass().getMethod("getNodes").invoke(user);
             if (!(nodes instanceof Iterable<?> iterable)) { return List.of(); }
             List<String> groups = new ArrayList<>();

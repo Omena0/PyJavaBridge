@@ -10,19 +10,31 @@ import os
 import re
 import sys
 
+import base64
+
 try:
     import markdown
     from markdown.extensions.fenced_code import FencedCodeExtension
     from markdown.extensions.tables import TableExtension
     from markdown.extensions.toc import TocExtension
+
 except ImportError:
     print("Installing markdown library...")
     import subprocess
     subprocess.check_call([sys.executable, "-m", "pip", "install", "markdown"])
+
     import markdown
     from markdown.extensions.fenced_code import FencedCodeExtension
     from markdown.extensions.tables import TableExtension
     from markdown.extensions.toc import TocExtension
+
+try:
+    import zstandard
+except ImportError:
+    print("Installing zstandard library...")
+    import subprocess
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "zstandard"])
+    import zstandard
 
 # ── Paths ────────────────────────────────────────────────────────────────────
 
@@ -325,7 +337,7 @@ TEMPLATE = """\
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,400..800&family=JetBrains+Mono:wght@400..700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -376,7 +388,8 @@ TEMPLATE = """\
     </svg>
   </button>
 
-  <script>window.SEARCH_INDEX={search_index};</script>
+  <script id="zstd-data" type="text/plain">{search_index_zstd_b64}</script>
+  <script src="https://cdn.jsdelivr.net/npm/fzstd@0.1.1/umd/index.js" async></script>
   <script src="script.js"></script>
 </body>
 </html>
@@ -427,7 +440,7 @@ def build_page(slug):
         subtitle_html=subtitle_html,
         body=body_html,
         sidebar=sidebar,
-        search_index=_search_index_json,
+        search_index_zstd_b64=_search_index_zstd_b64,
     )
 
     out_name = "index.html" if slug == "index" else f"{slug}.html"
@@ -444,10 +457,10 @@ def get_all_slugs():
     return slugs
 
 
-_search_index_json = "[]"
+_search_index_zstd_b64 = ""
 
 def main():
-    global _search_index_json
+    global _search_index_zstd_b64
     print("📖 Building PyJavaBridge docs...")
     print(f"   Source: {SRC_DIR}")
     print(f"   Output: {OUT_DIR}")
@@ -519,7 +532,14 @@ def main():
             search_index.append({"slug": slug, "title": title, "url": url, "sections": sections})
 
     import json
-    _search_index_json = json.dumps(search_index, separators=(',', ':'))
+    search_json = json.dumps(search_index, separators=(',', ':'))
+    cctx = zstandard.ZstdCompressor(level=22)
+    compressed = cctx.compress(search_json.encode('utf-8'))
+    _search_index_zstd_b64 = base64.b64encode(compressed).decode('ascii')
+    raw_size = len(search_json.encode('utf-8'))
+    compressed_size = len(compressed)
+    b64_size = len(_search_index_zstd_b64)
+    print(f"   Search index: {raw_size:,} bytes → {compressed_size:,} zstd → {b64_size:,} base64 ({100*b64_size/raw_size:.1f}%)")
 
     # Build pages (with search index inlined)
     for slug in slugs:

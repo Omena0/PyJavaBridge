@@ -39,7 +39,14 @@ class ScriptCommand extends Command {
     void setCompletions(Map<Integer, List<String>> completions) {
         this.completions.clear();
         if (completions != null) {
-            this.completions.putAll(completions);
+            // #19: Pre-lowercase all completion options at registration time
+            for (Map.Entry<Integer, List<String>> entry : completions.entrySet()) {
+                List<String> lowered = new ArrayList<>(entry.getValue().size());
+                for (String s : entry.getValue()) {
+                    lowered.add(s.toLowerCase());
+                }
+                this.completions.put(entry.getKey(), lowered);
+            }
         }
     }
 
@@ -160,7 +167,7 @@ class ScriptCommand extends Command {
 
         List<String> results = new ArrayList<>();
         for (String option : options) {
-            if (option.toLowerCase().startsWith(partial)) {
+            if (option.startsWith(partial)) {
                 results.add(option);
             }
         }

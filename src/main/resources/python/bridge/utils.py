@@ -11,17 +11,19 @@ from typing import Any, Callable, Dict, List, Optional, cast
 
 from bridge.connection import BridgeConnection
 from bridge.errors import BridgeError
-from bridge.types import (
-    EnumValue, Material, Biome, EffectType, AttributeType, GameMode, Sound,
-    Particle, Difficulty, DamageCause, Enchantment, ItemFlag, EquipmentSlot,
-    DyeColor, SpawnReason, EntityCategory, EntityPose, BlockFace, TreeType,
-    WeatherType, WorldType, Action, ChatColor, EventPriority, TeleportCause,
-    InventoryType, Billboard, BarFlag, BarColor, BarStyle, EntityType
-)
+from bridge.types import *
 
 # Injected by bridge.__init__ during _bootstrap()
 _connection:BridgeConnection = None  # type: ignore[assignment]
 _player_uuid_cache: Dict[str, str] = {}
+_PLAYER_UUID_CACHE_MAX = 1000
+
+
+def _bound_uuid_cache() -> None:
+    if len(_player_uuid_cache) >= _PLAYER_UUID_CACHE_MAX:
+        keys = list(_player_uuid_cache.keys())
+        for k in keys[:len(keys) // 4]:
+            del _player_uuid_cache[k]
 
 
 def _extract_xyz(pos: tuple[int] | Any) -> tuple:
@@ -73,12 +75,49 @@ def _enum_from(type_name: str, name: str) -> EnumValue:
     return enum_cls(type_name, name)
 
 
-def _proxy_from(raw: Dict[str, Any]) -> Any:
+# Lazy-init proxy dispatch table (avoids re-importing and re-creating dict per call)
+_proxy_map: Optional[Dict[str, type]] = None
+_proxy_suffix_table: Optional[list] = None
+_proxy_contains_table: Optional[list] = None
+_ProxyBase_cls: type = None  # type: ignore[assignment]
+_Event_cls: type = None  # type: ignore[assignment]
+_Entity_cls_u: type = None  # type: ignore[assignment]
+
+def _ensure_proxy_table() -> None:
+    global _proxy_map, _proxy_suffix_table, _proxy_contains_table
+    global _ProxyBase_cls, _Event_cls, _Entity_cls_u
+    if _proxy_map is not None:
+        return
     from bridge.wrappers import (
         ProxyBase, Server, Player, Entity, World, Dimension, Location, Block,
         Chunk, Vector, Inventory, Item, Effect, BossBar, Scoreboard, Team,
-        Objective, Advancement, AdvancementProgress, Attribute, Event,
+        Objective, Advancement, AdvancementProgress, Attribute, Event as EventCls,
     )
+    _ProxyBase_cls = ProxyBase
+    _Event_cls = EventCls
+    _Entity_cls_u = Entity
+    _proxy_map = {
+        "Server": Server, "Player": Player, "Entity": Entity,
+        "World": World, "WorldImpl": World, "Dimension": Dimension,
+        "Location": Location, "Block": Block, "Chunk": Chunk,
+        "Vector": Vector, "Inventory": Inventory, "ItemStack": Item,
+        "PotionEffect": Effect, "BossBar": BossBar, "Scoreboard": Scoreboard,
+        "Team": Team, "Objective": Objective, "Advancement": Advancement,
+        "AdvancementProgress": AdvancementProgress,
+        "AttributeInstance": Attribute, "Attribute": Attribute,
+        "Event": EventCls,
+    }
+    _proxy_suffix_table = [
+        ("Player", Player), ("Entity", Entity), ("World", World),
+        ("Location", Location), ("Block", Block), ("Chunk", Chunk),
+    ]
+    _proxy_contains_table = [
+        ("Inventory", Inventory), ("ItemStack", Item), ("PotionEffect", Effect),
+    ]
+
+
+def _proxy_from(raw: Dict[str, Any]) -> Any:
+    _ensure_proxy_table()
 
     type_name: Optional[str] = raw.get("__type__")
     raw_fields: Any = raw.get("fields") or {}
@@ -89,63 +128,30 @@ def _proxy_from(raw: Dict[str, Any]) -> Any:
         name = fields.get("name")
         player_uuid = fields.get("uuid")
         if isinstance(name, str):
+            _bound_uuid_cache()
             if isinstance(player_uuid, uuid.UUID):
                 _player_uuid_cache[name] = str(player_uuid)
             elif isinstance(player_uuid, str):
                 _player_uuid_cache[name] = player_uuid
 
-    proxy_map: Dict[str, type] = {
-        "Server": Server,
-        "Player": Player,
-        "Entity": Entity,
-        "World": World,
-        "WorldImpl": World,
-        "Dimension": Dimension,
-        "Location": Location,
-        "Block": Block,
-        "Chunk": Chunk,
-        "Vector": Vector,
-        "Inventory": Inventory,
-        "ItemStack": Item,
-        "PotionEffect": Effect,
-        "BossBar": BossBar,
-        "Scoreboard": Scoreboard,
-        "Team": Team,
-        "Objective": Objective,
-        "Advancement": Advancement,
-        "AdvancementProgress": AdvancementProgress,
-        "AttributeInstance": Attribute,
-        "Attribute": Attribute,
-        "Event": Event,
-    }
-
     if type_name and type_name.endswith("Event"):
-        proxy_cls = Event
+        proxy_cls = _Event_cls
     else:
-        proxy_cls = proxy_map.get(type_name or "", ProxyBase)
-        if proxy_cls is ProxyBase and type_name:
-            if type_name.endswith("Player"):
-                proxy_cls = Player
-            elif type_name.endswith("Entity"):
-                proxy_cls = Entity
-            elif type_name.endswith("World"):
-                proxy_cls = World
-            elif type_name.endswith("Location"):
-                proxy_cls = Location
-            elif type_name.endswith("Block"):
-                proxy_cls = Block
-            elif type_name.endswith("Chunk"):
-                proxy_cls = Chunk
-            elif "Inventory" in type_name:
-                proxy_cls = Inventory
-            elif "ItemStack" in type_name:
-                proxy_cls = Item
-            elif "PotionEffect" in type_name:
-                proxy_cls = Effect
+        proxy_cls = _proxy_map.get(type_name or "", _ProxyBase_cls)  # type: ignore[union-attr]
+        if proxy_cls is _ProxyBase_cls and type_name:
+            for suffix, cls in _proxy_suffix_table:  # type: ignore[union-attr]
+                if type_name.endswith(suffix):
+                    proxy_cls = cls
+                    break
+            else:
+                for substr, cls in _proxy_contains_table:  # type: ignore[union-attr]
+                    if substr in type_name:
+                        proxy_cls = cls
+                        break
 
         # Last-resort heuristic: if fields look like an entity, treat as Entity
-        if proxy_cls is ProxyBase and "uuid" in fields and "type" in fields:
-            proxy_cls = Entity
+        if proxy_cls is _ProxyBase_cls and "uuid" in fields and "type" in fields:
+            proxy_cls = _Entity_cls_u
 
     return proxy_cls(handle=handle, type_name=type_name, fields=fields)
 
@@ -374,6 +380,7 @@ async def _prime_player_cache():
                     name = player.fields.get("name")
                     player_uuid = player.fields.get("uuid")
                     if isinstance(name, str):
+                        _bound_uuid_cache()
                         if isinstance(player_uuid, uuid.UUID):
                             _player_uuid_cache[name] = str(player_uuid)
                         elif isinstance(player_uuid, str):

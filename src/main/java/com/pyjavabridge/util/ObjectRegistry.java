@@ -5,18 +5,22 @@ import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.StampedLock;
 
 public class ObjectRegistry {
     private final Map<Integer, Object> objects = new ConcurrentHashMap<>();
     private final IdentityHashMap<Object, Integer> reverseMap = new IdentityHashMap<>();
-    private final Object reverseLock = new Object();
+    // #24: StampedLock for read-heavy access (get() is lock-free via ConcurrentHashMap,
+    //      register/release use write lock on reverseMap)
+    private final StampedLock reverseLock = new StampedLock();
     private final AtomicInteger counter = new AtomicInteger(1);
 
     public int register(Object obj) {
         if (obj == null) {
             return 0;
         }
-        synchronized (reverseLock) {
+        long stamp = reverseLock.writeLock();
+        try {
             Integer existing = reverseMap.get(obj);
             if (existing != null && objects.containsKey(existing)) {
                 return existing;
@@ -25,6 +29,8 @@ public class ObjectRegistry {
             objects.put(id, obj);
             reverseMap.put(obj, id);
             return id;
+        } finally {
+            reverseLock.unlockWrite(stamp);
         }
     }
 
@@ -33,17 +39,28 @@ public class ObjectRegistry {
     }
 
     public void release(int id) {
-        synchronized (reverseLock) {
+        long stamp = reverseLock.writeLock();
+        try {
             Object removed = objects.remove(id);
             if (removed != null) {
                 reverseMap.remove(removed);
             }
+        } finally {
+            reverseLock.unlockWrite(stamp);
         }
     }
 
     public void releaseAll(Collection<Integer> ids) {
-        for (int id : ids) {
-            release(id);
+        long stamp = reverseLock.writeLock();
+        try {
+            for (int id : ids) {
+                Object removed = objects.remove(id);
+                if (removed != null) {
+                    reverseMap.remove(removed);
+                }
+            }
+        } finally {
+            reverseLock.unlockWrite(stamp);
         }
     }
 

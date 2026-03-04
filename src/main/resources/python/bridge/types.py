@@ -51,9 +51,17 @@ class EnumValue(metaclass=_EnumMeta):
     def __hash__(self) -> int:
         return hash((self.type, self.name))
 
+    _from_name_cache: dict[tuple, EnumValue] = {}
+
     @classmethod
     def from_name(cls: type[_EV], name: str) -> _EV:
-        return cls(cls.TYPE_NAME or cls.__name__, name)
+        key = (cls, name)
+        cached = EnumValue._from_name_cache.get(key)
+        if cached is not None:
+            return cached  # type: ignore[return-value]
+        instance = cls(cls.TYPE_NAME or cls.__name__, name)
+        EnumValue._from_name_cache[key] = instance
+        return instance
 
 def _bridge_call_done(future: "asyncio.Future[Any]") -> None:
     """Silently consume exceptions on unawaited bridge futures."""

@@ -39,13 +39,27 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class BridgeSerializer {
     private final ObjectRegistry registry;
     private final Gson gson;
     private final PyJavaBridgePlugin plugin;
+
+    // #9: Single cache map for tryInvokeNoArg — Optional.empty() means known-missing
+    private final ConcurrentHashMap<String, Optional<Method>> noArgMethodCache = new ConcurrentHashMap<>();
+    // Cache the PlainTextComponentSerializer instance instead of calling .plainText() repeatedly
+    private static final PlainTextComponentSerializer PLAIN_TEXT = PlainTextComponentSerializer.plainText();
+
+    // #8: Cache getLogicalTypeName() per concrete class to avoid repeated instanceof chains
+    private static final ConcurrentHashMap<Class<?>, String> typeNameCache = new ConcurrentHashMap<>();
+
+    // #3: ThreadLocal for cyclic reference detection set — reuse across serialize() calls
+    private static final ThreadLocal<Set<Object>> SEEN_SET = ThreadLocal.withInitial(
+            () -> Collections.newSetFromMap(new java.util.IdentityHashMap<>()));
 
     static final Object CONVERSION_FAIL = new Object();
 
@@ -55,31 +69,29 @@ public class BridgeSerializer {
      * (Player) must be checked before less specific ones (Entity).
      */
     private static String getLogicalTypeName(Object value) {
-        // Events
-        if (value instanceof org.bukkit.event.Event) {
-            return value.getClass().getSimpleName();          // keep event names as-is
-        }
-        // Order: most specific first
-        if (value instanceof Player)              return "Player";
-        if (value instanceof Entity)              return "Entity";
-        if (value instanceof org.bukkit.World)    return "World";
-        if (value instanceof Block)               return "Block";
-        if (value instanceof Location)            return "Location";
-        if (value instanceof org.bukkit.Chunk)    return "Chunk";
-        if (value instanceof Vector)              return "Vector";
-        if (value instanceof org.bukkit.inventory.Inventory) return "Inventory";
-        if (value instanceof ItemStack)           return "ItemStack";
-        if (value instanceof org.bukkit.potion.PotionEffect) return "PotionEffect";
-        if (value instanceof org.bukkit.boss.BossBar)        return "BossBar";
-        if (value instanceof org.bukkit.scoreboard.Scoreboard) return "Scoreboard";
-        if (value instanceof org.bukkit.scoreboard.Team)     return "Team";
-        if (value instanceof org.bukkit.scoreboard.Objective) return "Objective";
-        if (value instanceof org.bukkit.advancement.Advancement) return "Advancement";
-        if (value instanceof org.bukkit.advancement.AdvancementProgress) return "AdvancementProgress";
-        if (value instanceof org.bukkit.attribute.AttributeInstance) return "AttributeInstance";
-        if (value instanceof org.bukkit.Server)   return "Server";
-        // Fallback to implementation name
-        return value.getClass().getSimpleName();
+        return typeNameCache.computeIfAbsent(value.getClass(), clazz -> {
+            if (org.bukkit.event.Event.class.isAssignableFrom(clazz))
+                return clazz.getSimpleName();
+            if (Player.class.isAssignableFrom(clazz))               return "Player";
+            if (Entity.class.isAssignableFrom(clazz))               return "Entity";
+            if (org.bukkit.World.class.isAssignableFrom(clazz))     return "World";
+            if (Block.class.isAssignableFrom(clazz))                return "Block";
+            if (Location.class.isAssignableFrom(clazz))             return "Location";
+            if (org.bukkit.Chunk.class.isAssignableFrom(clazz))     return "Chunk";
+            if (Vector.class.isAssignableFrom(clazz))               return "Vector";
+            if (org.bukkit.inventory.Inventory.class.isAssignableFrom(clazz)) return "Inventory";
+            if (ItemStack.class.isAssignableFrom(clazz))            return "ItemStack";
+            if (org.bukkit.potion.PotionEffect.class.isAssignableFrom(clazz)) return "PotionEffect";
+            if (org.bukkit.boss.BossBar.class.isAssignableFrom(clazz))        return "BossBar";
+            if (org.bukkit.scoreboard.Scoreboard.class.isAssignableFrom(clazz)) return "Scoreboard";
+            if (org.bukkit.scoreboard.Team.class.isAssignableFrom(clazz))     return "Team";
+            if (org.bukkit.scoreboard.Objective.class.isAssignableFrom(clazz)) return "Objective";
+            if (org.bukkit.advancement.Advancement.class.isAssignableFrom(clazz)) return "Advancement";
+            if (org.bukkit.advancement.AdvancementProgress.class.isAssignableFrom(clazz)) return "AdvancementProgress";
+            if (org.bukkit.attribute.AttributeInstance.class.isAssignableFrom(clazz)) return "AttributeInstance";
+            if (org.bukkit.Server.class.isAssignableFrom(clazz))    return "Server";
+            return clazz.getSimpleName();
+        });
     }
 
     public BridgeSerializer(ObjectRegistry registry, Gson gson, PyJavaBridgePlugin plugin) {
@@ -89,7 +101,12 @@ public class BridgeSerializer {
     }
 
     public JsonElement serialize(Object value) {
-        return serialize(value, Collections.newSetFromMap(new java.util.IdentityHashMap<>()));
+        Set<Object> seen = SEEN_SET.get();
+        try {
+            return serialize(value, seen);
+        } finally {
+            seen.clear();
+        }
     }
 
     private JsonElement serialize(Object value, Set<Object> seen) {
@@ -246,22 +263,18 @@ public class BridgeSerializer {
             ItemMeta meta = itemStack.getItemMeta();
 
             if (meta != null) {
-                if (meta.hasDisplayName()) {
+                Component displayName = meta.displayName();
+                if (displayName != null) {
                     fields.addProperty("name",
-                            PlainTextComponentSerializer.plainText().serialize(meta.displayName()));
+                            PLAIN_TEXT.serialize(displayName));
                 }
-                if (meta.hasLore()) {
-                    List<Component> lore = meta.lore();
-
-                    if (lore != null) {
-                        List<String> loreText = new ArrayList<>();
-
-                        for (Component component : lore) {
-                            loreText.add(PlainTextComponentSerializer.plainText().serialize(component));
-                        }
-
-                        fields.add("lore", gson.toJsonTree(loreText));
+                List<Component> lore = meta.lore();
+                if (lore != null && !lore.isEmpty()) {
+                    List<String> loreText = new ArrayList<>(lore.size());
+                    for (Component component : lore) {
+                        loreText.add(PLAIN_TEXT.serialize(component));
                     }
+                    fields.add("lore", gson.toJsonTree(loreText));
                 }
 
                 if (meta.hasCustomModelData()) {
@@ -410,12 +423,26 @@ public class BridgeSerializer {
     }
 
     private Object tryInvokeNoArg(Object target, String methodName) {
-        try {
-            Method method = target.getClass().getMethod(methodName);
-            if (method.getParameterCount() != 0) {
+        String cacheKey = target.getClass().getName() + "." + methodName;
+        Optional<Method> cached = noArgMethodCache.get(cacheKey);
+        if (cached == null) {
+            // First access: look up via reflection
+            try {
+                Method m = target.getClass().getMethod(methodName);
+                if (m.getParameterCount() != 0) {
+                    noArgMethodCache.put(cacheKey, Optional.empty());
+                    return null;
+                }
+                noArgMethodCache.put(cacheKey, Optional.of(m));
+                cached = Optional.of(m);
+            } catch (Exception e) {
+                noArgMethodCache.put(cacheKey, Optional.empty());
                 return null;
             }
-            return method.invoke(target);
+        }
+        if (cached.isEmpty()) return null;
+        try {
+            return cached.get().invoke(target);
         } catch (Exception ignored) {
             return null;
         }

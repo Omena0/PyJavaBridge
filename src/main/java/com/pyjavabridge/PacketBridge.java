@@ -24,6 +24,25 @@ public class PacketBridge {
     private final ProtocolManager protocolManager;
     private final Map<String, PacketAdapter> activeListeners = new ConcurrentHashMap<>();
 
+    // #17: Pre-built lookup maps for O(1) PacketType resolution
+    private static final Map<String, PacketType> PLAY_SERVER_TYPES = new ConcurrentHashMap<>();
+    private static final Map<String, PacketType> PLAY_CLIENT_TYPES = new ConcurrentHashMap<>();
+    private static final Map<String, PacketType> ALL_TYPES = new ConcurrentHashMap<>();
+
+    static {
+        for (PacketType type : PacketType.values()) {
+            String key = type.name().toUpperCase();
+            ALL_TYPES.putIfAbsent(key, type);
+            if (type.getProtocol() == PacketType.Protocol.PLAY) {
+                if (type.getSender() == PacketType.Sender.SERVER) {
+                    PLAY_SERVER_TYPES.putIfAbsent(key, type);
+                } else if (type.getSender() == PacketType.Sender.CLIENT) {
+                    PLAY_CLIENT_TYPES.putIfAbsent(key, type);
+                }
+            }
+        }
+    }
+
     public PacketBridge(Plugin plugin) {
         this.plugin = plugin;
         this.protocolManager = ProtocolLibrary.getProtocolManager();
@@ -95,20 +114,15 @@ public class PacketBridge {
 
     private PacketType resolvePacketType(String name, PacketType.Protocol protocol, PacketType.Sender sender) {
         String upper = name.toUpperCase();
-        for (PacketType type : PacketType.values()) {
-            if (type.getProtocol() == protocol && type.getSender() == sender) {
-                if (type.name().equalsIgnoreCase(upper)) {
-                    return type;
-                }
-            }
+        // #17: O(1) lookup instead of iterating all PacketType values
+        if (protocol == PacketType.Protocol.PLAY && sender == PacketType.Sender.SERVER) {
+            PacketType result = PLAY_SERVER_TYPES.get(upper);
+            if (result != null) return result;
+        } else if (protocol == PacketType.Protocol.PLAY && sender == PacketType.Sender.CLIENT) {
+            PacketType result = PLAY_CLIENT_TYPES.get(upper);
+            if (result != null) return result;
         }
-        // Try loose match
-        for (PacketType type : PacketType.values()) {
-            if (type.name().equalsIgnoreCase(upper)) {
-                return type;
-            }
-        }
-        return null;
+        return ALL_TYPES.get(upper);
     }
 
     private JsonObject serializePacket(PacketContainer packet, String name) {

@@ -10,12 +10,17 @@ import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.EventExecutor;
 
+import java.util.concurrent.ConcurrentHashMap;
+
 public class EventSubscription implements Listener {
+    // #16: Cache resolved event classes to avoid repeated Class.forName() across 13 packages
+    private static final ConcurrentHashMap<String, Class<? extends Event>> eventClassCache = new ConcurrentHashMap<>();
+
     private final PyJavaBridgePlugin pluginRef;
     private final Class<? extends Event> eventClass;
     private final EventPriority priority;
     private long lastTick = -1;
-    private long lastDispatchNano = 0;
+    private volatile long lastDispatchNano = 0;
     private final EventExecutor executor;
 
     public EventSubscription(PyJavaBridgePlugin plugin, BridgeInstance instance, String eventName,
@@ -65,7 +70,11 @@ public class EventSubscription implements Listener {
     }
 
     static Class<? extends Event> resolveEventClass(String eventName) throws ClassNotFoundException {
+        Class<? extends Event> cached = eventClassCache.get(eventName);
+        if (cached != null) return cached;
+
         if (eventName.equalsIgnoreCase("server_boot")) {
+            eventClassCache.put(eventName, org.bukkit.event.server.ServerLoadEvent.class);
             return org.bukkit.event.server.ServerLoadEvent.class;
         }
         String pascal = toPascalCase(eventName) + "Event";
@@ -93,6 +102,7 @@ public class EventSubscription implements Listener {
                 if (Event.class.isAssignableFrom(clazz)) {
                     @SuppressWarnings("unchecked")
                     Class<? extends Event> eventClass = (Class<? extends Event>) clazz;
+                    eventClassCache.put(eventName, eventClass);
                     return eventClass;
                 }
             } catch (ClassNotFoundException ignored) {

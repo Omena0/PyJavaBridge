@@ -18,9 +18,13 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class RefFacade {
     private final BridgeInstance instance;
+
+    // #18: Cache getMethods() per class to avoid repeated reflection
+    private static final ConcurrentHashMap<Class<?>, Method[]> methodsCache = new ConcurrentHashMap<>();
 
     public RefFacade(BridgeInstance instance) {
         this.instance = instance;
@@ -109,7 +113,7 @@ public class RefFacade {
             Object pixelsObj = args.get(1);
             return instance.spawnImagePixels(worldTarget, locationObj, pixelsObj);
         }
-        Method[] methods = target.getClass().getMethods();
+        Method[] methods = methodsCache.computeIfAbsent(target.getClass(), Class::getMethods);
         for (Method candidate : methods) {
             if (!candidate.getName().equals(method)) {
                 continue;
