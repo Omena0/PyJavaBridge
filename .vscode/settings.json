@@ -4,5 +4,6 @@
     },
     "java.compile.nullAnalysis.mode": "automatic",
     "python-envs.defaultEnvManager": "ms-python.python:venv",
-    "java.configuration.updateBuildConfiguration": "interactive"
+    "java.configuration.updateBuildConfiguration": "interactive",
+    "python.defaultInterpreterPath": "/home/omena0/Github/PyJavaBridge/.venv/bin/python"
 }
