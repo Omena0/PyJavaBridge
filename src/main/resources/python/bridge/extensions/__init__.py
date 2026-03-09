@@ -21,6 +21,7 @@ Import extensions individually::
     from bridge.extensions import Leaderboard
     from bridge.extensions import VisualEffect
     from bridge.extensions import PlayerDataStore
+    from bridge.extensions import Schematic, Marker, PlacedSchematic
     from bridge.extensions import Dungeon, DungeonInstance, PlacedRoom, RoomTemplate, loot_pool
 """
 
@@ -43,6 +44,7 @@ from bridge.extensions.leaderboard import Leaderboard
 from bridge.extensions.custom_item import CustomItem
 from bridge.extensions.visual_effect import VisualEffect
 from bridge.extensions.player_data import PlayerDataStore
+from bridge.extensions.schematic import Schematic, Marker, PlacedSchematic
 from bridge.extensions.dungeon import Dungeon, DungeonInstance, PlacedRoom, RoomTemplate, Exit, loot_pool
 
 __all__ = [
@@ -65,5 +67,6 @@ __all__ = [
     "Leaderboard",
     "VisualEffect",
     "PlayerDataStore",
+    "Schematic", "Marker", "PlacedSchematic",
     "Dungeon", "DungeonInstance", "PlacedRoom", "RoomTemplate", "Exit", "loot_pool",
 ]

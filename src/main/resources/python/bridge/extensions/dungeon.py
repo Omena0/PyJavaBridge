@@ -97,95 +97,19 @@ import sys
 import time
 from typing import Any, Callable, Dict, List, Optional, Tuple
 from bridge.extensions.region import Region
+from bridge.extensions.schematic import (
+    FACING, FACING_NAME, _opposite_facing,
+    TRANSFORM_NONE, TRANSFORM_CW_90, TRANSFORM_CW_180, TRANSFORM_CW_270,
+    TRANSFORM_MIRROR_X, TRANSFORM_MIRROR_Z, ALL_TRANSFORMS,
+    _rotate_facing, _transform_local_pos, _transform_dims,
+    _expand_rle, _compute_ops, _parse_ops, _ops_to_text,
+    Marker, Schematic,
+)
 from bridge.types import async_task
 
 _print = __builtins__["print"] if isinstance(__builtins__, dict) else __builtins__.print  # type: ignore[index]
 def _log(msg: str):
     _print(f"[Dungeon] {msg}", file=sys.stderr)
-
-
-# -- Facing directions ---------------------------------------------------------
-FACING: Dict[str, Tuple[int, int, int]] = {
-    "+x": (1, 0, 0),  "-x": (-1, 0, 0),
-    "+y": (0, 1, 0),  "-y": (0, -1, 0),
-    "+z": (0, 0, 1),  "-z": (0, 0, -1),
-}
-FACING_NAME: Dict[Tuple[int, int, int], str] = {v: k for k, v in FACING.items()}
-
-def _opposite_facing(f: Tuple[int, int, int]) -> Tuple[int, int, int]:
-    return (-f[0], -f[1], -f[2])
-
-
-# -- Transformation helpers ----------------------------------------------------
-
-# Supported transforms applied around the Y axis.
-TRANSFORM_NONE = "none"
-TRANSFORM_CW_90 = "cw90"          # 90° clockwise when viewed from above
-TRANSFORM_CW_180 = "cw180"
-TRANSFORM_CW_270 = "cw270"
-TRANSFORM_MIRROR_X = "mirror_x"   # flip along the X axis (negate X)
-TRANSFORM_MIRROR_Z = "mirror_z"   # flip along the Z axis (negate Z)
-
-ALL_TRANSFORMS = (
-    TRANSFORM_NONE,
-    TRANSFORM_CW_90,
-    TRANSFORM_CW_180,
-    TRANSFORM_CW_270,
-    TRANSFORM_MIRROR_X,
-    TRANSFORM_MIRROR_Z,
-)
-
-def _rotate_facing(facing: Tuple[int, int, int], transform: str) -> Tuple[int, int, int]:
-    """Apply *transform* to a facing direction vector."""
-    fx, fy, fz = facing
-    if transform == TRANSFORM_NONE:
-        return facing
-    if transform == TRANSFORM_CW_90:
-        return (fz, fy, -fx)
-    if transform == TRANSFORM_CW_180:
-        return (-fx, fy, -fz)
-    if transform == TRANSFORM_CW_270:
-        return (-fz, fy, fx)
-    if transform == TRANSFORM_MIRROR_X:
-        return (-fx, fy, fz)
-    if transform == TRANSFORM_MIRROR_Z:
-        return (fx, fy, -fz)
-    return facing
-
-
-def _transform_local_pos(
-    x: int, y: int, z: int,
-    w: int, d: int,
-    transform: str,
-) -> Tuple[int, int, int]:
-    """Transform a local coordinate ``(x, y, z)`` within a room of size
-    ``w`` (X) × ``d`` (Z).  Returns the new ``(x', y', z')`` inside the
-    transformed bounding box.
-    """
-    if transform == TRANSFORM_NONE:
-        return (x, y, z)
-    if transform == TRANSFORM_CW_90:
-        # (x, z) -> (d-1-z, x);  new width = d, new depth = w
-        return (d - 1 - z, y, x)
-    if transform == TRANSFORM_CW_180:
-        return (w - 1 - x, y, d - 1 - z)
-    if transform == TRANSFORM_CW_270:
-        # (x, z) -> (z, w-1-x);  new width = d, new depth = w
-        return (z, y, w - 1 - x)
-    if transform == TRANSFORM_MIRROR_X:
-        return (w - 1 - x, y, z)
-    if transform == TRANSFORM_MIRROR_Z:
-        return (x, y, d - 1 - z)
-    return (x, y, z)
-
-
-def _transform_dims(
-    w: int, h: int, d: int, transform: str,
-) -> Tuple[int, int, int]:
-    """Return ``(new_width, height, new_depth)`` after *transform*."""
-    if transform in (TRANSFORM_CW_90, TRANSFORM_CW_270):
-        return (d, h, w)
-    return (w, h, d)
 
 
 def _exit_opening_corners(ex: "Exit") -> Tuple[Tuple[int, int, int], Tuple[int, int, int]]:
@@ -210,333 +134,6 @@ def _exit_opening_corners(ex: "Exit") -> Tuple[Tuple[int, int, int], Tuple[int, 
         ex.z + (ex.width - 1) * wd[2] + (ex.height - 1) * hd[2],
     )
     return (ex.x, ex.y, ex.z), opp
-
-# -- .droom file parser / writer -----------------------------------------------
-def _expand_rle(row_str: str) -> List[str]:
-    """Expand a run-length encoded string into a list of single-char keys.
-
-    ``S3`` -> ``['S','S','S']``, ``~`` -> ``['~']``, ``AB2C`` -> ``['A','B','B','C']``.
-
-    Kept for backwards compatibility with old RLE-format ``.droom`` files.
-    """
-    result: List[str] = []
-    i = 0
-    while i < len(row_str):
-        ch = row_str[i]
-        i += 1
-        num_str = ""
-        while i < len(row_str) and row_str[i].isdigit():
-            num_str += row_str[i]
-            i += 1
-        count = int(num_str) if num_str else 1
-        result.extend([ch] * count)
-    return result
-
-
-def _compute_ops(
-    blocks: List[List[List[str]]],
-    reverse_map: Dict[str, str],
-    width: int, height: int, depth: int,
-) -> List[tuple]:
-    """Compute optimal fill/set operations from a 3-D block array.
-
-    Uses a two-phase algorithm that allows overwriting:
-
-    1. **Volumetric fills** — iteratively try filling each block type's
-       bounding box.  A fill is accepted when the total operation count
-       (this fill + greedy correction of the resulting diffs) is lower
-       than the baseline (greedy mesh without the fill).  This enables
-       patterns like "fill solid cube, then carve interior with air".
-
-    2. **Greedy meshing** — sweep remaining diff cells (state != target)
-       with box expansion to mop up stragglers.
-
-    Returns a list of tuples:
-
-    - ``("set", x, y, z, key_char)``
-    - ``("fill", x1, y1, z1, x2, y2, z2, key_char)``
-    """
-    # Build target grid (char keys)
-    target = [
-        [
-            [reverse_map.get(blocks[y][z][x], "~") for x in range(width)]
-            for z in range(depth)
-        ]
-        for y in range(height)
-    ]
-    # State grid starts as all air
-    state = [
-        [["~"] * width for _ in range(depth)]
-        for _ in range(height)
-    ]
-
-    phase1_ops: List[tuple] = []
-    baseline_ops = _greedy_mesh(target, state, width, height, depth)
-
-    # Phase 1: Volumetric fills with overwriting
-    while True:
-        candidates = _diff_candidates(target, state, width, height, depth)
-        if not candidates:
-            break
-
-        current_total = len(phase1_ops) + len(baseline_ops)
-        best_fill: Optional[tuple] = None
-        best_state: Optional[List] = None
-        best_corrections: Optional[List[tuple]] = None
-        best_total = current_total
-
-        for key, (bx1, by1, bz1, bx2, by2, bz2) in candidates:
-            vol = (bx2 - bx1 + 1) * (by2 - by1 + 1) * (bz2 - bz1 + 1)
-            if vol <= 1:
-                continue
-
-            # Trial: apply this fill to a copy of state
-            trial = [[row[:] for row in layer] for layer in state]
-            for yi in range(by1, by2 + 1):
-                for zi in range(bz1, bz2 + 1):
-                    for xi in range(bx1, bx2 + 1):
-                        trial[yi][zi][xi] = key
-
-            trial_corrections = _greedy_mesh(target, trial, width, height, depth)
-            trial_total = len(phase1_ops) + 1 + len(trial_corrections)
-
-            if trial_total < best_total:
-                best_total = trial_total
-                best_fill = ("fill", bx1, by1, bz1, bx2, by2, bz2, key)
-                best_state = trial
-                best_corrections = trial_corrections
-
-        if best_fill is None:
-            break
-
-        phase1_ops.append(best_fill)
-        assert best_state is not None
-        assert best_corrections is not None
-        state = best_state
-        baseline_ops = best_corrections
-
-    return phase1_ops + baseline_ops
-
-
-def _diff_candidates(
-    target: List[List[List[str]]],
-    state: List[List[List[str]]],
-    w: int, h: int, d: int,
-) -> List[Tuple[str, Tuple[int, int, int, int, int, int]]]:
-    """Generate candidate fill regions for each diff block type.
-
-    For each type, returns the tight bounding box plus variants with
-    independent per-axis face insets.  XZ faces are inset symmetrically
-    (both sides by the same amount), while Y bottom and Y top can shrink
-    independently.  This lets the algorithm discover patterns like
-    'fill the entire interior' where the Y range doesn't align with a
-    uniform inset (e.g. floor at y=1, ceiling structure at y=6,
-    but bbox Y extends to y=8).
-    """
-    bounds: Dict[str, List[int]] = {}
-    for y in range(h):
-        for z in range(d):
-            for x in range(w):
-                if state[y][z][x] != target[y][z][x]:
-                    k = target[y][z][x]
-                    if k not in bounds:
-                        bounds[k] = [w, h, d, -1, -1, -1]
-                    b = bounds[k]
-                    if x < b[0]: b[0] = x
-                    if y < b[1]: b[1] = y
-                    if z < b[2]: b[2] = z
-                    if x > b[3]: b[3] = x
-                    if y > b[4]: b[4] = y
-                    if z > b[5]: b[5] = z
-
-    seen: set = set()
-    result: List[Tuple[str, Tuple[int, int, int, int, int, int]]] = []
-
-    for k, b in bounds.items():
-        if b[3] < 0:
-            continue
-        x1, y1, z1, x2, y2, z2 = b
-
-        # Per-axis insets: xz_inset (symmetric X and Z), y_bot, y_top
-        for xz in range(3):
-            for yb in range(3):
-                for yt in range(3):
-                    nx1 = x1 + xz
-                    nz1 = z1 + xz
-                    nx2 = x2 - xz
-                    nz2 = z2 - xz
-                    ny1 = y1 + yb
-                    ny2 = y2 - yt
-                    if nx1 > nx2 or ny1 > ny2 or nz1 > nz2:
-                        continue
-                    box = (nx1, ny1, nz1, nx2, ny2, nz2)
-                    key = (k, box)
-                    if key not in seen:
-                        seen.add(key)
-                        result.append((k, box))
-
-    return result
-
-
-def _greedy_mesh(
-    target: List[List[List[str]]],
-    state: List[List[List[str]]],
-    w: int, h: int, d: int,
-) -> List[tuple]:
-    """Greedy box expansion on diff cells using the best of several sweep orders."""
-    best: Optional[List[tuple]] = None
-    # Try 3 axis orderings: (y,z,x), (x,z,y), (z,x,y)
-    for perm in ((1, 2, 0), (0, 2, 1), (2, 0, 1)):
-        ops = _greedy_mesh_sweep(target, state, w, h, d, perm)
-        if best is None or len(ops) < len(best):
-            best = ops
-    return best  # type: ignore[return-value]
-
-
-def _greedy_mesh_sweep(
-    target: List[List[List[str]]],
-    state: List[List[List[str]]],
-    w: int, h: int, d: int,
-    perm: Tuple[int, int, int],
-) -> List[tuple]:
-    """Greedy box expansion using a specific axis sweep order.
-
-    *perm* is ``(outer, mid, inner)`` where ``0 = x, 1 = y, 2 = z``.
-    """
-    dims = (w, h, d)
-    s0, s1, s2 = dims[perm[0]], dims[perm[1]], dims[perm[2]]
-    p0, p1, p2 = perm
-
-    visited = [[[False] * s2 for _ in range(s1)] for _ in range(s0)]
-    ops: List[tuple] = []
-
-    for a in range(s0):
-        for b in range(s1):
-            for c in range(s2):
-                if visited[a][b][c]:
-                    continue
-                # Map permuted indices to real (x, y, z)
-                r = [0, 0, 0]
-                r[p0] = a; r[p1] = b; r[p2] = c
-                x, y, z = r[0], r[1], r[2]
-
-                if state[y][z][x] == target[y][z][x]:
-                    continue
-                key = target[y][z][x]
-
-                # Expand along inner axis (c)
-                ec = c
-                while ec + 1 < s2:
-                    r2 = [0, 0, 0]
-                    r2[p0] = a; r2[p1] = b; r2[p2] = ec + 1
-                    nx, ny, nz = r2[0], r2[1], r2[2]
-                    if (visited[a][b][ec + 1]
-                            or state[ny][nz][nx] == target[ny][nz][nx]
-                            or target[ny][nz][nx] != key):
-                        break
-                    ec += 1
-
-                # Expand along mid axis (b)
-                eb = b
-                expanding = True
-                while expanding and eb + 1 < s1:
-                    for jc in range(c, ec + 1):
-                        r2 = [0, 0, 0]
-                        r2[p0] = a; r2[p1] = eb + 1; r2[p2] = jc
-                        nx, ny, nz = r2[0], r2[1], r2[2]
-                        if (visited[a][eb + 1][jc]
-                                or state[ny][nz][nx] == target[ny][nz][nx]
-                                or target[ny][nz][nx] != key):
-                            expanding = False
-                            break
-                    if expanding:
-                        eb += 1
-
-                # Expand along outer axis (a)
-                ea = a
-                expanding = True
-                while expanding and ea + 1 < s0:
-                    for jb in range(b, eb + 1):
-                        for jc in range(c, ec + 1):
-                            r2 = [0, 0, 0]
-                            r2[p0] = ea + 1; r2[p1] = jb; r2[p2] = jc
-                            nx, ny, nz = r2[0], r2[1], r2[2]
-                            if (visited[ea + 1][jb][jc]
-                                    or state[ny][nz][nx] == target[ny][nz][nx]
-                                    or target[ny][nz][nx] != key):
-                                expanding = False
-                                break
-                        if not expanding:
-                            break
-                    if expanding:
-                        ea += 1
-
-                # Mark visited
-                for ja in range(a, ea + 1):
-                    for jb in range(b, eb + 1):
-                        for jc in range(c, ec + 1):
-                            visited[ja][jb][jc] = True
-
-                # Convert back to (x, y, z) coordinates
-                r1 = [0, 0, 0]
-                r1[p0] = a; r1[p1] = b; r1[p2] = c
-                r2 = [0, 0, 0]
-                r2[p0] = ea; r2[p1] = eb; r2[p2] = ec
-                x1, y1, z1 = r1[0], r1[1], r1[2]
-                x2, y2, z2 = r2[0], r2[1], r2[2]
-
-                if x1 == x2 and y1 == y2 and z1 == z2:
-                    ops.append(("set", x1, y1, z1, key))
-                else:
-                    ops.append(("fill", x1, y1, z1, x2, y2, z2, key))
-
-    return ops
-
-
-def _ops_to_text(ops: List[tuple]) -> str:
-    """Serialize operation tuples to the text block in a ``.droom`` file."""
-    lines: List[str] = []
-    for op in ops:
-        if op[0] == "set":
-            _, x, y, z, key = op
-            lines.append(f"set {x} {y} {z} {key}")
-        else:
-            _, x1, y1, z1, x2, y2, z2, key = op
-            lines.append(f"fill {x1} {y1} {z1} {x2} {y2} {z2} {key}")
-    return "\n".join(lines)
-
-
-def _parse_ops(
-    text: str,
-    key_map: Dict[str, str],
-    width: int, height: int, depth: int,
-) -> List[List[List[str]]]:
-    """Parse fill/set operation lines into a ``[y][z][x]`` block array."""
-    layers: List[List[List[str]]] = [
-        [["minecraft:air"] * width for _ in range(depth)]
-        for _ in range(height)
-    ]
-    for line in text.strip().splitlines():
-        line = line.strip()
-        if not line or line.startswith("#"):
-            continue
-        parts = line.split()
-        if parts[0] == "set" and len(parts) == 5:
-            x, y, z = int(parts[1]), int(parts[2]), int(parts[3])
-            key = parts[4]
-            block_def = key_map.get(key, "air")
-            layers[y][z][x] = f"minecraft:{block_def}"
-        elif parts[0] == "fill" and len(parts) == 8:
-            x1, y1, z1 = int(parts[1]), int(parts[2]), int(parts[3])
-            x2, y2, z2 = int(parts[4]), int(parts[5]), int(parts[6])
-            key = parts[7]
-            block_def = key_map.get(key, "air")
-            full = f"minecraft:{block_def}"
-            for yi in range(y1, y2 + 1):
-                for zi in range(z1, z2 + 1):
-                    for xi in range(x1, x2 + 1):
-                        layers[yi][zi][xi] = full
-    return layers
 
 # -- Exit definition -----------------------------------------------------------
 class Exit:
@@ -763,6 +360,56 @@ class RoomTemplate:
         return cls(name, path, room_type, exits, weight, loot, key_map,
                meta_width, meta_height, meta_depth, layers, spawns)
 
+    @classmethod
+    def from_schematic(cls, schem: "Schematic") -> "RoomTemplate":
+        """Create a RoomTemplate from a :class:`~bridge.extensions.schematic.Schematic`.
+
+        Interprets markers with type ``"exit"`` as exits and markers with
+        type ``"spawn"`` as mob spawns.  All other metadata keys from the
+        schematic's header are preserved as dungeon metadata (``type``,
+        ``weight``, ``loot``).
+        """
+        exits: List[Exit] = []
+        for m in schem.markers_by_type("exit"):
+            facing = FACING.get(m.metadata.get("facing", "+x"), (1, 0, 0))
+            w = int(m.metadata.get("width", "1"))
+            h = int(m.metadata.get("height", "1"))
+            tag = m.metadata.get("tag")
+            exits.append(Exit(m.x, m.y, m.z, facing, w, h, tag))
+
+        spawns: List[Dict[str, Any]] = []
+        for m in schem.markers_by_type("spawn"):
+            entity = m.metadata.get("entity", "zombie")
+            count = int(m.metadata.get("count", "1"))
+            kwargs = {k: v for k, v in m.metadata.items()
+                      if k not in ("entity", "count")}
+            spawns.append({"entity": entity, "x": m.x, "y": m.y, "z": m.z,
+                           "count": count, "kwargs": kwargs})
+
+        room_type = schem.metadata.get("type", "generic")
+        weight = int(schem.metadata.get("weight", "10"))
+        loot: Dict[str, str] = {}
+        loot_str = schem.metadata.get("loot", "")
+        for pair in loot_str.split():
+            if "=" in pair:
+                tag, _, pool = pair.partition("=")
+                loot[tag] = pool
+
+        return cls(
+            name=schem.name,
+            path=schem.path,
+            room_type=room_type,
+            exits=exits,
+            weight=weight,
+            loot=loot,
+            key_map=dict(schem.key_map),
+            width=schem.width,
+            height=schem.height,
+            depth=schem.depth,
+            blocks=schem.blocks,
+            spawns=spawns,
+        )
+
     def to_droom(self) -> str:
         """Serialize back to ``.droom`` format."""
         lines: List[str] = []
@@ -964,7 +611,7 @@ class PlacedRoom:
         _log(f"paste: {self.template.name!r} at {self.origin}")
         t0 = time.perf_counter()
         bulk_ops = self._build_bulk_ops()
-        from bridge.connection import _connection
+        from bridge import _connection
         originals = await _connection.call(
             target="region", method="pasteOperations",
             args=[world, bulk_ops],
@@ -1010,7 +657,7 @@ class PlacedRoom:
             return
         entries = [[wx, wy, wz, block_str]
                    for (wx, wy, wz), block_str in self.original_blocks.items()]
-        from bridge.connection import _connection
+        from bridge import _connection
         await _connection.call(
             target="region", method="restoreBlocks",
             args=[world, entries],
@@ -1593,7 +1240,7 @@ class DungeonInstance:
         _log(f"paste_all: {len(self.rooms)} rooms")
         t0 = time.perf_counter()
         from bridge import World
-        from bridge.connection import _connection
+        from bridge import _connection
 
         world = World(name=self.world_name)
 
@@ -1774,16 +1421,19 @@ class Dungeon:
         self._load_templates()
 
     def _load_templates(self):
-        """Scan ``rooms_dir`` for ``.droom`` files."""
+        """Scan ``rooms_dir`` for ``.droom`` and ``.bschem`` files."""
         if not os.path.isdir(self.rooms_dir):
             return
         for fname in sorted(os.listdir(self.rooms_dir)):
-            if fname.endswith(".droom"):
-                path = os.path.join(self.rooms_dir, fname)
-                try:
+            path = os.path.join(self.rooms_dir, fname)
+            try:
+                if fname.endswith(".droom"):
                     self._templates.append(RoomTemplate.load(path))
-                except Exception as e:
-                    print(f"[Dungeon] Failed to load {path}: {e}")
+                elif fname.endswith(".bschem"):
+                    schem = Schematic.load(path)
+                    self._templates.append(RoomTemplate.from_schematic(schem))
+            except Exception as e:
+                print(f"[Dungeon] Failed to load {path}: {e}")
 
     def reload_templates(self):
         """Re-scan the rooms directory."""
