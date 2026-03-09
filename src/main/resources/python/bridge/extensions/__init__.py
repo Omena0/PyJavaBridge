@@ -23,6 +23,11 @@ Import extensions individually::
     from bridge.extensions import PlayerDataStore
     from bridge.extensions import Schematic, Marker, PlacedSchematic
     from bridge.extensions import Dungeon, DungeonInstance, PlacedRoom, RoomTemplate, loot_pool
+    from bridge.extensions import TabList, TabEntry, TabGroup
+    from bridge.extensions import StateMachine, State
+    from bridge.extensions import Scheduler, ScheduledTask
+    from bridge.extensions import PlaceholderRegistry
+    from bridge.extensions import LootTable, LootPool, LootEntry
 """
 
 from bridge.extensions.npc import NPC
@@ -46,6 +51,11 @@ from bridge.extensions.visual_effect import VisualEffect
 from bridge.extensions.player_data import PlayerDataStore
 from bridge.extensions.schematic import Schematic, Marker, PlacedSchematic
 from bridge.extensions.dungeon import Dungeon, DungeonInstance, PlacedRoom, RoomTemplate, Exit, loot_pool
+from bridge.extensions.tab_list import TabList, TabEntry, TabGroup
+from bridge.extensions.state_machine import StateMachine, State
+from bridge.extensions.scheduler import Scheduler, ScheduledTask
+from bridge.extensions.placeholder import PlaceholderRegistry
+from bridge.extensions.loot_table import LootTable, LootPool, LootEntry
 
 __all__ = [
     "NPC",
@@ -69,4 +79,9 @@ __all__ = [
     "PlayerDataStore",
     "Schematic", "Marker", "PlacedSchematic",
     "Dungeon", "DungeonInstance", "PlacedRoom", "RoomTemplate", "Exit", "loot_pool",
+    "TabList", "TabEntry", "TabGroup",
+    "StateMachine", "State",
+    "Scheduler", "ScheduledTask",
+    "PlaceholderRegistry",
+    "LootTable", "LootPool", "LootEntry",
 ]

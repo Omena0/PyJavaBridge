@@ -243,6 +243,10 @@ class BridgeConnection:
 
         self.send(msg)
 
+    def fire_event(self, event_name: str, data: Dict[str, Any] | None = None) -> None:
+        """Fire a custom event that all scripts (including this one) can listen to."""
+        self.send_fire_forget("fire_event", event=event_name, data=data or {})
+
     def wait(self, ticks: int = 1) -> BridgeCall:
         request_id = self._next_id()
         future = self._loop.create_future()

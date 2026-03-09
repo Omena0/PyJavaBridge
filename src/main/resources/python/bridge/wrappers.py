@@ -361,8 +361,48 @@ class Server(ProxyBase):
     def max_players(self):
         return self._call_sync("getMaxPlayers")
 
+    # StructureManager
+    def save_structure(self, name: str, world, x1: int, y1: int, z1: int,
+                       x2: int, y2: int, z2: int):
+        """Save a region as a named structure."""
+        world_name = world.name if hasattr(world, "name") else str(world)
+        return self._call("saveStructure", name, world_name, x1, y1, z1, x2, y2, z2)
+
+    def load_structure(self, name: str, world, x: float, y: float, z: float,
+                       include_entities: bool = False):
+        """Place a saved structure at a location."""
+        world_name = world.name if hasattr(world, "name") else str(world)
+        return self._call("loadStructure", name, world_name, x, y, z, include_entities)
+
+    def delete_structure(self, name: str):
+        """Delete a saved structure."""
+        return self._call("deleteStructure", name)
+
+    @property
+    def structures(self):
+        """List all saved structure names."""
+        return self._call_sync("listStructures")
+
+    # WorldCreator
+    def create_world(self, name: str, *, environment: str = "NORMAL",
+                     world_type: str = "NORMAL", seed: Optional[int] = None,
+                     generate_structures: bool = True):
+        """Create or load a world."""
+        opts = {"name": name, "environment": environment, "type": world_type,
+                "generate_structures": generate_structures}
+        if seed is not None:
+            opts["seed"] = seed
+        return self._call("createWorld", opts)
+
+    def unload_world(self, name: str):
+        """Unload (delete from memory) a world."""
+        return self._call("deleteWorld", name)
+
 # Per-entity tags keyed by UUID, shared across all instances of the same entity.
 _entity_tags: Dict[str, set] = {}
+
+# Transient per-entity metadata keyed by UUID (Python-side only, not persisted).
+_entity_metadata: Dict[str, Dict[str, Any]] = {}
 
 class Entity(ProxyBase):
     """Base entity proxy."""
@@ -385,18 +425,25 @@ class Entity(ProxyBase):
             return
         super().__init__(handle=handle, type_name=type_name, fields=fields, target=target)
 
+    def __bool__(self) -> bool:
+        try:
+            return self._call_sync("isValid")
+        except Exception:
+            return False
+
     def teleport(self, location: Location):
         return self._call("teleport", location)
 
     def remove(self):
         return self._call("remove")
 
-    def set_velocity(self, vector: Vector):
-        return self._call("setVelocity", vector)
-
     @property
     def velocity(self):
         return self._call_sync("getVelocity")
+
+    @velocity.setter
+    def velocity(self, vector: Vector):
+        return self._call("setVelocity", vector)
 
     @property
     def is_dead(self):
@@ -414,7 +461,8 @@ class Entity(ProxyBase):
     def fire_ticks(self):
         return self._call_sync("getFireTicks")
 
-    def set_fire_ticks(self, ticks: int):
+    @fire_ticks.setter
+    def fire_ticks(self, ticks: int):
         return self._call("setFireTicks", ticks)
 
     def add_passenger(self, entity: Entity):
@@ -431,10 +479,20 @@ class Entity(ProxyBase):
     def custom_name(self):
         return self._call_sync("getCustomName")
 
-    def set_custom_name(self, name: str):
+    @custom_name.setter
+    def custom_name(self, name: str):
         return self._call("setCustomName", name)
 
-    def set_custom_name_visible(self, value: bool):
+    @custom_name.deleter
+    def custom_name(self):
+        return self._call("setCustomName", None)
+
+    @property
+    def custom_name_visible(self) -> bool:
+        return self._call_sync("isCustomNameVisible")
+
+    @custom_name_visible.setter
+    def custom_name_visible(self, value: bool):
         return self._call("setCustomNameVisible", value)
 
     @property
@@ -525,14 +583,20 @@ class Entity(ProxyBase):
     def target(self):
         return self._call_sync("getTarget")
 
-    def set_target(self, entity: Entity | None = None):
+    @target.setter
+    def target(self, entity: Entity | None = None):
         return self._call("setTarget", entity)
+
+    @target.deleter
+    def target(self):
+        return self._call("setTarget", None)
 
     @property
     def is_aware(self):
         return self._call_sync("isAware")
 
-    def set_aware(self, aware: bool):
+    @is_aware.setter
+    def is_aware(self, aware: bool):
         return self._call("setAware", aware)
 
     def pathfind_to(self, location: Location, speed: float = 1.0):
@@ -546,6 +610,20 @@ class Entity(ProxyBase):
 
     def look_at(self, location: Location):
         return self._call("lookAt", location)
+
+    # AI Goals (Paper MobGoals API)
+    @property
+    def goal_types(self) -> list:
+        """List all active AI goal type keys on this mob."""
+        return self._call_sync("getGoalTypes")
+
+    def remove_goal(self, goal_key: str) -> bool:
+        """Remove an AI goal by its key."""
+        return self._call_sync("removeGoal", goal_key)
+
+    def remove_all_goals(self):
+        """Remove all AI goals from this mob."""
+        return self._call("removeAllGoals")
 
     def damage(self, amount: float):
         return self._call("damage", amount)
@@ -569,6 +647,373 @@ class Entity(ProxyBase):
         """Check if this entity has a tag."""
         tags = _entity_tags.get(self.uuid)
         return tag in tags if tags else False
+
+    @property
+    def gravity(self) -> bool:
+        return self._call_sync("hasGravity")
+
+    @gravity.setter
+    def gravity(self, value: bool):
+        return self._call("setGravity", value)
+
+    @property
+    def glowing(self) -> bool:
+        return self._call_sync("isGlowing")
+
+    @glowing.setter
+    def glowing(self, value: bool):
+        return self._call("setGlowing", value)
+
+    @property
+    def invisible(self) -> bool:
+        return self._call_sync("isInvisible")
+
+    @invisible.setter
+    def invisible(self, value: bool):
+        return self._call("setInvisible", value)
+
+    @property
+    def invulnerable(self) -> bool:
+        return self._call_sync("isInvulnerable")
+
+    @invulnerable.setter
+    def invulnerable(self, value: bool):
+        return self._call("setInvulnerable", value)
+
+    @property
+    def silent(self) -> bool:
+        return self._call_sync("isSilent")
+
+    @silent.setter
+    def silent(self, value: bool):
+        return self._call("setSilent", value)
+
+    @property
+    def persistent(self) -> bool:
+        return self._call_sync("isPersistent")
+
+    @persistent.setter
+    def persistent(self, value: bool):
+        return self._call("setPersistent", value)
+
+    @property
+    def collidable(self) -> bool:
+        return self._call_sync("isCollidable")
+
+    @collidable.setter
+    def collidable(self, value: bool):
+        return self._call("setCollidable", value)
+
+    @property
+    def portal_cooldown(self) -> int:
+        return self._call_sync("getPortalCooldown")
+
+    @portal_cooldown.setter
+    def portal_cooldown(self, ticks: int):
+        return self._call("setPortalCooldown", int(ticks))
+
+    @property
+    def max_fire_ticks(self) -> int:
+        return self._call_sync("getMaxFireTicks")
+
+    @property
+    def freeze_ticks(self) -> int:
+        return self._call_sync("getFreezeTicks")
+
+    @freeze_ticks.setter
+    def freeze_ticks(self, ticks: int):
+        return self._call("setFreezeTicks", int(ticks))
+
+    @property
+    def height(self) -> float:
+        return self._call_sync("getHeight")
+
+    @property
+    def width(self) -> float:
+        return self._call_sync("getWidth")
+
+    @property
+    def bounding_box(self) -> dict:
+        return self._call_sync("getBoundingBox")
+
+    @property
+    def metadata(self) -> dict:
+        """Transient per-entity key/value storage (Python-side only, not persisted)."""
+        uid = self.uuid
+        if uid not in _entity_metadata:
+            _entity_metadata[uid] = {}
+        return _entity_metadata[uid]
+
+
+# ── Entity Subtypes ──────────────────────────────────────────────────
+
+class ArmorStand(Entity):
+    """ArmorStand entity with pose and equipment properties."""
+
+    @property
+    def small(self) -> bool:
+        return self._call_sync("isSmall")
+
+    @small.setter
+    def small(self, value: bool):
+        self._call("setSmall", value)
+
+    @property
+    def visible(self) -> bool:
+        return not self._call_sync("isInvisible")
+
+    @visible.setter
+    def visible(self, value: bool):
+        self._call("setInvisible", not value)
+
+    @property
+    def arms(self) -> bool:
+        return self._call_sync("hasArms")
+
+    @arms.setter
+    def arms(self, value: bool):
+        self._call("setArms", value)
+
+    @property
+    def base_plate(self) -> bool:
+        return self._call_sync("hasBasePlate")
+
+    @base_plate.setter
+    def base_plate(self, value: bool):
+        self._call("setBasePlate", value)
+
+    @property
+    def marker(self) -> bool:
+        return self._call_sync("isMarker")
+
+    @marker.setter
+    def marker(self, value: bool):
+        self._call("setMarker", value)
+
+    @property
+    def head_pose(self):
+        return self._call_sync("getHeadPose")
+
+    @head_pose.setter
+    def head_pose(self, pose):
+        self._call("setHeadPose", pose)
+
+    @property
+    def body_pose(self):
+        return self._call_sync("getBodyPose")
+
+    @body_pose.setter
+    def body_pose(self, pose):
+        self._call("setBodyPose", pose)
+
+    @property
+    def left_arm_pose(self):
+        return self._call_sync("getLeftArmPose")
+
+    @left_arm_pose.setter
+    def left_arm_pose(self, pose):
+        self._call("setLeftArmPose", pose)
+
+    @property
+    def right_arm_pose(self):
+        return self._call_sync("getRightArmPose")
+
+    @right_arm_pose.setter
+    def right_arm_pose(self, pose):
+        self._call("setRightArmPose", pose)
+
+    @property
+    def left_leg_pose(self):
+        return self._call_sync("getLeftLegPose")
+
+    @left_leg_pose.setter
+    def left_leg_pose(self, pose):
+        self._call("setLeftLegPose", pose)
+
+    @property
+    def right_leg_pose(self):
+        return self._call_sync("getRightLegPose")
+
+    @right_leg_pose.setter
+    def right_leg_pose(self, pose):
+        self._call("setRightLegPose", pose)
+
+
+class Villager(Entity):
+    """Villager entity with profession and trade properties."""
+
+    @property
+    def profession(self) -> str:
+        return self._call_sync("getProfession")
+
+    @profession.setter
+    def profession(self, value: str):
+        self._call("setProfession", value)
+
+    @property
+    def villager_type(self) -> str:
+        return self._call_sync("getVillagerType")
+
+    @villager_type.setter
+    def villager_type(self, value: str):
+        self._call("setVillagerType", value)
+
+    @property
+    def villager_level(self) -> int:
+        return self._call_sync("getVillagerLevel")
+
+    @villager_level.setter
+    def villager_level(self, value: int):
+        self._call("setVillagerLevel", int(value))
+
+    @property
+    def villager_experience(self) -> int:
+        return self._call_sync("getVillagerExperience")
+
+    @villager_experience.setter
+    def villager_experience(self, value: int):
+        self._call("setVillagerExperience", int(value))
+
+
+class ItemFrame(Entity):
+    """ItemFrame entity."""
+
+    @property
+    def item(self):
+        return self._call_sync("getItem")
+
+    @item.setter
+    def item(self, value):
+        self._call("setItem", value)
+
+    @item.deleter
+    def item(self):
+        self._call("setItem", None)
+
+    @property
+    def rotation(self):
+        return self._call_sync("getRotation")
+
+    @rotation.setter
+    def rotation(self, value):
+        self._call("setRotation", value)
+
+    @property
+    def fixed(self) -> bool:
+        return self._call_sync("isFixed")
+
+    @fixed.setter
+    def fixed(self, value: bool):
+        self._call("setFixed", value)
+
+    @property
+    def item_drop_chance(self) -> float:
+        return self._call_sync("getItemDropChance")
+
+    @item_drop_chance.setter
+    def item_drop_chance(self, value: float):
+        self._call("setItemDropChance", float(value))
+
+
+class FallingBlock(Entity):
+    """FallingBlock entity."""
+
+    @property
+    def material(self):
+        return self._call_sync("getBlockData")
+
+    @property
+    def drop_item(self) -> bool:
+        return self._call_sync("getDropItem")
+
+    @drop_item.setter
+    def drop_item(self, value: bool):
+        self._call("setDropItem", value)
+
+    @property
+    def can_hurt_entities(self) -> bool:
+        return self._call_sync("canHurtEntities")
+
+    @can_hurt_entities.setter
+    def can_hurt_entities(self, value: bool):
+        self._call("setHurtEntities", value)
+
+    @property
+    def damage_per_block(self) -> float:
+        return self._call_sync("getDamagePerBlock")
+
+    @damage_per_block.setter
+    def damage_per_block(self, value: float):
+        self._call("setDamagePerBlock", float(value))
+
+    @property
+    def max_damage(self) -> int:
+        return self._call_sync("getMaxDamage")
+
+    @max_damage.setter
+    def max_damage(self, value: int):
+        self._call("setMaxDamage", int(value))
+
+
+class AreaEffectCloud(Entity):
+    """AreaEffectCloud entity with radius and effect properties."""
+
+    @property
+    def radius(self) -> float:
+        return self._call_sync("getRadius")
+
+    @radius.setter
+    def radius(self, value: float):
+        self._call("setRadius", float(value))
+
+    @property
+    def color(self):
+        return self._call_sync("getColor")
+
+    @color.setter
+    def color(self, value):
+        self._call("setColor", value)
+
+    @property
+    def duration(self) -> int:
+        return self._call_sync("getDuration")
+
+    @duration.setter
+    def duration(self, ticks: int):
+        self._call("setDuration", int(ticks))
+
+    @property
+    def wait_time(self) -> int:
+        return self._call_sync("getWaitTime")
+
+    @wait_time.setter
+    def wait_time(self, ticks: int):
+        self._call("setWaitTime", int(ticks))
+
+    @property
+    def radius_on_use(self) -> float:
+        return self._call_sync("getRadiusOnUse")
+
+    @radius_on_use.setter
+    def radius_on_use(self, value: float):
+        self._call("setRadiusOnUse", float(value))
+
+    @property
+    def radius_per_tick(self) -> float:
+        return self._call_sync("getRadiusPerTick")
+
+    @radius_per_tick.setter
+    def radius_per_tick(self, value: float):
+        self._call("setRadiusPerTick", float(value))
+
+    @property
+    def particle(self):
+        return self._call_sync("getParticle")
+
+    @particle.setter
+    def particle(self, value):
+        self._call("setParticle", value)
+
 
 class Player(Entity):
     """Player API (inherits Entity)."""
@@ -685,14 +1130,16 @@ class Player(Entity):
     def tab_list_header(self):
         return self._call_sync("getTabListHeader")
 
+    @tab_list_header.setter
+    def tab_list_header(self, header: str):
+        return self._call("setTabListHeader", header)
+
     @property
     def tab_list_footer(self):
         return self._call_sync("getTabListFooter")
 
-    def set_tab_list_header(self, header: str):
-        return self._call("setTabListHeader", header)
-
-    def set_tab_list_footer(self, footer: str):
+    @tab_list_footer.setter
+    def tab_list_footer(self, footer: str):
         return self._call("setTabListFooter", footer)
 
     def set_tab_list_header_footer(self, header: str = "", footer: str = ""):
@@ -702,7 +1149,8 @@ class Player(Entity):
     def tab_list_name(self):
         return self._call_sync("getPlayerListName")
 
-    def set_tab_list_name(self, name: str):
+    @tab_list_name.setter
+    def tab_list_name(self, name: str):
         return self._call("setPlayerListName", name)
 
     def set_health(self, health: float):
@@ -715,35 +1163,40 @@ class Player(Entity):
     def level(self):
         return self._call_sync("getLevel")
 
-    def set_level(self, level: int):
+    @level.setter
+    def level(self, level: int):
         return self._call("setLevel", level)
 
     @property
     def exp(self):
         return self._call_sync("getExp")
 
-    def set_exp(self, exp: float):
+    @exp.setter
+    def exp(self, exp: float):
         return self._call("setExp", exp)
 
     @property
     def is_flying(self):
         return self._call_sync("isFlying")
 
-    def set_flying(self, value: bool):
+    @is_flying.setter
+    def is_flying(self, value: bool):
         return self._call("setFlying", value)
 
     @property
     def is_sneaking(self):
         return self._call_sync("isSneaking")
 
-    def set_sneaking(self, value: bool):
+    @is_sneaking.setter
+    def is_sneaking(self, value: bool):
         return self._call("setSneaking", value)
 
     @property
     def is_sprinting(self):
         return self._call_sync("isSprinting")
 
-    def set_sprinting(self, value: bool):
+    @is_sprinting.setter
+    def is_sprinting(self, value: bool):
         return self._call("setSprinting", value)
 
     def set_walk_speed(self, speed: float):
@@ -757,7 +1210,7 @@ class Player(Entity):
         return self.fields.get("name")
 
     @property
-    def uuid(self):
+    def uuid(self) -> str:
         if "uuid" in self.fields:
             return str(self.fields["uuid"])
 
@@ -796,7 +1249,8 @@ class Player(Entity):
                             del _player_uuid_cache[k]
                     _player_uuid_cache[str(ref_id)] = result_text
                 return result_text
-            return None
+
+            raise Exception(f"Could not get UUID: {self}")
 
         except Exception as exc:
             raise BridgeError(f"Failed to synchronously resolve uuid: {exc}") from exc
@@ -939,6 +1393,143 @@ class Player(Entity):
             raise RuntimeError("No default LevelSystem set")
         return Player._default_level_system.level(self)
 
+    @property
+    def absorption(self) -> float:
+        return self._call_sync("getAbsorptionAmount")
+
+    @absorption.setter
+    def absorption(self, value: float):
+        return self._call("setAbsorptionAmount", float(value))
+
+    @property
+    def saturation(self) -> float:
+        return self._call_sync("getSaturation")
+
+    @saturation.setter
+    def saturation(self, value: float):
+        return self._call("setSaturation", float(value))
+
+    @property
+    def exhaustion(self) -> float:
+        return self._call_sync("getExhaustion")
+
+    @exhaustion.setter
+    def exhaustion(self, value: float):
+        return self._call("setExhaustion", float(value))
+
+    @property
+    def attack_cooldown(self) -> float:
+        return self._call_sync("getAttackCooldown")
+
+    @property
+    def allow_flight(self) -> bool:
+        return self._call_sync("getAllowFlight")
+
+    @allow_flight.setter
+    def allow_flight(self, value: bool):
+        return self._call("setAllowFlight", value)
+
+    @property
+    def locale(self) -> str:
+        return self._call_sync("getLocale")
+
+    @property
+    def ping(self) -> int:
+        return self._call_sync("getPing")
+
+    @property
+    def client_brand(self) -> str:
+        return self._call_sync("getClientBrandName")
+
+    # --- Methods needing Java handlers ---
+
+    def hide_player(self, other: Player):
+        return self._call("hidePlayer", other)
+
+    def show_player(self, other: Player):
+        return self._call("showPlayer", other)
+
+    def can_see(self, other: Player) -> bool:
+        return self._call_sync("canSee", other)
+
+    def open_book(self, item: Item):
+        return self._call("openBook", item)
+
+    def send_block_change(self, location: Location, material: str):
+        return self._call("sendBlockChange", location, material)
+
+    def send_particle(self, particle: str, location: Location, count: int = 1, offset_x: float = 0, offset_y: float = 0, offset_z: float = 0, extra: float = 0):
+        return self._call("sendParticle", particle, location, count, offset_x, offset_y, offset_z, extra)
+
+    def get_cooldown(self, material: str) -> int:
+        return self._call_sync("getCooldown", material)
+
+    def set_cooldown(self, material: str, ticks: int):
+        return self._call("setCooldown", material, ticks)
+
+    def has_cooldown(self, material: str) -> bool:
+        return self._call_sync("hasCooldown", material)
+
+    def get_statistic(self, stat: str, material_or_entity: str | None = None) -> int:
+        if material_or_entity is not None:
+            return self._call_sync("getStatistic", stat, material_or_entity)
+        return self._call_sync("getStatistic", stat)
+
+    def set_statistic(self, stat: str, value: int, material_or_entity: str | None = None):
+        if material_or_entity is not None:
+            return self._call("setStatistic", stat, material_or_entity, value)
+        return self._call("setStatistic", stat, value)
+
+    @property
+    def max_health(self) -> float:
+        return self._call_sync("getMaxHealth")
+
+    @max_health.setter
+    def max_health(self, value: float):
+        self._call("setMaxHealth", float(value))
+
+    @property
+    def bed_spawn_location(self) -> Location | None:
+        data = self._call_sync("getBedSpawnLocation")
+        if data is None:
+            return None
+        if isinstance(data, dict):
+            return Location(fields=data)
+        return data
+
+    @bed_spawn_location.setter
+    def bed_spawn_location(self, location: Location | None):
+        self._call("setBedSpawnLocation", location)
+
+    @bed_spawn_location.deleter
+    def bed_spawn_location(self):
+        self._call("setBedSpawnLocation", None)
+
+    @property
+    def compass_target(self) -> Location:
+        data = self._call_sync("getCompassTarget")
+        if isinstance(data, dict):
+            return Location(fields=data)
+        return data
+
+    @compass_target.setter
+    def compass_target(self, location: Location):
+        self._call("setCompassTarget", location)
+
+    # --- PersistentDataContainer ---
+
+    def get_persistent_data(self) -> dict:
+        return self._call_sync("getPDC")
+
+    def set_persistent_data(self, key: str, value: str):
+        return self._call("setPDC", key, value)
+
+    def remove_persistent_data(self, key: str):
+        return self._call("removePDC", key)
+
+    def has_persistent_data(self, key: str) -> bool:
+        return self._call_sync("hasPDC", key)
+
 class World(ProxyBase):
     """World API."""
     def __init__(self, handle: Optional[int] = None, type_name: Optional[str] = None, fields: Optional[Dict[str, Any]] = None, target: Optional[str] = None, name: Optional[str] = None):
@@ -969,12 +1560,13 @@ class World(ProxyBase):
             return self.spawn_entity(location, entity_cls, **kwargs)
         return self._call("spawn", location, entity_cls, **kwargs)
 
-    def set_time(self, time: int):
-        return self._call("setTime", time)
-
     @property
     def time(self):
         return self._call_sync("getTime")
+
+    @time.setter
+    def time(self, time: int):
+        return self._call("setTime", time)
 
     @property
     def world_time(self) -> WorldTime:
@@ -993,12 +1585,13 @@ class World(ProxyBase):
             return handler
         return decorator
 
-    def set_difficulty(self, difficulty: Difficulty):
-        return self._call("setDifficulty", difficulty)
-
     @property
     def difficulty(self):
         return self._call_sync("getDifficulty")
+
+    @difficulty.setter
+    def difficulty(self, difficulty: Difficulty):
+        return self._call("setDifficulty", difficulty)
 
     def spawn_particle(self, particle: Particle, location: Location, count: int = 1, offset_x: float = 0, offset_y: float = 0, offset_z: float = 0, extra: float = 0):
         return self._call("spawnParticle", particle, location, count, offset_x, offset_y, offset_z, extra)
@@ -1016,42 +1609,48 @@ class World(ProxyBase):
     def spawn_location(self):
         return self._call_sync("getSpawnLocation")
 
-    def set_spawn_location(self, location: Location):
+    @spawn_location.setter
+    def spawn_location(self, location: Location):
         return self._call("setSpawnLocation", location)
 
     @property
     def full_time(self):
         return self._call_sync("getFullTime")
 
-    def set_full_time(self, time: int):
+    @full_time.setter
+    def full_time(self, time: int):
         return self._call("setFullTime", time)
 
     @property
     def has_storm(self):
         return self._call_sync("hasStorm")
 
-    def set_storm(self, value: bool):
+    @has_storm.setter
+    def has_storm(self, value: bool):
         return self._call("setStorm", value)
 
     @property
     def is_thundering(self):
         return self._call_sync("isThundering")
 
-    def set_thundering(self, value: bool):
+    @is_thundering.setter
+    def is_thundering(self, value: bool):
         return self._call("setThundering", value)
 
     @property
     def weather_duration(self):
         return self._call_sync("getWeatherDuration")
 
-    def set_weather_duration(self, ticks: int):
+    @weather_duration.setter
+    def weather_duration(self, ticks: int):
         return self._call("setWeatherDuration", ticks)
 
     @property
     def thunder_duration(self):
         return self._call_sync("getThunderDuration")
 
-    def set_thunder_duration(self, ticks: int):
+    @thunder_duration.setter
+    def thunder_duration(self, ticks: int):
         return self._call("setThunderDuration", ticks)
 
     @property
@@ -1184,6 +1783,118 @@ class World(ProxyBase):
                 for dz in range(-radius, radius + 1):
                     blocks.append(Block(world=self, x=cx + dx, y=cy + dy, z=cz + dz))
         return blocks
+
+    @property
+    def seed(self) -> int:
+        return self._call_sync("getSeed")
+
+    @property
+    def pvp(self) -> bool:
+        return self._call_sync("getPVP")
+
+    @pvp.setter
+    def pvp(self, value: bool):
+        return self._call("setPVP", value)
+
+    def __contains__(self, entity) -> bool:
+        """Check if an entity is in this world: ``entity in world``."""
+        if hasattr(entity, 'world'):
+            ew = entity.world
+            if hasattr(ew, 'name'):
+                return ew.name == self.name
+        return False
+
+    # --- Game Rules ---
+
+    def get_game_rule(self, rule: str):
+        return self._call_sync("getGameRule", rule)
+
+    def set_game_rule(self, rule: str, value):
+        return self._call("setGameRule", rule, value)
+
+    @property
+    def game_rules(self) -> dict:
+        return self._call_sync("getGameRules")
+
+    # --- World Border ---
+
+    @property
+    def world_border(self) -> dict:
+        return self._call_sync("getWorldBorder")
+
+    @world_border.setter
+    def world_border(self, settings: dict):
+        return self._call("setWorldBorder", settings)
+
+    # --- Terrain Queries ---
+
+    def get_highest_block_at(self, x: int, z: int) -> Block:
+        data = self._call_sync("getHighestBlockAt", x, z)
+        if isinstance(data, dict):
+            return Block(world=self, x=data.get("x", x), y=data.get("y", 0), z=data.get("z", z))
+        return data
+
+    def generate_tree(self, location: Location, tree_type: str) -> bool:
+        return self._call_sync("generateTree", location, tree_type)
+
+    def get_nearby_entities(self, location: Location, dx: float, dy: float, dz: float) -> list:
+        return self._call_sync("getNearbyEntities", location, dx, dy, dz)
+
+    def get_chunk_at_async(self, x: int, z: int):
+        return self._call("getChunkAtAsync", x, z)
+
+    def batch_spawn(self, specs: list) -> list:
+        """Spawn multiple entities in a single call. Each spec is a dict with 'location' and 'type'."""
+        return self._call_sync("batchSpawn", specs)
+
+    def ray_trace(self, start: Location, direction, max_distance: float) -> dict | None:
+        return self._call_sync("worldRayTrace", start, direction, max_distance)
+
+    def find_entities(self, location: Location, radius: float, predicate=None, entity_type: str | None = None) -> list:
+        """Find entities near a location, optionally filtered by type and/or predicate."""
+        entities = self.entities_near(location, radius)
+        if entity_type is not None:
+            type_upper = entity_type.upper()
+            entities = [e for e in entities if hasattr(e, 'type') and str(e.type).upper() == type_upper]
+        if predicate is not None:
+            entities = [e for e in entities if predicate(e)]
+        return entities
+
+    # --- Async World Edit ---
+
+    async def async_fill(self, x1: int, y1: int, z1: int, x2: int, y2: int, z2: int, material: str, blocks_per_tick: int = 256):
+        """Fill a region with a material, spread across ticks to avoid lag."""
+        from bridge import server
+        coords = []
+        for x in range(min(x1, x2), max(x1, x2) + 1):
+            for y in range(min(y1, y2), max(y1, y2) + 1):
+                for z in range(min(z1, z2), max(z1, z2) + 1):
+                    coords.append((x, y, z))
+        for i in range(0, len(coords), blocks_per_tick):
+            batch = coords[i:i + blocks_per_tick]
+            for x, y, z in batch:
+                block = Block(world=self, x=x, y=y, z=z)
+                block.set_type(material)
+            if i + blocks_per_tick < len(coords):
+                await server.after(1)
+
+    async def async_replace(self, x1: int, y1: int, z1: int, x2: int, y2: int, z2: int, from_material: str, to_material: str, blocks_per_tick: int = 256):
+        """Replace blocks of one material with another, spread across ticks."""
+        from bridge import server
+        from_upper = from_material.upper()
+        coords = []
+        for x in range(min(x1, x2), max(x1, x2) + 1):
+            for y in range(min(y1, y2), max(y1, y2) + 1):
+                for z in range(min(z1, z2), max(z1, z2) + 1):
+                    coords.append((x, y, z))
+        for i in range(0, len(coords), blocks_per_tick):
+            batch = coords[i:i + blocks_per_tick]
+            for x, y, z in batch:
+                block = Block(world=self, x=x, y=y, z=z)
+                if str(block.type).upper() == from_upper:
+                    block.set_type(to_material)
+            if i + blocks_per_tick < len(coords):
+                await server.after(1)
 
 class Firework:
     """Launch fireworks with custom effects."""
@@ -1328,7 +2039,8 @@ class Attribute(ProxyBase):
     def base_value(self):
         return self._call_sync("getBaseValue")
 
-    def set_base_value(self, value: float):
+    @base_value.setter
+    def base_value(self, value: float):
         return self._call("setBaseValue", value)
 
 class Dimension(ProxyBase):
@@ -1415,6 +2127,25 @@ class Location(ProxyBase):
             return Location(self.x - other.x, self.y - other.y, self.z - other.z, self.world, self.yaw, self.pitch)
         return NotImplemented
 
+    def __mul__(self, scalar):
+        if isinstance(scalar, (int, float)):
+            return Location(self.x * scalar, self.y * scalar, self.z * scalar, self.world, self.yaw, self.pitch)
+        return NotImplemented
+
+    def __truediv__(self, scalar):
+        if isinstance(scalar, (int, float)):
+            return Location(self.x / scalar, self.y / scalar, self.z / scalar, self.world, self.yaw, self.pitch)
+        return NotImplemented
+
+    def normalize(self) -> Location:
+        length = (self.x ** 2 + self.y ** 2 + self.z ** 2) ** 0.5
+        if length == 0:
+            return self.clone()
+        return Location(self.x / length, self.y / length, self.z / length, self.world, self.yaw, self.pitch)
+
+    def midpoint(self, other: Location) -> Location:
+        return Location((self.x + other.x) / 2, (self.y + other.y) / 2, (self.z + other.z) / 2, self.world, self.yaw, self.pitch)
+
     def __iter__(self):
         yield self.x
         yield self.y
@@ -1467,7 +2198,8 @@ class Block(ProxyBase):
     def data(self):
         return self._call_sync("getBlockData")
 
-    def set_data(self, data: Any):
+    @data.setter
+    def data(self, data: Any):
         return self._call("setBlockData", data)
 
     @property
@@ -1478,7 +2210,8 @@ class Block(ProxyBase):
     def biome(self):
         return self._call_sync("getBiome")
 
-    def set_biome(self, biome: Biome):
+    @biome.setter
+    def biome(self, biome: Biome):
         return self._call("setBiome", biome)
 
     @property
@@ -1497,46 +2230,51 @@ class Block(ProxyBase):
     def sign_lines(self) -> list:
         return self._call_sync("getSignLines")
 
+    @sign_lines.setter
+    def sign_lines(self, lines: list):
+        return self._call("setSignLines", lines)
+
     @property
     def sign_back_lines(self) -> list:
         return self._call_sync("getSignBackLines")
 
+    @sign_back_lines.setter
+    def sign_back_lines(self, lines: list):
+        return self._call("setSignBackLines", lines)
+
     def set_sign_line(self, index: int, text: str):
         return self._call("setSignLine", index, text)
 
-    def set_sign_lines(self, lines: list):
-        return self._call("setSignLines", lines)
-
     def set_sign_back_line(self, index: int, text: str):
         return self._call("setSignBackLine", index, text)
-
-    def set_sign_back_lines(self, lines: list):
-        return self._call("setSignBackLines", lines)
-
-    def set_sign_glowing(self, glowing: bool):
-        return self._call("setSignGlowing", glowing)
 
     @property
     def is_sign_glowing(self) -> bool:
         return self._call_sync("isSignGlowing")
 
+    @is_sign_glowing.setter
+    def is_sign_glowing(self, glowing: bool):
+        return self._call("setSignGlowing", glowing)
+
     @property
     def furnace_burn_time(self) -> int:
         return self._call_sync("getFurnaceBurnTime")
+
+    @furnace_burn_time.setter
+    def furnace_burn_time(self, ticks: int):
+        return self._call("setFurnaceBurnTime", int(ticks))
 
     @property
     def furnace_cook_time(self) -> int:
         return self._call_sync("getFurnaceCookTime")
 
+    @furnace_cook_time.setter
+    def furnace_cook_time(self, ticks: int):
+        return self._call("setFurnaceCookTime", int(ticks))
+
     @property
     def furnace_cook_time_total(self) -> int:
         return self._call_sync("getFurnaceCookTimeTotal")
-
-    def set_furnace_burn_time(self, ticks: int):
-        return self._call("setFurnaceBurnTime", ticks)
-
-    def set_furnace_cook_time(self, ticks: int):
-        return self._call("setFurnaceCookTime", ticks)
 
     @property
     def x(self) -> int:
@@ -1561,6 +2299,86 @@ class Block(ProxyBase):
     @property
     def world(self):
         return self.fields.get("world")
+
+    @property
+    def hardness(self) -> float:
+        return self._call_sync("getHardness")
+
+    @property
+    def blast_resistance(self) -> float:
+        return self._call_sync("getBlastResistance")
+
+    @property
+    def is_passable(self) -> bool:
+        return self._call_sync("isPassable")
+
+    @property
+    def is_liquid(self) -> bool:
+        return self._call_sync("isLiquid")
+
+    def get_drops(self, tool: Item | None = None) -> list:
+        if tool is not None:
+            return self._call_sync("getDrops", tool)
+        return self._call_sync("getDrops")
+
+    @property
+    def drops(self) -> list:
+        return self.get_drops()
+
+    # --- PersistentDataContainer ---
+
+    def get_persistent_data(self) -> dict:
+        return self._call_sync("getBlockPDC")
+
+    def set_persistent_data(self, key: str, value: str):
+        return self._call("setBlockPDC", key, value)
+
+    def remove_persistent_data(self, key: str):
+        return self._call("removeBlockPDC", key)
+
+
+class BlockSnapshot:
+    """Capture and restore a region of blocks.
+
+    Example::
+
+        snap = BlockSnapshot.capture(world, 0, 60, 0, 10, 70, 10)
+        # ... modify blocks ...
+        await snap.restore()  # restore original blocks
+    """
+
+    def __init__(self, world: World, blocks: list[dict]):
+        self._world = world
+        self._blocks = blocks
+
+    @classmethod
+    def capture(cls, world: World, x1: int, y1: int, z1: int, x2: int, y2: int, z2: int) -> BlockSnapshot:
+        blocks = []
+        for x in range(min(x1, x2), max(x1, x2) + 1):
+            for y in range(min(y1, y2), max(y1, y2) + 1):
+                for z in range(min(z1, z2), max(z1, z2) + 1):
+                    block = Block(world=world, x=x, y=y, z=z)
+                    blocks.append({"x": x, "y": y, "z": z, "type": block.type})
+        return cls(world, blocks)
+
+    async def restore(self, blocks_per_tick: int = 256):
+        """Restore captured blocks, spread across ticks."""
+        from bridge import server
+        for i in range(0, len(self._blocks), blocks_per_tick):
+            batch = self._blocks[i:i + blocks_per_tick]
+            for data in batch:
+                block = Block(world=self._world, x=data["x"], y=data["y"], z=data["z"])
+                block.set_type(data["type"])
+            if i + blocks_per_tick < len(self._blocks):
+                await server.after(1)
+
+    @property
+    def blocks(self) -> list[dict]:
+        return list(self._blocks)
+
+    def __len__(self) -> int:
+        return len(self._blocks)
+
 
 class Chunk(ProxyBase):
     """Chunk of a world (loadable/unloadable)."""
@@ -1721,6 +2539,34 @@ class Inventory(ProxyBase):
     def holder(self):
         return self._call_sync("getHolder")
 
+    @property
+    def viewers(self) -> list:
+        return self._call_sync("getViewers")
+
+    @property
+    def type(self):
+        return self._call_sync("getType")
+
+    def __getitem__(self, slot: int):
+        return self._call_sync("getItem", slot)
+
+    def __setitem__(self, slot: int, item):
+        return _connection.call("setItem", [slot, item], handle=self._handle)
+
+    def __iter__(self):
+        contents = self.contents
+        if contents:
+            yield from contents
+
+    def __len__(self) -> int:
+        return self.size
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        await self.update()
+
 class Item(ProxyBase):
     """Item (ItemStack) API."""
     @classmethod
@@ -1775,7 +2621,8 @@ class Item(ProxyBase):
     def amount(self):
         return self._call_sync("getAmount")
 
-    def set_amount(self, value: int):
+    @amount.setter
+    def amount(self, value: int):
         return self._call("setAmount", value)
 
     @property
@@ -1810,7 +2657,8 @@ class Item(ProxyBase):
     def custom_model_data(self):
         return self._call_sync("getCustomModelData")
 
-    def set_custom_model_data(self, value: int):
+    @custom_model_data.setter
+    def custom_model_data(self, value: int):
         if self._handle is None:
             self.fields["customModelData"] = int(value)
             return self
@@ -1820,7 +2668,8 @@ class Item(ProxyBase):
     def attributes(self):
         return self._call_sync("getAttributes")
 
-    def set_attributes(self, attributes: List[Dict[str, Any]]):
+    @attributes.setter
+    def attributes(self, attributes: List[Dict[str, Any]]):
         if self._handle is None:
             self.fields["attributes"] = list(attributes)
             return self
@@ -1830,7 +2679,8 @@ class Item(ProxyBase):
     def nbt(self):
         return self._call_sync("getNbt")
 
-    def set_nbt(self, nbt: Dict[str, Any]):
+    @nbt.setter
+    def nbt(self, nbt: Dict[str, Any]):
         if self._handle is None:
             self.fields["nbt"] = nbt
             return self
@@ -1845,6 +2695,50 @@ class Item(ProxyBase):
     @property
     def max_stack_size(self):
         return self._call_sync("getMaxStackSize")
+
+    @property
+    def durability(self) -> int:
+        return self._call_sync("getDurability")
+
+    @durability.setter
+    def durability(self, value: int):
+        return self._call("setDurability", int(value))
+
+    @property
+    def max_durability(self) -> int:
+        return self._call_sync("getMaxDurability")
+
+    @property
+    def enchantments(self) -> dict:
+        return self._call_sync("getEnchantments")
+
+    def add_enchantment(self, enchantment: str, level: int = 1):
+        return self._call("addEnchantment", enchantment, level)
+
+    def remove_enchantment(self, enchantment: str):
+        return self._call("removeEnchantment", enchantment)
+
+    @property
+    def item_flags(self) -> list:
+        return self._call_sync("getItemFlags")
+
+    @item_flags.setter
+    def item_flags(self, flags: list):
+        return self._call("addItemFlags", *flags)
+
+    def add_item_flags(self, *flags: str):
+        return self._call("addItemFlags", *flags)
+
+    def remove_item_flags(self, *flags: str):
+        return self._call("removeItemFlags", *flags)
+
+    @property
+    def is_unbreakable(self) -> bool:
+        return self._call_sync("isUnbreakable")
+
+    @is_unbreakable.setter
+    def is_unbreakable(self, value: bool):
+        return self._call("setUnbreakable", value)
 
 class ItemBuilder:
     """Fluent builder for Item objects."""
@@ -1950,6 +2844,53 @@ class ItemBuilder:
             builder._item_flags = list(item.fields.get("item_flags") or [])
         return builder
 
+
+class BookBuilder:
+    """Build a written book item.
+
+    Example::
+
+        book = (BookBuilder("My Book", "Author")
+                .page("Page 1 content")
+                .page("Page 2 content")
+                .build())
+        player.open_book(book)
+    """
+
+    def __init__(self, title: str = "Book", author: str = "Server"):
+        self._title = title
+        self._author = author
+        self._pages: list[str] = []
+
+    def title(self, title: str) -> BookBuilder:
+        self._title = title
+        return self
+
+    def author(self, author: str) -> BookBuilder:
+        self._author = author
+        return self
+
+    def page(self, content: str) -> BookBuilder:
+        self._pages.append(content)
+        return self
+
+    def pages(self, *contents: str) -> BookBuilder:
+        self._pages.extend(contents)
+        return self
+
+    def build(self) -> Item:
+        fields: Dict[str, Any] = {
+            "type": Material.from_name("WRITTEN_BOOK"),
+            "amount": 1,
+            "nbt": {
+                "title": self._title,
+                "author": self._author,
+                "pages": list(self._pages),
+            },
+        }
+        return Item(handle=None, fields=fields)
+
+
 class Recipe:
     """Register custom crafting and smelting recipes."""
 
@@ -1999,35 +2940,40 @@ class BossBar(ProxyBase):
     def title(self):
         return self._call_sync("getTitle")
 
-    def set_title(self, title: str):
+    @title.setter
+    def title(self, title: str):
         return self._call("setTitle", title)
 
     @property
     def progress(self):
         return self._call_sync("getProgress")
 
-    def set_progress(self, value: float):
+    @progress.setter
+    def progress(self, value: float):
         return self._call("setProgress", value)
 
     @property
     def color(self):
         return self._call_sync("getColor")
 
-    def set_color(self, color: BarColor):
+    @color.setter
+    def color(self, color: BarColor):
         return self._call("setColor", color)
 
     @property
     def style(self):
         return self._call_sync("getStyle")
 
-    def set_style(self, style: BarStyle):
+    @style.setter
+    def style(self, style: BarStyle):
         return self._call("setStyle", style)
 
     @property
     def visible(self):
         return self._call_sync("isVisible")
 
-    def set_visible(self, value: bool):
+    @visible.setter
+    def visible(self, value: bool):
         return self._call("setVisible", value)
 
 class Scoreboard(ProxyBase):
@@ -2086,7 +3032,8 @@ class Team(ProxyBase):
     def color(self):
         return self._call_sync("getColor")
 
-    def set_color(self, color: Any):
+    @color.setter
+    def color(self, color: Any):
         return self._call("setColor", color)
 
     @property
@@ -2119,7 +3066,8 @@ class Objective(ProxyBase):
     def display_slot(self):
         return self._call_sync("getDisplaySlot")
 
-    def set_display_slot(self, slot: Any):
+    @display_slot.setter
+    def display_slot(self, slot: Any):
         return self._call("setDisplaySlot", slot)
 
 class Advancement(ProxyBase):
@@ -2221,6 +3169,118 @@ class ChatFacade(ProxyBase):
     """Chat helper facade."""
     def broadcast(self, message: str):
         return self._call("broadcast", message)
+
+
+class TextComponent:
+    """Builder for rich text (MiniMessage format).
+
+    Example::
+
+        msg = (TextComponent("Hello ")
+               .bold("world")
+               .text("! ")
+               .color("#ff0000", "Click here")
+               .click_url("https://example.com")
+               .hover("Tooltip text"))
+        player.send_message(str(msg))
+    """
+
+    def __init__(self, text: str = ""):
+        self._parts: list[str] = []
+        if text:
+            self._parts.append(text)
+
+    def text(self, content: str) -> TextComponent:
+        self._parts.append(content)
+        return self
+
+    def bold(self, content: str) -> TextComponent:
+        self._parts.append(f"<bold>{content}</bold>")
+        return self
+
+    def italic(self, content: str) -> TextComponent:
+        self._parts.append(f"<italic>{content}</italic>")
+        return self
+
+    def underlined(self, content: str) -> TextComponent:
+        self._parts.append(f"<underlined>{content}</underlined>")
+        return self
+
+    def strikethrough(self, content: str) -> TextComponent:
+        self._parts.append(f"<strikethrough>{content}</strikethrough>")
+        return self
+
+    def obfuscated(self, content: str) -> TextComponent:
+        self._parts.append(f"<obfuscated>{content}</obfuscated>")
+        return self
+
+    def color(self, color: str, content: str) -> TextComponent:
+        self._parts.append(f"<color:{color}>{content}</color>")
+        return self
+
+    def gradient(self, colors: list[str], content: str) -> TextComponent:
+        cols = ":".join(colors)
+        self._parts.append(f"<gradient:{cols}>{content}</gradient>")
+        return self
+
+    def click_url(self, url: str, content: str = "") -> TextComponent:
+        if content:
+            self._parts.append(f"<click:open_url:'{url}'>{content}</click>")
+        elif self._parts:
+            last = self._parts.pop()
+            self._parts.append(f"<click:open_url:'{url}'>{last}</click>")
+        return self
+
+    def click_command(self, command: str, content: str = "") -> TextComponent:
+        if content:
+            self._parts.append(f"<click:run_command:'{command}'>{content}</click>")
+        elif self._parts:
+            last = self._parts.pop()
+            self._parts.append(f"<click:run_command:'{command}'>{last}</click>")
+        return self
+
+    def click_suggest(self, command: str, content: str = "") -> TextComponent:
+        if content:
+            self._parts.append(f"<click:suggest_command:'{command}'>{content}</click>")
+        elif self._parts:
+            last = self._parts.pop()
+            self._parts.append(f"<click:suggest_command:'{command}'>{last}</click>")
+        return self
+
+    def click_copy(self, text: str, content: str = "") -> TextComponent:
+        if content:
+            self._parts.append(f"<click:copy_to_clipboard:'{text}'>{content}</click>")
+        elif self._parts:
+            last = self._parts.pop()
+            self._parts.append(f"<click:copy_to_clipboard:'{text}'>{last}</click>")
+        return self
+
+    def hover(self, hover_text: str, content: str = "") -> TextComponent:
+        if content:
+            self._parts.append(f"<hover:show_text:'{hover_text}'>{content}</hover>")
+        elif self._parts:
+            last = self._parts.pop()
+            self._parts.append(f"<hover:show_text:'{hover_text}'>{last}</hover>")
+        return self
+
+    def newline(self) -> TextComponent:
+        self._parts.append("<newline>")
+        return self
+
+    def __str__(self) -> str:
+        return "".join(self._parts)
+
+    def __repr__(self) -> str:
+        return f"TextComponent({str(self)!r})"
+
+    def __add__(self, other) -> TextComponent:
+        result = TextComponent()
+        result._parts = self._parts.copy()
+        if isinstance(other, TextComponent):
+            result._parts.extend(other._parts)
+        else:
+            result._parts.append(str(other))
+        return result
 
 class ReflectFacade(ProxyBase):
     """Reflection helper facade."""

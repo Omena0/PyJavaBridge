@@ -42,6 +42,16 @@ import org.bukkit.inventory.ShapedRecipe;
 import org.bukkit.inventory.ShapelessRecipe;
 import org.bukkit.inventory.FurnaceRecipe;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.meta.Damageable;
+import org.bukkit.enchantments.Enchantment;
+import org.bukkit.inventory.ItemFlag;
+import org.bukkit.GameRule;
+import org.bukkit.WorldBorder;
+import org.bukkit.TreeType;
+import org.bukkit.Particle;
+import org.bukkit.Statistic;
+import org.bukkit.persistence.PersistentDataContainer;
+import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.permissions.PermissionAttachment;
 import org.bukkit.util.Transformation;
 import org.bukkit.Color;
@@ -289,6 +299,7 @@ public class BridgeInstance {
             case "update_entities" -> handleUpdateEntities(message);
             case "move_entities" -> handleMoveEntities(message);
             case "release" -> handleRelease(message);
+            case "fire_event" -> handleFireEvent(message);
             case "shutdown_ack" -> {
                 if (shutdownLatch != null) {
                     shutdownLatch.countDown();
@@ -586,6 +597,13 @@ public class BridgeInstance {
             }
             registry.releaseAll(ids);
         }
+    }
+
+    private void handleFireEvent(JsonObject message) {
+        String eventName = message.has("event") ? message.get("event").getAsString() : null;
+        if (eventName == null) return;
+        JsonObject payload = message.has("data") ? message.getAsJsonObject("data") : new JsonObject();
+        sendEvent(eventName, payload);
     }
 
     void sendShutdownEvent() {
@@ -1124,6 +1142,159 @@ public class BridgeInstance {
             Map<String, Object> options = serializer.deserializeArgsObject(argsObj);
             return entitySpawner.spawnFirework(world, locationObj, options);
         }
+        if ("getGameRule".equals(method) && !args.isEmpty()) {
+            String ruleName = args.get(0) instanceof EnumValue ev ? ev.name : String.valueOf(args.get(0));
+            @SuppressWarnings("unchecked")
+            GameRule<Object> rule = (GameRule<Object>) GameRule.getByName(ruleName);
+            if (rule != null) return world.getGameRuleValue(rule);
+            return null;
+        }
+        if ("setGameRule".equals(method) && args.size() >= 2) {
+            String ruleName = args.get(0) instanceof EnumValue ev ? ev.name : String.valueOf(args.get(0));
+            @SuppressWarnings("unchecked")
+            GameRule<Object> rule = (GameRule<Object>) GameRule.getByName(ruleName);
+            if (rule != null) {
+                Object val = args.get(1);
+                if (val instanceof Boolean b) {
+                    @SuppressWarnings("unchecked")
+                    GameRule<Boolean> boolRule = (GameRule<Boolean>) GameRule.getByName(ruleName);
+                    world.setGameRule(boolRule, b);
+                } else if (val instanceof Number n) {
+                    @SuppressWarnings("unchecked")
+                    GameRule<Integer> intRule = (GameRule<Integer>) GameRule.getByName(ruleName);
+                    world.setGameRule(intRule, n.intValue());
+                }
+            }
+            return null;
+        }
+        if ("getGameRules".equals(method)) {
+            Map<String, Object> rules = new java.util.HashMap<>();
+            for (String name : world.getGameRules()) {
+                @SuppressWarnings("unchecked")
+                GameRule<Object> gr = (GameRule<Object>) GameRule.getByName(name);
+                if (gr != null) rules.put(name, world.getGameRuleValue(gr));
+            }
+            return rules;
+        }
+        if ("getWorldBorder".equals(method)) {
+            WorldBorder border = world.getWorldBorder();
+            Map<String, Object> result = new java.util.HashMap<>();
+            result.put("center_x", border.getCenter().getX());
+            result.put("center_z", border.getCenter().getZ());
+            result.put("size", border.getSize());
+            result.put("damage_amount", border.getDamageAmount());
+            result.put("damage_buffer", border.getDamageBuffer());
+            result.put("warning_distance", border.getWarningDistance());
+            result.put("warning_time", border.getWarningTime());
+            return result;
+        }
+        if ("setWorldBorder".equals(method) && !args.isEmpty()) {
+            WorldBorder border = world.getWorldBorder();
+            if (args.get(0) instanceof Map<?, ?> map) {
+                if (map.containsKey("center_x") && map.containsKey("center_z")) {
+                    double cx = ((Number) map.get("center_x")).doubleValue();
+                    double cz = ((Number) map.get("center_z")).doubleValue();
+                    border.setCenter(cx, cz);
+                }
+                if (map.containsKey("size")) {
+                    border.setSize(((Number) map.get("size")).doubleValue());
+                }
+                if (map.containsKey("damage_amount")) {
+                    border.setDamageAmount(((Number) map.get("damage_amount")).doubleValue());
+                }
+                if (map.containsKey("damage_buffer")) {
+                    border.setDamageBuffer(((Number) map.get("damage_buffer")).doubleValue());
+                }
+                if (map.containsKey("warning_distance")) {
+                    border.setWarningDistance(((Number) map.get("warning_distance")).intValue());
+                }
+                if (map.containsKey("warning_time")) {
+                    border.setWarningTime(((Number) map.get("warning_time")).intValue());
+                }
+            }
+            return null;
+        }
+        if ("getHighestBlockAt".equals(method) && args.size() >= 2) {
+            int x = ((Number) args.get(0)).intValue();
+            int z = ((Number) args.get(1)).intValue();
+            return world.getHighestBlockAt(x, z);
+        }
+        if ("generateTree".equals(method) && args.size() >= 2) {
+            Location loc = toLocation(args.get(0), null);
+            if (loc == null && args.get(0) instanceof Location l) loc = l;
+            if (loc != null) {
+                loc.setWorld(world);
+                String typeName = args.get(1) instanceof EnumValue ev ? ev.name : String.valueOf(args.get(1));
+                TreeType type = TreeType.valueOf(typeName.toUpperCase());
+                return world.generateTree(loc, type);
+            }
+            return false;
+        }
+        if ("getNearbyEntities".equals(method) && args.size() >= 4) {
+            Location loc = toLocation(args.get(0), null);
+            if (loc == null && args.get(0) instanceof Location l) loc = l;
+            if (loc != null) {
+                loc.setWorld(world);
+                double dx = ((Number) args.get(1)).doubleValue();
+                double dy = ((Number) args.get(2)).doubleValue();
+                double dz = ((Number) args.get(3)).doubleValue();
+                return new ArrayList<>(world.getNearbyEntities(loc, dx, dy, dz));
+            }
+            return List.of();
+        }
+        if ("getChunkAtAsync".equals(method) && args.size() >= 2) {
+            int cx = ((Number) args.get(0)).intValue();
+            int cz = ((Number) args.get(1)).intValue();
+            return world.getChunkAtAsync(cx, cz);
+        }
+        if ("batchSpawn".equals(method) && !args.isEmpty() && args.get(0) instanceof List<?> batch) {
+            List<Entity> spawned = new ArrayList<>();
+            for (Object entry : batch) {
+                if (entry instanceof Map<?, ?> spec) {
+                    Object locObj = spec.get("location");
+                    Object typeObj = spec.get("type");
+                    Location loc = locObj instanceof Location l ? l : toLocation(locObj, null);
+                    if (loc != null && typeObj != null) {
+                        loc.setWorld(world);
+                        String typeName = typeObj instanceof EnumValue ev ? ev.name : String.valueOf(typeObj);
+                        EntityType et = EntityType.valueOf(typeName.toUpperCase());
+                        spawned.add(world.spawnEntity(loc, et));
+                    }
+                }
+            }
+            return spawned;
+        }
+        if ("worldRayTrace".equals(method) && args.size() >= 3) {
+            Location start = toLocation(args.get(0), null);
+            if (start == null && args.get(0) instanceof Location l) start = l;
+            if (start != null) {
+                start.setWorld(world);
+                org.bukkit.util.Vector direction;
+                if (args.get(1) instanceof org.bukkit.util.Vector v) {
+                    direction = v;
+                } else if (args.get(1) instanceof Map<?,?> m) {
+                    direction = new org.bukkit.util.Vector(
+                        ((Number)m.get("x")).doubleValue(),
+                        ((Number)m.get("y")).doubleValue(),
+                        ((Number)m.get("z")).doubleValue()
+                    );
+                } else {
+                    return null;
+                }
+                double maxDist = ((Number) args.get(2)).doubleValue();
+                org.bukkit.util.RayTraceResult hit = world.rayTraceBlocks(start, direction, maxDist);
+                if (hit != null) {
+                    Map<String, Object> result = new java.util.HashMap<>();
+                    if (hit.getHitBlock() != null) result.put("block", hit.getHitBlock());
+                    if (hit.getHitEntity() != null) result.put("entity", hit.getHitEntity());
+                    if (hit.getHitPosition() != null) {
+                        result.put("position", new Location(world, hit.getHitPosition().getX(), hit.getHitPosition().getY(), hit.getHitPosition().getZ()));
+                    }
+                    return result;
+                }
+            }
+            return null;
+        }
         return UNHANDLED;
     }
 
@@ -1288,6 +1459,51 @@ public class BridgeInstance {
                 }
             }
         }
+        if ("getDrops".equals(method)) {
+            if (!args.isEmpty() && args.get(0) instanceof ItemStack tool) {
+                return new ArrayList<>(block.getDrops(tool));
+            }
+            return new ArrayList<>(block.getDrops());
+        }
+        if ("getHardness".equals(method)) {
+            return block.getType().getHardness();
+        }
+        if ("getBlastResistance".equals(method)) {
+            return block.getType().getBlastResistance();
+        }
+        if ("getBlockPDC".equals(method)) {
+            BlockState state = block.getState();
+            if (state instanceof org.bukkit.block.TileState tile) {
+                PersistentDataContainer pdc = tile.getPersistentDataContainer();
+                Map<String, Object> result = new java.util.HashMap<>();
+                for (NamespacedKey key : pdc.getKeys()) {
+                    Object val = pdc.get(key, PersistentDataType.STRING);
+                    if (val != null) result.put(key.toString(), val);
+                }
+                return result;
+            }
+            return Map.of();
+        }
+        if ("setBlockPDC".equals(method) && args.size() >= 2) {
+            BlockState state = block.getState();
+            if (state instanceof org.bukkit.block.TileState tile) {
+                String keyStr = String.valueOf(args.get(0));
+                NamespacedKey key = new NamespacedKey(plugin, keyStr);
+                tile.getPersistentDataContainer().set(key, PersistentDataType.STRING, String.valueOf(args.get(1)));
+                tile.update();
+            }
+            return null;
+        }
+        if ("removeBlockPDC".equals(method) && !args.isEmpty()) {
+            BlockState state = block.getState();
+            if (state instanceof org.bukkit.block.TileState tile) {
+                String keyStr = String.valueOf(args.get(0));
+                NamespacedKey key = new NamespacedKey(plugin, keyStr);
+                tile.getPersistentDataContainer().remove(key);
+                tile.update();
+            }
+            return null;
+        }
         return UNHANDLED;
     }
 
@@ -1390,6 +1606,196 @@ public class BridgeInstance {
                 }
                 return null;
             }
+            case "hidePlayer" -> {
+                if (!args.isEmpty() && args.get(0) instanceof Player other) {
+                    player.hidePlayer(plugin, other);
+                }
+                return null;
+            }
+            case "showPlayer" -> {
+                if (!args.isEmpty() && args.get(0) instanceof Player other) {
+                    player.showPlayer(plugin, other);
+                }
+                return null;
+            }
+            case "canSee" -> {
+                if (!args.isEmpty() && args.get(0) instanceof Player other) {
+                    return player.canSee(other);
+                }
+                return false;
+            }
+            case "openBook" -> {
+                if (!args.isEmpty() && args.get(0) instanceof ItemStack book) {
+                    player.openBook(book);
+                }
+                return null;
+            }
+            case "sendBlockChange" -> {
+                if (args.size() >= 2) {
+                    Location loc = toLocation(args.get(0), player);
+                    if (loc != null) {
+                        Object matArg = args.get(1);
+                        org.bukkit.block.data.BlockData blockData;
+                        if (matArg instanceof org.bukkit.block.data.BlockData bd) {
+                            blockData = bd;
+                        } else {
+                            String matName = matArg instanceof EnumValue ev ? ev.name : String.valueOf(matArg);
+                            blockData = Bukkit.createBlockData(Material.matchMaterial(matName));
+                        }
+                        player.sendBlockChange(loc, blockData);
+                    }
+                }
+                return null;
+            }
+            case "sendParticle" -> {
+                if (args.size() >= 2) {
+                    Object particleArg = args.get(0);
+                    String particleName = particleArg instanceof EnumValue ev ? ev.name : String.valueOf(particleArg);
+                    Particle particle;
+                    try {
+                        particle = Particle.valueOf(particleName.toUpperCase());
+                    } catch (IllegalArgumentException ex) {
+                        throw new IllegalArgumentException("Unknown particle: " + particleName);
+                    }
+                    Location loc = toLocation(args.get(1), player);
+                    int count = args.size() > 2 && args.get(2) instanceof Number n ? n.intValue() : 1;
+                    double offX = args.size() > 3 && args.get(3) instanceof Number n ? n.doubleValue() : 0;
+                    double offY = args.size() > 4 && args.get(4) instanceof Number n ? n.doubleValue() : 0;
+                    double offZ = args.size() > 5 && args.get(5) instanceof Number n ? n.doubleValue() : 0;
+                    double extra = args.size() > 6 && args.get(6) instanceof Number n ? n.doubleValue() : 0;
+                    if (loc != null) {
+                        player.spawnParticle(particle, loc, count, offX, offY, offZ, extra);
+                    }
+                }
+                return null;
+            }
+            case "getCooldown" -> {
+                if (!args.isEmpty()) {
+                    String matName = args.get(0) instanceof EnumValue ev ? ev.name : String.valueOf(args.get(0));
+                    Material mat = Material.matchMaterial(matName);
+                    if (mat != null) return player.getCooldown(mat);
+                }
+                return 0;
+            }
+            case "setCooldown" -> {
+                if (args.size() >= 2) {
+                    String matName = args.get(0) instanceof EnumValue ev ? ev.name : String.valueOf(args.get(0));
+                    Material mat = Material.matchMaterial(matName);
+                    int ticks = ((Number) args.get(1)).intValue();
+                    if (mat != null) player.setCooldown(mat, ticks);
+                }
+                return null;
+            }
+            case "hasCooldown" -> {
+                if (!args.isEmpty()) {
+                    String matName = args.get(0) instanceof EnumValue ev ? ev.name : String.valueOf(args.get(0));
+                    Material mat = Material.matchMaterial(matName);
+                    if (mat != null) return player.hasCooldown(mat);
+                }
+                return false;
+            }
+            case "getStatistic" -> {
+                if (!args.isEmpty()) {
+                    String statName = args.get(0) instanceof EnumValue ev ? ev.name : String.valueOf(args.get(0));
+                    Statistic stat = Statistic.valueOf(statName.toUpperCase());
+                    if (args.size() == 1) {
+                        return player.getStatistic(stat);
+                    } else if (args.size() >= 2) {
+                        String arg2 = args.get(1) instanceof EnumValue ev ? ev.name : String.valueOf(args.get(1));
+                        Material mat = Material.matchMaterial(arg2);
+                        if (mat != null) return player.getStatistic(stat, mat);
+                        EntityType et = EntityType.valueOf(arg2.toUpperCase());
+                        return player.getStatistic(stat, et);
+                    }
+                }
+                return 0;
+            }
+            case "setStatistic" -> {
+                if (args.size() >= 2) {
+                    String statName = args.get(0) instanceof EnumValue ev ? ev.name : String.valueOf(args.get(0));
+                    Statistic stat = Statistic.valueOf(statName.toUpperCase());
+                    if (args.size() == 2) {
+                        player.setStatistic(stat, ((Number) args.get(1)).intValue());
+                    } else if (args.size() >= 3) {
+                        int val = ((Number) args.get(2)).intValue();
+                        String arg2 = args.get(1) instanceof EnumValue ev ? ev.name : String.valueOf(args.get(1));
+                        Material mat = Material.matchMaterial(arg2);
+                        if (mat != null) {
+                            player.setStatistic(stat, mat, val);
+                        } else {
+                            EntityType et = EntityType.valueOf(arg2.toUpperCase());
+                            player.setStatistic(stat, et, val);
+                        }
+                    }
+                }
+                return null;
+            }
+            case "getMaxHealth" -> {
+                org.bukkit.attribute.AttributeInstance attr = player.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH);
+                return attr != null ? attr.getValue() : 20.0;
+            }
+            case "setMaxHealth" -> {
+                if (!args.isEmpty() && args.get(0) instanceof Number n) {
+                    org.bukkit.attribute.AttributeInstance attr = player.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH);
+                    if (attr != null) attr.setBaseValue(n.doubleValue());
+                }
+                return null;
+            }
+            case "getBedSpawnLocation" -> {
+                return player.getRespawnLocation();
+            }
+            case "setBedSpawnLocation" -> {
+                if (!args.isEmpty()) {
+                    Location loc = toLocation(args.get(0), player);
+                    boolean force = args.size() > 1 && Boolean.TRUE.equals(args.get(1));
+                    player.setRespawnLocation(loc, force);
+                }
+                return null;
+            }
+            case "getCompassTarget" -> {
+                return player.getCompassTarget();
+            }
+            case "setCompassTarget" -> {
+                if (!args.isEmpty()) {
+                    Location loc = toLocation(args.get(0), player);
+                    if (loc != null) player.setCompassTarget(loc);
+                }
+                return null;
+            }
+            case "getPDC", "getPersistentData" -> {
+                PersistentDataContainer pdc = player.getPersistentDataContainer();
+                Map<String, Object> result = new java.util.HashMap<>();
+                for (NamespacedKey key : pdc.getKeys()) {
+                    Object val = pdc.get(key, PersistentDataType.STRING);
+                    if (val != null) result.put(key.toString(), val);
+                }
+                return result;
+            }
+            case "setPDC", "setPersistentData" -> {
+                if (args.size() >= 2) {
+                    String keyStr = String.valueOf(args.get(0));
+                    NamespacedKey key = new NamespacedKey(plugin, keyStr);
+                    String val = String.valueOf(args.get(1));
+                    player.getPersistentDataContainer().set(key, PersistentDataType.STRING, val);
+                }
+                return null;
+            }
+            case "removePDC", "removePersistentData" -> {
+                if (!args.isEmpty()) {
+                    String keyStr = String.valueOf(args.get(0));
+                    NamespacedKey key = new NamespacedKey(plugin, keyStr);
+                    player.getPersistentDataContainer().remove(key);
+                }
+                return null;
+            }
+            case "hasPDC", "hasPersistentData" -> {
+                if (!args.isEmpty()) {
+                    String keyStr = String.valueOf(args.get(0));
+                    NamespacedKey key = new NamespacedKey(plugin, keyStr);
+                    return player.getPersistentDataContainer().has(key, PersistentDataType.STRING);
+                }
+                return false;
+            }
         }
         return UNHANDLED;
     }
@@ -1449,6 +1855,34 @@ public class BridgeInstance {
                         mob.setRotation(yaw, pitch);
                     }
                 }
+                return null;
+            }
+            case "getGoalTypes" -> {
+                com.destroystokyo.paper.entity.ai.MobGoals goals = Bukkit.getMobGoals();
+                var allGoals = goals.getAllGoals(mob);
+                List<String> names = new ArrayList<>();
+                for (var goal : allGoals) {
+                    names.add(goal.getKey().getNamespacedKey().getKey());
+                }
+                return names;
+            }
+            case "removeGoal" -> {
+                if (!args.isEmpty()) {
+                    String goalKey = String.valueOf(args.get(0));
+                    com.destroystokyo.paper.entity.ai.MobGoals goals = Bukkit.getMobGoals();
+                    var allGoals = goals.getAllGoals(mob);
+                    for (var goal : allGoals) {
+                        if (goal.getKey().getNamespacedKey().getKey().equals(goalKey)) {
+                            goals.removeGoal(mob, goal);
+                            return true;
+                        }
+                    }
+                }
+                return false;
+            }
+            case "removeAllGoals" -> {
+                com.destroystokyo.paper.entity.ai.MobGoals goals = Bukkit.getMobGoals();
+                goals.removeAllGoals(mob);
                 return null;
             }
         }
@@ -1541,6 +1975,91 @@ public class BridgeInstance {
                             itemStack.setItemMeta(deserialized.getItemMeta());
                         }
                     }
+                }
+                return null;
+            }
+            case "getDurability" -> {
+                if (meta instanceof Damageable dmg) {
+                    return dmg.getDamage();
+                }
+                return 0;
+            }
+            case "setDurability" -> {
+                if (meta instanceof Damageable dmg && !args.isEmpty() && args.get(0) instanceof Number n) {
+                    dmg.setDamage(n.intValue());
+                    itemStack.setItemMeta(dmg);
+                }
+                return null;
+            }
+            case "getMaxDurability" -> {
+                return (int) itemStack.getType().getMaxDurability();
+            }
+            case "getEnchantments" -> {
+                Map<String, Integer> result = new java.util.HashMap<>();
+                for (Map.Entry<Enchantment, Integer> e : itemStack.getEnchantments().entrySet()) {
+                    result.put(e.getKey().getKey().getKey(), e.getValue());
+                }
+                return result;
+            }
+            case "addEnchantment" -> {
+                if (args.size() >= 2) {
+                    String enchName = args.get(0) instanceof EnumValue ev ? ev.name : String.valueOf(args.get(0));
+                    int level = ((Number) args.get(1)).intValue();
+                    Registry<Enchantment> enchReg = RegistryAccess.registryAccess().getRegistry(RegistryKey.ENCHANTMENT);
+                    Enchantment ench = enchReg.get(NamespacedKey.minecraft(enchName.toLowerCase()));
+                    if (ench != null) {
+                        meta.addEnchant(ench, level, true);
+                        itemStack.setItemMeta(meta);
+                    }
+                }
+                return null;
+            }
+            case "removeEnchantment" -> {
+                if (!args.isEmpty()) {
+                    String enchName = args.get(0) instanceof EnumValue ev ? ev.name : String.valueOf(args.get(0));
+                    Registry<Enchantment> enchReg = RegistryAccess.registryAccess().getRegistry(RegistryKey.ENCHANTMENT);
+                    Enchantment ench = enchReg.get(NamespacedKey.minecraft(enchName.toLowerCase()));
+                    if (ench != null) itemStack.removeEnchantment(ench);
+                }
+                return null;
+            }
+            case "getItemFlags" -> {
+                if (meta != null) {
+                    List<String> flags = new ArrayList<>();
+                    for (ItemFlag f : meta.getItemFlags()) {
+                        flags.add(f.name());
+                    }
+                    return flags;
+                }
+                return List.of();
+            }
+            case "addItemFlags" -> {
+                if (meta != null && !args.isEmpty()) {
+                    for (Object arg : args) {
+                        String flagName = arg instanceof EnumValue ev ? ev.name : String.valueOf(arg);
+                        meta.addItemFlags(ItemFlag.valueOf(flagName.toUpperCase()));
+                    }
+                    itemStack.setItemMeta(meta);
+                }
+                return null;
+            }
+            case "removeItemFlags" -> {
+                if (meta != null && !args.isEmpty()) {
+                    for (Object arg : args) {
+                        String flagName = arg instanceof EnumValue ev ? ev.name : String.valueOf(arg);
+                        meta.removeItemFlags(ItemFlag.valueOf(flagName.toUpperCase()));
+                    }
+                    itemStack.setItemMeta(meta);
+                }
+                return null;
+            }
+            case "isUnbreakable" -> {
+                return meta != null && meta.isUnbreakable();
+            }
+            case "setUnbreakable" -> {
+                if (meta != null && !args.isEmpty()) {
+                    meta.setUnbreakable(Boolean.TRUE.equals(args.get(0)));
+                    itemStack.setItemMeta(meta);
                 }
                 return null;
             }
@@ -1646,6 +2165,101 @@ public class BridgeInstance {
         }
         if ("hasPacketApi".equals(method)) {
             return plugin.hasPacketBridge();
+        }
+        // StructureManager
+        if ("saveStructure".equals(method) && args.size() >= 5) {
+            String structName = String.valueOf(args.get(0));
+            NamespacedKey key = new NamespacedKey(plugin, structName);
+            org.bukkit.structure.StructureManager mgr = Bukkit.getStructureManager();
+            org.bukkit.structure.Structure structure = mgr.createStructure();
+            World w = Bukkit.getWorld(String.valueOf(args.get(1)));
+            if (w == null) return null;
+            int x1 = ((Number) args.get(2)).intValue();
+            int y1 = ((Number) args.get(3)).intValue();
+            int z1 = ((Number) args.get(4)).intValue();
+            int x2 = args.size() > 7 ? ((Number) args.get(5)).intValue() : x1;
+            int y2 = args.size() > 7 ? ((Number) args.get(6)).intValue() : y1;
+            int z2 = args.size() > 7 ? ((Number) args.get(7)).intValue() : z1;
+            org.bukkit.util.BlockVector size = new org.bukkit.util.BlockVector(
+                Math.abs(x2 - x1) + 1, Math.abs(y2 - y1) + 1, Math.abs(z2 - z1) + 1);
+            structure.fill(new Location(w, Math.min(x1, x2), Math.min(y1, y2), Math.min(z1, z2)), size, true);
+            try {
+                mgr.saveStructure(key, structure);
+            } catch (Exception e) {
+                return "Error: " + e.getMessage();
+            }
+            return structName;
+        }
+        if ("loadStructure".equals(method) && args.size() >= 5) {
+            String structName = String.valueOf(args.get(0));
+            NamespacedKey key = new NamespacedKey(plugin, structName);
+            org.bukkit.structure.StructureManager mgr = Bukkit.getStructureManager();
+            org.bukkit.structure.Structure structure;
+            try {
+                structure = mgr.loadStructure(key);
+            } catch (Exception e) {
+                return "Error: " + e.getMessage();
+            }
+            if (structure == null) return "Error: Structure not found";
+            World w = Bukkit.getWorld(String.valueOf(args.get(1)));
+            if (w == null) return "Error: World not found";
+            Location loc = new Location(w,
+                ((Number) args.get(2)).doubleValue(),
+                ((Number) args.get(3)).doubleValue(),
+                ((Number) args.get(4)).doubleValue());
+            boolean includeEntities = args.size() > 5 && Boolean.TRUE.equals(args.get(5));
+            structure.place(loc, includeEntities, org.bukkit.block.structure.StructureRotation.NONE,
+                org.bukkit.block.structure.Mirror.NONE, 0, 1.0f, new java.util.Random());
+            return structName;
+        }
+        if ("deleteStructure".equals(method) && !args.isEmpty()) {
+            String structName = String.valueOf(args.get(0));
+            NamespacedKey key = new NamespacedKey(plugin, structName);
+            try {
+                Bukkit.getStructureManager().deleteStructure(key);
+            } catch (Exception e) {
+                return "Error: " + e.getMessage();
+            }
+            return true;
+        }
+        if ("listStructures".equals(method)) {
+            Map<NamespacedKey, org.bukkit.structure.Structure> all = Bukkit.getStructureManager().getStructures();
+            List<String> names = new ArrayList<>();
+            for (NamespacedKey k : all.keySet()) {
+                names.add(k.getKey());
+            }
+            return names;
+        }
+        // WorldCreator
+        if ("createWorld".equals(method) && !args.isEmpty()) {
+            Map<?, ?> opts = args.get(0) instanceof Map<?, ?> m ? m : Map.of("name", String.valueOf(args.get(0)));
+            String worldName = String.valueOf(opts.get("name"));
+            org.bukkit.WorldCreator creator = new org.bukkit.WorldCreator(worldName);
+            if (opts.containsKey("environment")) {
+                creator.environment(World.Environment.valueOf(String.valueOf(opts.get("environment")).toUpperCase()));
+            }
+            if (opts.containsKey("type")) {
+                creator.type(org.bukkit.WorldType.valueOf(String.valueOf(opts.get("type")).toUpperCase()));
+            }
+            if (opts.containsKey("seed")) {
+                creator.seed(((Number) opts.get("seed")).longValue());
+            }
+            if (opts.containsKey("generate_structures")) {
+                creator.generateStructures(Boolean.TRUE.equals(opts.get("generate_structures")));
+            }
+            World w = creator.createWorld();
+            return w;
+        }
+        if ("deleteWorld".equals(method) && !args.isEmpty()) {
+            String worldName = String.valueOf(args.get(0));
+            World w = Bukkit.getWorld(worldName);
+            if (w != null) {
+                return Bukkit.unloadWorld(w, false);
+            }
+            return false;
+        }
+        if ("getWorlds".equals(method)) {
+            return new ArrayList<>(Bukkit.getWorlds());
         }
         return UNHANDLED;
     }

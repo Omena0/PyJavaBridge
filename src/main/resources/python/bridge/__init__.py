@@ -28,6 +28,11 @@ from bridge.types import async_task
 _connection: BridgeConnection = None  # type: ignore[assignment]
 _player_uuid_cache: Dict[str, str] = {}
 
+
+def fire_event(event_name: str, data: dict | None = None) -> None:
+    """Fire a custom event that all scripts (including this one) can listen to."""
+    _connection.fire_event(event_name, data)
+
 # ── Bootstrap ─────────────────────────────────────────────────────────
 def _bootstrap(script_path: str):
     """Entry point called by the Java plugin to start a Python script."""

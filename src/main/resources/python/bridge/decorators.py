@@ -1,13 +1,15 @@
-"""Decorator-based registration: @event, @task, @command."""
+"""Decorator-based registration: @event, @task, @command, @preserve."""
 from __future__ import annotations
 
 import asyncio
 import inspect
+import json
+import os
 import sys
 from functools import wraps
 from typing import Any, Callable, Dict, List, Optional, cast
 
-__all__ = ["event", "task", "command"]
+__all__ = ["event", "task", "command", "preserve"]
 
 from bridge.utils import _command_signature_params, _parse_command_tokens
 from bridge.connection import BridgeConnection
@@ -228,3 +230,59 @@ def command(description: Optional[str] = None, *, name: Optional[str] = None, pe
         return wrapper
 
     return decorator
+
+
+# ---------------------------------------------------------------------------
+# @preserve — hot-reload state persistence
+# ---------------------------------------------------------------------------
+
+_PRESERVE_DIR: str | None = None
+
+
+def _preserve_dir() -> str:
+    global _PRESERVE_DIR
+    if _PRESERVE_DIR is None:
+        base = os.environ.get("PJB_DATA_DIR", "plugins/PyJavaBridge")
+        _PRESERVE_DIR = os.path.join(base, "preserve")
+        os.makedirs(_PRESERVE_DIR, exist_ok=True)
+    return _PRESERVE_DIR
+
+
+def preserve(func: Callable[[], Any]) -> Callable[[], Any]:
+    """Persist a variable across hot reloads.
+
+    Decorate a no-arg factory function.  On first load, the factory runs and
+    its return value is cached to disk as JSON.  On subsequent reloads, the
+    cached value is returned instead.
+
+    Example::
+
+        @preserve
+        def player_scores():
+            return {}
+
+        # player_scores is now a dict that survives /pjb reload
+    """
+    key = func.__qualname__
+    path = os.path.join(_preserve_dir(), f"{key}.json")
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            value = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        value = func()
+
+    def _save():
+        try:
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump(value, f)
+        except Exception as e:
+            print(f"[PyJavaBridge] preserve save error for {key}: {e}")
+
+    if _connection is not None:
+        _connection.on("server_shutdown", lambda _: _save())
+        _connection.on("script_unload", lambda _: _save())
+
+    # Make the value itself the return, but stash save for explicit use
+    if isinstance(value, dict):
+        value.setdefault("__preserve_save__", _save)
+    return value  # type: ignore[return-value]
