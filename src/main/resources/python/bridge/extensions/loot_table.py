@@ -4,7 +4,6 @@ from __future__ import annotations
 import random
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
-
 class LootEntry:
     """A single entry in a loot pool.
 
@@ -17,7 +16,8 @@ class LootEntry:
     """
 
     def __init__(self, item: Any, weight: int = 1, min_amount: int = 1,
-                 max_amount: int = 1, condition: Optional[Callable[..., bool]] = None):
+            max_amount: int = 1, condition: Optional[Callable[..., bool]] = None):
+        """Initialise a new LootEntry."""
         self.item = item
         self.weight = max(1, weight)
         self.min_amount = min_amount
@@ -25,14 +25,17 @@ class LootEntry:
         self.condition = condition
 
     def _matches(self, context: Any) -> bool:
+        """Handle matches."""
         if self.condition is None:
             return True
+
         try:
             return bool(self.condition(context))
         except Exception:
             return False
 
     def _roll_amount(self) -> int:
+        """Return the roll amount."""
         return random.randint(self.min_amount, self.max_amount)
 
     def _resolve_item(self) -> dict:
@@ -41,8 +44,8 @@ class LootEntry:
             result = dict(self.item)
             result.setdefault("amount", self._roll_amount())
             return result
-        return {"material": str(self.item), "amount": self._roll_amount()}
 
+        return {"material": str(self.item), "amount": self._roll_amount()}
 
 class LootPool:
     """A pool of loot entries with configurable rolls.
@@ -54,14 +57,17 @@ class LootPool:
     """
 
     def __init__(self, name: str = "pool", rolls: int = 1, bonus_rolls: int = 0):
+        """Initialise a new LootPool."""
         self.name = name
         self.rolls = rolls
         self.bonus_rolls = bonus_rolls
         self._entries: List[LootEntry] = []
 
-    def add(self, item: Any, weight: int = 1, min_amount: int = 1,
+    def add(
+            self, item: Any, weight: int = 1, min_amount: int = 1,
             max_amount: int = 1,
-            condition: Optional[Callable[..., bool]] = None) -> LootEntry:
+            condition: Optional[Callable[..., bool]] = None,
+    ) -> LootEntry:
         """Add an entry to this pool.
 
         Args:
@@ -76,12 +82,14 @@ class LootPool:
         return entry
 
     def entry(self, item: Any, weight: int = 1, min_amount: int = 1,
-              max_amount: int = 1,
-              condition: Optional[Callable[..., bool]] = None):
+            max_amount: int = 1,
+            condition: Optional[Callable[..., bool]] = None):
         """Decorator-style entry registration. Returns the condition function."""
         def decorator(func: Callable[..., bool]) -> Callable[..., bool]:
+            """Register as a decorator."""
             self.add(item, weight, min_amount, max_amount, condition=func)
             return func
+
         return decorator
 
     def generate(self, context: Any = None, luck: float = 0.0) -> List[dict]:
@@ -110,12 +118,10 @@ class LootPool:
 
         return results
 
-
 class LootTable:
     """Custom loot table with multiple pools.
 
     Example::
-
         loot = LootTable("dungeon_chest")
 
         common = loot.add_pool("common", rolls=3)
@@ -130,31 +136,34 @@ class LootTable:
         # Generate loot
         items = loot.generate(context={"difficulty": "hard"}, luck=1.0)
         # -> [{"material": "IRON_INGOT", "amount": 3}, {"material": "GOLD_INGOT", "amount": 2}, ...]
-
         # Give to player
         for item_data in items:
             await player.inventory.add_item(item_data["material"], item_data.get("amount", 1))
     """
 
     def __init__(self, name: str = "loot_table"):
+        """Initialise a new LootTable."""
         self.name = name
         self._pools: Dict[str, LootPool] = {}
 
     def add_pool(self, name: str = "pool", rolls: int = 1,
-                 bonus_rolls: int = 0) -> LootPool:
+            bonus_rolls: int = 0) -> LootPool:
         """Add a loot pool to this table."""
         pool = LootPool(name, rolls, bonus_rolls)
         self._pools[name] = pool
         return pool
 
     def get_pool(self, name: str) -> Optional[LootPool]:
+        """Return the pool."""
         return self._pools.get(name)
 
     def remove_pool(self, name: str):
+        """Remove a pool."""
         self._pools.pop(name, None)
 
     @property
     def pools(self) -> List[LootPool]:
+        """The pools value."""
         return list(self._pools.values())
 
     def generate(self, context: Any = None, luck: float = 0.0) -> List[dict]:
@@ -170,10 +179,11 @@ class LootTable:
         results: List[dict] = []
         for pool in self._pools.values():
             results.extend(pool.generate(context, luck))
+
         return results
 
     def generate_stacked(self, context: Any = None,
-                         luck: float = 0.0) -> List[dict]:
+            luck: float = 0.0) -> List[dict]:
         """Generate loot and combine items of the same material into stacks.
 
         Returns:
@@ -187,4 +197,5 @@ class LootTable:
                 stacked[key]["amount"] = stacked[key].get("amount", 1) + item.get("amount", 1)
             else:
                 stacked[key] = dict(item)
+
         return list(stacked.values())

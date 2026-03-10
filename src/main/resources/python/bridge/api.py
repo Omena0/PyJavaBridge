@@ -25,11 +25,10 @@ _connection:BridgeConnection = None  # type: ignore[assignment]
 
 _print = __builtins__["print"] if isinstance(__builtins__, dict) else __builtins__.print  # type: ignore[index]
 def print(*args):
+    """Redirect print to stderr so stdout stays reserved for IPC."""
     _print(*args, file=sys.stderr)
 
-
 # --- Packet API (requires ProtocolLib) ---
-
 def has_packet_api() -> BridgeCall:
     """Check if ProtocolLib packet API is available. Returns Awaitable[bool]."""
     return _connection.call("hasPacketApi", target="server")
@@ -37,19 +36,23 @@ def has_packet_api() -> BridgeCall:
 def on_packet_send(packet_type: str):
     """Decorator: listen for outgoing packets of the given type."""
     def decorator(handler: Callable) -> Callable:
+        """Register *handler* for outgoing packets of *packet_type*."""
         _connection.call("listenPacketSend", target="server", args=[packet_type])
         _connection.on("packet_send", handler)
         _connection.subscribe("packet_send", False)
         return handler
+
     return decorator
 
 def on_packet_receive(packet_type: str):
     """Decorator: listen for incoming packets of the given type."""
     def decorator(handler: Callable) -> Callable:
+        """Register *handler* for incoming packets of *packet_type*."""
         _connection.call("listenPacketReceive", target="server", args=[packet_type])
         _connection.on("packet_receive", handler)
         _connection.subscribe("packet_receive", False)
         return handler
+
     return decorator
 
 def send_packet(player: Any, packet_type: str, fields: Dict[str, Any] | None = None):
@@ -77,7 +80,6 @@ def get_scripts() -> BridgeCall:
     _connection._pending[request_id] = future
     _connection.send({"type": "get_scripts", "id": request_id})
     return BridgeCall(future)
-
 
 # --- Raycast ---
 @async_task

@@ -1,7 +1,6 @@
 """PyJavaBridge extension modules.
 
 Import extensions individually::
-
     from bridge.extensions import NPC
     from bridge.extensions import ImageDisplay
     from bridge.extensions import MeshDisplay

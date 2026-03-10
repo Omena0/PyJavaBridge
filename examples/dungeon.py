@@ -7,6 +7,7 @@ Setup:
 3. Run /bridge schem <x> <y> <z> <width> <height> <depth> to capture them.
 4. Edit the saved .droom files to add exit definitions, set type, and loot pools.
    Exits use exact coordinates: exit: x,y,z <facing> <WxH> [tag]
+
 5. Put the .droom files in a rooms/ folder next to this script.
 """
 
@@ -17,7 +18,6 @@ import inspect
 
 # ── Register loot generators ────────────────────────────────────────
 # These fill chests tagged with [loot:<pool>] in the room template.
-
 @loot_pool("common")
 def fill_common(inventory, room):
     """Fill a common loot chest."""
@@ -58,7 +58,6 @@ def fill_boss(inventory, room):
 # ── Define the dungeon ──────────────────────────────────────────────
 # Point rooms_dir at a folder full of .droom files.
 # The start_room is the first room placed (must exist as a .droom file).
-
 crypt = Dungeon(
     name="Ancient Crypt",
     rooms_dir="crypt_rooms",
@@ -70,34 +69,38 @@ crypt = Dungeon(
 )
 
 # ── Dungeon event handlers ──────────────────────────────────────────
-
 @crypt.on_enter
 async def on_enter(instance, player):
+    """Greet the player entering the dungeon."""
     player.send_message("§5You descend into the Ancient Crypt...")
     player.send_message(f"§7Rooms: {len(instance.rooms)} | Difficulty: {instance.dungeon.difficulty}")
     player.play_sound("ambient_cave")
 
 @crypt.on_complete
 async def on_complete(instance):
+    """Announce dungeon completion and schedule cleanup."""
     for p in instance.players:
         p.send_message("§a§lDungeon Complete! §7The Ancient Crypt trembles...")
         p.play_sound("ui_toast_challenge_complete")
+
     # Auto-cleanup after 30 seconds
     await server.after(600)
     await instance.destroy()
 
 @crypt.on_room_enter
 async def on_room_enter(player, room):
+    """Notify the player which room they entered."""
     player.send_message(f"§8Entering: §f{room.template.name} §7({room.template.type})")
 
 @crypt.on_room_clear
 async def on_room_clear(room):
+    """Log when a room is cleared."""
     print(f"Room {room.template.name} at {room.origin} cleared!")
-
 
 # Spawn mobs when a room is generated. Handlers receive (room, world).
 @crypt.on_room_generate
 async def spawn_room_mobs(room, world):
+    """Spawn zombies proportional to room area."""
     area = max(1, room.template.width * room.template.depth)
     count = max(1, area // 25)
     cx, cy, cz = room.center
@@ -111,10 +114,10 @@ async def spawn_room_mobs(room, world):
         except Exception:
             pass
 
-
 # ── Commands ─────────────────────────────────────────────────────────
 @command("Start a dungeon run")
 async def dungeon(event: Event):
+    """Create and enter a dungeon instance at the player's location."""
     player = event.player
     loc = player.location
 
@@ -137,6 +140,7 @@ async def dungeon(event: Event):
 
 @command("Destroy active dungeon")
 async def dungeon_destroy(event: Event):
+    """Destroy the most recent dungeon instance."""
     if not crypt.instances:
         event.player.send_message("§7No active dungeon instances.")
         return
@@ -147,6 +151,7 @@ async def dungeon_destroy(event: Event):
 
 @command("List dungeon instances")
 async def dungeon_list(event: Event):
+    """List all active dungeon instances."""
     if not crypt.instances:
         event.player.send_message("§7No active dungeon instances.")
         return

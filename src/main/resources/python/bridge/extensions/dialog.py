@@ -6,7 +6,6 @@ from typing import Any, Callable, List, Optional, Tuple, Union
 
 import bridge
 
-
 class DialogEntry:
     """A single step in a dialog sequence.
 
@@ -15,6 +14,7 @@ class DialogEntry:
         text: Message text.
         answers: Optional list of ``(answer_text, next)`` where *next* is
                  another :class:`DialogEntry` or a callback ``(player) -> ...``.
+
         delay: Auto-advance after this many seconds if no answers, or timeout
                if answers are present but the player doesn't respond.
     """
@@ -26,6 +26,7 @@ class DialogEntry:
         answers: Optional[List[Tuple[str, Union[DialogEntry, Callable[..., Any]]]]] = None,
         delay: Optional[float] = None,
     ):
+        """Initialise a new DialogEntry."""
         self.speaker = speaker
         self.text = text
         self.answers = answers or []
@@ -38,7 +39,6 @@ class Dialog:
     ``start(player)`` to begin.
 
     Example::
-
         intro = DialogEntry("Bob", "Hello there!", [
             ("Hi!", DialogEntry("Bob", "Welcome!")),
             ("Go away", lambda p: p.send_message("Fine...")),
@@ -48,22 +48,27 @@ class Dialog:
     """
 
     def __init__(self, root: DialogEntry):
+        """Initialise a new Dialog."""
         self._root = root
         self._active: dict[str, bool] = {}  # player uuid -> active
 
     def start(self, player: Any):
+        """Start the process."""
         puuid = str(player.uuid)
         self._active[puuid] = True
         asyncio.ensure_future(self._play(player, self._root))
 
     def stop(self, player: Any):
+        """Handle stop."""
         puuid = str(player.uuid)
         self._active.pop(puuid, None)
 
     def is_active(self, player: Any) -> bool:
+        """Check if active."""
         return self._active.get(str(player.uuid), False)
 
     async def _play(self, player: Any, entry: DialogEntry):
+        """Asynchronously handle play."""
         from bridge import server
         puuid = str(player.uuid)
         if not self._active.get(puuid):
@@ -110,18 +115,22 @@ class Dialog:
         future: asyncio.Future[int] = asyncio.get_event_loop().create_future()
 
         async def _chat_handler(event: Any):
+            """Asynchronously handle chat handler."""
             ep = event.fields.get("player")
             if ep is None:
                 return
+
             ep_uuid = ep.fields.get("uuid") if hasattr(ep, "fields") else None
             if ep_uuid != puuid:
                 return
+
             raw = event.fields.get("message", "").strip()
             if raw.isdigit():
                 idx = int(raw) - 1
                 if 0 <= idx < count:
                     if not future.done():
                         future.set_result(idx)
+
                     event.cancel()
 
         bridge._connection.on("player_chat", _chat_handler)

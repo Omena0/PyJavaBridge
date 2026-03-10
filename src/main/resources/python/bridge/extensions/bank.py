@@ -6,7 +6,6 @@ import json
 import os
 from typing import Any, Callable, Dict, List, Optional
 
-
 class Bank:
     """Global bank instance — tracks per-player currency balances.
 
@@ -20,6 +19,7 @@ class Bank:
     _instances: Dict[str, "Bank"] = {}
 
     def __init__(self, name: str = "default", currency: str = "coins"):
+        """Initialise a new Bank."""
         self.name = name
         self.currency = currency
         self._balances: Dict[str, int] = {}
@@ -29,50 +29,63 @@ class Bank:
         Bank._instances[name] = self
 
     def _load(self):
+        """Load data from storage."""
         if os.path.isfile(self._path):
             with open(self._path, "r") as f:
                 self._balances = json.load(f)
 
     def _save(self):
+        """Save data to storage."""
         os.makedirs(os.path.dirname(self._path), exist_ok=True)
         with open(self._path, "w") as f:
             json.dump(self._balances, f)
 
     def _puuid(self, player: Any) -> str:
+        """Handle puuid."""
         if isinstance(player, str):
             return player
+
         return str(player.uuid)
 
     def balance(self, player: Any) -> int:
+        """Get the balance."""
         return self._balances.get(self._puuid(player), 0)
 
     def deposit(self, player: Any, amount: int):
+        """Deposit a value."""
         if amount <= 0:
             raise ValueError("Deposit amount must be positive")
+
         puuid = self._puuid(player)
         self._balances[puuid] = self._balances.get(puuid, 0) + amount
         self._save()
         self._fire_transaction(player, "deposit", amount)
 
     def withdraw(self, player: Any, amount: int) -> bool:
+        """Withdraw a value."""
         if amount <= 0:
             raise ValueError("Withdraw amount must be positive")
+
         puuid = self._puuid(player)
         current = self._balances.get(puuid, 0)
         if current < amount:
             return False
+
         self._balances[puuid] = current - amount
         self._save()
         self._fire_transaction(player, "withdraw", amount)
         return True
 
     def transfer(self, source: Any, target: Any, amount: int) -> bool:
+        """Transfer a value."""
         if not self.withdraw(source, amount):
             return False
+
         self.deposit(target, amount)
         return True
 
     def set_balance(self, player: Any, amount: int):
+        """Set the balance."""
         self._balances[self._puuid(player)] = max(0, amount)
         self._save()
 
@@ -82,6 +95,7 @@ class Bank:
         return handler
 
     def _fire_transaction(self, player: Any, action: str, amount: int):
+        """Fire the transaction callbacks."""
         for handler in self._transaction_handlers:
             try:
                 result = handler(player, action, amount)
@@ -94,4 +108,5 @@ class Bank:
 
     @classmethod
     def get(cls, name: str = "default") -> Optional["Bank"]:
+        """Get by key."""
         return cls._instances.get(name)

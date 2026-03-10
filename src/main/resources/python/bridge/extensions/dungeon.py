@@ -16,7 +16,6 @@ room already placed.
 A ``.droom`` file has two sections separated by a ``---`` line:
 
 **Metadata** (key: value, one per line)::
-
     type: combat
     weight: 10
     width: 9
@@ -25,7 +24,6 @@ A ``.droom`` file has two sections separated by a ``---`` line:
     loot: chest1=common chest2=rare
 
 **Exit definitions** (``exit: x,y,z facing WxH [tag]``)::
-
     exit: 0,0,4 -x 3x3
     exit: 8,0,4 +x 3x3
     exit: 4,3,0 -z 2x2 upper
@@ -36,14 +34,12 @@ Exits connect when they share the same **tag** and **size**, facing
 opposite directions.
 
 **Block keys** (single character = block definition)::
-
     S: stone_bricks
     C: chest[facing=north,name=[loot:chest1]]
 
 ``~`` is always air (hardcoded, no definition needed).
 
 **Block data** (after the ``---`` separator)::
-
     One operation per line using ``fill`` and ``set`` commands.
     Coordinates are local to the room (0-indexed).
 
@@ -59,7 +55,6 @@ opposite directions.
     ``world.fill()`` call at paste time.
 
 Example ``.droom`` file::
-
     type: combat
     weight: 10
     width: 5
@@ -109,8 +104,8 @@ from bridge.types import async_task
 
 _print = __builtins__["print"] if isinstance(__builtins__, dict) else __builtins__.print  # type: ignore[index]
 def _log(msg: str):
+    """Handle log."""
     _print(f"[Dungeon] {msg}", file=sys.stderr)
-
 
 def _exit_opening_corners(ex: "Exit") -> Tuple[Tuple[int, int, int], Tuple[int, int, int]]:
     """Return ``(anchor, opposite)`` corners of an exit's opening rectangle.
@@ -128,6 +123,7 @@ def _exit_opening_corners(ex: "Exit") -> Tuple[Tuple[int, int, int], Tuple[int, 
         wd, hd = (1, 0, 0), (0, 0, 1)
     else:             # ±z → width along x, height along y
         wd, hd = (1, 0, 0), (0, 1, 0)
+
     opp = (
         ex.x + (ex.width - 1) * wd[0] + (ex.height - 1) * hd[0],
         ex.y + (ex.width - 1) * wd[1] + (ex.height - 1) * hd[1],
@@ -152,9 +148,10 @@ class Exit:
     __slots__ = ("x", "y", "z", "facing", "width", "height", "tag")
 
     def __init__(self, x: int, y: int, z: int,
-                 facing: Tuple[int, int, int],
-                 width: int, height: int,
-                 tag: Optional[str] = None):
+            facing: Tuple[int, int, int],
+            width: int, height: int,
+            tag: Optional[str] = None):
+        """Initialise a new Exit."""
         self.x = x
         self.y = y
         self.z = z
@@ -166,11 +163,12 @@ class Exit:
     def can_connect(self, other: "Exit") -> bool:
         """True if *other* is a valid partner for this exit."""
         return (self.tag == other.tag
-                and self.width == other.width
-                and self.height == other.height
-                and other.facing == _opposite_facing(self.facing))
+            and self.width == other.width
+            and self.height == other.height
+            and other.facing == _opposite_facing(self.facing))
 
     def __repr__(self) -> str:
+        """Return a string representation."""
         f = FACING_NAME.get(self.facing, str(self.facing))
         return f"Exit({self.x},{self.y},{self.z} {f} {self.width}x{self.height} {self.tag!r})"
 
@@ -180,11 +178,13 @@ class Exit:
         parts = text.split()
         if len(parts) < 3:
             raise ValueError(f"Bad exit definition: {text!r}")
+
         coords = parts[0].split(",")
         x, y, z = int(coords[0]), int(coords[1]), int(coords[2])
         facing = FACING.get(parts[1])
         if facing is None:
             raise ValueError(f"Unknown facing {parts[1]!r} in exit: {text!r}")
+
         wh = parts[2].lower().split("x")
         w, h = int(wh[0]), int(wh[1])
         tag = parts[3] if len(parts) > 3 else None
@@ -197,6 +197,7 @@ class Exit:
         default_tag = f"{self.width}x{self.height}"
         if self.tag != default_tag:
             s += f" {self.tag}"
+
         return s
 
 # -- Room template -------------------------------------------------------------
@@ -218,12 +219,13 @@ class RoomTemplate:
     """
 
     def __init__(self, name: str, path: str, room_type: str,
-                 exits: List[Exit], weight: int,
-                 loot: Dict[str, str],
-                 key_map: Dict[str, str],
-                 width: int, height: int, depth: int,
-                 blocks: List[List[List[str]]],
-                 spawns: Optional[List[Dict[str, Any]]] = None):
+            exits: List[Exit], weight: int,
+            loot: Dict[str, str],
+            key_map: Dict[str, str],
+            width: int, height: int, depth: int,
+            blocks: List[List[List[str]]],
+            spawns: Optional[List[Dict[str, Any]]] = None):
+        """Initialise a new RoomTemplate."""
         self.name = name
         self.path = path
         self.type = room_type
@@ -265,8 +267,10 @@ class RoomTemplate:
             line = line.strip()
             if not line or line.startswith("#"):
                 continue
+
             if ":" not in line:
                 continue
+
             key, _, value = line.partition(":")
             key = key.strip()
             value = value.strip()
@@ -304,6 +308,7 @@ class RoomTemplate:
                         cx, cy, cz = (int(p) for p in coords.split(","))
                     except Exception:
                         continue
+
                     kwargs: Dict[str, Any] = {}
                     count = 1
                     for extra in toks[2:]:
@@ -316,6 +321,7 @@ class RoomTemplate:
                                     pass
                             else:
                                 kwargs[k] = v
+
                     spawns.append({"entity": entity, "x": cx, "y": cy, "z": cz, "count": count, "kwargs": kwargs})
 
         # Block data
@@ -342,6 +348,7 @@ class RoomTemplate:
                     f"Block data length {len(char_keys)} != "
                     f"width*height*depth {expected} in {path}"
                 )
+
             layers = []
             idx = 0
             for _y in range(meta_height):
@@ -353,7 +360,9 @@ class RoomTemplate:
                         idx += 1
                         block_def = key_map.get(ch, "air")
                         row.append(f"minecraft:{block_def}")
+
                     layer.append(row)
+
                 layers.append(layer)
 
         name = os.path.splitext(os.path.basename(path))[0]
@@ -383,6 +392,7 @@ class RoomTemplate:
             count = int(m.metadata.get("count", "1"))
             kwargs = {k: v for k, v in m.metadata.items()
                       if k not in ("entity", "count")}
+
             spawns.append({"entity": entity, "x": m.x, "y": m.y, "z": m.z,
                            "count": count, "kwargs": kwargs})
 
@@ -416,17 +426,20 @@ class RoomTemplate:
         lines.append(f"type: {self.type}")
         if self.weight != 10:
             lines.append(f"weight: {self.weight}")
+
         lines.append(f"width: {self.width}")
         lines.append(f"height: {self.height}")
         lines.append(f"depth: {self.depth}")
         if self.loot:
             pairs = " ".join(f"{t}={p}" for t, p in self.loot.items())
             lines.append(f"loot: {pairs}")
+
         lines.append("")
 
         # Write exit definitions
         for ex in self.exits:
             lines.append(f"exit: {ex.serialize()}")
+
         if self.exits:
             lines.append("")
 
@@ -434,7 +447,9 @@ class RoomTemplate:
         for ch, block_def in sorted(self.key_map.items()):
             if ch == "~":
                 continue
+
             lines.append(f"{ch}: {block_def}")
+
         lines.append("")
         lines.append("---")
 
@@ -536,7 +551,8 @@ class PlacedRoom:
     """
 
     def __init__(self, template: RoomTemplate, origin: Tuple[int, int, int],
-                 world_name: str):
+            world_name: str):
+        """Initialise a new PlacedRoom."""
         self.template = template
         self.origin = origin
         self.world_name = world_name
@@ -556,12 +572,13 @@ class PlacedRoom:
         return (
             (ox, oy, oz),
             (ox + self.template.width - 1,
-             oy + self.template.height - 1,
-             oz + self.template.depth - 1),
-        )
+                oy + self.template.height - 1,
+                oz + self.template.depth - 1),
+            )
 
     @property
     def center(self) -> Tuple[int, int, int]:
+        """The center value."""
         ox, oy, oz = self.origin
         return (
             ox + self.template.width // 2,
@@ -570,14 +587,17 @@ class PlacedRoom:
         )
 
     def on_enter(self, handler: Callable[..., Any]) -> Callable[..., Any]:
+        """Handle the enter event."""
         self._enter_handlers.append(handler)
         return handler
 
     def on_clear(self, handler: Callable[..., Any]) -> Callable[..., Any]:
+        """Handle the clear event."""
         self._clear_handlers.append(handler)
         return handler
 
     async def _fire_enter(self, player: Any):
+        """Fire the enter callbacks."""
         for h in self._enter_handlers:
             try:
                 r = h(player, self)
@@ -587,6 +607,7 @@ class PlacedRoom:
                 pass
 
     async def _fire_clear(self):
+        """Fire the clear callbacks."""
         self.cleared = True
         for h in self._clear_handlers:
             try:
@@ -623,6 +644,7 @@ class PlacedRoom:
                     pos = (int(parts[0]), int(parts[1]), int(parts[2]))
                     if pos not in self.original_blocks:
                         self.original_blocks[pos] = block_str
+
         _log(f"paste: {self.template.name!r} done in {time.perf_counter()-t0:.3f}s")
 
     def _build_bulk_ops(self) -> List[list]:
@@ -631,6 +653,7 @@ class PlacedRoom:
         reverse: Dict[str, str] = {}
         for ch, block_def in self.template.key_map.items():
             reverse[f"minecraft:{block_def}"] = ch
+
         ops = _compute_ops(
             self.template.blocks, reverse,
             self.template.width, self.template.height, self.template.depth,
@@ -648,6 +671,7 @@ class PlacedRoom:
                 block_str = _strip_loot_name(f"minecraft:{block_def}")
                 bulk.append(["fill", ox + x1, oy + y1, oz + z1,
                              ox + x2, oy + y2, oz + z2, block_str])
+
         return bulk
 
     @async_task
@@ -655,8 +679,10 @@ class PlacedRoom:
         """Restore original blocks (cleanup) in a single bulk call."""
         if not self.original_blocks:
             return
+
         entries = [[wx, wy, wz, block_str]
                    for (wx, wy, wz), block_str in self.original_blocks.items()]
+
         from bridge import _connection
         await _connection.call(
             target="region", method="restoreBlocks",
@@ -665,11 +691,11 @@ class PlacedRoom:
         self.original_blocks.clear()
 
     def __repr__(self):
+        """Return a string representation."""
         return (f"<PlacedRoom {self.template.name!r} at {self.origin} "
-                f"cleared={self.cleared}>")
+            f"cleared={self.cleared}>")
 
 # -- Loot system ---------------------------------------------------------------
-
 _loot_generators: Dict[str, Callable[..., Any]] = {}
 
 def loot_pool(name: str):
@@ -685,8 +711,10 @@ def loot_pool(name: str):
             inventory.add_item(ItemBuilder("BREAD").amount(5).build())
     """
     def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
+        """Register as a decorator."""
         _loot_generators[name] = func
         return func
+
     return decorator
 
 _LOOT_NAME_RE = re.compile(r',?name=\[loot:\w+\]')
@@ -697,6 +725,7 @@ def _strip_loot_name(block_str: str) -> str:
     s = s.replace('[,', '[').replace(',]', ']')
     if s.endswith('[]'):
         s = s[:-2]
+
     return s
 
 @async_task
@@ -711,11 +740,13 @@ async def _fill_loot(room: PlacedRoom, world: Any):
                 match = re.search(r'name=\[loot:(\w+)\]', block_str)
                 if not match:
                     continue
+
                 tag = match.group(1)
                 pool = room.template.loot.get(tag, tag)
                 gen = _loot_generators.get(pool)
                 if not gen:
                     continue
+
                 wx, wy, wz = ox + xi, oy + yi, oz + zi
                 try:
                     blk = await world.block_at(wx, wy, wz)
@@ -727,15 +758,14 @@ async def _fill_loot(room: PlacedRoom, world: Any):
                     pass
 
 # -- AABB helpers --------------------------------------------------------------
-
 def _aabb_overlaps(
     min_a: Tuple[int, int, int], max_a: Tuple[int, int, int],
     min_b: Tuple[int, int, int], max_b: Tuple[int, int, int],
 ) -> bool:
     """True if two axis-aligned bounding boxes overlap (inclusive)."""
     return (min_a[0] <= max_b[0] and max_a[0] >= min_b[0]
-            and min_a[1] <= max_b[1] and max_a[1] >= min_b[1]
-            and min_a[2] <= max_b[2] and max_a[2] >= min_b[2])
+        and min_a[1] <= max_b[1] and max_a[1] >= min_b[1]
+        and min_a[2] <= max_b[2] and max_a[2] >= min_b[2])
 
 def _room_aabb(
     origin: Tuple[int, int, int], t: RoomTemplate,
@@ -763,8 +793,8 @@ def _compute_new_origin(
     sz = src_origin[2] + src_exit.z
     dx, dy, dz = src_exit.facing
     return (sx + dx - dst_exit.x,
-            sy + dy - dst_exit.y,
-            sz + dz - dst_exit.z)
+        sy + dy - dst_exit.y,
+        sz + dz - dst_exit.z)
 
 class _DungeonGenerator:
     """Jigsaw-style recursive dungeon generator.
@@ -775,10 +805,12 @@ class _DungeonGenerator:
     3. For each open exit, find candidate ``(template, exit_index)``
        pairs that could physically attach without overlapping any
        placed room.
+
     4. **Lowest entropy first** -- prioritise the exit with the fewest
        valid candidates.  Prefer exits with at least ``min_candidates``
        options; if no exit meets the threshold fall back to whatever
        is available.
+
     5. Pick a candidate weighted by ``template.weight`` and place it.
     6. Repeat until ``room_count`` is reached or no open exits remain.
 
@@ -786,10 +818,11 @@ class _DungeonGenerator:
     """
 
     def __init__(self, templates: List[RoomTemplate],
-                 room_count: int,
-                 branch_factor: float,
-                 type_limits: Dict[str, int],
-                 min_candidates: int = 5):
+            room_count: int,
+            branch_factor: float,
+            type_limits: Dict[str, int],
+            min_candidates: int = 5):
+        """Initialise a new _DungeonGenerator."""
         self.templates = templates
         self.room_count = room_count
         self.branch_factor = max(0.0, min(1.0, branch_factor))
@@ -808,6 +841,7 @@ class _DungeonGenerator:
                 sig = (t.name, tuple(tuple(tuple(row) for row in layer) for layer in variant.blocks))
                 if sig in seen:
                     continue
+
                 seen.add(sig)
                 self._variants.append((variant, t))
 
@@ -816,18 +850,17 @@ class _DungeonGenerator:
         self._type_counts: Dict[str, int] = {}
 
     # -- overlap ---------------------------------------------------------------
-
     def _overlaps_any(self, origin: Tuple[int, int, int],
-                      template: RoomTemplate) -> bool:
+            template: RoomTemplate) -> bool:
         """Check if placing *template* at *origin* overlaps any placed room."""
         new_min, new_max = _room_aabb(origin, template)
         for pmin, pmax in self._aabbs:
             if _aabb_overlaps(new_min, new_max, pmin, pmax):
                 return True
+
         return False
 
     # -- candidate search ------------------------------------------------------
-
     def _candidates_for_exit(
         self, room: PlacedRoom, exit_idx: int,
     ) -> List[Tuple[RoomTemplate, int, Tuple[int, int, int]]]:
@@ -845,15 +878,16 @@ class _DungeonGenerator:
             for di, dst_exit in enumerate(variant.exits):
                 if not src_exit.can_connect(dst_exit):
                     continue
+
                 new_origin = _compute_new_origin(room.origin, src_exit, dst_exit)
                 if self._overlaps_any(new_origin, variant):
                     continue
+
                 results.append((variant, di, new_origin))
 
         return results
 
     # -- placement / undo helpers ------------------------------------------------
-
     def _place(self, room: PlacedRoom):
         """Add *room* to the placed set."""
         self.placed.append(room)
@@ -870,10 +904,9 @@ class _DungeonGenerator:
         self._type_counts[room.template.type] -= 1
 
     # -- main loop -------------------------------------------------------------
-
     def generate(self, start_template: RoomTemplate,
-                 origin: Tuple[int, int, int],
-                 world_name: str) -> List[PlacedRoom]:
+            origin: Tuple[int, int, int],
+            world_name: str) -> List[PlacedRoom]:
         """Generate the dungeon layout and return placed rooms."""
         _log(f"generate: start template={start_template.name!r} origin={origin} target={self.room_count} rooms")
         t0 = time.perf_counter()
@@ -926,9 +959,11 @@ class _DungeonGenerator:
                             # multi-exit gets weight reduced by pressure
                             w = 1.0 if ne <= 1 else max(1.0 - exit_pressure * 0.9, 0.05)
                             weighted.append((c, w))
+
                         # Stochastic selection: sort by -weight*random
                         weighted.sort(key=lambda cw: -(cw[1] * random.random()))
                         cands = [cw[0] for cw in weighted]
+
                 if cands:
                     scored.append((len(cands), depth, item, cands))
 
@@ -952,6 +987,7 @@ class _DungeonGenerator:
                 # branch_factor=1 → strongly prefer shallow; 0 → strongly prefer deep
                 w = (1 - ratio) * self.branch_factor + ratio * (1 - self.branch_factor)
                 weights.append(max(w, 0.01))
+
             chosen_entry = random.choices(pool, weights=weights, k=1)[0]
             _, _, (source_room, src_eidx, depth), cands = chosen_entry
 
@@ -971,12 +1007,14 @@ class _DungeonGenerator:
 
             _ep = exit_pressure  # capture for closure
             def _cand_key(c):
+                """Handle cand key."""
                 w = c[0].weight
                 base = c[0].name.split("_none")[0].split("_cw_")[0].split("_mirror_")[0]
                 for i, rn in enumerate(recent_names):
                     if base == rn:
                         w *= 0.05 * (i + 1)
                         break
+
                 # Boost dead-ends under exit pressure
                 ne = len(c[0].exits)
                 if _ep > 0:
@@ -984,11 +1022,14 @@ class _DungeonGenerator:
                         w *= 1.0 + _ep * 4.0  # up to 5× boost
                     else:
                         w *= max(1.0 - _ep * 0.9, 0.1)
+
                 return -(w * random.random())
+
             cands.sort(key=_cand_key)
 
             _log(f"generate: placing room {len(self.placed)+1}/{self.room_count}, "
-                 f"exit on {source_room.template.name!r}[{src_eidx}], {len(cands)} candidates")
+                f"exit on {source_room.template.name!r}[{src_eidx}], {len(cands)} candidates")
+
             placed_ok = False
             for chosen_t, chosen_di, new_origin in cands:
                 new_room = PlacedRoom(chosen_t, new_origin, world_name)
@@ -1035,6 +1076,7 @@ class _DungeonGenerator:
                 dead = [c for c in cands if len(c[0].exits) <= 1]
                 if not dead:
                     continue
+
                 open_exits.pop(i)
                 # Try each dead-end candidate
                 for chosen_t, chosen_di, new_origin in dead:
@@ -1048,7 +1090,9 @@ class _DungeonGenerator:
                 else:
                     # None fit — leave this exit
                     pass
+
                 break
+
             if not found:
                 break
 
@@ -1061,7 +1105,7 @@ class _DungeonGenerator:
             if conn is None
         )
         _log(f"generate: placed {len(self.placed)} rooms in {time.perf_counter()-t0:.3f}s"
-             f" ({open_remaining} open exits remain)")
+            f" ({open_remaining} open exits remain)")
 
         # -- post-generation: seal all remaining open exits --------------------
         self._seal_open_exits(world_name)
@@ -1126,6 +1170,7 @@ class _DungeonGenerator:
                     for di, dst_exit in enumerate(variant.exits):
                         if not src_exit_0.can_connect(dst_exit):
                             continue
+
                         new_origin = _compute_new_origin(
                             first_neighbor.origin, src_exit_0, dst_exit
                         )
@@ -1144,8 +1189,10 @@ class _DungeonGenerator:
                             for vi, vexit in enumerate(variant.exits):
                                 if vi in used_exits:
                                     continue
+
                                 if not nb_src.can_connect(vexit):
                                     continue
+
                                 # Verify origin consistency: the origin
                                 # computed from this neighbor must match.
                                 check_origin = _compute_new_origin(
@@ -1156,6 +1203,7 @@ class _DungeonGenerator:
                                     used_exits.add(vi)
                                     found = True
                                     break
+
                             if not found:
                                 all_ok = False
                                 break
@@ -1169,6 +1217,7 @@ class _DungeonGenerator:
                             best_open = unconnected
                             if best_open == 0:
                                 break
+
                     if best is not None and best_open == 0:
                         break
 
@@ -1212,8 +1261,9 @@ class DungeonInstance:
     """
 
     def __init__(self, dungeon: "Dungeon", players: List[Any],
-                 instance_id: int, rooms: List[PlacedRoom],
-                 world_name: str):
+            instance_id: int, rooms: List[PlacedRoom],
+            world_name: str):
+        """Initialise a new DungeonInstance."""
         self.dungeon = dungeon
         self.players: List[Any] = list(players)
         self.instance_id = instance_id
@@ -1228,10 +1278,12 @@ class DungeonInstance:
         """Fraction of rooms cleared (0.0 - 1.0)."""
         if not self.rooms:
             return 1.0
+
         return sum(1 for r in self.rooms if r.cleared) / len(self.rooms)
 
     @property
     def is_complete(self) -> bool:
+        """The is complete value."""
         return self._completed or all(r.cleared for r in self.rooms)
 
     @async_task
@@ -1292,6 +1344,7 @@ class DungeonInstance:
         """Restore all original blocks and remove the instance."""
         if self._tracker_task and not self._tracker_task.done():
             self._tracker_task.cancel()
+
         from bridge import World
         from bridge import _connection
 
@@ -1301,6 +1354,7 @@ class DungeonInstance:
         if self._all_originals:
             entries = [[wx, wy, wz, block_str]
                        for (wx, wy, wz), block_str in self._all_originals.items()]
+
             await _connection.call(
                 target="region", method="restoreBlocks",
                 args=[world, entries],
@@ -1341,6 +1395,7 @@ class DungeonInstance:
                         if (ox <= px < ox + t.width and
                                 oy <= py < oy + t.height and
                                 oz <= pz < oz + t.depth):
+
                             current = room
                             break
 
@@ -1366,8 +1421,9 @@ class DungeonInstance:
                 break
 
     def __repr__(self):
+        """Return a string representation."""
         return (f"<DungeonInstance #{self.instance_id} "
-                f"rooms={len(self.rooms)} progress={self.progress:.0%}>")
+            f"rooms={len(self.rooms)} progress={self.progress:.0%}>")
 
 # -- Dungeon template ----------------------------------------------------------
 class Dungeon:
@@ -1380,6 +1436,7 @@ class Dungeon:
         branch_factor:  0.0 = depth-first, 1.0 = breadth-first, 0.5 = balanced.
         min_candidates: Prefer exits with at least this many viable templates
                         before expanding (default 5).
+
         description:    Flavour text.
         difficulty:     Integer difficulty rating.
         start_room:     Name of the starting room template (without extension).
@@ -1387,12 +1444,13 @@ class Dungeon:
     """
 
     def __init__(self, name: str, rooms_dir: str,
-                 room_count: int = 12,
-                 branch_factor: float = 0.5,
-                 min_candidates: int = 5,
-                 description: str = "",
-                 difficulty: int = 1,
-                 start_room: Optional[str] = None):
+            room_count: int = 12,
+            branch_factor: float = 0.5,
+            min_candidates: int = 5,
+            description: str = "",
+            difficulty: int = 1,
+            start_room: Optional[str] = None):
+        """Initialise a new Dungeon."""
         self.name = name
         self.rooms_dir = rooms_dir
         self.room_count = room_count
@@ -1424,6 +1482,7 @@ class Dungeon:
         """Scan ``rooms_dir`` for ``.droom`` and ``.bschem`` files."""
         if not os.path.isdir(self.rooms_dir):
             return
+
         for fname in sorted(os.listdir(self.rooms_dir)):
             path = os.path.join(self.rooms_dir, fname)
             try:
@@ -1442,6 +1501,7 @@ class Dungeon:
 
     @property
     def templates(self) -> List[RoomTemplate]:
+        """The templates value."""
         return list(self._templates)
 
     def add_template(self, template: RoomTemplate):
@@ -1449,7 +1509,6 @@ class Dungeon:
         self._templates.append(template)
 
     # -- Decorators ------------------------------------------------------------
-
     def on_enter(self, handler: Callable[..., Any]) -> Callable[..., Any]:
         """Decorator: ``(instance, player)`` when a player enters the dungeon."""
         self._enter_handlers.append(handler)
@@ -1484,13 +1543,12 @@ class Dungeon:
         return self.on_complete(handler)
 
     # -- Instance management ---------------------------------------------------
-
     async def create_instance(self, players: List[Any],
-                              origin: Tuple[int, int, int],
-                              world: Any = "world",
-                              room_count: Optional[int] = None,
-                              branch_factor: Optional[float] = None
-                              ) -> DungeonInstance:
+            origin: Tuple[int, int, int],
+            world: Any = "world",
+            room_count: Optional[int] = None,
+            branch_factor: Optional[float] = None
+            ) -> DungeonInstance:
         """Generate and place a dungeon instance in the world.
 
         Args:
@@ -1514,6 +1572,7 @@ class Dungeon:
                 (t for t in self._templates if t.name == self.start_room_name),
                 None,
             )
+
         if start is None:
             start = self._templates[0]
 
@@ -1556,6 +1615,7 @@ class Dungeon:
                     loc = (room.origin[0] + s.get("x", 0),
                         room.origin[1] + s.get("y", 0),
                         room.origin[2] + s.get("z", 0))
+
                     try:
                         r = world.spawn_entity(loc, ent, **kwargs)
                         if inspect.isawaitable(r):
@@ -1591,7 +1651,6 @@ class Dungeon:
 
     @property
     def instances(self) -> List[DungeonInstance]:
+        """The instances value."""
         return list(self._instances)
-
-
 

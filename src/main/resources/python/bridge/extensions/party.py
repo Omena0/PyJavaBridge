@@ -6,7 +6,6 @@ from typing import Any, Callable, Dict, List, Optional
 
 import bridge
 
-
 class Party:
     """Player group with leader, invites, and party chat.
 
@@ -21,6 +20,7 @@ class Party:
     _listener_registered = False
 
     def __init__(self, name: str, leader: Any, max_size: int = 4):
+        """Initialise a new Party."""
         self.name = name
         self._leader_uuid: str = str(leader.uuid)
         self.max_size = max_size
@@ -34,41 +34,52 @@ class Party:
 
     @property
     def leader(self) -> Any:
+        """The leader value."""
         return self._members.get(self._leader_uuid)
 
     @property
     def members(self) -> List[Any]:
+        """The members value."""
         return list(self._members.values())
 
     @property
     def member_uuids(self) -> List[str]:
+        """The member uuids value."""
         return list(self._members.keys())
 
     @property
     def size(self) -> int:
+        """The size value."""
         return len(self._members)
 
     def is_member(self, player: Any) -> bool:
+        """Check if member."""
         return str(player.uuid) in self._members
 
     def is_leader(self, player: Any) -> bool:
+        """Check if leader."""
         return str(player.uuid) == self._leader_uuid
 
     def join(self, player: Any) -> bool:
+        """Join the group."""
         puuid = str(player.uuid)
         if puuid in Party._player_party:
             return False
+
         if len(self._members) >= self.max_size:
             return False
+
         self._members[puuid] = player
         Party._player_party[puuid] = self.name
         self._fire(self._on_join, player)
         return True
 
     def leave(self, player: Any):
+        """Leave the group."""
         puuid = str(player.uuid)
         if puuid not in self._members:
             return
+
         del self._members[puuid]
         Party._player_party.pop(puuid, None)
         self._fire(self._on_leave, player)
@@ -79,14 +90,17 @@ class Party:
                 self.disband()
 
     def kick(self, player: Any):
+        """Kick the player."""
         self.leave(player)
 
     def promote(self, player: Any):
+        """Promote a member."""
         puuid = str(player.uuid)
         if puuid in self._members:
             self._leader_uuid = puuid
 
     def disband(self):
+        """Disband the group."""
         for handler in self._on_disband:
             try:
                 result = handler(self)
@@ -94,28 +108,35 @@ class Party:
                     asyncio.ensure_future(result)
             except Exception:
                 pass
+
         for puuid in list(self._members):
             Party._player_party.pop(puuid, None)
+
         self._members.clear()
         Party._all_parties.pop(self.name, None)
 
     def broadcast(self, message: str):
+        """Broadcast a message."""
         for member in self._members.values():
             asyncio.ensure_future(member.send_message(f"§d[Party] §f{message}"))
 
     def on_join(self, handler: Callable[..., Any]) -> Callable[..., Any]:
+        """Handle the join event."""
         self._on_join.append(handler)
         return handler
 
     def on_leave(self, handler: Callable[..., Any]) -> Callable[..., Any]:
+        """Handle the leave event."""
         self._on_leave.append(handler)
         return handler
 
     def on_disband(self, handler: Callable[..., Any]) -> Callable[..., Any]:
+        """Handle the disband event."""
         self._on_disband.append(handler)
         return handler
 
     def _fire(self, handlers: List[Callable[..., Any]], player: Any):
+        """Fire callbacks."""
         for handler in handlers:
             try:
                 result = handler(player, self)
@@ -126,16 +147,20 @@ class Party:
 
     @classmethod
     def of(cls, player: Any) -> Optional["Party"]:
+        """Handle of."""
         puuid = str(player.uuid)
         name = cls._player_party.get(puuid)
         if name:
             return cls._all_parties.get(name)
+
         return None
 
     @classmethod
     def _ensure_listener(cls):
+        """Ensure listener."""
         if cls._listener_registered:
             return
+
         cls._listener_registered = True
 
         async def _on_damage(event: Any):
@@ -144,10 +169,12 @@ class Party:
             victim = event.fields.get("entity")
             if not attacker or not victim:
                 return
+
             a_uuid = attacker.fields.get("uuid") if hasattr(attacker, "fields") else None
             v_uuid = victim.fields.get("uuid") if hasattr(victim, "fields") else None
             if not a_uuid or not v_uuid:
                 return
+
             a_party = cls._player_party.get(a_uuid)
             v_party = cls._player_party.get(v_uuid)
             if a_party and a_party == v_party:

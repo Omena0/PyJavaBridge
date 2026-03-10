@@ -7,7 +7,6 @@ from typing import Any, Callable, Dict, Optional
 
 import bridge
 
-
 class Ability:
     """Base ability class with cooldown tracking and optional mana/bossbar.
 
@@ -24,9 +23,10 @@ class Ability:
     """
 
     def __init__(self, name: str, description: str = "",
-                 cooldown: float = 1.0, use_cost: Optional[float] = None,
-                 cooldown_msg: str = "§cAbility on cooldown! {remaining:.1f}s",
-                 display_bossbar: bool = False):
+            cooldown: float = 1.0, use_cost: Optional[float] = None,
+            cooldown_msg: str = "§cAbility on cooldown! {remaining:.1f}s",
+            display_bossbar: bool = False):
+        """Initialise a new Ability."""
         self.name = name
         self.description = description
         self.cooldown = cooldown
@@ -40,6 +40,7 @@ class Ability:
         self._bar: Optional[bridge.BossBarDisplay] = None
 
     def set_mana_store(self, mana_store: Any):
+        """Set the mana store."""
         self._mana_store = mana_store
 
     def on_use(self, func: Callable[..., Any]) -> Callable[..., Any]:
@@ -53,12 +54,15 @@ class Ability:
         return func
 
     def last_used(self, player: Any) -> Optional[float]:
+        """Handle last used."""
         return self._last_used.get(str(player.uuid))
 
     def remaining_cooldown(self, player: Any) -> float:
+        """Handle remaining cooldown."""
         last = self._last_used.get(str(player.uuid))
         if last is None:
             return 0.0
+
         return max(0.0, self.cooldown - (time.time() - last))
 
     def use(self, player: Any):
@@ -79,6 +83,7 @@ class Ability:
             if self._mana_store[player] < self.use_cost:
                 asyncio.ensure_future(player.send_message("§cNot enough mana!"))
                 return False
+
             self._mana_store.consume(player, self.use_cost)
 
         self._last_used[puuid] = time.time()
@@ -94,19 +99,23 @@ class Ability:
         return True
 
     def _show_cooldown_bar(self, player: Any):
+        """Handle show cooldown bar."""
         if self._bar is None:
             self._bar = bridge.BossBarDisplay(self.name, color="RED", style="SOLID")
+
         self._bar.max = self.cooldown
         self._bar.value = self.cooldown
         self._bar.show(player)
 
         async def _update():
+            """Asynchronously handle update."""
             from bridge import server
             while True:
                 remaining = self.remaining_cooldown(player)
                 if remaining <= 0:
                     self._bar.hide(player)  # type: ignore[union-attr]
                     break
+
                 self._bar.value = remaining  # type: ignore[union-attr]
                 try:
                     await server.after(2)

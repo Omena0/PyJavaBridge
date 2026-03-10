@@ -27,10 +27,10 @@ __all__ = [
     "PermissionError",
 ]
 
-
 class BridgeError(Exception):
     """Bridge-specific runtime error."""
     def __init__(self, message: str = "", java_stacktrace: Optional[str] = None):
+        """Initialise with an optional Java stacktrace appended to the message."""
         self.java_stacktrace = java_stacktrace
         if java_stacktrace:
             super().__init__(f"{message}\n--- Java stacktrace ---\n{java_stacktrace}")
@@ -117,7 +117,6 @@ class PermissionError(BridgeError):
     """Raised when a permission check fails."""
     pass
 
-
 _ERROR_CODE_MAP: Dict[str, type[BridgeError]] = {
     "ENTITY_GONE": EntityGoneException,
     "TIMEOUT": TimeoutError,
@@ -133,6 +132,7 @@ _ERROR_CODE_MAP: Dict[str, type[BridgeError]] = {
 }
 
 def _make_bridge_error(message: Dict[str, Any]) -> BridgeError:
+    """Create the appropriate BridgeError subclass from a raw error message dict."""
     code = message.get("code")
     msg = message.get("message", "Unknown error")
     stacktrace = message.get("stacktrace")

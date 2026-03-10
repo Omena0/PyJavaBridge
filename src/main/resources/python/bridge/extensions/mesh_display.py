@@ -10,7 +10,6 @@ from bridge.wrappers import (
 )
 from bridge.extensions.image_display import ImageDisplay
 
-
 class MeshDisplay:
     """Render 3D triangle mesh using TextDisplay entities with greedy meshing.
 
@@ -19,7 +18,6 @@ class MeshDisplay:
     one TextDisplay entity per rectangle.
 
     **[ext]** Import from ``bridge.extensions``::
-
         from bridge.extensions import MeshDisplay
     """
 
@@ -36,6 +34,7 @@ class MeshDisplay:
             yaw = math.degrees(math.atan2(ez, ex)) if exz > 1e-9 else 0.0
         else:
             yaw = 0.0
+
         yaw_rad = math.radians(yaw)
         pitch_rad = math.radians(pitch)
         fwd_x = -math.sin(yaw_rad) * math.cos(pitch_rad)
@@ -51,8 +50,9 @@ class MeshDisplay:
 
     @staticmethod
     def _rasterize(vertices, faces, pixel_size, face_colors=None,
-                   vertex_colors=None, tex_data=None, tex_w=0, tex_h=0,
-                   uvs=None, face_uvs=None, dual_sided=False):
+            vertex_colors=None, tex_data=None, tex_w=0, tex_h=0,
+            uvs=None, face_uvs=None, dual_sided=False):
+        """Handle rasterize."""
         ps = float(pixel_size)
         scale_unit = ps * 8
         scale_z = max(scale_unit * 0.08, 0.001)
@@ -70,6 +70,7 @@ class MeshDisplay:
             nl = math.sqrt(nx * nx + ny * ny + nz * nz)
             if nl > 1e-9:
                 nx /= nl; ny /= nl; nz /= nl
+
             face_normals.append((nx, ny, nz))
 
         groups: dict[tuple, list[int]] = {}
@@ -88,6 +89,7 @@ class MeshDisplay:
             nl = math.sqrt(nx * nx + ny * ny + nz * nz)
             if nl < 1e-9:
                 continue
+
             nx /= nl; ny /= nl; nz /= nl
 
             uniform_argb = None
@@ -102,6 +104,7 @@ class MeshDisplay:
                     for fi_idx in group_faces:
                         for vi in faces[fi_idx]:
                             verts_in_group.add(vi)
+
                     first_vc = vertex_colors[next(iter(verts_in_group))]
                     if all(vertex_colors[vi] == first_vc for vi in verts_in_group):
                         uniform_argb = (first_vc[3] << 24) | (first_vc[0] << 16) | (first_vc[1] << 8) | first_vc[2]
@@ -120,6 +123,7 @@ class MeshDisplay:
             for side_idx, (snx, sny, snz) in enumerate(side_normals):
                 face_yaw, face_pitch, rx, ry, rz, upx, upy, upz, fwd_x, fwd_y, fwd_z = \
                     MeshDisplay._axes_from_normal(snx, sny, snz, ref_edge)
+
                 dx_d, dy_d, dz_d = -upx, -upy, -upz
                 face_nudge = nudge if side_idx == 1 else 0.0
 
@@ -192,6 +196,7 @@ class MeshDisplay:
                     tdenom = td00 * td11 - td01 * td01
                     if abs(tdenom) < 1e-12:
                         continue
+
                     tinv = 1.0 / tdenom
 
                     tuv0 = tuv1 = tuv2 = None
@@ -241,6 +246,7 @@ class MeshDisplay:
                                     argb = (fc[3] << 24) | (fc[0] << 16) | (fc[1] << 8) | fc[2]
                                 else:
                                     argb = default_argb
+
                                 idx = r * cols + c
                                 grid[idx] = argb
                                 grid_fi[idx] = fi_idx
@@ -254,13 +260,16 @@ class MeshDisplay:
                         rc = r * cols + c
                         if used[rc] or grid[rc] is None:
                             continue
+
                         color = grid[rc]
                         w = 1
                         while c + w < cols:
                             idx2 = r * cols + c + w
                             if grid[idx2] != color or used[idx2]:
                                 break
+
                             w += 1
+
                         h = 1
                         while r + h < rows:
                             ok = True
@@ -269,9 +278,12 @@ class MeshDisplay:
                                 if grid[idx2] != color or used[idx2]:
                                     ok = False
                                     break
+
                             if not ok:
                                 break
+
                             h += 1
+
                         for dr in range(h):
                             for dc in range(w):
                                 used[(r + dr) * cols + c + dc] = True
@@ -298,18 +310,20 @@ class MeshDisplay:
         return payload, entity_bary
 
     def __init__(self, location: Location,
-                 vertices: list[tuple[float, float, float]],
-                 faces: list[tuple[int, int, int]],
-                 face_colors: list[tuple[int,int,int,int]] | None = None,
-                 vertex_colors: list[tuple[int,int,int,int]] | None = None,
-                 texture: Any = None,
-                 uvs: list[tuple[float, float]] | None = None,
-                 face_uvs: list[tuple[int, int, int]] | None = None,
-                 pixel_size: float = 1 / 16,
-                 dual_sided: bool = False):
+            vertices: list[tuple[float, float, float]],
+            faces: list[tuple[int, int, int]],
+            face_colors: list[tuple[int,int,int,int]] | None = None,
+            vertex_colors: list[tuple[int,int,int,int]] | None = None,
+            texture: Any = None,
+            uvs: list[tuple[float, float]] | None = None,
+            face_uvs: list[tuple[int, int, int]] | None = None,
+            pixel_size: float = 1 / 16,
+            dual_sided: bool = False):
+        """Initialise a new MeshDisplay."""
         world: Any = location.world
         if isinstance(world, str):
             world = World(name=world)
+
         if world is None:
             world = World(name='world')
 
@@ -328,6 +342,7 @@ class MeshDisplay:
         tex_w = tex_h = 0
         if texture is not None:
             tex_w, tex_h, tex_data = ImageDisplay._load_pixels(texture)
+
         if face_uvs is None:
             face_uvs = faces
 
@@ -339,13 +354,15 @@ class MeshDisplay:
         self._entities = list(spawned) if isinstance(spawned, list) else []
 
     def update_geometry(self, vertices: list[tuple[float, float, float]],
-                        face_colors: list[tuple[int,int,int,int]] | None = None,
-                        vertex_colors: list[tuple[int,int,int,int]] | None = None) -> None:
+            face_colors: list[tuple[int,int,int,int]] | None = None,
+            vertex_colors: list[tuple[int,int,int,int]] | None = None) -> None:
         """Update mesh vertex positions and optionally colors."""
         if face_colors is not None:
             self._face_colors = face_colors
+
         if vertex_colors is not None:
             self._vertex_colors = vertex_colors
+
         fc = self._face_colors
         vc = self._vertex_colors
 
@@ -363,6 +380,7 @@ class MeshDisplay:
             extra = self._world._call_sync("spawnImagePixels", self._location, payload[have:])
             if isinstance(extra, list):
                 self._entities.extend(extra)
+
             have = len(self._entities)
 
         entries: list[list[Any]] = []
@@ -370,6 +388,7 @@ class MeshDisplay:
             e = self._entities[i]
             if e._handle is None:
                 continue
+
             p = payload[i]
             entries.append([
                 e._handle,
@@ -378,10 +397,12 @@ class MeshDisplay:
                 p["scaleX"], p["scaleY"], p["scaleZ"],
                 p["yOffset"],
             ])
+
         for i in range(needed, have):
             e = self._entities[i]
             if e._handle is None:
                 continue
+
             entries.append([e._handle, ox, oy - 1000, oz, 0.0, 0.0, 0x00000000, 0.001, 0.001, 0.001])
 
         if entries and bridge._connection is not None:  # type: ignore[attr-defined]
@@ -394,24 +415,29 @@ class MeshDisplay:
         """Remove all spawned mesh entities."""
         if not self._entities:
             return
+
         handles = [e._handle for e in self._entities if e._handle is not None]
         if handles and bridge._connection is not None:  # type: ignore[attr-defined]
             bridge._connection.send_fire_forget("remove_entities", handles=handles)  # type: ignore[attr-defined]
+
         self._entities.clear()
         self._entity_bary.clear()
 
     def update(self, face_colors: list[tuple[int,int,int,int]] | None = None,
-               vertex_colors: list[tuple[int,int,int,int]] | None = None) -> None:
+            vertex_colors: list[tuple[int,int,int,int]] | None = None) -> None:
         """Update mesh colors without respawning entities."""
         if not self._entities:
             return
+
         entries: list[list[int]] = []
         for i, (face_idx, bu, bv, bw) in enumerate(self._entity_bary):
             if i >= len(self._entities):
                 break
+
             entity = self._entities[i]
             if entity._handle is None:
                 continue
+
             if vertex_colors is not None:
                 fi, fj, fk = self._faces[face_idx]
                 c0, c1, c2 = vertex_colors[fi], vertex_colors[fj], vertex_colors[fk]
@@ -425,7 +451,9 @@ class MeshDisplay:
                 argb = (c[3] << 24) | (c[0] << 16) | (c[1] << 8) | c[2]
             else:
                 continue
+
             entries.append([entity._handle, argb])
+
         if entries and bridge._connection is not None:  # type: ignore[attr-defined]
             bridge._connection.send_fire_forget("update_entities", entries=entries)  # type: ignore[attr-defined]
 

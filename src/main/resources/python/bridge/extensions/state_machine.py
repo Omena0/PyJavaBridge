@@ -5,7 +5,6 @@ import asyncio
 import inspect
 from typing import Any, Callable, Dict, List, Optional, Set
 
-
 class State:
     """A single state in a state machine.
 
@@ -14,6 +13,7 @@ class State:
     """
 
     def __init__(self, name: str):
+        """Initialise a new State."""
         self.name = name
         self._on_enter: List[Callable[..., Any]] = []
         self._on_exit: List[Callable[..., Any]] = []
@@ -40,6 +40,7 @@ class State:
         self._transitions[event] = target
 
     async def _fire(self, handlers: List[Callable[..., Any]], *args):
+        """Fire callbacks."""
         for h in handlers:
             try:
                 r = h(*args)
@@ -48,12 +49,10 @@ class State:
             except Exception:
                 pass
 
-
 class StateMachine:
     """Per-entity/player state machine for game phases.
 
     Example::
-
         sm = StateMachine("boss_fight")
 
         idle = sm.add_state("idle")
@@ -81,6 +80,7 @@ class StateMachine:
     """
 
     def __init__(self, name: str = "state_machine"):
+        """Initialise a new StateMachine."""
         self.name = name
         self._states: Dict[str, State] = {}
         self._initial: Optional[str] = None
@@ -95,17 +95,21 @@ class StateMachine:
         self._states[name] = state
         if self._initial is None:
             self._initial = name
+
         return state
 
     def get_state(self, name: str) -> Optional[State]:
+        """Return the state."""
         return self._states.get(name)
 
     @property
     def initial_state(self) -> Optional[str]:
+        """The initial state value."""
         return self._initial
 
     @initial_state.setter
     def initial_state(self, name: str):
+        """Set the initial state."""
         if name in self._states:
             self._initial = name
 
@@ -113,6 +117,7 @@ class StateMachine:
         """Get a unique key for the entity."""
         if hasattr(entity, "uuid"):
             return str(entity.uuid)
+
         return str(id(entity))
 
     def current_state(self, entity) -> Optional[str]:
@@ -140,9 +145,11 @@ class StateMachine:
         cur_name = self._current.get(key)
         if cur_name is None:
             return False
+
         cur_state = self._states.get(cur_name)
         if cur_state is None:
             return False
+
         target_name = cur_state._transitions.get(event)
         if target_name is None or target_name not in self._states:
             return False
@@ -162,8 +169,10 @@ class StateMachine:
         old_name = self._current.get(key)
         if state_name not in self._states:
             return
+
         if old_name and old_name in self._states:
             await self._states[old_name]._fire(self._states[old_name]._on_exit, entity, state_name)
+
         self._current[key] = state_name
         await self._states[state_name]._fire(self._states[state_name]._on_enter, entity, old_name)
 
@@ -180,6 +189,7 @@ class StateMachine:
         self._tick_interval = interval_ticks
 
         async def _loop():
+            """Asynchronously handle loop."""
             while True:
                 for key in list(self._attached):
                     state_name = self._current.get(key)
@@ -188,6 +198,7 @@ class StateMachine:
                         entity = entity_resolver(key) if entity_resolver else key
                         if entity is not None:
                             await state._fire(state._on_tick, entity)
+
                 await bridge.server.after(self._tick_interval)
 
         self._tick_task = asyncio.ensure_future(_loop())

@@ -12,7 +12,6 @@ from bridge.errors import (
     EntityGoneException, BridgeError,
 )
 
-
 class ImageDisplay:
     """Render pixel art images in-world using one TextDisplay per pixel.
 
@@ -20,7 +19,6 @@ class ImageDisplay:
     character spacing gaps and row spacing artifacts.
 
     **[ext]** Import from ``bridge.extensions``::
-
         from bridge.extensions import ImageDisplay
     """
 
@@ -34,26 +32,32 @@ class ImageDisplay:
                 raise ImportError(
                     "Pillow is required for loading images from file paths. "
                     "Install with: pip install Pillow")
+
             img = PILImage.open(image).convert("RGBA")
             return int(img.size[0]), int(img.size[1]), list(img.getdata())  # type: ignore[arg-type]
+
         if hasattr(image, 'size') and hasattr(image, 'convert'):
             img = image.convert("RGBA")
             return int(img.size[0]), int(img.size[1]), list(img.getdata())  # type: ignore[arg-type]
+
         if isinstance(image, (tuple, list)) and len(image) == 3:
             w, h, data = image
             if isinstance(w, int) and isinstance(h, int):
                 return w, h, list(data)
+
         raise TypeError("image must be a file path (str), PIL Image, or (width, height, pixel_data) tuple")
 
     def __init__(self, location: Location, image: Any,
-                 pixel_size: float = 1/16,
-                 dual_sided: bool = False,
-                 dual_side_mode: str = "mirror"):
+            pixel_size: float = 1/16,
+            dual_sided: bool = False,
+            dual_side_mode: str = "mirror"):
+        """Initialise a new ImageDisplay."""
         width, height, _flat_pixels = ImageDisplay._load_pixels(image)
 
         world: Any = location.world
         if isinstance(world, str):
             world = World(name=world)
+
         if world is None:
             world = World(name='world')
 
@@ -79,6 +83,7 @@ class ImageDisplay:
         dual_depth_shift = 0.01
 
         def _local_to_world_shift(local_x: float, local_y: float, entity_yaw: float, entity_pitch: float, local_z: float = 0.0) -> tuple[float, float, float]:
+            """Handle local to world shift."""
             yaw_rad = math.radians(entity_yaw)
             pitch_rad = math.radians(entity_pitch)
 
@@ -187,7 +192,8 @@ class ImageDisplay:
                 entity.teleport(loc)
                 entity._call_sync("setRotation", float(yaw), float(pitch))
                 entity._call_sync("setTransform", float(xy_zero), float(xy_zero), float(z_offset),
-                                  float(sx), float(sy), float(sz))
+                    float(sx), float(sy), float(sz))
+
                 alive_placements.append((entity, base_x_shift, base_y_shift, base_z_shift, z_offset, yaw, pitch, sx, sy, sz, xy_zero))
             except EntityGoneException:
                 pass
@@ -200,12 +206,14 @@ class ImageDisplay:
         """Remove all spawned pixel entities."""
         if not self._entities:
             return
+
         handles = [e._handle for e in self._entities if e._handle is not None]
         if handles and bridge._connection is not None:  # type: ignore[attr-defined]
             try:
                 bridge._connection.call_sync_raw("remove_entities", handles=handles)  # type: ignore[attr-defined]
             except (EntityGoneException, BridgeError):
                 pass
+
         self._entities.clear()
         self._placements.clear()
 
@@ -260,12 +268,15 @@ class ImageDisplay:
             e = self._entities[entity_idx]
             if e._handle is not None:
                 entries.append([e._handle, argb])
+
             entity_idx += 1
             if self._dual_sided:
                 e = self._entities[entity_idx]
                 if e._handle is not None:
                     entries.append([e._handle, argb])
+
                 entity_idx += 1
+
         if entries and bridge._connection is not None:  # type: ignore[attr-defined]
             bridge._connection.send_fire_forget("update_entities", entries=entries)  # type: ignore[attr-defined]
 
@@ -275,5 +286,6 @@ class ImageDisplay:
         for i, entity in enumerate(self._entities):
             if i < len(argb_list) and entity._handle is not None:
                 entries.append([entity._handle, argb_list[i]])
+
         if entries and bridge._connection is not None:  # type: ignore[attr-defined]
             bridge._connection.send_fire_forget("update_entities", entries=entries)  # type: ignore[attr-defined]

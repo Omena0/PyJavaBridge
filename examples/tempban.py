@@ -2,11 +2,13 @@
 from humanfriendly import format_timespan
 from time import time as time_now
 from bridge import *
+from typing import Optional
 import re
 
 bans = {}
 
 def parse_time(time:str) -> int:
+    """Parse a human-readable time string (e.g. '2h30m') into seconds."""
     if not time:
         raise ValueError('Time string is required')
 
@@ -44,15 +46,16 @@ def parse_time(time:str) -> int:
     return total
 
 @command('Ban someone for a specified time or permanently')
-async def ban(event: Event, user:str, t:str=None, r:str=None):
+async def ban(event: Event, user:str, t:Optional[str]=None, r:Optional[str]=None):
+    """Ban a player for a specified time or permanently."""
     global bans
 
-    if not event.player.is_op():
+    if not event.player.is_op:
         event.player.send_message('No permission!')
         event.player.play_sound('block_note_block_bass')
         return
 
-    target = Player(user)
+    target = Player(name=user)
     duration = parse_time(t) if t else None
     reason = r or "Ban hammer has spoken!"
 
@@ -66,18 +69,19 @@ async def ban(event: Event, user:str, t:str=None, r:str=None):
 
 @command('Unban someone')
 async def unban(event: Event, user:str):
+    """Unban a previously banned player."""
     global bans
 
-    if not event.player.is_op():
+    if not event.player.is_op:
         event.player.send_message('No permission!')
-        event.player.play_sound('block_note_block_bass')
+        event.player.play_sound(Sound.from_name('BLOCK_NOTE_BLOCK_BASS'))
         return
 
-    target = Player(user)
+    target = Player(name=user)
 
     if not target.uuid in bans:
         event.player.send_message("That user is not banned")
-        event.player.play_sound('block_note_block_bass')
+        event.player.play_sound(Sound.from_name('BLOCK_NOTE_BLOCK_BASS'))
         return
 
     bans.pop(target.uuid)
@@ -86,6 +90,7 @@ async def unban(event: Event, user:str):
 
 @event
 async def player_join(event: Event):
+    """Kick banned players on join if their ban is still active."""
     global bans
     uuid = event.player.uuid
 

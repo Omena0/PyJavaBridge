@@ -7,7 +7,6 @@ from typing import Any, Callable, Dict, List, Optional
 
 import bridge
 
-
 class Quest:
     """Base quest class with progress tracking and BossBarDisplay integration.
 
@@ -21,7 +20,8 @@ class Quest:
     """
 
     def __init__(self, name: str, description: str = "",
-                 time_limit: Optional[float] = None):
+            time_limit: Optional[float] = None):
+        """Initialise a new Quest."""
         self.name = name
         self.description = description
         self.time_limit = time_limit
@@ -33,7 +33,6 @@ class Quest:
         self._bar: Optional[bridge.BossBarDisplay] = None
 
     # -- decorator setters --
-
     def on_complete(self, func: Callable[..., Any]) -> Callable[..., Any]:
         """Decorator to register a completion callback ``(quest, player)``."""
         self._on_complete = func
@@ -45,29 +44,34 @@ class Quest:
         return func
 
     # -- status helpers --
-
     def status(self, player: Any) -> str:
+        """Handle status."""
         return self._status.get(str(player.uuid), "not_started")
 
     def progress(self, player: Any) -> float:
+        """Handle progress."""
         if self._progress_getter is not None:
             return self._progress_getter(self, player)
+
         return 0.0
 
     def start_time(self, player: Any) -> Optional[float]:
+        """Start the time."""
         return self._start_times.get(str(player.uuid))
 
     def end_time(self, player: Any) -> Optional[float]:
+        """Handle end time."""
         return self._end_times.get(str(player.uuid))
 
     # -- lifecycle --
-
     def accept(self, player: Any):
+        """Accept the quest."""
         puuid = str(player.uuid)
         if self._status.get(puuid) in (None, "not_started", "failed"):
             self._status[puuid] = "accepted"
 
     def start(self, player: Any):
+        """Start the process."""
         puuid = str(player.uuid)
         self._status[puuid] = "active"
         self._start_times[puuid] = time.time()
@@ -75,6 +79,7 @@ class Quest:
             asyncio.ensure_future(self._time_limit_task(player))
 
     def complete(self, player: Any):
+        """Mark as complete."""
         puuid = str(player.uuid)
         self._status[puuid] = "completed"
         self._end_times[puuid] = time.time()
@@ -84,6 +89,7 @@ class Quest:
                 asyncio.ensure_future(result)
 
     def fail(self, player: Any):
+        """Mark as failed."""
         puuid = str(player.uuid)
         self._status[puuid] = "failed"
         self._end_times[puuid] = time.time()
@@ -93,18 +99,21 @@ class Quest:
         self.complete(player)
 
     # -- bossbar integration --
-
     def show_bar(self, player: Any, color: str = "GREEN", style: str = "SEGMENTED_10"):
+        """Show the bar."""
         if self._bar is None:
             self._bar = bridge.BossBarDisplay(self.name, color, style)
+
         self._bar.show(player)
         asyncio.ensure_future(self._bar_update_task(player))
 
     def hide_bar(self, player: Any):
+        """Hide the bar."""
         if self._bar is not None:
             self._bar.hide(player)
 
     async def _bar_update_task(self, player: Any):
+        """Asynchronously handle bar update task."""
         from bridge import server
         while self.status(player) == "active":
             prog = self.progress(player)
@@ -116,15 +125,18 @@ class Quest:
                     self._bar.text = f"{self.name} — {int(remaining)}s"
                 else:
                     self._bar.text = f"{self.name} — {int(prog * 100)}%"
+
             if prog >= 1.0:
                 self.complete(player)
                 break
+
             try:
                 await server.after(20)
             except Exception:
                 break
 
     async def _time_limit_task(self, player: Any):
+        """Asynchronously handle time limit task."""
         from bridge import server
         puuid = str(player.uuid)
         start = self._start_times.get(puuid, time.time())
@@ -133,11 +145,11 @@ class Quest:
             if elapsed >= self.time_limit:  # type: ignore[operator]
                 self.fail(player)
                 break
+
             try:
                 await server.after(20)
             except Exception:
                 break
-
 
 class QuestTree:
     """Linear quest tree — complete each depth to unlock the next.
@@ -148,6 +160,7 @@ class QuestTree:
     """
 
     def __init__(self, tree: List[List[Quest] | Quest]):
+        """Initialise a new QuestTree."""
         self._tree: List[List[Quest]] = []
         for entry in tree:
             if isinstance(entry, Quest):
@@ -157,29 +170,38 @@ class QuestTree:
 
     @property
     def depth(self) -> int:
+        """The depth value."""
         return len(self._tree)
 
     def current_depth(self, player: Any) -> int:
+        """Handle current depth."""
         for i, layer in enumerate(self._tree):
             if not all(q.status(player) == "completed" for q in layer):
                 return i
+
         return len(self._tree)
 
     def available(self, player: Any) -> List[Quest]:
+        """Handle available."""
         d = self.current_depth(player)
         if d >= len(self._tree):
             return []
+
         return [q for q in self._tree[d]
                 if q.status(player) not in ("completed", "active")]
 
     def active(self, player: Any) -> List[Quest]:
+        """Handle active."""
         d = self.current_depth(player)
         if d >= len(self._tree):
             return []
+
         return [q for q in self._tree[d] if q.status(player) == "active"]
 
     def is_complete(self, player: Any) -> bool:
+        """Check if complete."""
         return self.current_depth(player) >= len(self._tree)
 
     def all_quests(self) -> List[Quest]:
+        """Return the all quests."""
         return [q for layer in self._tree for q in layer]

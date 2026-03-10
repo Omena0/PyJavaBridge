@@ -7,7 +7,6 @@ from typing import Any, Callable, Dict, List, Optional
 
 import bridge
 
-
 class Region:
     """Cuboid region in a world with enter/exit callbacks.
 
@@ -22,8 +21,9 @@ class Region:
     _tracker_started = False
 
     def __init__(self, name: str, world: Any,
-                 x1: float, y1: float, z1: float,
-                 x2: float, y2: float, z2: float):
+            x1: float, y1: float, z1: float,
+            x2: float, y2: float, z2: float):
+        """Initialise a new Region."""
         self.name = name
         self._world = str(world.name) if hasattr(world, "name") else str(world)
         self.x1, self.y1, self.z1 = min(x1, x2), min(y1, y2), min(z1, z2)
@@ -36,6 +36,7 @@ class Region:
 
     @property
     def world(self) -> str:
+        """The world value."""
         return self._world
 
     def contains(self, location: Any) -> bool:
@@ -46,11 +47,13 @@ class Region:
         w = location.world.name if hasattr(location, "world") and hasattr(location.world, "name") else None
         if w is not None and w != self._world:
             return False
+
         return (self.x1 <= x <= self.x2 and
-                self.y1 <= y <= self.y2 and
-                self.z1 <= z <= self.z2)
+            self.y1 <= y <= self.y2 and
+            self.z1 <= z <= self.z2)
 
     def is_inside(self, player: Any) -> bool:
+        """Check if inside."""
         return self._inside.get(str(player.uuid), False)
 
     def on_enter(self, handler: Callable[..., Any]) -> Callable[..., Any]:
@@ -64,18 +67,22 @@ class Region:
         return handler
 
     def remove(self):
+        """Remove this object."""
         if self in Region._all_regions:
             Region._all_regions.remove(self)
 
     @classmethod
     def _ensure_tracker(cls):
+        """Ensure tracker."""
         if cls._tracker_started:
             return
+
         cls._tracker_started = True
         asyncio.ensure_future(cls._track_loop())
 
     @classmethod
     async def _track_loop(cls):
+        """Asynchronously handle track loop."""
         from bridge import server
         while True:
             try:
@@ -88,6 +95,7 @@ class Region:
                             inside = region.contains(loc)
                         except Exception:
                             inside = False
+
                         was = region._inside.get(puuid, False)
                         region._inside[puuid] = inside
                         if inside and not was:
@@ -106,6 +114,7 @@ class Region:
                                         await r
                                 except Exception:
                                     pass
+
                 await server.after(10)
             except Exception:
                 break

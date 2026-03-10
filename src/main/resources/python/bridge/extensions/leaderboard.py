@@ -6,7 +6,6 @@ from typing import Any, Callable, Dict, List, Optional
 
 import bridge
 
-
 class Leaderboard:
     """Hologram that displays a sorted leaderboard.
 
@@ -19,8 +18,9 @@ class Leaderboard:
     """
 
     def __init__(self, location: Any, title: str = "Leaderboard",
-                 get_metric: Optional[Callable[..., Any]] = None,
-                 update_interval: int = 100, max_entries: int = 10):
+            get_metric: Optional[Callable[..., Any]] = None,
+            update_interval: int = 100, max_entries: int = 10):
+        """Initialise a new Leaderboard."""
         self._location = location
         self.title = title
         self._get_metric = get_metric
@@ -33,10 +33,12 @@ class Leaderboard:
         """Create the hologram and start the update loop."""
         if self._hologram is None:
             self._hologram = bridge.Hologram(self._location, self.title)
+
         self._running = True
         asyncio.ensure_future(self._update_loop())
 
     def stop(self):
+        """Return the stop."""
         self._running = False
         if self._hologram is not None:
             self._hologram.remove()
@@ -48,6 +50,7 @@ class Leaderboard:
         return func
 
     async def _update_loop(self):
+        """Update the loop."""
         from bridge import server
         while self._running:
             try:
@@ -57,9 +60,11 @@ class Leaderboard:
                 break
 
     async def _refresh(self):
+        """Asynchronously handle refresh."""
         from bridge import server
         if self._hologram is None or self._get_metric is None:
             return
+
         online = server.players
         scores: List[tuple[str, float]] = []
         for p in online:
@@ -67,9 +72,11 @@ class Leaderboard:
                 val = self._get_metric(p)
                 if asyncio.iscoroutine(val):
                     val = await val
+
                 scores.append((str(p.name), float(val)))
             except Exception:
                 pass
+
         scores.sort(key=lambda x: x[1], reverse=True)
         scores = scores[:self.max_entries]
 
@@ -81,6 +88,7 @@ class Leaderboard:
         # Update hologram lines
         while len(self._hologram) > len(lines):
             del self._hologram[len(self._hologram) - 1]
+
         for i, line in enumerate(lines):
             if i < len(self._hologram):
                 self._hologram[i] = line

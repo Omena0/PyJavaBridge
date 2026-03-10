@@ -7,7 +7,6 @@ from typing import Any, Callable, Dict, List, Optional
 
 import bridge
 
-
 class CombatSystem:
     """Tracks combat state per-player and prevents combat-logging.
 
@@ -21,7 +20,8 @@ class CombatSystem:
     """
 
     def __init__(self, combat_timeout: float = 10.0,
-                 display_bossbar: bool = False):
+            display_bossbar: bool = False):
+        """Initialise a new CombatSystem."""
         self.combat_timeout = combat_timeout
         self.display_bossbar = display_bossbar
         self._last_attack: Dict[str, float] = {}  # puuid -> timestamp
@@ -30,23 +30,28 @@ class CombatSystem:
         self._listener_registered = False
 
     def _register_listeners(self):
+        """Register listeners."""
         if self._listener_registered:
             return
+
         self._listener_registered = True
 
         async def _on_damage(event: Any):
+            """Handle the damage event."""
             attacker = event.fields.get("damager")
             victim = event.fields.get("entity")
             if attacker and hasattr(attacker, "fields"):
                 a_uuid = attacker.fields.get("uuid")
                 if a_uuid:
                     self._tag(a_uuid, attacker)
+
             if victim and hasattr(victim, "fields"):
                 v_uuid = victim.fields.get("uuid")
                 if v_uuid:
                     self._tag(v_uuid, victim)
 
         async def _on_quit(event: Any):
+            """Handle the quit event."""
             player = event.fields.get("player")
             if player and hasattr(player, "fields"):
                 puuid = player.fields.get("uuid")
@@ -58,6 +63,7 @@ class CombatSystem:
                                 await result
                         except Exception:
                             pass
+
                     self._last_attack.pop(puuid, None)
 
         bridge._connection.on("entity_damage_by_entity", _on_damage)
@@ -70,23 +76,29 @@ class CombatSystem:
         self._register_listeners()
 
     def _tag(self, puuid: str, player: Any):
+        """Handle tag."""
         self._last_attack[puuid] = time.time()
         if self.display_bossbar:
             self._show_bar(puuid, player)
 
     def in_combat(self, player: Any) -> bool:
+        """Handle in combat."""
         return self.in_combat_by_uuid(str(player.uuid))
 
     def in_combat_by_uuid(self, puuid: str) -> bool:
+        """Handle in combat by uuid."""
         last = self._last_attack.get(puuid)
         if last is None:
             return False
+
         return (time.time() - last) < self.combat_timeout
 
     def remaining(self, player: Any) -> float:
+        """Handle remaining."""
         last = self._last_attack.get(str(player.uuid))
         if last is None:
             return 0.0
+
         return max(0.0, self.combat_timeout - (time.time() - last))
 
     def on_combat_log(self, handler: Callable[..., Any]) -> Callable[..., Any]:
@@ -95,6 +107,7 @@ class CombatSystem:
         return handler
 
     def _show_bar(self, puuid: str, player: Any):
+        """Handle show bar."""
         if puuid not in self._bars:
             bar = bridge.BossBarDisplay("In Combat", color="RED", style="SOLID")
             bar.show(player)
@@ -105,6 +118,7 @@ class CombatSystem:
         bar.value = self.combat_timeout
 
         async def _update():
+            """Asynchronously handle update."""
             from bridge import server
             while self.in_combat_by_uuid(puuid):
                 remaining = self.remaining(player)
@@ -114,6 +128,7 @@ class CombatSystem:
                     await server.after(4)
                 except Exception:
                     break
+
             bar.hide(player)
 
         asyncio.ensure_future(_update())

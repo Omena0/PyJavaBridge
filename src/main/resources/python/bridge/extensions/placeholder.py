@@ -6,7 +6,6 @@ from typing import Any, Callable, Dict, Optional
 
 _PLACEHOLDER_RE = re.compile(r"%([a-zA-Z0-9_.]+)%")
 
-
 class PlaceholderRegistry:
     """Global registry for placeholder expansions.
 
@@ -14,7 +13,6 @@ class PlaceholderRegistry:
     :meth:`resolve`, all registered placeholders are expanded.
 
     Example::
-
         placeholders = PlaceholderRegistry()
 
         @placeholders.register("player_health")
@@ -36,6 +34,7 @@ class PlaceholderRegistry:
     """
 
     def __init__(self):
+        """Initialise a new PlaceholderRegistry."""
         self._placeholders: Dict[str, Callable[..., str]] = {}
 
     def register(self, name: str):
@@ -45,8 +44,10 @@ class PlaceholderRegistry:
         If the function returns None, the placeholder is left unresolved.
         """
         def decorator(func: Callable[..., str]) -> Callable[..., str]:
+            """Register as a decorator."""
             self._placeholders[name] = func
             return func
+
         return decorator
 
     def add(self, name: str, func: Callable[..., str]):
@@ -58,10 +59,12 @@ class PlaceholderRegistry:
         self._placeholders.pop(name, None)
 
     def has(self, name: str) -> bool:
+        """Handle has."""
         return name in self._placeholders
 
     @property
     def names(self) -> list:
+        """The names value."""
         return list(self._placeholders.keys())
 
     def resolve(self, text: str, player: Any = None, **kwargs) -> str:
@@ -76,10 +79,12 @@ class PlaceholderRegistry:
             The string with all known placeholders expanded.
         """
         def _replace(match):
+            """Handle replace."""
             name = match.group(1)
             func = self._placeholders.get(name)
             if func is None:
                 return match.group(0)  # leave unresolved
+
             try:
                 result = func(player, **kwargs) if kwargs else func(player)
                 return str(result) if result is not None else match.group(0)

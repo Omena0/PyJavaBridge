@@ -13,7 +13,6 @@ class VisualEffect:
     inside a step to add pauses.
 
     Example::
-
         vfx = VisualEffect("explosion")
         @vfx.step
         async def _boom(loc):
@@ -25,6 +24,7 @@ class VisualEffect:
     """
 
     def __init__(self, name: str = "effect"):
+        """Initialise a new VisualEffect."""
         self.name = name
         self._steps: List[Callable[..., Any]] = []
 

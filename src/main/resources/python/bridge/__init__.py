@@ -11,6 +11,7 @@ import sys
 # ── stderr print override ─────────────────────────────────────────────
 _print = __builtins__["print"] if isinstance(__builtins__, dict) else __builtins__.print  # type: ignore[index]
 def print(*args):
+    """Redirect print to stderr so stdout stays reserved for IPC."""
     _print(*args, file=sys.stderr)
 
 # ── Sub-module imports ────────────────────────────────────────────────
@@ -27,7 +28,6 @@ from bridge.types import async_task
 # ── Module-level globals ──────────────────────────────────────────────
 _connection: BridgeConnection = None  # type: ignore[assignment]
 _player_uuid_cache: Dict[str, str] = {}
-
 
 def fire_event(event_name: str, data: dict | None = None) -> None:
     """Fire a custom event that all scripts (including this one) can listen to."""

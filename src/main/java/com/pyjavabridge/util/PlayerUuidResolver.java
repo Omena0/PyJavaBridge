@@ -27,7 +27,6 @@ public class PlayerUuidResolver {
             .build();
 
     // #12: Proper LRU eviction instead of clear()-on-overflow
-    @SuppressWarnings("serial")
     private final Map<String, UUID> playerUuidCache = Collections.synchronizedMap(
             new LinkedHashMap<String, UUID>(64, 0.75f, true) {
                 @Override

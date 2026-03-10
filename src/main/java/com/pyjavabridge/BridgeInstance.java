@@ -1128,7 +1128,6 @@ public class BridgeInstance {
         return map;
     }
 
-    @SuppressWarnings("unchecked")
     private org.bukkit.inventory.MerchantRecipe deserializeMerchantRecipe(Map<String, Object> map) {
         if (map == null) return null;
         // Deserialize result item

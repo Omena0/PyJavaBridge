@@ -1,0 +1,15 @@
+{
+    "extraPaths": [
+        "src/main/resources/python"
+    ],
+    "exclude": [
+        "bin",
+        "build",
+        "server",
+        "**/.*",
+        "**/__pycache__",
+        ".venv",
+        "**/node_modules"
+    ],
+    "pythonVersion": "3.14"
+}

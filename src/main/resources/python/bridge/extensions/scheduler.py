@@ -6,7 +6,6 @@ import inspect
 import time
 from typing import Any, Callable, Dict, List, Optional
 
-
 class ScheduledTask:
     """A single scheduled task.
 
@@ -19,8 +18,9 @@ class ScheduledTask:
     """
 
     def __init__(self, name: str, handler: Callable[..., Any],
-                 interval: float = 0, delay: float = 0,
-                 repeat: bool = True):
+            interval: float = 0, delay: float = 0,
+            repeat: bool = True):
+        """Initialise a new ScheduledTask."""
         self.name = name
         self.handler = handler
         self.interval = interval
@@ -33,10 +33,12 @@ class ScheduledTask:
 
     @property
     def cancelled(self) -> bool:
+        """The cancelled value."""
         return self._cancelled
 
     @property
     def run_count(self) -> int:
+        """The run count value."""
         return self._run_count
 
     @property
@@ -57,17 +59,16 @@ class ScheduledTask:
             r = self.handler()
             if inspect.isawaitable(r):
                 await r
+
             self._run_count += 1
             self._last_run = time.time()
         except Exception:
             pass
 
-
 class Scheduler:
     """Cron-like scheduler with named tasks and real-world-time intervals.
 
     Example::
-
         sched = Scheduler()
 
         @sched.every(60, name="announce")
@@ -86,15 +87,17 @@ class Scheduler:
     """
 
     def __init__(self):
+        """Initialise a new Scheduler."""
         self._tasks: Dict[str, ScheduledTask] = {}
         self._running = False
 
     @property
     def tasks(self) -> Dict[str, ScheduledTask]:
+        """The tasks value."""
         return dict(self._tasks)
 
     def every(self, seconds: float, name: Optional[str] = None,
-              delay: float = 0):
+            delay: float = 0):
         """Decorator: schedule a function to run every *seconds* seconds.
 
         Args:
@@ -103,13 +106,17 @@ class Scheduler:
             delay: Initial delay before first execution.
         """
         def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
+            """Register as a decorator."""
             task_name = name or func.__name__
             task = ScheduledTask(task_name, func, interval=seconds,
-                                 delay=delay, repeat=True)
+                delay=delay, repeat=True)
+
             self._tasks[task_name] = task
             if self._running:
                 self._launch(task)
+
             return func
+
         return decorator
 
     def after(self, seconds: float, name: Optional[str] = None):
@@ -120,18 +127,22 @@ class Scheduler:
             name: Task name. Defaults to function name.
         """
         def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
+            """Register as a decorator."""
             task_name = name or func.__name__
             task = ScheduledTask(task_name, func, interval=0,
-                                 delay=seconds, repeat=False)
+                delay=seconds, repeat=False)
+
             self._tasks[task_name] = task
             if self._running:
                 self._launch(task)
+
             return func
+
         return decorator
 
     def schedule(self, name: str, handler: Callable[..., Any],
-                 interval: float = 0, delay: float = 0,
-                 repeat: bool = True):
+            interval: float = 0, delay: float = 0,
+            repeat: bool = True):
         """Imperatively schedule a task.
 
         Args:
@@ -142,10 +153,12 @@ class Scheduler:
             repeat: Whether to repeat.
         """
         task = ScheduledTask(name, handler, interval=interval,
-                             delay=delay, repeat=repeat)
+            delay=delay, repeat=repeat)
+
         self._tasks[name] = task
         if self._running:
             self._launch(task)
+
         return task
 
     def cancel(self, name: str):
@@ -158,20 +171,25 @@ class Scheduler:
         """Cancel all tasks."""
         for task in self._tasks.values():
             task.cancel()
+
         self._tasks.clear()
 
     def _launch(self, task: ScheduledTask):
         """Launch a task's async loop."""
         async def _run():
+            """Asynchronously handle run."""
             if task.delay > 0:
                 await asyncio.sleep(task.delay)
+
             if task.cancelled:
                 return
+
             await task._execute()
             while task.repeat and not task.cancelled and task.interval > 0:
                 await asyncio.sleep(task.interval)
                 if task.cancelled:
                     break
+
                 await task._execute()
 
         task._task = asyncio.ensure_future(_run())

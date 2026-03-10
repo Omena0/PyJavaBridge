@@ -6,7 +6,6 @@ from typing import Any, Callable, Dict, List, Optional
 
 import bridge
 
-
 class TabEntry:
     """A single entry in a player's tab list.
 
@@ -18,12 +17,12 @@ class TabEntry:
     """
 
     def __init__(self, name: str, ping: int = 0, skin: Optional[str] = None,
-                 game_mode: str = "SURVIVAL"):
+            game_mode: str = "SURVIVAL"):
+        """Initialise a new TabEntry."""
         self.name = name
         self.ping = ping
         self.skin = skin
         self.game_mode = game_mode
-
 
 class TabGroup:
     """A named group of tab entries with a shared prefix/sorting order.
@@ -35,6 +34,7 @@ class TabGroup:
     """
 
     def __init__(self, name: str, prefix: str = "", priority: int = 0):
+        """Initialise a new TabGroup."""
         self.name = name
         self.prefix = prefix
         self.priority = priority
@@ -50,14 +50,13 @@ class TabGroup:
 
     @property
     def entries(self) -> List[TabEntry]:
+        """The entries value."""
         return list(self._entries)
-
 
 class TabList:
     """Per-player tab list manager with header, footer, templates, and fake entries.
 
     Example::
-
         tab = TabList()
         tab.header = "&6My Server"
         tab.footer = "&7Online: {online}/{max}"
@@ -72,6 +71,7 @@ class TabList:
     """
 
     def __init__(self):
+        """Initialise a new TabList."""
         self._header: str = ""
         self._footer: str = ""
         self._groups: Dict[str, TabGroup] = {}
@@ -79,31 +79,37 @@ class TabList:
 
     @property
     def header(self) -> str:
+        """The header value."""
         return self._header
 
     @header.setter
     def header(self, value: str):
+        """Set the header."""
         self._header = value
 
     @property
     def footer(self) -> str:
+        """The footer value."""
         return self._footer
 
     @footer.setter
     def footer(self, value: str):
+        """Set the footer."""
         self._footer = value
 
     def create_group(self, name: str, prefix: str = "",
-                     priority: int = 0) -> TabGroup:
+            priority: int = 0) -> TabGroup:
         """Create a named tab group."""
         group = TabGroup(name, prefix, priority)
         self._groups[name] = group
         return group
 
     def get_group(self, name: str) -> Optional[TabGroup]:
+        """Return the group."""
         return self._groups.get(name)
 
     def remove_group(self, name: str):
+        """Remove a group."""
         self._groups.pop(name, None)
 
     def template(self, name: str):
@@ -118,8 +124,10 @@ class TabList:
                 return f"&7Online: {len(server.players)}"
         """
         def decorator(func: Callable[..., str]) -> Callable[..., str]:
+            """Register as a decorator."""
             self._templates[name] = func
             return func
+
         return decorator
 
     def _resolve_templates(self, text: str, player, server) -> str:
@@ -131,6 +139,7 @@ class TabList:
                     text = text.replace(placeholder, str(func(player, server)))
                 except Exception:
                     pass
+
         # Built-in placeholders
         try:
             players = server.players
@@ -138,10 +147,12 @@ class TabList:
             text = text.replace("{max}", str(server.max_players))
         except Exception:
             pass
+
         try:
             text = text.replace("{player}", str(player.name))
         except Exception:
             pass
+
         return text
 
     async def apply(self, player):
@@ -166,10 +177,13 @@ class TabList:
         Returns an ``asyncio.Task`` that can be cancelled.
         """
         async def _loop():
+            """Asynchronously handle loop."""
             while True:
                 try:
                     await self.apply_all()
                 except Exception:
                     pass
+
                 await bridge.server.after(interval_ticks)
+
         return asyncio.ensure_future(_loop())
