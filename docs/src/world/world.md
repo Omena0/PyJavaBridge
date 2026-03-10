@@ -57,6 +57,7 @@ All players currently in this world.
 ### time
 
 - **Type:** `int`
+- **Settable:** `world.time = 6000`
 
 Current world time (0–24000). 0 = dawn, 6000 = noon, 12000 = dusk, 18000 = midnight.
 
@@ -69,44 +70,86 @@ Current world time as a `WorldTime` object with helper properties.
 ### full_time
 
 - **Type:** `int`
+- **Settable:** `world.full_time = 100000`
 
 Absolute world time that is not reset by sleeping.
 
 ### difficulty
 
 - **Type:** [`Difficulty`](enums.md)
+- **Settable:** `world.difficulty = Difficulty.HARD`
 
 World difficulty level.
 
 ### spawn_location
 
 - **Type:** [`Location`](location.md)
+- **Settable:** `world.spawn_location = location`
 
 The world's spawn location.
 
 ### has_storm
 
 - **Type:** `bool`
+- **Settable:** `world.has_storm = True`
 
 Whether it is currently raining/snowing.
 
 ### is_thundering
 
 - **Type:** `bool`
+- **Settable:** `world.is_thundering = True`
 
 Whether there is a thunderstorm.
 
 ### weather_duration
 
 - **Type:** `int`
+- **Settable:** `world.weather_duration = 6000`
 
 Remaining weather duration in ticks.
 
 ### thunder_duration
 
 - **Type:** `int`
+- **Settable:** `world.thunder_duration = 6000`
 
 Remaining thunder duration in ticks.
+
+### seed
+
+- **Type:** `int`
+
+The world seed.
+
+### pvp
+
+- **Type:** `bool`
+- **Settable:** `world.pvp = False`
+
+Whether PvP is enabled in this world.
+
+### game_rules
+
+- **Type:** `dict`
+
+All game rules as a dictionary.
+
+### world_border
+
+- **Type:** `dict`
+- **Settable:** `world.world_border = {"center": [0, 0], "size": 1000}`
+
+The world border settings as a dictionary.
+
+### `__contains__`
+
+Supports `entity in world` operator:
+
+```python
+if player in world:
+    await player.send_message("You're in this world!")
+```
 
 ---
 
@@ -237,19 +280,15 @@ Strike visual-only lightning (no damage, no fire).
 
 ---
 
-## Time & Weather Setters
+## Time & Weather
 
-### set_time
+All time and weather values are settable via property syntax (see Attributes above). For example:
 
 ```python
-await world.set_time(time)
+world.time = 6000               # Set to noon
+world.difficulty = Difficulty.HARD
+world.has_storm = False          # Clear weather
 ```
-
-Set the world time.
-
-- **Parameters:**
-  - `time` (`int`) — Time value (0–24000).
-- **Returns:** `Awaitable[None]`
 
 ### at_time
 
@@ -282,86 +321,202 @@ async def dawn(w):
 
 ### set_full_time
 
-```python
-await world.set_full_time(time)
-```
-
-Set the absolute (non-resetting) time.
-
-- **Parameters:**
-  - `time` (`int`) — Absolute time value.
-- **Returns:** `Awaitable[None]`
+> **Deprecated setter method.** Use property syntax instead: `world.full_time = 100000`
 
 ### set_difficulty
 
-```python
-await world.set_difficulty(difficulty)
-```
-
-Set the world difficulty.
-
-- **Parameters:**
-  - `difficulty` ([`Difficulty`](enums.md)) — Difficulty level.
-- **Returns:** `Awaitable[None]`
+> **Deprecated setter method.** Use property syntax instead: `world.difficulty = Difficulty.HARD`
 
 ### set_spawn_location
 
-```python
-await world.set_spawn_location(location)
-```
-
-Set the world spawn point.
-
-- **Parameters:**
-  - `location` ([`Location`](location.md)) — New spawn location.
-- **Returns:** `Awaitable[None]`
+> **Deprecated setter method.** Use property syntax instead: `world.spawn_location = location`
 
 ### set_storm
 
-```python
-await world.set_storm(value)
-```
-
-Start or stop rain/snow.
-
-- **Parameters:**
-  - `value` (`bool`) — `True` = start storm, `False` = clear.
-- **Returns:** `Awaitable[None]`
+> **Deprecated setter method.** Use property syntax instead: `world.has_storm = True`
 
 ### set_thundering
 
-```python
-await world.set_thundering(value)
-```
-
-Start or stop thunderstorm.
-
-- **Parameters:**
-  - `value` (`bool`)
-- **Returns:** `Awaitable[None]`
+> **Deprecated setter method.** Use property syntax instead: `world.is_thundering = True`
 
 ### set_weather_duration
 
-```python
-await world.set_weather_duration(ticks)
-```
-
-Set how long the current weather lasts.
-
-- **Parameters:**
-  - `ticks` (`int`) — Duration in ticks.
-- **Returns:** `Awaitable[None]`
+> **Deprecated setter method.** Use property syntax instead: `world.weather_duration = 6000`
 
 ### set_thunder_duration
 
+> **Deprecated setter method.** Use property syntax instead: `world.thunder_duration = 6000`
+
+---
+
+## Game Rules
+
+### get_game_rule
+
 ```python
-await world.set_thunder_duration(ticks)
+value = await world.get_game_rule(rule)
 ```
 
-Set how long the current thunder lasts.
+Get a game rule value.
 
 - **Parameters:**
-  - `ticks` (`int`) — Duration in ticks.
+  - `rule` (`str`) — Game rule name (e.g. `"doDaylightCycle"`).
+- **Returns:** `Awaitable[any]`
+
+### set_game_rule
+
+```python
+await world.set_game_rule(rule, value)
+```
+
+Set a game rule value.
+
+- **Parameters:**
+  - `rule` (`str`) — Game rule name.
+  - `value` — The value to set.
+- **Returns:** `Awaitable[None]`
+
+```python
+await world.set_game_rule("doDaylightCycle", False)
+await world.set_game_rule("randomTickSpeed", 10)
+```
+
+---
+
+## Terrain & Block Queries
+
+### get_highest_block_at
+
+```python
+block = await world.get_highest_block_at(x, z)
+```
+
+Get the highest non-air block at the given X/Z coordinates.
+
+- **Parameters:**
+  - `x` (`int`) — X coordinate.
+  - `z` (`int`) — Z coordinate.
+- **Returns:** `Awaitable[`[`Block`](block.md)`]`
+
+### generate_tree
+
+```python
+result = await world.generate_tree(location, tree_type)
+```
+
+Generate a tree at the given location.
+
+- **Parameters:**
+  - `location` ([`Location`](location.md)) — Base location.
+  - `tree_type` (`str`) — Tree type (e.g. `"OAK"`, `"BIRCH"`, `"JUNGLE"`).
+- **Returns:** `Awaitable[bool]`
+
+### get_chunk_at_async
+
+```python
+chunk = await world.get_chunk_at_async(x, z)
+```
+
+Asynchronously load a chunk at chunk coordinates.
+
+- **Parameters:**
+  - `x` (`int`) — Chunk X.
+  - `z` (`int`) — Chunk Z.
+- **Returns:** `Awaitable[`[`Chunk`](chunk.md)`]`
+
+---
+
+## Advanced Entity Queries
+
+### get_nearby_entities
+
+```python
+entities = await world.get_nearby_entities(location, dx, dy, dz)
+```
+
+Get entities within a bounding box centered on a location.
+
+- **Parameters:**
+  - `location` ([`Location`](location.md)) — Center.
+  - `dx` (`float`) — Half-width on X axis.
+  - `dy` (`float`) — Half-height on Y axis.
+  - `dz` (`float`) — Half-width on Z axis.
+- **Returns:** `Awaitable[list[`[`Entity`](entity.md)`]]`
+
+### find_entities
+
+```python
+entities = await world.find_entities(location, radius, predicate=None, entity_type=None)
+```
+
+Find entities within a radius, optionally filtered by type.
+
+- **Parameters:**
+  - `location` ([`Location`](location.md)) — Center.
+  - `radius` (`float`) — Search radius.
+  - `predicate` (`callable | None`) — Optional filter function.
+  - `entity_type` (`str | None`) — Optional entity type name filter.
+- **Returns:** `Awaitable[list[`[`Entity`](entity.md)`]]`
+
+### batch_spawn
+
+```python
+entities = await world.batch_spawn(specs)
+```
+
+Spawn multiple entities in a single call.
+
+- **Parameters:**
+  - `specs` (`list[dict]`) — List of spawn specifications, each with `type`, `location`, and optional extra fields.
+- **Returns:** `Awaitable[list[`[`Entity`](entity.md)`]]`
+
+### ray_trace
+
+```python
+result = await world.ray_trace(start, direction, max_distance)
+```
+
+Perform a ray trace from a start location in a direction.
+
+- **Parameters:**
+  - `start` ([`Location`](location.md)) — Start position.
+  - `direction` ([`Vector`](vector.md)) — Direction vector.
+  - `max_distance` (`float`) — Maximum trace distance.
+- **Returns:** `Awaitable[dict | None]` — Hit result or `None`.
+
+---
+
+## Async Bulk Operations
+
+### async_fill
+
+```python
+await world.async_fill(x1, y1, z1, x2, y2, z2, material, blocks_per_tick=256)
+```
+
+Fill a region asynchronously over multiple ticks to avoid lag spikes.
+
+- **Parameters:**
+  - `x1, y1, z1` (`int`) — First corner.
+  - `x2, y2, z2` (`int`) — Opposite corner.
+  - `material` (`str`) — Block material.
+  - `blocks_per_tick` (`int`) — Blocks to process per tick. Default `256`.
+- **Returns:** `Awaitable[None]`
+
+### async_replace
+
+```python
+await world.async_replace(x1, y1, z1, x2, y2, z2, from_material, to_material, blocks_per_tick=256)
+```
+
+Replace blocks asynchronously over multiple ticks.
+
+- **Parameters:**
+  - `x1, y1, z1` (`int`) — First corner.
+  - `x2, y2, z2` (`int`) — Opposite corner.
+  - `from_material` (`str`) — Material to replace.
+  - `to_material` (`str`) — Replacement material.
+  - `blocks_per_tick` (`int`) — Default `256`.
 - **Returns:** `Awaitable[None]`
 
 ---

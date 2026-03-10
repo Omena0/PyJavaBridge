@@ -60,6 +60,43 @@ Display title of the inventory.
 
 Index of the first empty slot, or `-1` if the inventory is full.
 
+### viewers
+
+- **Type:** `list[`[`Player`](player.md)`]`
+
+Players currently viewing this inventory.
+
+### type
+
+- **Type:** `str`
+
+The inventory type (e.g. `"CHEST"`, `"HOPPER"`, `"PLAYER"`).
+
+---
+
+## Special Protocols
+
+Inventory supports Python's sequence protocol:
+
+```python
+# Index access
+item = inv[0]
+inv[0] = Item("DIAMOND")
+
+# Iteration
+for item in inv:
+    if item:
+        print(item.type)
+
+# Length
+slots = len(inv)
+
+# Async context manager (auto-updates on exit)
+async with inv:
+    inv[0] = Item("DIAMOND")
+    inv[1] = Item("EMERALD")
+```
+
 ---
 
 ## Methods

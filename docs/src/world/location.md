@@ -96,7 +96,7 @@ above = player.location.add(0, 2, 0)
 
 ## Arithmetic Operators
 
-Location supports `+` and `-` operators with [`Location`](location.md) or [`Vector`](vector.md) operands.
+Location supports `+`, `-`, `*`, and `/` operators with [`Location`](location.md) or [`Vector`](vector.md) operands.
 
 ### Addition (`+`)
 
@@ -115,6 +115,44 @@ offset = loc_a - loc_b  # Location representing the difference
 ```
 
 The result preserves the world, yaw, and pitch of the left-hand operand.
+
+### Multiplication (`*`)
+
+```python
+scaled = location * 2.0  # Scale coordinates by a factor
+```
+
+### Division (`/`)
+
+```python
+halved = location / 2.0  # Divide coordinates by a factor
+```
+
+### normalize
+
+```python
+normalized = location.normalize()
+```
+
+Return a new location with the XYZ components normalized to a unit vector. **Synchronous.**
+
+- **Returns:** [`Location`](#)
+
+### midpoint
+
+```python
+mid = location.midpoint(other)
+```
+
+Return the midpoint between this location and another. **Synchronous.**
+
+- **Parameters:**
+  - `other` ([`Location`](#)) — The other location.
+- **Returns:** [`Location`](#)
+
+```python
+center = loc_a.midpoint(loc_b)
+```
 
 ### clone
 

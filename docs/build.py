@@ -46,97 +46,111 @@ OUT_DIR = os.path.join(DOCS_DIR, "site")
 
 SIDEBAR = [
     ("Getting Started", [
-        ("index", "Home"),
-        ("decorators", "Decorators"),
-        ("exceptions", "Exceptions"),
-        ("examples", "Examples"),
+        ("getting_started/index", "Home"),
+        ("getting_started/decorators", "Decorators"),
+        ("getting_started/exceptions", "Exceptions"),
+        ("getting_started/examples", "Examples"),
     ]),
     ("Core", [
-        ("server", "Server"),
-        ("event", "Event"),
-        ("entity", "Entity"),
-        ("player", "Player"),
+        ("core/server", "Server"),
+        ("core/event", "Event"),
+        ("core/entity", "Entity"),
+        ("core/entitysubtypes", "Entity Subtypes"),
+        ("core/player", "Player"),
     ]),
     ("World & Space", [
-        ("world", "World"),
-        ("location", "Location"),
-        ("block", "Block"),
-        ("chunk", "Chunk"),
-        ("vector", "Vector"),
+        ("world/world", "World"),
+        ("world/location", "Location"),
+        ("world/block", "Block"),
+        ("world/blocksnapshot", "BlockSnapshot"),
+        ("world/chunk", "Chunk"),
+        ("world/vector", "Vector"),
     ]),
     ("Items & Inventory", [
-        ("item", "Item"),
-        ("itembuilder", "ItemBuilder"),
-        ("inventory", "Inventory"),
-        ("recipe", "Recipe"),
+        ("items/item", "Item"),
+        ("items/itembuilder", "ItemBuilder"),
+        ("items/inventory", "Inventory"),
+        ("items/recipe", "Recipe"),
     ]),
     ("Effects & Attributes", [
-        ("effect", "Effect"),
-        ("potion", "Potion"),
-        ("attribute", "Attribute"),
-        ("advancement", "Advancement"),
-        ("firework", "Firework"),
+        ("effects/effect", "Effect"),
+        ("effects/potion", "Potion"),
+        ("effects/attribute", "Attribute"),
+        ("effects/advancement", "Advancement"),
+        ("effects/firework", "Firework"),
+        ("effects/textcomponent", "TextComponent"),
+        ("effects/bookbuilder", "BookBuilder"),
     ]),
     ("Scoreboards & UI", [
-        ("menu", "Menu"),
-        ("menuitem", "MenuItem"),
-        ("sidebar", "Sidebar"),
-        ("actionbardisplay", "ActionBarDisplay"),
-        ("bossbardisplay", "BossBarDisplay"),
-        ("bossbar", "BossBar"),
-        ("scoreboard", "Scoreboard"),
-        ("objective", "Objective"),
-        ("team", "Team"),
+        ("ui/menu", "Menu"),
+        ("ui/menuitem", "MenuItem"),
+        ("ui/sidebar", "Sidebar"),
+        ("ui/actionbardisplay", "ActionBarDisplay"),
+        ("ui/bossbardisplay", "BossBarDisplay"),
+        ("ui/bossbar", "BossBar"),
+        ("ui/scoreboard", "Scoreboard"),
+        ("ui/objective", "Objective"),
+        ("ui/team", "Team"),
     ]),
     ("Helpers", [
-        ("npc", "NPC"),
-        ("config", "Config"),
-        ("state", "State"),
-        ("cooldown", "Cooldown"),
-        ("paginator", "Paginator"),
-        ("enums", "Enums"),
-        ("enumvalue", "EnumValue"),
+        ("helpers/npc", "NPC"),
+        ("helpers/config", "Config"),
+        ("helpers/state", "State"),
+        ("helpers/cooldown", "Cooldown"),
+        ("helpers/paginator", "Paginator"),
+        ("helpers/enums", "Enums"),
+        ("helpers/enumvalue", "EnumValue"),
     ]),
     ("Display Entities", [
-        ("hologram", "Hologram"),
-        ("blockdisplay", "BlockDisplay"),
-        ("itemdisplay", "ItemDisplay"),
+        ("display/hologram", "Hologram"),
+        ("display/blockdisplay", "BlockDisplay"),
+        ("display/itemdisplay", "ItemDisplay"),
     ]),
     ("Extensions", [
-        ("imagedisplay", "ImageDisplay"),
-        ("meshdisplay", "MeshDisplay"),
-        ("quest", "Quest"),
-        ("dialog", "Dialog"),
-        ("bank", "Bank"),
-        ("shop", "Shop"),
-        ("trade", "TradeWindow"),
-        ("ability", "Ability"),
-        ("mana", "ManaStore"),
-        ("combat", "CombatSystem"),
-        ("levels", "LevelSystem"),
-        ("region", "Region"),
-        ("party", "Party"),
-        ("guild", "Guild"),
-        ("customitem", "CustomItem"),
-        ("leaderboard", "Leaderboard"),
-        ("visualeffect", "VisualEffect"),
-        ("playerdatastore", "PlayerDataStore"),
-        ("dungeon", "Dungeon"),
+        ("extensions/imagedisplay", "ImageDisplay"),
+        ("extensions/meshdisplay", "MeshDisplay"),
+        ("extensions/quest", "Quest"),
+        ("extensions/dialog", "Dialog"),
+        ("extensions/bank", "Bank"),
+        ("extensions/shop", "Shop"),
+        ("extensions/trade", "TradeWindow"),
+        ("extensions/ability", "Ability"),
+        ("extensions/mana", "ManaStore"),
+        ("extensions/combat", "CombatSystem"),
+        ("extensions/levels", "LevelSystem"),
+        ("extensions/region", "Region"),
+        ("extensions/party", "Party"),
+        ("extensions/guild", "Guild"),
+        ("extensions/customitem", "CustomItem"),
+        ("extensions/leaderboard", "Leaderboard"),
+        ("extensions/visualeffect", "VisualEffect"),
+        ("extensions/playerdatastore", "PlayerDataStore"),
+        ("extensions/dungeon", "Dungeon"),
+        ("extensions/tablist", "TabList"),
+        ("extensions/statemachine", "StateMachine"),
+        ("extensions/scheduler", "Scheduler"),
+        ("extensions/placeholder", "Placeholder"),
+        ("extensions/loottable", "LootTable"),
     ]),
     ("Utilities", [
-        ("raycast", "Raycast"),
-        ("chat", "Chat"),
-        ("reflect", "Reflect"),
+        ("utilities/raycast", "Raycast"),
+        ("utilities/chat", "Chat"),
+        ("utilities/reflect", "Reflect"),
     ]),
     ("Internals", [
-        ("bridge", "Bridge"),
-        ("events_internal", "Events"),
-        ("execution", "Execution"),
-        ("serialization", "Serialization"),
-        ("lifecycle", "Lifecycle"),
-        ("debugging", "Debugging")
+        ("internals/bridge", "Bridge"),
+        ("internals/events_internal", "Events"),
+        ("internals/execution", "Execution"),
+        ("internals/serialization", "Serialization"),
+        ("internals/lifecycle", "Lifecycle"),
+        ("internals/debugging", "Debugging")
     ]),
 ]
+
+
+def slug_basename(slug):
+    """Extract the filename part from a possibly prefixed slug (e.g. 'core/entity' → 'entity')."""
+    return slug.rsplit("/", 1)[-1]
 
 # ── Frontmatter parser ──────────────────────────────────────────────────────
 
@@ -223,7 +237,7 @@ def convert_markdown(text):
         TocExtension(permalink=False, toc_depth="2-3"),
     ])
     html = md.convert(text)
-    toc_tokens = md.toc_tokens
+    toc_tokens = getattr(md, "toc_tokens", [])
     md.reset()
     return html, toc_tokens
 
@@ -285,8 +299,9 @@ def build_sidebar_html(current_slug):
         )
         is_ext = section_name == "Extensions"
         for slug, label in pages:
+            base = slug_basename(slug)
             active = ' class="active"' if slug == current_slug else ''
-            href = "index.html" if slug == "index" else f"{slug}.html"
+            href = "index.html" if base == "index" else f"{base}.html"
             display = f'{label} <span class="ext-tag">ext</span>' if is_ext else label
             parts.append(f'    <li><a href="{href}"{active}>{display}</a></li>')
 
@@ -443,7 +458,7 @@ def build_page(slug):
         search_index_zstd_b64=_search_index_zstd_b64,
     )
 
-    out_name = "index.html" if slug == "index" else f"{slug}.html"
+    out_name = "index.html" if slug_basename(slug) == "index" else f"{slug_basename(slug)}.html"
     out_path = os.path.join(OUT_DIR, out_name)
     with open(out_path, "w", encoding="utf-8") as f:
         f.write(out_html)
@@ -470,11 +485,13 @@ def main():
 
     # Also check for any .md files not in the sidebar
     if os.path.isdir(SRC_DIR):
-        for fname in os.listdir(SRC_DIR):
-            if fname.endswith(".md"):
-                s = fname[:-3]
-                if s not in slugs:
-                    slugs.append(s)
+        for dirpath, _dirnames, filenames in os.walk(SRC_DIR):
+            for fname in filenames:
+                if fname.endswith(".md"):
+                    rel = os.path.relpath(os.path.join(dirpath, fname), SRC_DIR)
+                    s = rel[:-3]  # strip .md, keeps subfolder prefix
+                    if s not in slugs:
+                        slugs.append(s)
 
     built = 0
     search_index = []
@@ -528,8 +545,8 @@ def main():
             # Flush any remaining table
             if table_first_cols:
                 sections.append({"heading": current_heading, "text": ", ".join(table_first_cols)})
-            url = "index.html" if slug == "index" else f"{slug}.html"
-            search_index.append({"slug": slug, "title": title, "url": url, "sections": sections})
+            url = "index.html" if slug_basename(slug) == "index" else f"{slug_basename(slug)}.html"
+            search_index.append({"slug": slug_basename(slug), "title": title, "url": url, "sections": sections})
 
     import json
     search_json = json.dumps(search_index, separators=(',', ':'))
@@ -546,7 +563,7 @@ def main():
         src = os.path.join(SRC_DIR, f"{slug}.md")
         if os.path.exists(src):
             build_page(slug)
-            print(f"  ✓ {slug}.html")
+            print(f"  ✓ {slug_basename(slug)}.html")
             built += 1
 
     print(f"\n✅ Built {built} pages")

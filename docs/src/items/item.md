@@ -86,6 +86,7 @@ The item's material type.
 ### amount
 
 - **Type:** `int`
+- **Settable:** `item.amount = 32`
 
 Current stack size.
 
@@ -104,18 +105,21 @@ Lore lines displayed below the item name.
 ### custom_model_data
 
 - **Type:** `int | None`
+- **Settable:** `item.custom_model_data = 100`
 
 Custom model data value for resource packs.
 
 ### attributes
 
 - **Type:** `list[dict]`
+- **Settable:** `item.attributes = [...]`
 
 Attribute modifiers (attack damage, armor, etc.).
 
 ### nbt
 
 - **Type:** `dict`
+- **Settable:** `item.nbt = {...}`
 
 The item's NBT data as a dictionary.
 
@@ -124,6 +128,39 @@ The item's NBT data as a dictionary.
 - **Type:** `int`
 
 Maximum stack size for this item type (e.g. 64 for blocks, 16 for ender pearls, 1 for tools).
+
+### durability
+
+- **Type:** `int`
+- **Settable:** `item.durability = 100`
+
+Current durability of the item.
+
+### max_durability
+
+- **Type:** `int`
+
+Maximum durability for this item type. Read-only.
+
+### enchantments
+
+- **Type:** `dict`
+
+All enchantments on the item as a `{name: level}` dictionary. Read-only.
+
+### item_flags
+
+- **Type:** `list`
+- **Settable:** `item.item_flags = ["HIDE_ENCHANTS"]`
+
+Item flags (e.g. `HIDE_ENCHANTS`, `HIDE_ATTRIBUTES`).
+
+### is_unbreakable
+
+- **Type:** `bool`
+- **Settable:** `item.is_unbreakable = True`
+
+Whether the item is unbreakable.
 
 ---
 
@@ -135,7 +172,7 @@ Maximum stack size for this item type (e.g. 64 for blocks, 16 for ender pearls, 
 await item.set_amount(value)
 ```
 
-Set the stack size.
+Set the stack size. Property syntax: `item.amount = 32`.
 
 - **Parameters:**
   - `value` (`int`) — New amount.
@@ -171,7 +208,7 @@ Set the lore lines.
 await item.set_custom_model_data(value)
 ```
 
-Set custom model data.
+Set custom model data. Property syntax: `item.custom_model_data = 100`.
 
 - **Parameters:**
   - `value` (`int`) — Model data value.
@@ -183,7 +220,7 @@ Set custom model data.
 await item.set_attributes(attributes)
 ```
 
-Set attribute modifiers.
+Set attribute modifiers. Property syntax: `item.attributes = [...]`.
 
 - **Parameters:**
   - `attributes` (`list[dict]`) — Attribute modifier list.
@@ -195,7 +232,7 @@ Set attribute modifiers.
 await item.set_nbt(nbt)
 ```
 
-Set raw NBT data.
+Set raw NBT data. Property syntax: `item.nbt = {...}`.
 
 - **Parameters:**
   - `nbt` (`dict`) — NBT data dictionary.
@@ -222,3 +259,67 @@ Check if two items are similar (same type, name, lore — ignoring amount).
 - **Parameters:**
   - `other` ([`Item`](#)) — The item to compare.
 - **Returns:** `Awaitable[bool]`
+
+---
+
+## Enchantments
+
+### add_enchantment
+
+```python
+await item.add_enchantment(enchantment, level=1)
+```
+
+Add an enchantment to the item.
+
+- **Parameters:**
+  - `enchantment` (`str`) — Enchantment name (e.g. `"SHARPNESS"`).
+  - `level` (`int`) — Enchantment level. Default `1`.
+- **Returns:** `Awaitable[None]`
+
+### remove_enchantment
+
+```python
+await item.remove_enchantment(enchantment)
+```
+
+Remove an enchantment from the item.
+
+- **Parameters:**
+  - `enchantment` (`str`) — Enchantment name.
+- **Returns:** `Awaitable[None]`
+
+```python
+await sword.add_enchantment("SHARPNESS", 5)
+await sword.add_enchantment("FIRE_ASPECT", 2)
+print(sword.enchantments)  # {"SHARPNESS": 5, "FIRE_ASPECT": 2}
+await sword.remove_enchantment("FIRE_ASPECT")
+```
+
+---
+
+## Item Flags
+
+### add_item_flags
+
+```python
+await item.add_item_flags(*flags)
+```
+
+Add item flags.
+
+- **Parameters:**
+  - `*flags` (`str`) — Flag names (e.g. `"HIDE_ENCHANTS"`, `"HIDE_ATTRIBUTES"`).
+- **Returns:** `Awaitable[None]`
+
+### remove_item_flags
+
+```python
+await item.remove_item_flags(*flags)
+```
+
+Remove item flags.
+
+- **Parameters:**
+  - `*flags` (`str`) — Flag names to remove.
+- **Returns:** `Awaitable[None]`

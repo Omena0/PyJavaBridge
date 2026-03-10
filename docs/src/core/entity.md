@@ -115,6 +115,7 @@ await fireball.set_velocity(direction)
 ### velocity
 
 - **Type:** [`Vector`](vector.md)
+- **Settable:** `entity.velocity = Vector(0, 1, 0)`
 
 The entity's current velocity vector.
 
@@ -145,6 +146,7 @@ Whether the entity handle is still valid. Becomes `False` when the entity is rem
 ### fire_ticks
 
 - **Type:** `int`
+- **Settable:** `entity.fire_ticks = 100`
 
 Remaining fire ticks. 0 means not on fire. Each tick at 20 TPS, so 100 = 5 seconds of fire.
 
@@ -156,9 +158,18 @@ Entities riding on top of this entity.
 
 ### custom_name
 
-- **Type:** `any`
+- **Type:** `str | None`
+- **Settable:** `entity.custom_name = "§cBoss"`
+- **Deletable:** `del entity.custom_name` (clears name)
 
 The entity's custom name, or `None` if not set.
+
+### custom_name_visible
+
+- **Type:** `bool`
+- **Settable:** `entity.custom_name_visible = True`
+
+Whether the custom name tag is visible through walls and at distance.
 
 ### is_projectile
 
@@ -221,6 +232,112 @@ async def entity_damage_by_entity(e):
     # Check if a tamed wolf attacked something
     if damager.is_tamed:
         await damager.owner.send_message(f"Your {damager.type} attacked {e.entity.type}")
+```
+
+### gravity
+
+- **Type:** `bool`
+- **Settable:** `entity.gravity = False`
+
+Whether the entity is affected by gravity.
+
+### glowing
+
+- **Type:** `bool`
+- **Settable:** `entity.glowing = True`
+
+Whether the entity has the glowing outline effect.
+
+### invisible
+
+- **Type:** `bool`
+- **Settable:** `entity.invisible = True`
+
+Whether the entity is invisible.
+
+### invulnerable
+
+- **Type:** `bool`
+- **Settable:** `entity.invulnerable = True`
+
+Whether the entity is invulnerable to damage.
+
+### silent
+
+- **Type:** `bool`
+- **Settable:** `entity.silent = True`
+
+Whether the entity makes sounds.
+
+### persistent
+
+- **Type:** `bool`
+- **Settable:** `entity.persistent = True`
+
+Whether the entity persists through chunk unloads. Prevents despawning.
+
+### collidable
+
+- **Type:** `bool`
+- **Settable:** `entity.collidable = False`
+
+Whether other entities can collide with this entity.
+
+### portal_cooldown
+
+- **Type:** `int`
+- **Settable:** `entity.portal_cooldown = 100`
+
+The entity's portal cooldown in ticks.
+
+### max_fire_ticks
+
+- **Type:** `int`
+
+The maximum fire ticks the entity can have (read-only).
+
+### freeze_ticks
+
+- **Type:** `int`
+- **Settable:** `entity.freeze_ticks = 140`
+
+The entity's powdered-snow freeze ticks.
+
+### height
+
+- **Type:** `float`
+
+The entity's bounding box height.
+
+### width
+
+- **Type:** `float`
+
+The entity's bounding box width.
+
+### bounding_box
+
+- **Type:** `dict`
+
+The entity's axis-aligned bounding box as a dictionary.
+
+### metadata
+
+- **Type:** `dict`
+
+Transient Python-side key/value storage attached to this entity. Persists across event handlers within the same session but is not saved to disk.
+
+```python
+entity.metadata["spawned_by"] = player.name
+```
+
+### `__bool__`
+
+Entity implements `__bool__` returning `is_valid`, so you can use:
+
+```python
+if entity:  # equivalent to entity.is_valid
+    await entity.remove()
 ```
 
 ---
@@ -317,7 +434,7 @@ Remove a riding entity.
 await entity.set_custom_name(name)
 ```
 
-Set the entity's custom name tag.
+Set the entity's custom name tag. You can also use property syntax: `entity.custom_name = "§cBoss Zombie"`.
 
 - **Parameters:**
   - `name` (`str`) — The name to display. Supports `§` color codes.
@@ -325,6 +442,9 @@ Set the entity's custom name tag.
 
 ```python
 await zombie.set_custom_name("§cBoss Zombie")
+# or
+zombie.custom_name = "§cBoss Zombie"
+del zombie.custom_name  # clears name
 ```
 
 ### set_custom_name_visible
@@ -333,7 +453,7 @@ await zombie.set_custom_name("§cBoss Zombie")
 await entity.set_custom_name_visible(value)
 ```
 
-Show or hide the custom name tag. When `True`, the name is visible through walls and at a distance.
+Show or hide the custom name tag. When `True`, the name is visible through walls and at a distance. You can also use property syntax: `entity.custom_name_visible = True`.
 
 - **Parameters:**
   - `value` (`bool`) — Whether the name should be visible.
@@ -369,7 +489,9 @@ target = entity.target
 
 Get the mob's current attack target.
 
-- **Returns:** [`Entity`](#) `| None`
+- **Type:** [`Entity`](#) `| None`
+- **Settable:** `entity.target = player`
+- **Deletable:** `del entity.target` (clears target)
 
 ### set_target
 
@@ -377,7 +499,7 @@ Get the mob's current attack target.
 await entity.set_target(target)
 ```
 
-Set the mob's attack target. Pass `None` to clear.
+Set the mob's attack target. Pass `None` to clear. You can also use property syntax.
 
 - **Parameters:**
   - `target` ([`Entity`](#) `| None`) — The entity to target.
@@ -385,7 +507,9 @@ Set the mob's attack target. Pass `None` to clear.
 
 ```python
 await zombie.set_target(player)
-await zombie.set_target(None)  # clear target
+# or
+zombie.target = player
+del zombie.target  # clear target
 ```
 
 ### is_aware
@@ -396,7 +520,8 @@ aware = entity.is_aware
 
 Check if the mob has AI awareness (responds to environment, pathfinds, etc).
 
-- **Returns:** `bool`
+- **Type:** `bool`
+- **Settable:** `entity.is_aware = False`
 
 ### set_aware
 
@@ -404,7 +529,7 @@ Check if the mob has AI awareness (responds to environment, pathfinds, etc).
 await entity.set_aware(aware)
 ```
 
-Enable or disable AI awareness. When disabled, the mob won't move or react.
+Enable or disable AI awareness. When disabled, the mob won't move or react. You can also use property syntax: `entity.is_aware = False`.
 
 - **Parameters:**
   - `aware` (`bool`) — Whether AI should be active.
@@ -476,6 +601,50 @@ await zombie.look_at(player.location)
 
 ---
 
+## AI Goals
+
+These methods interact with Paper's MobGoals API to inspect and modify mob AI goals.
+
+### goal_types
+
+```python
+goals = entity.goal_types
+```
+
+Get a list of all active AI goal type keys on the mob.
+
+- **Type:** `list`
+
+### remove_goal
+
+```python
+removed = entity.remove_goal(goal_key)
+```
+
+Remove a specific AI goal by its key. **Synchronous.**
+
+- **Parameters:**
+  - `goal_key` (`str`) — The goal type key to remove.
+- **Returns:** `bool`
+
+### remove_all_goals
+
+```python
+await entity.remove_all_goals()
+```
+
+Remove all AI goals from the mob.
+
+- **Returns:** `Awaitable[None]`
+
+```python
+# Create a "dummy" mob that won't do anything
+await zombie.remove_all_goals()
+await zombie.set_aware(False)
+```
+
+---
+
 ## Tags
 
 Entities support Python-side tags — string labels shared across all instances that reference the same entity UUID. Tags are stored in memory (not persisted to disk) and are useful for marking entities across different event handlers.
@@ -534,3 +703,9 @@ async def entity_damage(e):
     if e.entity.is_tagged("boss"):
         await e.entity.set_custom_name(f"§c Boss HP: {e.entity.health}")
 ```
+
+---
+
+## Entity Subtypes
+
+See [Entity subtypes](#entity-subtypes)

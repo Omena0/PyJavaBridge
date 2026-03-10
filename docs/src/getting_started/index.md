@@ -50,6 +50,7 @@ Drop your `.py` file into the server's `scripts/` folder and reload. The bridge 
 | [Server](server.md) | Global server API |
 | [Entity](entity.md) | Base entity proxy |
 | [Player](player.md) | Player API (extends Entity) |
+| [Entity Subtypes](entitysubtypes.md) | ArmorStand, Villager, ItemFrame, FallingBlock, AreaEffectCloud |
 
 ### World & Space
 
@@ -58,6 +59,7 @@ Drop your `.py` file into the server's `scripts/` folder and reload. The bridge 
 | [World](world.md) | World API, region utilities, particle shapes, spawn helpers |
 | [Location](location.md) | 3D position with world, yaw, and pitch |
 | [Block](block.md) | Block in the world |
+| [BlockSnapshot](blocksnapshot.md) | Capture and restore block regions |
 | [Chunk](chunk.md) | World chunk loading/unloading |
 | [Vector](vector.md) | 3D vector |
 
@@ -68,6 +70,7 @@ Drop your `.py` file into the server's `scripts/` folder and reload. The bridge 
 | [Item](item.md) | ItemStack API |
 | [ItemBuilder](itembuilder.md) | Fluent item construction |
 | [Inventory](inventory.md) | Inventory management |
+| [Recipe](recipe.md) | Custom crafting recipes |
 | [Material](enums.md#material) | Material enum |
 
 ### Effects & Attributes
@@ -95,11 +98,15 @@ Drop your `.py` file into the server's `scripts/` folder and reload. The bridge 
 | ---- | ----------- |
 | [Config](config.md) | Configuration files (TOML, JSON, properties) |
 | [Cooldown](cooldown.md) | Per-player cooldowns |
+| [State](state.md) | Key-value state container |
 | [Hologram](hologram.md) | Floating text entities |
 | [Menu](menu.md) | Chest GUI builder |
 | [Paginator](paginator.md) | Multi-page menu |
 | [ActionBarDisplay](actionbardisplay.md) | Persistent action bar messages |
 | [BossBarDisplay](bossbardisplay.md) | Boss bar wrapper with cooldown linking |
+| [FireworkEffect](firework.md) | Firework builder |
+| [TextComponent](textcomponent.md) | Rich text components |
+| [BookBuilder](bookbuilder.md) | Written book builder |
 
 ### Display Entities
 
@@ -144,6 +151,12 @@ Extensions are imported separately via `from bridge.extensions import ...`.
 | [VisualEffect](visualeffect.md) | Sequenced particle/sound effects |
 | [PlayerDataStore](playerdatastore.md) | Persistent per-player key/value storage |
 | [Dungeon](dungeon.md) | Instanced dungeon system with WFC generation |
+| [NPC](npc.md) | Custom NPC entities |
+| [Scheduler](scheduler.md) | Advanced task scheduling |
+| [StateMachine](statemachine.md) | Finite state machine |
+| [TabList](tablist.md) | Advanced tab list management |
+| [Placeholder](placeholder.md) | Placeholder string registry |
+| [LootTable](loottable.md) | Loot table generation |
 
 ### Examples
 

@@ -106,6 +106,12 @@ The Bukkit scheduler. Rarely needed — use `server.after()` and `@task` instead
 
 The server's scoreboard manager.
 
+### structures
+
+- **Type:** `list[str]`
+
+All saved structure names.
+
 ---
 
 ## Methods
@@ -238,4 +244,82 @@ await server.flush()
 
 Send all pending batched requests immediately. Use this inside a `frame()` or `atomic()` block if you need partial results before the block ends.
 
+- **Returns:** `Awaitable[None]`
+
+---
+
+## Structure Management
+
+### save_structure
+
+```python
+await server.save_structure(name, world, x1, y1, z1, x2, y2, z2)
+```
+
+Save a region as a named structure.
+
+- **Parameters:**
+  - `name` (`str`) — Structure name.
+  - `world` (`str`) — World name.
+  - `x1, y1, z1` (`int`) — First corner.
+  - `x2, y2, z2` (`int`) — Opposite corner.
+- **Returns:** `Awaitable[None]`
+
+### load_structure
+
+```python
+await server.load_structure(name, world, x, y, z, include_entities=False)
+```
+
+Load a saved structure at a location.
+
+- **Parameters:**
+  - `name` (`str`) — Structure name.
+  - `world` (`str`) — World name.
+  - `x, y, z` (`int`) — Placement origin.
+  - `include_entities` (`bool`) — Whether to include saved entities. Default `False`.
+- **Returns:** `Awaitable[None]`
+
+### delete_structure
+
+```python
+await server.delete_structure(name)
+```
+
+Delete a saved structure.
+
+- **Parameters:**
+  - `name` (`str`) — Structure name to delete.
+- **Returns:** `Awaitable[None]`
+
+---
+
+## World Management
+
+### create_world
+
+```python
+world = await server.create_world(name, *, environment="NORMAL", world_type="NORMAL", seed=None, generate_structures=True)
+```
+
+Create a new world.
+
+- **Parameters:**
+  - `name` (`str`) — World name.
+  - `environment` (`str`) — `"NORMAL"`, `"NETHER"`, or `"THE_END"`. Default `"NORMAL"`.
+  - `world_type` (`str`) — World type. Default `"NORMAL"`.
+  - `seed` (`int | None`) — World seed. Default `None` (random).
+  - `generate_structures` (`bool`) — Whether to generate structures. Default `True`.
+- **Returns:** `Awaitable[`[`World`](world.md)`]`
+
+### unload_world
+
+```python
+await server.unload_world(name)
+```
+
+Unload a world from the server.
+
+- **Parameters:**
+  - `name` (`str`) — World name to unload.
 - **Returns:** `Awaitable[None]`

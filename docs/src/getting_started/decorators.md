@@ -339,3 +339,85 @@ await build_arena()
 - Works on both module-level functions and methods.
 - The return value is a `BridgeCall`, which is an `Awaitable`.
 - Unawaited errors are silently logged (same as unawaited bridge API calls).
+
+---
+
+## @preserve
+
+```python
+@preserve
+def player_scores():
+    return {}
+```
+
+Persist a variable across hot reloads. Decorate a no-arg factory function. On first load, the factory runs and its return value is cached to disk as JSON. On subsequent reloads, the cached value is returned instead.
+
+### Signature
+
+```py
+@preserve
+```
+
+### Usage
+
+```python
+@preserve
+def kill_counts():
+    return {}
+
+@event
+async def entity_death(e):
+    if e.entity.type.name == "ZOMBIE":
+        killer = e.entity.source
+        if killer:
+            kill_counts[killer.name] = kill_counts.get(killer.name, 0) + 1
+```
+
+### Notes
+
+- Only works with JSON-serializable return values.
+- Data is stored in `plugins/PyJavaBridge/preserve/<function_qualname>.json`.
+- The value is loaded once at script start and saved on changes.
+
+---
+
+## fire_event
+
+```python
+fire_event(event_name, data=None)
+```
+
+Fire a custom event that all scripts (including the calling script) can listen to. This enables cross-script communication.
+
+### Signature
+
+```py
+fire_event(event_name: str, data: dict | None = None) -> None
+```
+
+### Parameters
+
+#### event_name
+
+- **Type:** `str`
+
+The custom event name. Listeners subscribe using the `@event` decorator with a matching function name (snake_case).
+
+#### data
+
+- **Type:** `dict | None`
+- **Default:** `None`
+
+Optional data payload passed to listeners via the event object.
+
+### Usage
+
+```python
+# Script A: fire a custom event
+fire_event("quest_complete", {"player": player.name, "quest": "dragon_slayer"})
+
+# Script B: listen for it
+@event
+async def quest_complete(e):
+    await server.broadcast(f"{e.player} completed {e.quest}!")
+```

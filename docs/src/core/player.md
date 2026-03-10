@@ -100,12 +100,14 @@ async def player_item_held(e):
 ### level
 
 - **Type:** `int`
+- **Settable:** `player.level = 5`
 
 Player experience level (the green number).
 
 ### exp
 
 - **Type:** `float`
+- **Settable:** `player.exp = 0.5`
 
 Experience progress within the current level (0.0 to 1.0).
 
@@ -118,18 +120,21 @@ Whether the player is a server operator.
 ### is_flying
 
 - **Type:** `bool`
+- **Settable:** `player.is_flying = True`
 
 Whether the player is currently flying.
 
 ### is_sneaking
 
 - **Type:** `bool`
+- **Settable:** `player.is_sneaking = True`
 
 Whether the player is sneaking (shift held).
 
 ### is_sprinting
 
 - **Type:** `bool`
+- **Settable:** `player.is_sprinting = True`
 
 Whether the player is sprinting.
 
@@ -154,20 +159,97 @@ The player's primary permission group (LuckPerms). `None` if LuckPerms is not in
 ### tab_list_header
 
 - **Type:** `str`
+- **Settable:** `player.tab_list_header = "§6My Server"`
 
 The player's tab list header text.
 
 ### tab_list_footer
 
 - **Type:** `str`
+- **Settable:** `player.tab_list_footer = "§7play.example.com"`
 
 The player's tab list footer text.
 
 ### tab_list_name
 
 - **Type:** `str`
+- **Settable:** `player.tab_list_name = "§c[Admin]§r Steve"`
 
 The player's display name in the tab list.
+
+### absorption
+
+- **Type:** `float`
+- **Settable:** `player.absorption = 4.0`
+
+Absorption hearts amount (golden hearts).
+
+### saturation
+
+- **Type:** `float`
+- **Settable:** `player.saturation = 5.0`
+
+Food saturation level. Higher saturation prevents hunger drain.
+
+### exhaustion
+
+- **Type:** `float`
+- **Settable:** `player.exhaustion = 0.0`
+
+Food exhaustion level. When exhaustion exceeds 4.0, saturation decreases.
+
+### attack_cooldown
+
+- **Type:** `float`
+
+Attack cooldown progress (0.0 to 1.0). Read-only.
+
+### allow_flight
+
+- **Type:** `bool`
+- **Settable:** `player.allow_flight = True`
+
+Whether the player is allowed to fly.
+
+### locale
+
+- **Type:** `str`
+
+The player's client locale string (e.g. `"en_US"`).
+
+### ping
+
+- **Type:** `int`
+
+The player's ping in milliseconds.
+
+### client_brand
+
+- **Type:** `str`
+
+The player's client brand (e.g. `"vanilla"`, `"fabric"`).
+
+### max_health
+
+- **Type:** `float`
+- **Settable:** `player.max_health = 40.0`
+
+The player's maximum health. Default is 20.0 (10 hearts).
+
+### bed_spawn_location
+
+- **Type:** [`Location`](location.md) `| None`
+- **Settable:** `player.bed_spawn_location = location`
+- **Deletable:** `del player.bed_spawn_location`
+
+The player's bed/respawn location. `None` if not set.
+
+### compass_target
+
+- **Type:** [`Location`](location.md)
+- **Settable:** `player.compass_target = location`
+
+The location the player's compass points to.
 
 ---
 
@@ -388,6 +470,221 @@ Set the player's active scoreboard.
 - **Parameters:**
   - `scoreboard` ([`Scoreboard`](scoreboard.md)) — The scoreboard to display.
 - **Returns:** `Awaitable[None]`
+
+### hide_player
+
+```python
+await player.hide_player(other)
+```
+
+Hide another player from this player.
+
+- **Parameters:**
+  - `other` ([`Player`](#)) — The player to hide.
+- **Returns:** `Awaitable[None]`
+
+### show_player
+
+```python
+await player.show_player(other)
+```
+
+Show a previously hidden player to this player.
+
+- **Parameters:**
+  - `other` ([`Player`](#)) — The player to show.
+- **Returns:** `Awaitable[None]`
+
+### can_see
+
+```python
+visible = await player.can_see(other)
+```
+
+Check if this player can see another player.
+
+- **Parameters:**
+  - `other` ([`Player`](#)) — The player to check.
+- **Returns:** `Awaitable[bool]`
+
+### open_book
+
+```python
+await player.open_book(item)
+```
+
+Open a written book for the player.
+
+- **Parameters:**
+  - `item` ([`Item`](item.md)) — A written book item.
+- **Returns:** `Awaitable[None]`
+
+### send_block_change
+
+```python
+await player.send_block_change(location, material)
+```
+
+Send a fake block change to the player (client-side only).
+
+- **Parameters:**
+  - `location` ([`Location`](location.md)) — The block location.
+  - `material` (`str`) — The material to display.
+- **Returns:** `Awaitable[None]`
+
+### send_particle
+
+```python
+await player.send_particle(particle, location, count=1, offset_x=0, offset_y=0, offset_z=0, extra=0)
+```
+
+Send a particle effect to the player.
+
+- **Parameters:**
+  - `particle` ([`Particle`](enums.md) `| str`) — The particle type.
+  - `location` ([`Location`](location.md)) — Where to spawn the particle.
+  - `count` (`int`) — Number of particles. Default `1`.
+  - `offset_x` (`float`) — Random offset on X axis.
+  - `offset_y` (`float`) — Random offset on Y axis.
+  - `offset_z` (`float`) — Random offset on Z axis.
+  - `extra` (`float`) — Extra data (usually speed). Default `0`.
+- **Returns:** `Awaitable[None]`
+
+---
+
+## Cooldowns
+
+### get_cooldown
+
+```python
+ticks = await player.get_cooldown(material)
+```
+
+Get the remaining cooldown on a material (item type).
+
+- **Parameters:**
+  - `material` (`str`) — The material name.
+- **Returns:** `Awaitable[int]` — Remaining ticks.
+
+### set_cooldown
+
+```python
+await player.set_cooldown(material, ticks)
+```
+
+Set a cooldown on a material.
+
+- **Parameters:**
+  - `material` (`str`) — The material name.
+  - `ticks` (`int`) — Cooldown duration in ticks.
+- **Returns:** `Awaitable[None]`
+
+### has_cooldown
+
+```python
+result = await player.has_cooldown(material)
+```
+
+Check if a material has an active cooldown.
+
+- **Parameters:**
+  - `material` (`str`) — The material name.
+- **Returns:** `Awaitable[bool]`
+
+---
+
+## Statistics
+
+### get_statistic
+
+```python
+value = await player.get_statistic(stat, material_or_entity=None)
+```
+
+Get a player statistic value.
+
+- **Parameters:**
+  - `stat` (`str`) — The statistic name (e.g. `"PLAY_ONE_MINUTE"`, `"MINE_BLOCK"`).
+  - `material_or_entity` (`str | None`) — Sub-type for material/entity statistics.
+- **Returns:** `Awaitable[int]`
+
+```python
+playtime = await player.get_statistic("PLAY_ONE_MINUTE")
+blocks_mined = await player.get_statistic("MINE_BLOCK", "DIAMOND_ORE")
+```
+
+### set_statistic
+
+```python
+await player.set_statistic(stat, value, material_or_entity=None)
+```
+
+Set a player statistic value.
+
+- **Parameters:**
+  - `stat` (`str`) — The statistic name.
+  - `value` (`int`) — The value to set.
+  - `material_or_entity` (`str | None`) — Sub-type for material/entity statistics.
+- **Returns:** `Awaitable[None]`
+
+---
+
+## Persistent Data Container (PDC)
+
+Store custom data on the player that persists across server restarts.
+
+### get_persistent_data
+
+```python
+data = await player.get_persistent_data()
+```
+
+Get all persistent data as a dictionary.
+
+- **Returns:** `Awaitable[dict]`
+
+### set_persistent_data
+
+```python
+await player.set_persistent_data(key, value)
+```
+
+Set a persistent data key.
+
+- **Parameters:**
+  - `key` (`str`) — The data key.
+  - `value` (`str`) — The data value.
+- **Returns:** `Awaitable[None]`
+
+### remove_persistent_data
+
+```python
+await player.remove_persistent_data(key)
+```
+
+Remove a persistent data key.
+
+- **Parameters:**
+  - `key` (`str`) — The key to remove.
+- **Returns:** `Awaitable[None]`
+
+### has_persistent_data
+
+```python
+result = await player.has_persistent_data(key)
+```
+
+Check if a persistent data key exists.
+
+- **Parameters:**
+  - `key` (`str`) — The key to check.
+- **Returns:** `Awaitable[bool]`
+
+```python
+await player.set_persistent_data("quest_stage", "3")
+if await player.has_persistent_data("quest_stage"):
+    stage = (await player.get_persistent_data())["quest_stage"]
+```
 
 ---
 
