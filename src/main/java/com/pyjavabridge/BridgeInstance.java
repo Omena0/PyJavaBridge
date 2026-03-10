@@ -1110,6 +1110,71 @@ public class BridgeInstance {
         return args;
     }
 
+    private Map<String, Object> serializeMerchantRecipe(org.bukkit.inventory.MerchantRecipe recipe) {
+        Map<String, Object> map = new java.util.LinkedHashMap<>();
+        map.put("result", recipe.getResult().serialize());
+        List<Map<String, Object>> ingredients = new ArrayList<>();
+        for (ItemStack ingredient : recipe.getIngredients()) {
+            ingredients.add(ingredient.serialize());
+        }
+        map.put("ingredients", ingredients);
+        map.put("maxUses", recipe.getMaxUses());
+        map.put("uses", recipe.getUses());
+        map.put("experienceReward", recipe.hasExperienceReward());
+        map.put("villagerExperience", recipe.getVillagerExperience());
+        map.put("priceMultiplier", recipe.getPriceMultiplier());
+        map.put("demand", recipe.getDemand());
+        map.put("specialPrice", recipe.getSpecialPrice());
+        return map;
+    }
+
+    @SuppressWarnings("unchecked")
+    private org.bukkit.inventory.MerchantRecipe deserializeMerchantRecipe(Map<String, Object> map) {
+        if (map == null) return null;
+        // Deserialize result item
+        Object resultObj = map.get("result");
+        ItemStack result;
+        if (resultObj instanceof Map<?, ?> resultMap) {
+            result = ItemStack.deserialize(toStringKeyMap(resultMap));
+        } else {
+            return null;
+        }
+        int maxUses = map.containsKey("maxUses") ? ((Number) map.get("maxUses")).intValue() : 1;
+        boolean experienceReward = map.containsKey("experienceReward") ? Boolean.TRUE.equals(map.get("experienceReward")) : true;
+        int villagerExperience = map.containsKey("villagerExperience") ? ((Number) map.get("villagerExperience")).intValue() : 0;
+        float priceMultiplier = map.containsKey("priceMultiplier") ? ((Number) map.get("priceMultiplier")).floatValue() : 0.0f;
+        int demand = map.containsKey("demand") ? ((Number) map.get("demand")).intValue() : 0;
+        int specialPrice = map.containsKey("specialPrice") ? ((Number) map.get("specialPrice")).intValue() : 0;
+        int uses = map.containsKey("uses") ? ((Number) map.get("uses")).intValue() : 0;
+
+        org.bukkit.inventory.MerchantRecipe recipe = new org.bukkit.inventory.MerchantRecipe(
+            result, uses, maxUses, experienceReward, villagerExperience, priceMultiplier, demand, specialPrice
+        );
+
+        // Deserialize ingredients
+        Object ingredientsObj = map.get("ingredients");
+        if (ingredientsObj instanceof List<?> ingredientsList) {
+            List<ItemStack> ingredients = new ArrayList<>();
+            for (Object ingObj : ingredientsList) {
+                if (ingObj instanceof Map<?, ?> ingMap) {
+                    ItemStack ing = ItemStack.deserialize(toStringKeyMap(ingMap));
+                    ingredients.add(ing);
+                }
+            }
+            recipe.setIngredients(ingredients);
+        }
+
+        return recipe;
+    }
+
+    private Map<String, Object> toStringKeyMap(Map<?, ?> map) {
+        Map<String, Object> result = new java.util.LinkedHashMap<>();
+        for (Map.Entry<?, ?> entry : map.entrySet()) {
+            result.put(String.valueOf(entry.getKey()), entry.getValue());
+        }
+        return result;
+    }
+
     private Location toLocation(Object arg, Entity context) {
         if (arg instanceof Location loc) return loc;
         if (arg instanceof List<?> list && list.size() >= 3) {
@@ -1883,6 +1948,51 @@ public class BridgeInstance {
             case "removeAllGoals" -> {
                 com.destroystokyo.paper.entity.ai.MobGoals goals = Bukkit.getMobGoals();
                 goals.removeAllGoals(mob);
+                return null;
+            }
+            // ── Villager trades ──────────────────────────────────────
+            case "getRecipes" -> {
+                if (!(mob instanceof org.bukkit.entity.AbstractVillager villager)) return UNHANDLED;
+                List<org.bukkit.inventory.MerchantRecipe> recipes = villager.getRecipes();
+                List<Map<String, Object>> result = new ArrayList<>();
+                for (org.bukkit.inventory.MerchantRecipe recipe : recipes) {
+                    result.add(serializeMerchantRecipe(recipe));
+                }
+                return result;
+            }
+            case "getRecipeCount" -> {
+                if (!(mob instanceof org.bukkit.entity.AbstractVillager villager)) return UNHANDLED;
+                return villager.getRecipeCount();
+            }
+            case "setRecipes" -> {
+                if (!(mob instanceof org.bukkit.entity.AbstractVillager villager)) return UNHANDLED;
+                if (args.isEmpty()) return null;
+                @SuppressWarnings("unchecked")
+                List<Map<String, Object>> recipeMaps = (List<Map<String, Object>>) args.get(0);
+                List<org.bukkit.inventory.MerchantRecipe> recipes = new ArrayList<>();
+                for (Map<String, Object> map : recipeMaps) {
+                    org.bukkit.inventory.MerchantRecipe recipe = deserializeMerchantRecipe(map);
+                    if (recipe != null) recipes.add(recipe);
+                }
+                villager.setRecipes(recipes);
+                return null;
+            }
+            case "addRecipe" -> {
+                if (!(mob instanceof org.bukkit.entity.AbstractVillager villager)) return UNHANDLED;
+                if (args.isEmpty()) return null;
+                @SuppressWarnings("unchecked")
+                Map<String, Object> recipeMap = (Map<String, Object>) args.get(0);
+                org.bukkit.inventory.MerchantRecipe recipe = deserializeMerchantRecipe(recipeMap);
+                if (recipe != null) {
+                    List<org.bukkit.inventory.MerchantRecipe> recipes = new ArrayList<>(villager.getRecipes());
+                    recipes.add(recipe);
+                    villager.setRecipes(recipes);
+                }
+                return null;
+            }
+            case "clearRecipes" -> {
+                if (!(mob instanceof org.bukkit.entity.AbstractVillager villager)) return UNHANDLED;
+                villager.setRecipes(new ArrayList<>());
                 return null;
             }
         }

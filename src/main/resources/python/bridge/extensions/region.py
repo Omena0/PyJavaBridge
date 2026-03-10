@@ -79,7 +79,7 @@ class Region:
         from bridge import server
         while True:
             try:
-                online = await server.players
+                online = server.players
                 for region in list(cls._all_regions):
                     for p in online:
                         puuid = str(p.uuid)

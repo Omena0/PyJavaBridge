@@ -154,7 +154,7 @@ class NPC:
                 if npc_loc is None:
                     await server.after(20)
                     continue
-                online = await server.players
+                online = server.players
                 for p in online:
                     puuid = str(p.uuid)
                     try:

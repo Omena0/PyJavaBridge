@@ -134,7 +134,7 @@ class Guild:
         """Send a message to all online guild members."""
         async def _send():
             from bridge import server
-            online = await server.players
+            online = server.players
             for p in online:
                 if str(p.uuid) in self._members:
                     await p.send_message(f"§6[Guild] §f{message}")

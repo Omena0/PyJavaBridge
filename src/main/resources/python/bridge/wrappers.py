@@ -874,6 +874,51 @@ class Villager(Entity):
     def villager_experience(self, value: int):
         self._call("setVillagerExperience", int(value))
 
+    @property
+    def recipes(self) -> list[dict]:
+        """Get the villager's trade recipes."""
+        return self._call_sync("getRecipes")
+
+    @recipes.setter
+    def recipes(self, value: list[dict]):
+        """Set the villager's trade recipes."""
+        self._call("setRecipes", value)
+
+    @property
+    def recipe_count(self) -> int:
+        """Get the number of trade recipes."""
+        return self._call_sync("getRecipeCount")
+
+    def add_recipe(self, result: dict, ingredients: list[dict], max_uses: int = 1,
+                   experience_reward: bool = True, villager_experience: int = 0,
+                   price_multiplier: float = 0.0, demand: int = 0, special_price: int = 0):
+        """Add a trade recipe to this villager.
+
+        Args:
+            result: Serialized ItemStack dict for the result item.
+            ingredients: List of serialized ItemStack dicts (1-2 items).
+            max_uses: Maximum number of uses before the trade locks.
+            experience_reward: Whether the trade rewards experience.
+            villager_experience: Experience given to the villager.
+            price_multiplier: Price multiplier based on demand.
+            demand: Current demand for this trade.
+            special_price: Special price adjustment.
+        """
+        self._call("addRecipe", {
+            "result": result,
+            "ingredients": ingredients,
+            "maxUses": max_uses,
+            "experienceReward": experience_reward,
+            "villagerExperience": villager_experience,
+            "priceMultiplier": price_multiplier,
+            "demand": demand,
+            "specialPrice": special_price,
+        })
+
+    def clear_recipes(self):
+        """Remove all trade recipes from this villager."""
+        self._call("clearRecipes")
+
 
 class ItemFrame(Entity):
     """ItemFrame entity."""

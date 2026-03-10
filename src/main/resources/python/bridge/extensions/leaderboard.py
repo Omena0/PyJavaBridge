@@ -60,7 +60,7 @@ class Leaderboard:
         from bridge import server
         if self._hologram is None or self._get_metric is None:
             return
-        online = await server.players
+        online = server.players
         scores: List[tuple[str, float]] = []
         for p in online:
             try:
