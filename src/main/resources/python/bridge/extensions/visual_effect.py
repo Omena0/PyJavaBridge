@@ -22,6 +22,7 @@ class VisualEffect:
 
         await vfx.trigger(some_location)
     """
+    __slots__ = ("name", "_steps")
 
     def __init__(self, name: str = "effect"):
         """Initialise a new VisualEffect."""

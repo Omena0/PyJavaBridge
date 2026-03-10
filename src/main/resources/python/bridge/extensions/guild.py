@@ -149,13 +149,16 @@ class Guild:
 
     def broadcast(self, message: str):
         """Send a message to all online guild members."""
+        member_set = self._members
+
         async def _send():
             """Asynchronously handle send."""
             from bridge import server
             online = server.players
+            msg = f"§6[Guild] §f{message}"
             for p in online:
-                if str(p.uuid) in self._members:
-                    await p.send_message(f"§6[Guild] §f{message}")
+                if str(p.uuid) in member_set:
+                    await p.send_message(msg)
 
         asyncio.ensure_future(_send())
 

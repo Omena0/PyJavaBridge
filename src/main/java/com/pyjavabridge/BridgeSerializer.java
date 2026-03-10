@@ -136,7 +136,11 @@ public class BridgeSerializer {
         }
 
         if (value instanceof List<?> list) {
-            return gson.toJsonTree(list.stream().map(item -> serialize(item, seen)).toList());
+            JsonArray arr = new JsonArray(list.size());
+            for (Object item : list) {
+                arr.add(serialize(item, seen));
+            }
+            return arr;
         }
 
         if (value instanceof Map<?, ?> map) {
@@ -465,8 +469,9 @@ public class BridgeSerializer {
         }
 
         if (element.isJsonArray()) {
-            List<Object> list = new ArrayList<>();
-            for (JsonElement child : element.getAsJsonArray()) {
+            var jsonArray = element.getAsJsonArray();
+            List<Object> list = new ArrayList<>(jsonArray.size());
+            for (JsonElement child : jsonArray) {
                 list.add(deserialize(child));
             }
             return list;
@@ -665,9 +670,10 @@ public class BridgeSerializer {
                         }
 
                         if (fields.has("lore") && fields.get("lore").isJsonArray()) {
-                            List<Component> lore = new ArrayList<>();
+                            var loreArr = fields.getAsJsonArray("lore");
+                            List<Component> lore = new ArrayList<>(loreArr.size());
 
-                            for (JsonElement element : fields.getAsJsonArray("lore")) {
+                            for (JsonElement element : loreArr) {
                                 if (!element.isJsonNull()) {
                                     lore.add(Component.text(element.getAsString()));
                                 }
@@ -715,9 +721,10 @@ public class BridgeSerializer {
                 }
 
                 if (fields.has("lore") && fields.get("lore").isJsonArray()) {
-                    List<Component> lore = new ArrayList<>();
+                    var loreArr2 = fields.getAsJsonArray("lore");
+                    List<Component> lore = new ArrayList<>(loreArr2.size());
 
-                    for (JsonElement element : fields.getAsJsonArray("lore")) {
+                    for (JsonElement element : loreArr2) {
                         Object loreObj = deserialize(element);
                         if (loreObj != null) {
                             lore.add(Component.text(loreObj.toString()));
@@ -1007,7 +1014,7 @@ public class BridgeSerializer {
     }
 
     public Map<String, Object> deserializeArgsObject(JsonObject argsObj) {
-        Map<String, Object> options = new HashMap<>();
+        Map<String, Object> options = new HashMap<>(argsObj != null ? argsObj.size() : 4);
 
         if (argsObj != null) {
             for (Map.Entry<String, JsonElement> entry : argsObj.entrySet()) {
@@ -1130,15 +1137,15 @@ public class BridgeSerializer {
     }
 
     List<Map<String, Object>> attributeList(ItemMeta meta) {
-        List<Map<String, Object>> list = new ArrayList<>();
         Multimap<Attribute, AttributeModifier> modifiers = meta.getAttributeModifiers();
         if (modifiers == null) {
-            return list;
+            return List.of();
         }
+        List<Map<String, Object>> list = new ArrayList<>(modifiers.size());
         for (Map.Entry<Attribute, AttributeModifier> entry : modifiers.entries()) {
             Attribute attribute = entry.getKey();
             AttributeModifier modifier = entry.getValue();
-            Map<String, Object> entryMap = new HashMap<>();
+            Map<String, Object> entryMap = new HashMap<>(4);
             if (attribute.getKey() != null) {
                 entryMap.put("attribute", attribute.getKey().toString());
             }

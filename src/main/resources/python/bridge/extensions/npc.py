@@ -163,16 +163,18 @@ class NPC:
                     await server.after(20)
                     continue
 
+                # Cache NPC coords and pre-compute squared range to avoid sqrt per player
+                npc_x, npc_y, npc_z = npc_loc.x, npc_loc.y, npc_loc.z
+                range_sq = self._range * self._range
                 online = server.players
                 for p in online:
                     puuid = str(p.uuid)
                     try:
                         ploc = p.location
-                        dx = ploc.x - npc_loc.x
-                        dy = ploc.y - npc_loc.y
-                        dz = ploc.z - npc_loc.z
-                        dist = (dx * dx + dy * dy + dz * dz) ** 0.5
-                        in_range = dist <= self._range
+                        dx = ploc.x - npc_x
+                        dy = ploc.y - npc_y
+                        dz = ploc.z - npc_z
+                        in_range = (dx * dx + dy * dy + dz * dz) <= range_sq
                     except Exception:
                         in_range = False
 

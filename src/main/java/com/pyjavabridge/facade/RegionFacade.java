@@ -184,7 +184,7 @@ public class RegionFacade {
         double dx = x2 - x1, dy = y2 - y1, dz = z2 - z1;
         double length = Math.sqrt(dx * dx + dy * dy + dz * dz);
         int steps = Math.max(1, (int) Math.ceil(length));
-        Set<Long> placed = new HashSet<>();
+        Set<Long> placed = new HashSet<>(steps + 16);
         int count = 0;
         for (int i = 0; i <= steps; i++) {
             double t = (double) i / steps;
@@ -210,7 +210,7 @@ public class RegionFacade {
      */
     @SuppressWarnings("unchecked")
     public Map<String, String> pasteOperations(World world, List<Object> operations) {
-        Map<String, String> originals = new HashMap<>();
+        Map<String, String> originals = new HashMap<>(operations.size() * 2);
 
         for (Object opObj : operations) {
             List<Object> op = (List<Object>) opObj;

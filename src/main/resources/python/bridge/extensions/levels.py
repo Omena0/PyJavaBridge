@@ -82,9 +82,11 @@ class LevelSystem:
     def add_xp(self, player: Any, amount: float):
         """Add a xp."""
         puuid = self._puuid(player)
-        old_level = self.level_from_xp(self._xp.get(puuid, 0.0))
-        self._xp[puuid] = self._xp.get(puuid, 0.0) + amount
-        new_level = self.level_from_xp(self._xp[puuid])
+        old_xp = self._xp.get(puuid, 0.0)
+        old_level = self.level_from_xp(old_xp)
+        new_xp = old_xp + amount
+        self._xp[puuid] = new_xp
+        new_level = self.level_from_xp(new_xp)
         self._save()
         if new_level > old_level:
             for handler in self._on_level_up:
@@ -109,13 +111,13 @@ class LevelSystem:
     def xp_to_next(self, player: Any) -> float:
         """XP remaining until the next level."""
         current = self.xp(player)
-        next_level = self.level(player) + 1
+        next_level = self.level_from_xp(current) + 1
         return max(0.0, self.xp_for_level(next_level) - current)
 
     def progress(self, player: Any) -> float:
         """Progress through the current level (0.0 – 1.0)."""
         current_xp = self.xp(player)
-        lvl = self.level(player)
+        lvl = self.level_from_xp(current_xp)
         floor = self.xp_for_level(lvl)
         ceiling = self.xp_for_level(lvl + 1)
         span = ceiling - floor

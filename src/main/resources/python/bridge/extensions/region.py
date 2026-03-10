@@ -87,12 +87,28 @@ class Region:
         while True:
             try:
                 online = server.players
+                # Pre-fetch all player locations once per tick (avoid repeated bridge calls)
+                player_data: list[tuple[Any, str, Any]] = []
+                for p in online:
+                    try:
+                        player_data.append((p, str(p.uuid), p.location))
+                    except Exception:
+                        pass
+
                 for region in list(cls._all_regions):
-                    for p in online:
-                        puuid = str(p.uuid)
+                    rx1, ry1, rz1 = region.x1, region.y1, region.z1
+                    rx2, ry2, rz2 = region.x2, region.y2, region.z2
+                    rworld = region._world
+                    for p, puuid, loc in player_data:
                         try:
-                            loc = p.location
-                            inside = region.contains(loc)
+                            x = loc.x if hasattr(loc, "x") else loc[0]
+                            y = loc.y if hasattr(loc, "y") else loc[1]
+                            z = loc.z if hasattr(loc, "z") else loc[2]
+                            w = loc.world.name if hasattr(loc, "world") and hasattr(loc.world, "name") else None
+                            if w is not None and w != rworld:
+                                inside = False
+                            else:
+                                inside = (rx1 <= x <= rx2 and ry1 <= y <= ry2 and rz1 <= z <= rz2)
                         except Exception:
                             inside = False
 

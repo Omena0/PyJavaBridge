@@ -11,6 +11,7 @@ class State:
     Args:
         name: Unique state identifier.
     """
+    __slots__ = ("name", "_on_enter", "_on_exit", "_on_tick", "_transitions")
 
     def __init__(self, name: str):
         """Initialise a new State."""
@@ -78,6 +79,8 @@ class StateMachine:
         await sm.trigger(boss_entity, "aggro")   # idle -> combat
         await sm.trigger(boss_entity, "die")      # combat -> dead
     """
+    __slots__ = ("name", "_states", "_initial", "_current",
+                 "_tick_task", "_tick_interval", "_attached")
 
     def __init__(self, name: str = "state_machine"):
         """Initialise a new StateMachine."""

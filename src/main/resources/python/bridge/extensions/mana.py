@@ -157,20 +157,27 @@ class ManaStore:
         """Asynchronously handle regen loop."""
         from bridge import server
         while True:
-            for puuid in list(self._mana.keys()):
-                rate = self._regen_rate.get(puuid, self.default_regen_rate)
-                current = self._mana.get(puuid, 0.0)
-                cap = self._max_mana.get(puuid, self.default_max_mana)
+            mana = self._mana
+            max_mana = self._max_mana
+            regen_rate = self._regen_rate
+            bars = self._bars
+            default_rate = self.default_regen_rate
+            default_max = self.default_max_mana
+            for puuid in list(mana):
+                rate = regen_rate.get(puuid, default_rate)
+                current = mana.get(puuid, 0.0)
+                cap = max_mana.get(puuid, default_max)
                 if current < cap:
-                    self._mana[puuid] = min(current + rate, cap)
-                    if puuid in self._bars:
+                    new_val = min(current + rate, cap)
+                    mana[puuid] = new_val
+                    bar = bars.get(puuid)
+                    if bar is not None:
                         try:
-                            bar = self._bars[puuid]
                             bar.max = cap
-                            bar.value = self._mana[puuid]
-                            bar.text = f"§bMana: {int(self._mana[puuid])}/{int(cap)}"
+                            bar.value = new_val
+                            bar.text = f"§bMana: {int(new_val)}/{int(cap)}"
                         except Exception:
-                            self._bars.pop(puuid, None)
+                            bars.pop(puuid, None)
 
             try:
                 await server.after(20)  # tick every second

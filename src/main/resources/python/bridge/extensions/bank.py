@@ -78,10 +78,18 @@ class Bank:
 
     def transfer(self, source: Any, target: Any, amount: int) -> bool:
         """Transfer a value."""
-        if not self.withdraw(source, amount):
+        # Inline withdraw to avoid double _save
+        src_uuid = self._puuid(source)
+        current = self._balances.get(src_uuid, 0)
+        if amount <= 0 or current < amount:
             return False
 
-        self.deposit(target, amount)
+        tgt_uuid = self._puuid(target)
+        self._balances[src_uuid] = current - amount
+        self._balances[tgt_uuid] = self._balances.get(tgt_uuid, 0) + amount
+        self._save()
+        self._fire_transaction(source, "withdraw", amount)
+        self._fire_transaction(target, "deposit", amount)
         return True
 
     def set_balance(self, player: Any, amount: int):

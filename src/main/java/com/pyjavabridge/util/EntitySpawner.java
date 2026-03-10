@@ -198,7 +198,7 @@ public class EntitySpawner {
                     + " exceeds maximum of " + MAX_IMAGE_PIXELS);
         }
 
-        List<Entity> spawned = new ArrayList<>();
+        List<Entity> spawned = new ArrayList<>(pixelEntries.size());
         int spawnedViaWorldSpawn = 0;
         int skippedEntries = 0;
         int worldSpawnErrors = 0;

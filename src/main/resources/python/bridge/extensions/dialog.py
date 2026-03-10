@@ -18,6 +18,7 @@ class DialogEntry:
         delay: Auto-advance after this many seconds if no answers, or timeout
                if answers are present but the player doesn't respond.
     """
+    __slots__ = ("speaker", "text", "answers", "delay")
 
     def __init__(
         self,

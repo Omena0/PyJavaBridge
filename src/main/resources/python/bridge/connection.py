@@ -34,11 +34,17 @@ except (ImportError, ModuleNotFoundError):
 
     def _json_dumps(obj: Any) -> bytes:
         """Serialize *obj* to compact JSON bytes via stdlib json."""
-        return json.dumps(obj, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+        return json.dumps(obj, separators=_JSON_SEPARATORS, ensure_ascii=False).encode("utf-8")
 
     def _json_loads(data: Any) -> Any:
         """DeSerialize JSON bytes/str via stdlib json."""
         return json.loads(data)
+
+# Reused constant to avoid recreating the tuple on every call
+_JSON_SEPARATORS = (",", ":")
+
+# Frozenset for O(1) membership checks in _build_call_message
+_RESERVED_KWARGS = frozenset(("field", "value"))
 
 _print = __builtins__["print"] if isinstance(__builtins__, dict) else __builtins__.print  # type: ignore[index]
 
@@ -186,7 +192,7 @@ class BridgeConnection:
             message["target"] = target
 
         if kwargs:
-            extra_args = {k: self._serialize(v) for k, v in kwargs.items() if k not in ("field", "value")}
+            extra_args = {k: self._serialize(v) for k, v in kwargs.items() if k not in _RESERVED_KWARGS}
             if extra_args:
                 message["args"] = extra_args
 
@@ -480,10 +486,25 @@ class BridgeConnection:
 
         elif msg_type == "event_batch":
             event_name = message.get("event")
-            payloads = message.get("payloads", [])
+            for raw_payload in message.get("payloads", []):
+                payload = self._deserialize(raw_payload)
 
-            for payload in payloads:
-                self._handle_message({"type": "event", "event": event_name, "payload": payload})
+                if isinstance(payload, dict) and "event" in payload:
+                    p = cast(Dict[str, Any], payload)
+                    event_obj = p.get("event")
+
+                    if event_obj and isinstance(event_obj, _ProxyBase):
+                        if "id" in p:
+                            event_obj.fields["__event_id__"] = p.get("id")
+
+                        for key, value in p.items():
+                            if key != "event":
+                                event_obj.fields[key] = value
+
+                        payload = event_obj
+
+                if event_name is not None:
+                    asyncio.create_task(self._dispatch_event(event_name, payload))
 
         elif msg_type == "tab_complete":
             asyncio.create_task(self._handle_tab_complete(message))
@@ -646,7 +667,7 @@ class BridgeConnection:
         return next(self._id_counter)
 
     def _serialize(self, value: Any) -> Any:
-        """Convert a Python value into its JSON-serialisable bridge representation."""
+        """Convert a Python value into its JSON-serializable bridge representation."""
         if isinstance(value, _ProxyBase):
             if value._handle is not None:
                 return {"__handle__": value._handle}
@@ -687,7 +708,8 @@ class BridgeConnection:
                 assert _enum_from_fn is not None
                 return _enum_from_fn(d["__enum__"], d["name"])
 
-            if _XYZ_KEYS.issubset(d.keys()):
+            # Faster than _XYZ_KEYS.issubset(d.keys()) — avoids view creation
+            if "x" in d and "y" in d and "z" in d:
                 return SimpleNamespace(**{k: self._deserialize(v) for k, v in d.items()})
 
             return {k: self._deserialize(v) for k, v in d.items()}

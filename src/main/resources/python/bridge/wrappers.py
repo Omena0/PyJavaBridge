@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 import inspect
+import math
 import sys
 import uuid
 from types import SimpleNamespace
@@ -671,7 +672,6 @@ class Entity(ProxyBase):
     @property
     def look_direction(self) -> Vector:
         """Normalized direction vector from the entity's yaw and pitch."""
-        import math
         loc = self._call_sync("getLocation")
         yaw = math.radians(float(loc.yaw)) if loc else 0.0
         pitch = math.radians(float(loc.pitch)) if loc else 0.0

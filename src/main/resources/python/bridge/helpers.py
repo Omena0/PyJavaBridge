@@ -43,6 +43,7 @@ def print(*args):
 
 class ConsolePlayer:
     """Fake player wrapper for console command senders."""
+    __slots__ = ("_sender", "fields")
 
     def __init__(self, sender_obj: Any):
         """Wrap *sender_obj* with player-like fields."""
@@ -103,6 +104,7 @@ class Sidebar:
 
     _ENTRIES = [f"\u00a7{c}" for c in "0123456789abcdef"]
     MAX_LINES = len(_ENTRIES)
+    __slots__ = ("_board", "_obj", "_teams", "_lines")
 
     def __init__(self, title: str = ""):
         """Create a sidebar scoreboard with the given title."""
@@ -318,6 +320,7 @@ class State:
     """Simple persistent key-value store that survives script reloads."""
 
     _instances: list[weakref.ref] = []
+    __slots__ = ("_path", "_data")
 
     def __init__(self, name: Optional[str] = None):
         """Create or load a persistent state file for the current script."""
@@ -405,6 +408,7 @@ class State:
 
 class Cooldown:
     """Per-player cooldown tracker."""
+    __slots__ = ("seconds", "on_expire", "_expiry", "_task_started")
 
     def __init__(
             self, seconds: float = 1.0,
@@ -427,7 +431,8 @@ class Cooldown:
         """Return True if the cooldown has expired (and reset it), False otherwise."""
         uid = self._get_uuid(player)
         now = time.time()
-        if uid in self._expiry and now < self._expiry[uid]:
+        exp = self._expiry.get(uid)
+        if exp is not None and now < exp:
             return False
 
         self._expiry[uid] = now + self.seconds
@@ -439,10 +444,11 @@ class Cooldown:
     def remaining(self, player: Any) -> float:
         """Return the seconds remaining on a player's cooldown."""
         uid = self._get_uuid(player)
-        if uid not in self._expiry:
+        exp = self._expiry.get(uid)
+        if exp is None:
             return 0.0
 
-        left = self._expiry[uid] - time.time()
+        left = exp - time.time()
         return max(0.0, left)
 
     def reset(self, player: Any):
@@ -480,6 +486,7 @@ class Cooldown:
 
 class Hologram:
     """Floating text display using a TextDisplay entity."""
+    __slots__ = ("_lines", "_entity")
 
     def __init__(
             self, location: Any, *lines: str,
@@ -606,6 +613,7 @@ class Hologram:
 
 class ActionBarDisplay:
     """Persistent action bar text that auto-refreshes."""
+    __slots__ = ("_texts", "_players", "_task_started")
 
     def __init__(self):
         """Create an action bar display manager."""
@@ -665,6 +673,7 @@ class ActionBarDisplay:
 
 class BossBarDisplay:
     """Convenient boss bar display with value/max support and cooldown linking."""
+    __slots__ = ("_bar", "_value", "_max", "_linked_task_started")
 
     def __init__(
             self, title: str = "", color: str = "PINK",
@@ -795,6 +804,7 @@ class BossBarDisplay:
 
 class BlockDisplay:
     """Block display entity wrapper."""
+    __slots__ = ("_entity",)
 
     def __init__(
             self, location: Any, block_type: str,
@@ -835,6 +845,7 @@ class BlockDisplay:
 
 class ItemDisplay:
     """Item display entity wrapper."""
+    __slots__ = ("_entity",)
 
     def __init__(
             self, location: Any, item: Any,
@@ -878,6 +889,7 @@ class ItemDisplay:
 
 class Menu:
     """Interactive chest GUI menu with click handlers."""
+    __slots__ = ("_title", "_rows", "_items")
 
     def __init__(self, title: str = "", rows: int = 3):
         """Create a new menu with the given title and row count."""
@@ -947,6 +959,7 @@ class MenuItem:
 
 class Paginator(Menu):
     """Menu subclass with multiple pages and navigation buttons."""
+    __slots__ = ("_pages", "_page_index")
 
     def __init__(
         self, title: str = "", rows: int = 3,

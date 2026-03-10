@@ -32,6 +32,7 @@ class PlaceholderRegistry:
         msg = placeholders.resolve("Hello %player_name%! HP: %player_health%", player)
         # -> "Hello Steve! HP: 20.0"
     """
+    __slots__ = ("_placeholders",)
 
     def __init__(self):
         """Initialise a new PlaceholderRegistry."""

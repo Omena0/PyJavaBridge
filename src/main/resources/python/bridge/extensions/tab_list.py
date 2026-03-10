@@ -15,6 +15,7 @@ class TabEntry:
         skin: Optional skin texture value (base64).
         game_mode: Game mode shown. Default "SURVIVAL".
     """
+    __slots__ = ("name", "ping", "skin", "game_mode")
 
     def __init__(self, name: str, ping: int = 0, skin: Optional[str] = None,
             game_mode: str = "SURVIVAL"):
@@ -32,6 +33,7 @@ class TabGroup:
         prefix: Text prefix prepended to all entries in this group.
         priority: Sorting priority (lower = higher in list). Default 0.
     """
+    __slots__ = ("name", "prefix", "priority", "_entries")
 
     def __init__(self, name: str, prefix: str = "", priority: int = 0):
         """Initialise a new TabGroup."""
@@ -133,7 +135,7 @@ class TabList:
     def _resolve_templates(self, text: str, player, server) -> str:
         """Replace {template_name} placeholders in text."""
         for name, func in self._templates.items():
-            placeholder = "{" + name + "}"
+            placeholder = f"{{{name}}}"
             if placeholder in text:
                 try:
                     text = text.replace(placeholder, str(func(player, server)))

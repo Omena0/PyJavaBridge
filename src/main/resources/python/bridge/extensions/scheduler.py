@@ -16,6 +16,8 @@ class ScheduledTask:
         delay: Initial delay in seconds before first run.
         repeat: Whether to repeat. Default True for interval tasks.
     """
+    __slots__ = ("name", "handler", "interval", "delay", "repeat",
+                 "_cancelled", "_task", "_run_count", "_last_run")
 
     def __init__(self, name: str, handler: Callable[..., Any],
             interval: float = 0, delay: float = 0,
@@ -85,6 +87,7 @@ class Scheduler:
         # Start all tasks
         sched.start()
     """
+    __slots__ = ("_tasks", "_running")
 
     def __init__(self):
         """Initialise a new Scheduler."""

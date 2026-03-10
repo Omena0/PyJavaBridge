@@ -18,6 +18,9 @@ class Quest:
         description: Quest description text.
         time_limit: Optional time limit in seconds.
     """
+    __slots__ = ("name", "description", "time_limit", "_status",
+                 "_start_times", "_end_times", "_on_complete",
+                 "_progress_getter", "_bar")
 
     def __init__(self, name: str, description: str = "",
             time_limit: Optional[float] = None):
@@ -140,9 +143,10 @@ class Quest:
         from bridge import server
         puuid = str(player.uuid)
         start = self._start_times.get(puuid, time.time())
-        while self._status.get(puuid) == "active":
-            elapsed = time.time() - start
-            if elapsed >= self.time_limit:  # type: ignore[operator]
+        limit = self.time_limit
+        status = self._status
+        while status.get(puuid) == "active":
+            if time.time() - start >= limit:  # type: ignore[operator]
                 self.fail(player)
                 break
 
@@ -158,6 +162,7 @@ class QuestTree:
         tree: List of quest layers. Each layer is a list of Quest objects.
               All quests in a layer must be completed to unlock the next layer.
     """
+    __slots__ = ("_tree",)
 
     def __init__(self, tree: List[List[Quest] | Quest]):
         """Initialise a new QuestTree."""

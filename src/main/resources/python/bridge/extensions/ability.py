@@ -68,11 +68,14 @@ class Ability:
     def use(self, player: Any):
         """Attempt to use the ability. Returns True if used successfully."""
         puuid = str(player.uuid)
-        remaining = self.remaining_cooldown(player)
-        if remaining > 0:
-            msg = self.cooldown_msg.format(remaining=remaining, name=self.name)
-            asyncio.ensure_future(player.send_message(msg))
-            return False
+        now = time.time()
+        last = self._last_used.get(puuid)
+        if last is not None:
+            remaining = self.cooldown - (now - last)
+            if remaining > 0:
+                msg = self.cooldown_msg.format(remaining=remaining, name=self.name)
+                asyncio.ensure_future(player.send_message(msg))
+                return False
 
         if self._can_use_handler is not None:
             if not self._can_use_handler(self, player):

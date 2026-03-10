@@ -50,7 +50,8 @@ class Shop:
         from bridge.helpers import _register_menu_events, _open_menus, Menu, MenuItem
 
         usable = (self._rows - 1) * 9
-        total_pages = max(1, (len(self._items) + usable - 1) // usable)
+        n_items = len(self._items)
+        total_pages = max(1, (n_items + usable - 1) // usable)
         page = max(0, min(page, total_pages - 1))
 
         puuid = str(player.uuid)

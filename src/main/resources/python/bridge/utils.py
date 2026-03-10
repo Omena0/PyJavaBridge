@@ -22,8 +22,10 @@ def _bound_uuid_cache() -> None:
     """Evict the oldest quarter of the UUID cache when it exceeds the limit."""
     if len(_player_uuid_cache) >= _PLAYER_UUID_CACHE_MAX:
         keys = list(_player_uuid_cache.keys())
-        for k in keys[:len(keys) // 4]:
-            del _player_uuid_cache[k]
+        # Delete in-place via islice to avoid second list allocation
+        count = len(keys) // 4
+        for i in range(count):
+            del _player_uuid_cache[keys[i]]
 
 def _extract_xyz(pos: tuple[int] | Any) -> tuple:
     """Extract (x, y, z) from a Location, Vector, tuple, list, or namespace."""
@@ -36,41 +38,43 @@ def _extract_xyz(pos: tuple[int] | Any) -> tuple:
 
     raise BridgeError(f"Cannot extract (x, y, z) from {type(pos).__name__}")
 
+# Module-level constant: avoids recreating this dict on every Java enum deserialization
+_ENUM_TYPE_MAPPING: Dict[str, type] = {
+    "org.bukkit.Material": Material,
+    "org.bukkit.block.Biome": Biome,
+    "org.bukkit.GameMode": GameMode,
+    "org.bukkit.Sound": Sound,
+    "org.bukkit.Particle": Particle,
+    "org.bukkit.Difficulty": Difficulty,
+    "org.bukkit.attribute.Attribute": AttributeType,
+    "org.bukkit.boss.BarColor": BarColor,
+    "org.bukkit.boss.BarStyle": BarStyle,
+    "org.bukkit.entity.EntityType": EntityType,
+    "org.bukkit.potion.PotionEffectType": EffectType,
+    "org.bukkit.event.entity.EntityDamageEvent.DamageCause": DamageCause,
+    "org.bukkit.enchantments.Enchantment": Enchantment,
+    "org.bukkit.inventory.ItemFlag": ItemFlag,
+    "org.bukkit.inventory.EquipmentSlot": EquipmentSlot,
+    "org.bukkit.DyeColor": DyeColor,
+    "org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason": SpawnReason,
+    "org.bukkit.entity.EntityCategory": EntityCategory,
+    "org.bukkit.entity.Pose": EntityPose,
+    "org.bukkit.block.BlockFace": BlockFace,
+    "org.bukkit.TreeType": TreeType,
+    "org.bukkit.WeatherType": WeatherType,
+    "org.bukkit.WorldType": WorldType,
+    "org.bukkit.event.block.Action": Action,
+    "org.bukkit.ChatColor": ChatColor,
+    "org.bukkit.event.EventPriority": EventPriority,
+    "org.bukkit.event.player.PlayerTeleportEvent.TeleportCause": TeleportCause,
+    "org.bukkit.event.inventory.InventoryType": InventoryType,
+    "org.bukkit.entity.Display.Billboard": Billboard,
+    "org.bukkit.boss.BarFlag": BarFlag,
+}
+
 def _enum_from(type_name: str, name: str) -> EnumValue:
     """Look up or create the correct EnumValue subclass for a Java enum type."""
-    mapping: Dict[str, type] = {
-        "org.bukkit.Material": Material,
-        "org.bukkit.block.Biome": Biome,
-        "org.bukkit.GameMode": GameMode,
-        "org.bukkit.Sound": Sound,
-        "org.bukkit.Particle": Particle,
-        "org.bukkit.Difficulty": Difficulty,
-        "org.bukkit.attribute.Attribute": AttributeType,
-        "org.bukkit.boss.BarColor": BarColor,
-        "org.bukkit.boss.BarStyle": BarStyle,
-        "org.bukkit.entity.EntityType": EntityType,
-        "org.bukkit.potion.PotionEffectType": EffectType,
-        "org.bukkit.event.entity.EntityDamageEvent.DamageCause": DamageCause,
-        "org.bukkit.enchantments.Enchantment": Enchantment,
-        "org.bukkit.inventory.ItemFlag": ItemFlag,
-        "org.bukkit.inventory.EquipmentSlot": EquipmentSlot,
-        "org.bukkit.DyeColor": DyeColor,
-        "org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason": SpawnReason,
-        "org.bukkit.entity.EntityCategory": EntityCategory,
-        "org.bukkit.entity.Pose": EntityPose,
-        "org.bukkit.block.BlockFace": BlockFace,
-        "org.bukkit.TreeType": TreeType,
-        "org.bukkit.WeatherType": WeatherType,
-        "org.bukkit.WorldType": WorldType,
-        "org.bukkit.event.block.Action": Action,
-        "org.bukkit.ChatColor": ChatColor,
-        "org.bukkit.event.EventPriority": EventPriority,
-        "org.bukkit.event.player.PlayerTeleportEvent.TeleportCause": TeleportCause,
-        "org.bukkit.event.inventory.InventoryType": InventoryType,
-        "org.bukkit.entity.Display.Billboard": Billboard,
-        "org.bukkit.boss.BarFlag": BarFlag,
-    }
-    enum_cls = mapping.get(type_name, EnumValue)
+    enum_cls = _ENUM_TYPE_MAPPING.get(type_name, EnumValue)
     return enum_cls(type_name, name)
 
 # Lazy-init proxy dispatch table (avoids re-importing and re-creating dict per call)
@@ -237,22 +241,23 @@ def _toml_dumps(data: Dict[str, Any]) -> str:
 
 def _toml_write_table(data: Dict[str, Any], path: List[str], lines: List[str]):
     """Recursively write TOML table entries into *lines*."""
+    # Single-pass: separate scalars from sub-tables to avoid double iteration
+    sub_tables: List[tuple[str, Any]] = []
     for key, value in data.items():
         if value is None:
             continue
 
         if isinstance(value, dict):
+            sub_tables.append((key, value))
             continue
 
         if isinstance(value, list) and value and isinstance(value[0], dict):
+            sub_tables.append((key, value))
             continue
 
         lines.append(f"{_toml_key(key)} = {_toml_value(value)}")
 
-    for key, value in data.items():
-        if value is None:
-            continue
-
+    for key, value in sub_tables:
         if isinstance(value, dict):
             sub_path = path + [key]
             if lines and lines[-1] != "":

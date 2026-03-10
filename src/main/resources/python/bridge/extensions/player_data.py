@@ -17,6 +17,7 @@ class PlayerDataStore:
     """
 
     _DATA_DIR = "plugins/PyJavaBridge/playerdata"
+    __slots__ = ("name", "_data", "_dir")
 
     def __init__(self, name: str = "default"):
         """Initialise a new PlayerDataStore."""
@@ -100,6 +101,7 @@ class PlayerDataStore:
 
 class _PlayerView:
     """Proxy returned by ``store[player]`` for dict-like field access."""
+    __slots__ = ("_store", "_key")
 
     def __init__(self, store: PlayerDataStore, key: str):
         """Initialise a new _PlayerView."""

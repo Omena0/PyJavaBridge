@@ -392,11 +392,11 @@ public class BridgeInstance {
 
         Map<Integer, List<String>> completions = null;
         if (message.has("completions")) {
-            completions = new java.util.HashMap<>();
+            completions = new java.util.HashMap<>(16);
             JsonObject compObj = message.getAsJsonObject("completions");
             for (var entry : compObj.entrySet()) {
                 int index = Integer.parseInt(entry.getKey());
-                List<String> values = new ArrayList<>();
+                List<String> values = new ArrayList<>(entry.getValue().getAsJsonArray().size());
                 for (var el : entry.getValue().getAsJsonArray()) {
                     values.add(el.getAsString());
                 }
@@ -415,7 +415,9 @@ public class BridgeInstance {
 
         List<String> results = new ArrayList<>();
         if (message.has("results") && message.get("results").isJsonArray()) {
-            for (var el : message.getAsJsonArray("results")) {
+            var arr = message.getAsJsonArray("results");
+            results = new ArrayList<>(arr.size());
+            for (var el : arr) {
                 results.add(el.getAsString());
             }
         }
@@ -477,7 +479,7 @@ public class BridgeInstance {
             if (hasId) sendError(id, "remove_entities requires handles array", null);
             return;
         }
-        List<Integer> handles = new ArrayList<>();
+        List<Integer> handles = new ArrayList<>(handlesEl.getAsJsonArray().size());
         for (JsonElement el : handlesEl.getAsJsonArray()) {
             handles.add(el.getAsInt());
         }
@@ -591,8 +593,9 @@ public class BridgeInstance {
     private void handleRelease(JsonObject message) {
         JsonElement handlesEl = message.get("handles");
         if (handlesEl != null && handlesEl.isJsonArray()) {
-            List<Integer> ids = new ArrayList<>();
-            for (JsonElement el : handlesEl.getAsJsonArray()) {
+            var idArray = handlesEl.getAsJsonArray();
+            List<Integer> ids = new ArrayList<>(idArray.size());
+            for (JsonElement el : idArray) {
                 ids.add(el.getAsInt());
             }
             registry.releaseAll(ids);
@@ -807,10 +810,11 @@ public class BridgeInstance {
     private void handleCallBatch(JsonObject message, long startNano) {
 
         boolean atomic = message.has("atomic") && message.get("atomic").getAsBoolean();
-        List<JsonObject> calls = new ArrayList<>();
+        var msgArray = message.has("messages") ? message.getAsJsonArray("messages") : null;
+        List<JsonObject> calls = new ArrayList<>(msgArray != null ? msgArray.size() : 4);
 
-        if (message.has("messages")) {
-            for (JsonElement element : message.getAsJsonArray("messages")) {
+        if (msgArray != null) {
+            for (JsonElement element : msgArray) {
                 if (element.isJsonObject()) {
                     calls.add(element.getAsJsonObject());
                 }
@@ -844,8 +848,8 @@ public class BridgeInstance {
 
     private void executeBatchCalls(List<JsonObject> calls, boolean atomic, long startNano) {
         if (atomic) {
-            List<JsonObject> responses = new ArrayList<>();
-            List<Integer> ids = new ArrayList<>();
+            List<JsonObject> responses = new ArrayList<>(calls.size());
+            List<Integer> ids = new ArrayList<>(calls.size());
             boolean failed = false;
             int failedId = -1;
             Exception failedEx = null;
@@ -895,7 +899,7 @@ public class BridgeInstance {
             return;
         }
 
-        List<JsonObject> batchResponses = new ArrayList<>();
+        List<JsonObject> batchResponses = new ArrayList<>(calls.size());
         for (JsonObject callMessage : calls) {
             int id = callMessage.get("id").getAsInt();
 
@@ -993,10 +997,11 @@ public class BridgeInstance {
 
         JsonObject argsObj = message.has("args") ? message.getAsJsonObject("args") : EMPTY_JSON_OBJ;
 
-        List<Object> args = new ArrayList<>();
+        var argsList = message.has("args_list") ? message.getAsJsonArray("args_list") : null;
+        List<Object> args = new ArrayList<>(argsList != null ? argsList.size() : 4);
 
-        if (message.has("args_list")) {
-            for (JsonElement element : message.getAsJsonArray("args_list")) {
+        if (argsList != null) {
+            for (JsonElement element : argsList) {
                 args.add(serializer.deserialize(element));
             }
         }
@@ -1113,7 +1118,7 @@ public class BridgeInstance {
     private Map<String, Object> serializeMerchantRecipe(org.bukkit.inventory.MerchantRecipe recipe) {
         Map<String, Object> map = new java.util.LinkedHashMap<>();
         map.put("result", recipe.getResult().serialize());
-        List<Map<String, Object>> ingredients = new ArrayList<>();
+        List<Map<String, Object>> ingredients = new ArrayList<>(recipe.getIngredients().size());
         for (ItemStack ingredient : recipe.getIngredients()) {
             ingredients.add(ingredient.serialize());
         }
@@ -1153,7 +1158,7 @@ public class BridgeInstance {
         // Deserialize ingredients
         Object ingredientsObj = map.get("ingredients");
         if (ingredientsObj instanceof List<?> ingredientsList) {
-            List<ItemStack> ingredients = new ArrayList<>();
+            List<ItemStack> ingredients = new ArrayList<>(ingredientsList.size());
             for (Object ingObj : ingredientsList) {
                 if (ingObj instanceof Map<?, ?> ingMap) {
                     ItemStack ing = ItemStack.deserialize(toStringKeyMap(ingMap));
@@ -1312,7 +1317,7 @@ public class BridgeInstance {
             return world.getChunkAtAsync(cx, cz);
         }
         if ("batchSpawn".equals(method) && !args.isEmpty() && args.get(0) instanceof List<?> batch) {
-            List<Entity> spawned = new ArrayList<>();
+            List<Entity> spawned = new ArrayList<>(batch.size());
             for (Object entry : batch) {
                 if (entry instanceof Map<?, ?> spec) {
                     Object locObj = spec.get("location");
@@ -1379,7 +1384,7 @@ public class BridgeInstance {
             BlockState state = block.getState();
             if (state instanceof Sign sign) {
                 SignSide side = sign.getSide(Side.FRONT);
-                List<String> lines = new ArrayList<>();
+                List<String> lines = new ArrayList<>(4);
                 for (int i = 0; i < 4; i++) {
                     lines.add(PlainTextComponentSerializer.plainText().serialize(side.line(i)));
                 }
@@ -1391,7 +1396,7 @@ public class BridgeInstance {
             BlockState state = block.getState();
             if (state instanceof Sign sign) {
                 SignSide side = sign.getSide(Side.BACK);
-                List<String> lines = new ArrayList<>();
+                List<String> lines = new ArrayList<>(4);
                 for (int i = 0; i < 4; i++) {
                     lines.add(PlainTextComponentSerializer.plainText().serialize(side.line(i)));
                 }
@@ -1525,9 +1530,9 @@ public class BridgeInstance {
         }
         if ("getDrops".equals(method)) {
             if (!args.isEmpty() && args.get(0) instanceof ItemStack tool) {
-                return new ArrayList<>(block.getDrops(tool));
+                return List.copyOf(block.getDrops(tool));
             }
-            return new ArrayList<>(block.getDrops());
+            return List.copyOf(block.getDrops());
         }
         if ("getHardness".equals(method)) {
             return block.getType().getHardness();
@@ -1924,7 +1929,7 @@ public class BridgeInstance {
             case "getGoalTypes" -> {
                 com.destroystokyo.paper.entity.ai.MobGoals goals = Bukkit.getMobGoals();
                 var allGoals = goals.getAllGoals(mob);
-                List<String> names = new ArrayList<>();
+                List<String> names = new ArrayList<>(allGoals.size());
                 for (var goal : allGoals) {
                     names.add(goal.getKey().getNamespacedKey().getKey());
                 }
@@ -1953,7 +1958,7 @@ public class BridgeInstance {
             case "getRecipes" -> {
                 if (!(mob instanceof org.bukkit.entity.AbstractVillager villager)) return UNHANDLED;
                 List<org.bukkit.inventory.MerchantRecipe> recipes = villager.getRecipes();
-                List<Map<String, Object>> result = new ArrayList<>();
+                List<Map<String, Object>> result = new ArrayList<>(recipes.size());
                 for (org.bukkit.inventory.MerchantRecipe recipe : recipes) {
                     result.add(serializeMerchantRecipe(recipe));
                 }
@@ -1968,7 +1973,7 @@ public class BridgeInstance {
                 if (args.isEmpty()) return null;
                 @SuppressWarnings("unchecked")
                 List<Map<String, Object>> recipeMaps = (List<Map<String, Object>>) args.get(0);
-                List<org.bukkit.inventory.MerchantRecipe> recipes = new ArrayList<>();
+                List<org.bukkit.inventory.MerchantRecipe> recipes = new ArrayList<>(recipeMaps.size());
                 for (Map<String, Object> map : recipeMaps) {
                     org.bukkit.inventory.MerchantRecipe recipe = deserializeMerchantRecipe(map);
                     if (recipe != null) recipes.add(recipe);
@@ -1991,7 +1996,7 @@ public class BridgeInstance {
             }
             case "clearRecipes" -> {
                 if (!(mob instanceof org.bukkit.entity.AbstractVillager villager)) return UNHANDLED;
-                villager.setRecipes(new ArrayList<>());
+                villager.setRecipes(List.of());
                 return null;
             }
         }
@@ -2020,7 +2025,7 @@ public class BridgeInstance {
                     if (lore == null) {
                         return List.of();
                     }
-                    List<String> loreText = new ArrayList<>();
+                    List<String> loreText = new ArrayList<>(lore.size());
                     for (Component component : lore) {
                         loreText.add(PlainTextComponentSerializer.plainText().serialize(component));
                     }
@@ -2031,13 +2036,16 @@ public class BridgeInstance {
             case "setLore" -> {
                 if (meta != null && !args.isEmpty()) {
                     Object loreArg = args.get(0);
-                    List<Component> loreComponents = new ArrayList<>();
+                    List<Component> loreComponents;
                     if (loreArg instanceof List<?> loreList) {
+                        loreComponents = new ArrayList<>(loreList.size());
                         for (Object entry : loreList) {
                             if (entry != null) {
                                 loreComponents.add(Component.text(entry.toString()));
                             }
                         }
+                    } else {
+                        loreComponents = List.of();
                     }
                     meta.lore(loreComponents);
                     itemStack.setItemMeta(meta);
@@ -2134,8 +2142,9 @@ public class BridgeInstance {
             }
             case "getItemFlags" -> {
                 if (meta != null) {
-                    List<String> flags = new ArrayList<>();
-                    for (ItemFlag f : meta.getItemFlags()) {
+                    var itemFlags = meta.getItemFlags();
+                    List<String> flags = new ArrayList<>(itemFlags.size());
+                    for (ItemFlag f : itemFlags) {
                         flags.add(f.name());
                     }
                     return flags;
@@ -2202,7 +2211,7 @@ public class BridgeInstance {
             return Bukkit.removeRecipe(new NamespacedKey(plugin, key));
         }
         if ("getAllEnchantments".equals(method)) {
-            List<String> names = new ArrayList<>();
+            List<String> names = new ArrayList<>(40);
             Registry<org.bukkit.enchantments.Enchantment> enchReg = RegistryAccess.registryAccess().getRegistry(RegistryKey.ENCHANTMENT);
             for (org.bukkit.enchantments.Enchantment ench : enchReg) {
                 names.add(ench.getKey().getKey().toUpperCase());
@@ -2213,7 +2222,7 @@ public class BridgeInstance {
             String materialName = String.valueOf(args.get(0)).toUpperCase();
             Material mat = Material.valueOf(materialName);
             ItemStack testItem = new ItemStack(mat);
-            List<String> names = new ArrayList<>();
+            List<String> names = new ArrayList<>(16);
             Registry<org.bukkit.enchantments.Enchantment> enchReg2 = RegistryAccess.registryAccess().getRegistry(RegistryKey.ENCHANTMENT);
             for (org.bukkit.enchantments.Enchantment ench : enchReg2) {
                 if (ench.canEnchantItem(testItem)) {
@@ -2333,7 +2342,7 @@ public class BridgeInstance {
         }
         if ("listStructures".equals(method)) {
             Map<NamespacedKey, org.bukkit.structure.Structure> all = Bukkit.getStructureManager().getStructures();
-            List<String> names = new ArrayList<>();
+            List<String> names = new ArrayList<>(all.size());
             for (NamespacedKey k : all.keySet()) {
                 names.add(k.getKey());
             }
@@ -2677,7 +2686,7 @@ public class BridgeInstance {
     }
 
     private boolean tryTabListSetter(Player player, Object header, Object footer, Boolean headerOnly) {
-        List<String> methods = new ArrayList<>();
+        List<String> methods = new ArrayList<>(3);
 
         if (headerOnly == null) {
             methods.add("setPlayerListHeaderFooter");
@@ -2896,7 +2905,7 @@ public class BridgeInstance {
     }
 
     private void startPythonProcess() {
-        List<String> command = new ArrayList<>();
+        List<String> command = new ArrayList<>(4);
 
         String python = resolvePythonExecutable();
 

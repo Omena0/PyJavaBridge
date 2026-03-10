@@ -165,7 +165,7 @@ class ScriptCommand extends Command {
         }
         if (options == null) return List.of();
 
-        List<String> results = new ArrayList<>();
+        List<String> results = new ArrayList<>(options.size());
         for (String option : options) {
             if (option.startsWith(partial)) {
                 results.add(option);

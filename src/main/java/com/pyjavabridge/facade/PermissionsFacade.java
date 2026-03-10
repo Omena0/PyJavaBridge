@@ -191,7 +191,7 @@ public class PermissionsFacade {
             }
             Object nodes = user.getClass().getMethod("getNodes").invoke(user);
             if (!(nodes instanceof Iterable<?> iterable)) { return List.of(); }
-            List<String> groups = new ArrayList<>();
+            List<String> groups = new ArrayList<>(16);
             for (Object node : iterable) {
                 if (inheritanceNodeClass.isInstance(node)) {
                     Object name = inheritanceNodeClass.getMethod("getGroupName").invoke(node);

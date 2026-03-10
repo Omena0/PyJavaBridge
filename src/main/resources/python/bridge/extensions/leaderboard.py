@@ -17,6 +17,8 @@ class Leaderboard:
         max_entries: Number of entries to show.
     """
 
+    _MEDALS = ("§6", "§7", "§c")
+
     def __init__(self, location: Any, title: str = "Leaderboard",
             get_metric: Optional[Callable[..., Any]] = None,
             update_interval: int = 100, max_entries: int = 10):
@@ -82,7 +84,7 @@ class Leaderboard:
 
         lines = [f"§e§l{self.title}"]
         for i, (name, val) in enumerate(scores):
-            medal = "§6" if i == 0 else "§7" if i == 1 else "§c" if i == 2 else "§f"
+            medal = self._MEDALS[i] if i < 3 else "§f"
             lines.append(f"{medal}#{i + 1} §f{name}: §a{val:.0f}")
 
         # Update hologram lines

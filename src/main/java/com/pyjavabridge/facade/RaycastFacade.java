@@ -58,7 +58,7 @@ public class RaycastFacade {
         float outPitch = pitch != null ? pitch : (float) Math.toDegrees(Math.asin(-direction.getY()));
         Block hitBlock = result != null ? result.getHitBlock() : null;
         Entity hitEntity = result != null ? result.getHitEntity() : null;
-        Map<String, Object> payload = new HashMap<>();
+        Map<String, Object> payload = new HashMap<>(16);
 
         payload.put("x", hitX);
         payload.put("y", hitY);

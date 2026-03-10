@@ -125,7 +125,7 @@ def command(description: Optional[str] = None, *, name: Optional[str] = None, pe
 
             text = str(annotation)
             if text.startswith("typing."):
-                return text.replace("typing.", "")
+                return text[7:]  # len("typing.") == 7
 
             return text
 
@@ -150,8 +150,7 @@ def command(description: Optional[str] = None, *, name: Optional[str] = None, pe
             return f"Usage: /{cmd_name}" + (f" {args_text}" if args_text else "")
 
         func_name = handler.__name__
-        if func_name.startswith("cmd_"):
-            func_name = func_name[4:]
+        func_name = func_name.removeprefix("cmd_")
 
         command_name = (name or func_name).lower()
 
@@ -187,9 +186,7 @@ def command(description: Optional[str] = None, *, name: Optional[str] = None, pe
                 kwargs = {k: v for k, v in kwargs.items() if k in allowed_kw_names}
 
             used_names = {p.name for p in positional_params[:len(pos_args)]}
-            for key in list(kwargs.keys()):
-                if key in used_names:
-                    kwargs.pop(key)
+            kwargs = {k: v for k, v in kwargs.items() if k not in used_names}
 
             if positional_tokens and not positional_params and not has_varargs:
                 target: Any = None

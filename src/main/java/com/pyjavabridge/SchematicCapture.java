@@ -59,15 +59,15 @@ public final class SchematicCapture {
             World world = player.getWorld();
 
             // First pass: collect unique block strings and loot tags
-            Map<String, String> lootTags = new HashMap<>();
-            Map<String, Character> keyMap = new LinkedHashMap<>();
-            List<String> blockDefs = new ArrayList<>();
+            Map<String, String> lootTags = new HashMap<>(16);
+            Map<String, Character> keyMap = new LinkedHashMap<>(64);
+            List<String> blockDefs = new ArrayList<>((int) volume);
             String keyPool = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz!@#$%^&*()_+-={}|[]:<>?,./";
             int nextKey = 0;
 
-            Set<Integer> limeConcretePos = new HashSet<>();
-            Map<String, Set<Integer>> otherConcretePos = new LinkedHashMap<>();
-            Map<String, Integer> blockCounts = new HashMap<>();
+            Set<Integer> limeConcretePos = new HashSet<>(1024);
+            Map<String, Set<Integer>> otherConcretePos = new LinkedHashMap<>(32);
+            Map<String, Integer> blockCounts = new HashMap<>(256);
 
             for (int y = 0; y < height; y++) {
                 for (int z = 0; z < depth; z++) {
@@ -141,13 +141,15 @@ public final class SchematicCapture {
             }
 
             // Compute main block(s)
-            int totalNonAir = blockCounts.values().stream().mapToInt(Integer::intValue).sum();
-            List<String> mainBlockDefs = new ArrayList<>();
-            List<Integer> mainBlockWeights = new ArrayList<>();
+            int totalNonAir = 0;
+            for (int count : blockCounts.values()) {
+                totalNonAir += count;
+            }
+            List<String> mainBlockDefs = new ArrayList<>(8);
+            List<Integer> mainBlockWeights = new ArrayList<>(8);
             if (totalNonAir > 0) {
-                List<Map.Entry<String, Integer>> sorted = blockCounts.entrySet().stream()
-                    .sorted(Map.Entry.<String, Integer>comparingByValue().reversed())
-                    .toList();
+                List<Map.Entry<String, Integer>> sorted = new ArrayList<>(blockCounts.entrySet());
+                sorted.sort((a, b) -> Integer.compare(b.getValue(), a.getValue()));
                 for (var entry : sorted) {
                     double pct = (double) entry.getValue() / totalNonAir * 100;
                     if (pct >= 35.0) {
@@ -176,7 +178,10 @@ public final class SchematicCapture {
 
             // Replace concrete marker placeholders with main block(s)
             if (!otherConcretePos.isEmpty()) {
-                int totalWeight = mainBlockWeights.stream().mapToInt(Integer::intValue).sum();
+                int totalWeight = 0;
+                for (int weight : mainBlockWeights) {
+                    totalWeight += weight;
+                }
                 for (int i = 0; i < blockDefs.size(); i++) {
                     if (blockDefs.get(i) == null) {
                         if (mainBlockDefs.size() == 1) {
@@ -203,7 +208,7 @@ public final class SchematicCapture {
             }
 
             // Detect exits from lime concrete groups
-            List<String> exitDefs = new ArrayList<>();
+            List<String> exitDefs = new ArrayList<>(8);
             if (!limeConcretePos.isEmpty()) {
                 for (Set<Integer> group : connectedComponents(limeConcretePos, width, height, depth)) {
                     String exitDef = exitFromGroup(group, width, height, depth);
@@ -212,7 +217,7 @@ public final class SchematicCapture {
             }
 
             // Detect markers from other concrete groups
-            List<String> markerDefs = new ArrayList<>();
+            List<String> markerDefs = new ArrayList<>(otherConcretePos.size() * 2);
             for (var colorEntry : otherConcretePos.entrySet()) {
                 for (Set<Integer> group : connectedComponents(colorEntry.getValue(), width, height, depth)) {
                     String mDef = markerFromGroup(colorEntry.getKey(), group, width, height, depth);
@@ -321,7 +326,7 @@ public final class SchematicCapture {
             for (int z = 0; z < d; z++)
                 java.util.Arrays.fill(state[y][z], '~');
 
-        List<String> phase1 = new ArrayList<>();
+        List<String> phase1 = new ArrayList<>(64);
         List<String> baseline = Objects.requireNonNull(greedyMesh(target, state, w, h, d));
 
         while (true) {
@@ -368,7 +373,7 @@ public final class SchematicCapture {
     }
 
     private static List<Object[]> diffCandidates(char[][][] target, char[][][] state, int w, int h, int d) {
-        Map<Character, int[]> bboxes = new HashMap<>();
+        Map<Character, int[]> bboxes = new HashMap<>(256);
         for (int y = 0; y < h; y++)
             for (int z = 0; z < d; z++)
                 for (int x = 0; x < w; x++) {
@@ -379,8 +384,8 @@ public final class SchematicCapture {
                         if (x > b[3]) b[3] = x; if (y > b[4]) b[4] = y; if (z > b[5]) b[5] = z;
                     }
                 }
-        List<Object[]> result = new ArrayList<>();
-        java.util.Set<Long> seen = new java.util.HashSet<>();
+        List<Object[]> result = new ArrayList<>(bboxes.size() * 27);
+        java.util.Set<Long> seen = new java.util.HashSet<>(bboxes.size() * 27);
         for (var entry : bboxes.entrySet()) {
             char k = entry.getKey();
             int[] b = entry.getValue();
@@ -419,7 +424,7 @@ public final class SchematicCapture {
         int s0 = dims[perm[0]], s1 = dims[perm[1]], s2 = dims[perm[2]];
         int p0 = perm[0], p1 = perm[1], p2 = perm[2];
         boolean[][][] visited = new boolean[s0][s1][s2];
-        List<String> ops = new ArrayList<>();
+        List<String> ops = new ArrayList<>(Math.max(64, (s0 * s1 * s2) / 100));
 
         for (int a = 0; a < s0; a++) {
             for (int b = 0; b < s1; b++) {
@@ -489,11 +494,11 @@ public final class SchematicCapture {
 
     /** Find connected components via BFS in a set of flat-indexed positions. */
     static List<Set<Integer>> connectedComponents(Set<Integer> positions, int w, int h, int d) {
-        List<Set<Integer>> components = new ArrayList<>();
+        List<Set<Integer>> components = new ArrayList<>(8);
         Set<Integer> remaining = new HashSet<>(positions);
         while (!remaining.isEmpty()) {
             int start = remaining.iterator().next();
-            Set<Integer> comp = new HashSet<>();
+            Set<Integer> comp = new HashSet<>(positions.size() / 4);
             ArrayDeque<Integer> queue = new ArrayDeque<>();
             queue.add(start);
             remaining.remove(start);

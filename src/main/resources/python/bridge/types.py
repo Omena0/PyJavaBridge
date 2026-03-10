@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 import functools
+import logging
 import threading
 from dataclasses import dataclass
 from typing import Any, Awaitable, Callable, ClassVar, Optional, TypeVar
@@ -80,7 +81,6 @@ def _bridge_call_done(future: "asyncio.Future[Any]") -> None:
 
     exc = future.exception()
     if exc is not None:
-        import logging
         logging.getLogger("bridge").debug("Unawaited bridge call failed: %s", exc)
 
 class BridgeCall(Awaitable[Any]):
@@ -126,6 +126,8 @@ def async_task(func: Callable[..., Any]) -> Callable[..., BridgeCall]:
 
 class BridgeMethod:
     """Callable wrapper for late-bound method invocations on proxies."""
+    __slots__ = ("_proxy", "_name")
+
     def __init__(self, proxy: Any, name: str):
         """Bind a method name to a proxy object."""
         self._proxy = proxy
@@ -137,6 +139,8 @@ class BridgeMethod:
 
 class _SyncWait:
     """Thread-safe one-shot value container for synchronous bridge calls."""
+    __slots__ = ("event", "result", "error")
+
     def __init__(self):
         """Create a one-shot synchronous waiter."""
         self.event = threading.Event()
@@ -144,6 +148,8 @@ class _SyncWait:
         self.error: Optional[Exception] = None
 
 # --- Enum subclasses ---
+_MINECRAFT_PREFIXES = ("minecraft:", "MINECRAFT:", "Minecraft:")
+
 class Material(EnumValue):
     """Material, such as diamond, netherite, wood, etc"""
     TYPE_NAME = "org.bukkit.Material"
@@ -152,8 +158,8 @@ class Material(EnumValue):
         """Create a Material from a name, stripping 'minecraft:' prefix."""
         actual = _name if _name is not None else name
         actual = str(actual)
-        if actual.lower().startswith("minecraft:"):
-            actual = actual[len("minecraft:"):]
+        if actual.startswith(_MINECRAFT_PREFIXES):
+            actual = actual[10:]  # len("minecraft:") == 10
 
         super().__init__(self.TYPE_NAME, actual.upper())
 

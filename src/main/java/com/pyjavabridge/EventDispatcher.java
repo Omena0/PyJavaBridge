@@ -195,8 +195,8 @@ public class EventDispatcher {
         if (blocks.isEmpty()) {
             return;
         }
-        List<PendingEvent> batch = new ArrayList<>();
-        List<JsonObject> payloads = new ArrayList<>();
+        List<PendingEvent> batch = new ArrayList<>(blocks.size());
+        List<JsonObject> payloads = new ArrayList<>(blocks.size());
         // Compute the base event payload once and clone per-block
         JsonObject basePayload = baseEventPayload(event, eventName);
         for (org.bukkit.block.Block block : blocks) {
@@ -264,14 +264,13 @@ public class EventDispatcher {
 
     private Method getCachedMethod(Class<?> eventClass, String methodName) {
         String key = eventClass.getName() + "." + methodName;
-        Optional<Method> cached = methodCache.computeIfAbsent(key, k -> {
+        return methodCache.computeIfAbsent(key, k -> {
             try {
                 return Optional.of(eventClass.getMethod(methodName));
             } catch (Exception e) {
                 return Optional.empty();
             }
-        });
-        return cached.orElse(null);
+        }).orElse(null);
     }
 
     private void tryAddPayload(JsonObject payload, Event event, String key, String... methodNames) {

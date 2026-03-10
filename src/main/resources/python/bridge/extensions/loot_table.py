@@ -14,6 +14,7 @@ class LootEntry:
         max_amount: Maximum stack size. Default 1.
         condition: Optional callable ``(context) -> bool`` that must return True for this entry to drop.
     """
+    __slots__ = ("item", "weight", "min_amount", "max_amount", "condition")
 
     def __init__(self, item: Any, weight: int = 1, min_amount: int = 1,
             max_amount: int = 1, condition: Optional[Callable[..., bool]] = None):

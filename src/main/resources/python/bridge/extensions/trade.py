@@ -17,6 +17,7 @@ class TradeWindow:
         bank: Optional Bank for currency offers.
         delay: Seconds after both confirm before executing (anti-scam).
     """
+    __slots__ = ("_bank", "_delay", "_on_trade_handlers", "_sessions")
 
     def __init__(self, bank: Optional[Bank] = None, delay: float = 3.0):
         """Initialise a new TradeWindow."""
@@ -51,6 +52,8 @@ class TradeWindow:
 
 class _TradeSession:
     """Internal per-trade state."""
+    __slots__ = ("window", "p1", "p2", "items1", "items2",
+                 "balance1", "balance2", "confirmed", "_cancelled", "_executing")
 
     def __init__(self, window: TradeWindow, p1: Any, p2: Any):
         """Initialise a new _TradeSession."""

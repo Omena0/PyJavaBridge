@@ -88,10 +88,7 @@ class CombatSystem:
     def in_combat_by_uuid(self, puuid: str) -> bool:
         """Handle in combat by uuid."""
         last = self._last_attack.get(puuid)
-        if last is None:
-            return False
-
-        return (time.time() - last) < self.combat_timeout
+        return last is not None and (time.time() - last) < self.combat_timeout
 
     def remaining(self, player: Any) -> float:
         """Handle remaining."""
