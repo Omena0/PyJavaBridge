@@ -26,7 +26,7 @@ The `BridgeCall` wrapper (an `asyncio.Future`) is returned so the caller can `aw
 
 ### 2. Java bridge thread reads the message
 
-The bridge thread (one per script) reads from Python's stdout in a blocking loop. Each message is parsed and passed to `handleMessage()`, which routes by type.
+The bridge thread (one per script) reads from Python's stdout in a blocking loop. Each message is deserialized (from msgpack or JSON, depending on the negotiated format) and passed to `handleMessage()`, which routes by type.
 
 ### 3. Thread safety check
 

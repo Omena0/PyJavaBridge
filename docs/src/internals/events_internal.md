@@ -116,7 +116,7 @@ tryAddPayload(payload, event, "block", "getBlock", "getClickedBlock");
 tryAddPayload(payload, event, "inventory", "getInventory", "getClickedInventory");
 ```
 
-Fields are serialized with the full bridge serializer, so you get proper proxy objects in Python (not raw JSON).
+Fields are serialized with the full bridge serializer, so you get proper proxy objects in Python (not raw data).
 
 ---
 

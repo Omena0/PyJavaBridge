@@ -153,19 +153,44 @@ async with frame():
         player.get_inventory().set_item(i, item)
 ```
 
+### Fire-and-forget for void calls
+
+Most setters and void methods (like `send_message`, `set_health`, `teleport`) are fire-and-forget — Python doesn't wait for a response. This makes them nearly instant:
+
+```python
+# These are fire-and-forget (instant, no round-trip):
+await player.send_message("Hello")
+await player.set_health(20)
+await player.teleport(location)
+
+# These still need a round-trip (they return data):
+health = await player.get_health()
+world = await player.get_world()
+```
+
+### Install msgpack for faster serialization
+
+The bridge supports msgpack as an alternative wire format. Install it in your Python environment for smaller payloads and faster serialization:
+
+```bash
+pip install msgpack
+```
+
+The bridge auto-detects msgpack on startup and negotiates the format with Java. No code changes needed.
+
 ### Use thread-safe APIs when possible
 
 Calls that are [thread-safe](execution.html) skip main thread scheduling and execute immediately:
 
 ```python
-# These are thread-safe (fast):
-player.send_message("Hello")
-player.play_sound(...)
-player.kick("reason")
+# These are thread-safe and fire-and-forget (fastest):
+await player.send_message("Hello")
+await player.play_sound(...)
+await player.kick("reason")
 
 # These need main thread (slower):
-player.set_health(20)
 world.get_block_at(x, y, z)
+entity.get_passengers()
 ```
 
 ### Keep event handlers fast

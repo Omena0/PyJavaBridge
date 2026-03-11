@@ -5,7 +5,7 @@ subtitle: Object handles, type serialization, and proxy classes
 
 # Serialization
 
-How Java objects are converted to JSON for the wire, how Python reconstructs them as proxy objects, and how the object handle registry works.
+How Java objects are serialized for the wire (as msgpack or JSON), how Python reconstructs them as proxy objects, and how the object handle registry works.
 
 ---
 
@@ -68,7 +68,7 @@ If Python holds references to proxy objects indefinitely (e.g. in a global list)
 
 ## Java → Python Serialization
 
-The `BridgeSerializer` converts Java objects to JSON with type-specific field extraction.
+The `BridgeSerializer` converts Java objects into structured data (serialized as msgpack or JSON depending on the negotiated wire format) with type-specific field extraction.
 
 ### Type-specific fields
 
@@ -143,7 +143,7 @@ The reflective fallback (`invokeReflective`) automatically converts arguments to
 
 ## Python-Side Deserialization
 
-The `BridgeConnection._deserialize()` method reconstructs Python objects from JSON:
+The `BridgeConnection._deserialize()` method reconstructs Python objects from deserialized wire data (msgpack dicts/lists or JSON):
 
 ```python
 def _deserialize(self, value):
@@ -243,14 +243,6 @@ Fields with invalidation:
 | `level` setter | `level` |
 | `exp` setter | `exp` |
 | `max_health` setter | `health` |
-
-1. Check `self.fields` first — if the field was serialized, return it immediately (no RPC)
-2. Otherwise, return a `BridgeMethod` wrapper that will dispatch an RPC when called
-
-```python
-player.name         # → fields["name"] (cached, instant)
-player.get_health() # → BridgeMethod → RPC call (round trip)
-```
 
 ### Attribute setting (`__setattr__`)
 
