@@ -13,7 +13,7 @@ import org.bukkit.plugin.EventExecutor;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class EventSubscription implements Listener {
-    // #16: Cache resolved event classes to avoid repeated Class.forName() across 13 packages
+    // Cache resolved event classes to avoid repeated Class.forName() across 13 packages
     private static final ConcurrentHashMap<String, Class<? extends Event>> eventClassCache = new ConcurrentHashMap<>();
 
     private final PyJavaBridgePlugin pluginRef;

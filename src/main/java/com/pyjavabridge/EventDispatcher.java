@@ -25,6 +25,10 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
+/**
+ * Dispatches Bukkit events to a Python script over the bridge.
+ * Handles event serialization, cancellation, and timeout management.
+ */
 public class EventDispatcher {
     private final PyJavaBridgePlugin plugin;
     private final BridgeSerializer serializer;
@@ -46,6 +50,7 @@ public class EventDispatcher {
         this.gson = gson;
     }
 
+    /** Sends a pre-built event payload to the Python script. */
     public void sendEvent(String eventName, JsonObject payload) {
         JsonObject message = new JsonObject();
         message.addProperty("type", "event");
@@ -54,6 +59,7 @@ public class EventDispatcher {
         sender.accept(message);
     }
 
+    /** Serializes and sends a Bukkit event to the Python script. */
     public void sendEvent(Event event, String eventName) {
         if (eventName.equalsIgnoreCase("block_explode")) {
             if (event instanceof BlockExplodeEvent blockExplodeEvent) {
@@ -68,12 +74,12 @@ public class EventDispatcher {
         }
         if (event instanceof EntityExplodeEvent && eventName.equalsIgnoreCase("entity_explode")) {
             JsonObject payload = baseEventPayload(event, eventName);
-            dispatchCancellableEvent(event, eventName, payload, CancelMode.EVENT, 1000);
+            dispatchCancellableEvent(event, eventName, payload, CancelMode.EVENT, plugin.getEventTimeoutMs());
             return;
         }
 
         JsonObject payload = baseEventPayload(event, eventName);
-        dispatchCancellableEvent(event, eventName, payload, CancelMode.EVENT, 1000);
+        dispatchCancellableEvent(event, eventName, payload, CancelMode.EVENT, plugin.getEventTimeoutMs());
     }
 
     private JsonObject baseEventPayload(Event event, String eventName) {
@@ -215,7 +221,7 @@ public class EventDispatcher {
             payloads.add(payload);
         }
         sendBatch(eventName, payloads);
-        long deadline = System.currentTimeMillis() + 100;
+        long deadline = System.currentTimeMillis() + plugin.getExplosionTimeoutMs();
         try {
             while (System.currentTimeMillis() < deadline) {
                 boolean allDone = true;
@@ -285,7 +291,9 @@ public class EventDispatcher {
                     payload.add(key, serializer.serialize(value));
                     return;
                 }
-            } catch (Exception ignored) {
+            } catch (Exception e) {
+                // Method exists but invocation failed — may indicate a transient entity state
+                plugin.getLogger().fine("[" + name + "] tryAddPayload '" + key + "' via " + methodName + " failed: " + e.getMessage());
             }
         }
     }
@@ -308,7 +316,9 @@ public class EventDispatcher {
                     payload.add(key, serializer.serialize(value));
                 }
                 return;
-            } catch (Exception ignored) {
+            } catch (Exception e) {
+                // Method exists but invocation failed — may indicate a transient entity state
+                plugin.getLogger().fine("[" + name + "] tryAddPrimitive '" + key + "' via " + methodName + " failed: " + e.getMessage());
             }
         }
     }
@@ -339,7 +349,8 @@ public class EventDispatcher {
                 return PlainTextComponentSerializer.plainText().serialize(component);
             }
 
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            // title() API may not exist on older Paper versions, fall through
         }
 
         try {
@@ -349,7 +360,8 @@ public class EventDispatcher {
                 return result.toString();
             }
 
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            // Legacy getTitle() method not available either
         }
         return "";
     }

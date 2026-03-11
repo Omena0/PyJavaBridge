@@ -9,7 +9,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.logging.Logger;
 
 public class DebugManager {
-    // #23: CopyOnWriteArraySet — writes are rare (toggle debug), reads (broadcast) are frequent
+    // CopyOnWriteArraySet — writes are rare (toggle debug), reads (broadcast) are frequent
     private final Set<UUID> debugPlayers = new CopyOnWriteArraySet<>();
     private volatile boolean consoleDebug = false;
     private volatile Logger logger;

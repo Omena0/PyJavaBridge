@@ -111,7 +111,9 @@ public final class SchematicCapture {
                             } catch (Exception e) {
                                 try {
                                     customName = container.getInventory().getType().name();
-                                } catch (Exception ignored) {}
+                                } catch (Exception ignored) {
+                                    // Container inventory type name not available
+                                }
                             }
                             if (customName != null && customName.contains("[loot:")) {
                                 java.util.regex.Matcher m = java.util.regex.Pattern.compile("\\[loot:(\\w+)\\]").matcher(customName);

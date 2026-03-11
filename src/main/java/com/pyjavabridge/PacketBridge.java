@@ -17,14 +17,14 @@ import java.util.function.BiConsumer;
 
 /**
  * Optional ProtocolLib integration for packet-level API.
- * Only loaded when ProtocolLib is available.
+ * Provides packet listening and sending capabilities when ProtocolLib is available.
  */
 public class PacketBridge {
     private final Plugin plugin;
     private final ProtocolManager protocolManager;
     private final Map<String, PacketAdapter> activeListeners = new ConcurrentHashMap<>();
 
-    // #17: Pre-built lookup maps for O(1) PacketType resolution
+    // Pre-built lookup maps for O(1) PacketType resolution
     private static final Map<String, PacketType> PLAY_SERVER_TYPES = new ConcurrentHashMap<>();
     private static final Map<String, PacketType> PLAY_CLIENT_TYPES = new ConcurrentHashMap<>();
     private static final Map<String, PacketType> ALL_TYPES = new ConcurrentHashMap<>();
@@ -114,7 +114,7 @@ public class PacketBridge {
 
     private PacketType resolvePacketType(String name, PacketType.Protocol protocol, PacketType.Sender sender) {
         String upper = name.toUpperCase();
-        // #17: O(1) lookup instead of iterating all PacketType values
+        // O(1) lookup instead of iterating all PacketType values
         if (protocol == PacketType.Protocol.PLAY && sender == PacketType.Sender.SERVER) {
             PacketType result = PLAY_SERVER_TYPES.get(upper);
             if (result != null) return result;
@@ -154,7 +154,8 @@ public class PacketBridge {
                 Boolean val = booleans.readSafely(i);
                 if (val != null) obj.addProperty("bool_" + i, val);
             }
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            plugin.getLogger().fine("Failed to serialize packet '" + name + "': " + e.getMessage());
         }
         return obj;
     }
@@ -179,7 +180,8 @@ public class PacketBridge {
                     int idx = Integer.parseInt(key.substring(5));
                     packet.getBooleans().writeSafely(idx, fields.get(key).getAsBoolean());
                 }
-            } catch (Exception ignored) {
+            } catch (Exception e) {
+                plugin.getLogger().warning("Failed to apply packet field '" + key + "': " + e.getMessage());
             }
         }
     }

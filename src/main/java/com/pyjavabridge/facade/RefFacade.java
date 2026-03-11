@@ -23,7 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class RefFacade {
     private final BridgeInstance instance;
 
-    // #18: Cache getMethods() per class to avoid repeated reflection
+    // Cache getMethods() per class to avoid repeated reflection
     private static final ConcurrentHashMap<Class<?>, Method[]> methodsCache = new ConcurrentHashMap<>();
 
     public RefFacade(BridgeInstance instance) {

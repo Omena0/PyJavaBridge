@@ -88,6 +88,11 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.player.PlayerQuitEvent;
 
+/**
+ * Represents a single Python script bridge connection.
+ * Manages the IPC protocol (stdin/stdout), message routing,
+ * event subscriptions, and object handle registry for one script.
+ */
 public class BridgeInstance {
     private final PyJavaBridgePlugin plugin;
     private final String name;
@@ -152,7 +157,9 @@ public class BridgeInstance {
                 if (attachment != null) {
                     try {
                         event.getPlayer().removeAttachment(attachment);
-                    } catch (Exception ignored) {
+                    } catch (Exception e) {
+                        // Attachment may already be invalid if plugin is disabling
+                        plugin.getLogger().fine("[" + name + "] Could not remove permission attachment: " + e.getMessage());
                     }
                 }
             }
@@ -179,6 +186,7 @@ public class BridgeInstance {
         return subscriptions.containsKey(eventName);
     }
 
+    /** Starts the Python process and bridge communication thread. */
     void start() {
         running = true;
 
@@ -214,7 +222,9 @@ public class BridgeInstance {
             if (obj instanceof org.bukkit.boss.BossBar bar) {
                 try {
                     bar.removeAll();
-                } catch (Exception ignored) {}
+                } catch (Exception e) {
+                    plugin.getLogger().fine("[" + name + "] Could not remove boss bar: " + e.getMessage());
+                }
             }
         }
 
@@ -254,7 +264,7 @@ public class BridgeInstance {
                 } catch (IOException eof) {
                     break;
                 }
-                if (length <= 0 || length > 16_777_216) {
+                if (length <= 0 || length > plugin.getMaxMessageSize()) {
                     plugin.getLogger().severe("[" + name + "] Invalid message length: " + length);
                     break;
                 }
@@ -265,6 +275,10 @@ public class BridgeInstance {
                     message = deserializePayload(payload);
                 } catch (Exception e) {
                     plugin.getLogger().severe("[" + name + "] Failed to parse message: " + e.getMessage());
+                    continue;
+                }
+                if (!message.has("type") || !message.get("type").isJsonPrimitive()) {
+                    plugin.getLogger().warning("[" + name + "] Received message without valid 'type' field, skipping");
                     continue;
                 }
                 handleMessage(message);
@@ -406,6 +420,21 @@ public class BridgeInstance {
 
     private void handleRegisterCommand(JsonObject message) {
         String commandName = message.get("name").getAsString();
+
+        // Validate command name
+        if (commandName == null || commandName.isEmpty()) {
+            plugin.getLogger().warning("[" + name + "] Attempted to register command with empty name");
+            return;
+        }
+        if (commandName.length() > 64) {
+            plugin.getLogger().warning("[" + name + "] Command name too long (max 64): " + commandName);
+            return;
+        }
+        if (!commandName.matches("[a-zA-Z0-9_-]+")) {
+            plugin.getLogger().warning("[" + name + "] Invalid command name (alphanumeric, _ and - only): " + commandName);
+            return;
+        }
+
         String permission = message.has("permission") ? message.get("permission").getAsString() : null;
         boolean hasDynamicTabComplete = message.has("has_tab_complete") && message.get("has_tab_complete").getAsBoolean();
 
@@ -508,7 +537,8 @@ public class BridgeInstance {
                 if (obj instanceof Entity entity) {
                     try {
                         entity.remove();
-                    } catch (Exception ignored) {
+                    } catch (Exception e) {
+                        plugin.getLogger().fine("[" + name + "] Could not remove entity: " + e.getMessage());
                     }
                 }
                 registry.release(handle);
@@ -644,22 +674,32 @@ public class BridgeInstance {
 
     public Object handleKick(Player player, List<Object> args) {
         String reason = args.isEmpty() ? "" : String.valueOf(args.get(0));
+        // Try API variants in order: Component, String, legacy kickPlayer
         try {
             Method kick = player.getClass().getMethod("kick", Component.class);
             kick.invoke(player, Component.text(reason));
             return null;
-        } catch (Exception ignored) {
+        } catch (NoSuchMethodException e) {
+            // API variant not available, try next
+        } catch (Exception e) {
+            plugin.getLogger().fine("[" + name + "] kick(Component) failed: " + e.getMessage());
         }
         try {
             Method kick = player.getClass().getMethod("kick", String.class);
             kick.invoke(player, reason);
             return null;
-        } catch (Exception ignored) {
+        } catch (NoSuchMethodException e) {
+            // API variant not available, try next
+        } catch (Exception e) {
+            plugin.getLogger().fine("[" + name + "] kick(String) failed: " + e.getMessage());
         }
         try {
             Method kickPlayer = player.getClass().getMethod("kickPlayer", String.class);
             kickPlayer.invoke(player, reason);
-        } catch (Exception ignored) {
+        } catch (NoSuchMethodException e) {
+            plugin.getLogger().warning("[" + name + "] No kick method found on player class");
+        } catch (Exception e) {
+            plugin.getLogger().fine("[" + name + "] kickPlayer(String) failed: " + e.getMessage());
         }
         return null;
     }
@@ -1613,7 +1653,8 @@ public class BridgeInstance {
                         viewer.closeInventory();
                     }
                 }
-            } catch (Exception ignored) {
+            } catch (Exception e) {
+                plugin.getLogger().fine("[" + name + "] Error closing inventory: " + e.getMessage());
             }
             return null;
         }
@@ -1622,7 +1663,8 @@ public class BridgeInstance {
                 Method getTitle = inventory.getClass().getMethod("getTitle");
                 Object titleObj = getTitle.invoke(inventory);
                 return titleObj != null ? titleObj.toString() : "";
-            } catch (Exception ignored) {
+            } catch (Exception e) {
+                // getTitle() may not exist on all inventory types
                 return "";
             }
         }
@@ -2114,7 +2156,9 @@ public class BridgeInstance {
                         try {
                             Method setType = ItemStack.class.getMethod("setType", Material.class);
                             setType.invoke(itemStack, deserialized.getType());
-                        } catch (Exception ignored) {
+                        } catch (Exception e) {
+                            // setType may be deprecated/removed in newer API versions
+                            plugin.getLogger().fine("[" + name + "] ItemStack.setType fallback failed: " + e.getMessage());
                         }
                         itemStack.setAmount(deserialized.getAmount());
                         if (deserialized.hasItemMeta()) {
@@ -2501,7 +2545,7 @@ public class BridgeInstance {
         return UNHANDLED;
     }
 
-    // #2: Cache getMethods() per class to avoid repeated reflection
+    // Cache getMethods() per class to avoid repeated reflection
     private static final ConcurrentHashMap<Class<?>, Method[]> reflectiveMethodsCache = new ConcurrentHashMap<>();
 
     private Object invokeReflective(Object target, String method, List<Object> args) throws Exception {
@@ -2631,7 +2675,9 @@ public class BridgeInstance {
                             }
                         }
                     }
-                } catch (Exception ignored) {
+                } catch (Exception e) {
+                    // Sound registry lookup may fail depending on server version
+                    plugin.getLogger().fine("Sound registry lookup failed for '" + name + "': " + e.getMessage());
                 }
             }
 
@@ -2644,7 +2690,9 @@ public class BridgeInstance {
                 if (soundObj instanceof Sound sound) {
                     return sound;
                 }
-            } catch (Exception ignored) {
+            } catch (Exception e) {
+                // Sound.valueOf not available or name doesn't match
+                plugin.getLogger().fine("Sound.valueOf failed for '" + enumName + "': " + e.getMessage());
             }
         }
         return null;
@@ -2669,7 +2717,8 @@ public class BridgeInstance {
                 Method method = player.getClass().getMethod(name);
                 value = method.invoke(player);
                 break;
-            } catch (Exception ignored) {
+            } catch (Exception e) {
+                // API variant not available; try next method name
             }
         }
 
@@ -2744,12 +2793,14 @@ public class BridgeInstance {
                 method.invoke(player, header);
                 return true;
 
-            } catch (Exception ignored) {
+            } catch (Exception e) {
+                // Try next API method variant
             }
         }
         return false;
     }
 
+    /** Serializes a value using the bridge serializer. */
     public JsonElement serialize(Object value) {
         return serializer.serialize(value);
     }
@@ -2915,6 +2966,7 @@ public class BridgeInstance {
         return JsonParser.parseString(new String(payload, StandardCharsets.UTF_8)).getAsJsonObject();
     }
 
+    /** Sends a JSON message to the Python process over the bridge. */
     public void send(JsonObject response) {
         if (writer == null || !running) {
             return;
@@ -2936,8 +2988,8 @@ public class BridgeInstance {
     }
 
     /**
-     * Write multiple responses under a single lock acquisition + single flush.
-     * Much more efficient than calling send() in a loop for batch responses.
+     * Write multiple responses under a single lock acquisition and single flush.
+     * More efficient than calling send() in a loop for batch responses.
      */
     private void sendAll(List<JsonObject> responses, long startNano) {
         if (writer == null || !running || responses.isEmpty()) {
@@ -3091,6 +3143,15 @@ public class BridgeInstance {
     }
 
     private String resolvePythonExecutable() {
+        String override = plugin.getPythonExecutableOverride();
+        if (override != null && !"auto".equalsIgnoreCase(override)) {
+            Path overridePath = Path.of(override);
+            if (Files.exists(overridePath)) {
+                return overridePath.toAbsolutePath().toString();
+            }
+            plugin.getLogger().warning("[" + name + "] Configured python-executable not found: " + override + ", falling back to auto-detect");
+        }
+
         boolean isWindows = System.getProperty("os.name", "").toLowerCase().contains("win");
 
         Path venvDir = scriptsDir.resolve(".venv");
@@ -3113,7 +3174,8 @@ public class BridgeInstance {
         }
         try {
             closable.close();
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            plugin.getLogger().fine("[" + name + "] Error during close: " + e.getMessage());
         }
     }
 }

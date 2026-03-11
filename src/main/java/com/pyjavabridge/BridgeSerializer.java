@@ -44,20 +44,25 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * Serializes and deserializes Java/Bukkit objects to and from JSON
+ * for transmission over the Python bridge. Handles object registration,
+ * cyclic reference detection, and type-specific field extraction.
+ */
 public class BridgeSerializer {
     private final ObjectRegistry registry;
     private final Gson gson;
     private final PyJavaBridgePlugin plugin;
 
-    // #9: Single cache map for tryInvokeNoArg — Optional.empty() means known-missing
+    // Cache for tryInvokeNoArg — Optional.empty() means known-missing
     private final ConcurrentHashMap<String, Optional<Method>> noArgMethodCache = new ConcurrentHashMap<>();
     // Cache the PlainTextComponentSerializer instance instead of calling .plainText() repeatedly
     private static final PlainTextComponentSerializer PLAIN_TEXT = PlainTextComponentSerializer.plainText();
 
-    // #8: Cache getLogicalTypeName() per concrete class to avoid repeated instanceof chains
+    // Cache getLogicalTypeName() per concrete class to avoid repeated instanceof chains
     private static final ConcurrentHashMap<Class<?>, String> typeNameCache = new ConcurrentHashMap<>();
 
-    // #3: ThreadLocal for cyclic reference detection set — reuse across serialize() calls
+    // ThreadLocal for cyclic reference detection set — reuse across serialize() calls
     private static final ThreadLocal<Set<Object>> SEEN_SET = ThreadLocal.withInitial(
             () -> Collections.newSetFromMap(new java.util.IdentityHashMap<>()));
 
@@ -100,6 +105,7 @@ public class BridgeSerializer {
         this.plugin = plugin;
     }
 
+    /** Serializes a Java/Bukkit object to a JSON representation. */
     public JsonElement serialize(Object value) {
         Set<Object> seen = SEEN_SET.get();
         try {
@@ -316,7 +322,8 @@ public class BridgeSerializer {
                 if (titleObj != null) {
                     fields.addProperty("title", titleObj.toString());
                 }
-            } catch (Exception ignored) {
+            } catch (Exception e) {
+                // getTitle() may not exist on all inventory implementations
             }
         }
 
@@ -446,11 +453,13 @@ public class BridgeSerializer {
         if (cached.isEmpty()) return null;
         try {
             return cached.get().invoke(target);
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            // Invocation failed on a known method — likely transient entity state
             return null;
         }
     }
 
+    /** Deserializes a JSON element back to a Java object (primitives, lists, handles, refs, values). */
     public Object deserialize(JsonElement element) {
         if (element == null || element.isJsonNull()) {
             return null;

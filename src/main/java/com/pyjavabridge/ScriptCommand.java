@@ -13,6 +13,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 
+/**
+ * A dynamically registered Bukkit command that forwards execution and
+ * tab-completion to the connected Python script via the bridge.
+ */
 class ScriptCommand extends Command {
     private volatile BridgeInstance instance;
     private String permission;
@@ -39,7 +43,7 @@ class ScriptCommand extends Command {
     void setCompletions(Map<Integer, List<String>> completions) {
         this.completions.clear();
         if (completions != null) {
-            // #19: Pre-lowercase all completion options at registration time
+            // Pre-lowercase all completion options at registration time
             for (Map.Entry<Integer, List<String>> entry : completions.entrySet()) {
                 List<String> lowered = new ArrayList<>(entry.getValue().size());
                 for (String s : entry.getValue()) {

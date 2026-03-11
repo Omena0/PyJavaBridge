@@ -28,6 +28,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
+/**
+ * Main plugin class for PyJavaBridge.
+ * Manages the lifecycle of Python script bridge instances,
+ * the main-thread task queue, and plugin-wide configuration.
+ */
 public class PyJavaBridgePlugin extends JavaPlugin {
     private final ConcurrentLinkedQueue<Runnable> mainThreadQueue = new ConcurrentLinkedQueue<>();
     private final Map<String, BridgeInstance> instances = new ConcurrentHashMap<>();
@@ -45,11 +50,21 @@ public class PyJavaBridgePlugin extends JavaPlugin {
     private final AtomicInteger eventCounter = new AtomicInteger(1);
     private PacketBridge packetBridge;
 
+    // Config values (loaded from config.yml)
+    private int maxMessageSize = 16_777_216;
+    private long eventTimeoutMs = 1000L;
+    private long explosionTimeoutMs = 100L;
+    private String pythonExecutableOverride = "auto";
+
     @Override
     public void onEnable() {
         debugManager.setLogger(getLogger());
         getCommand("bridge").setExecutor(this);
         getCommand("bridge").setTabCompleter(this);
+
+        // Load and validate config
+        saveDefaultConfig();
+        loadPluginConfig();
 
         Path dataDir = getDataFolder().toPath();
         Path scriptsDir = dataDir.resolve("scripts");
@@ -217,6 +232,59 @@ public class PyJavaBridgePlugin extends JavaPlugin {
         return instances.keySet();
     }
 
+    private void loadPluginConfig() {
+        maxMessageSize = getConfig().getInt("max-message-size", 16_777_216);
+        eventTimeoutMs = getConfig().getLong("event-timeout-ms", 1000L);
+        explosionTimeoutMs = getConfig().getLong("explosion-timeout-ms", 100L);
+        pythonExecutableOverride = getConfig().getString("python-executable", "auto");
+
+        // Validate config values
+        if (maxMessageSize < 1024) {
+            getLogger().warning("Config: max-message-size too small (" + maxMessageSize + "), using minimum of 1024");
+            maxMessageSize = 1024;
+        }
+        if (maxMessageSize > 64_000_000) {
+            getLogger().warning("Config: max-message-size too large (" + maxMessageSize + "), using maximum of 64000000");
+            maxMessageSize = 64_000_000;
+        }
+        if (eventTimeoutMs < 50) {
+            getLogger().warning("Config: event-timeout-ms too small (" + eventTimeoutMs + "), using minimum of 50");
+            eventTimeoutMs = 50;
+        }
+        if (eventTimeoutMs > 30_000) {
+            getLogger().warning("Config: event-timeout-ms too large (" + eventTimeoutMs + "), using maximum of 30000");
+            eventTimeoutMs = 30_000;
+        }
+        if (explosionTimeoutMs < 10) {
+            getLogger().warning("Config: explosion-timeout-ms too small (" + explosionTimeoutMs + "), using minimum of 10");
+            explosionTimeoutMs = 10;
+        }
+        if (explosionTimeoutMs > 5000) {
+            getLogger().warning("Config: explosion-timeout-ms too large (" + explosionTimeoutMs + "), using maximum of 5000");
+            explosionTimeoutMs = 5000;
+        }
+    }
+
+    /** Returns the configured maximum bridge message size in bytes. */
+    public int getMaxMessageSize() {
+        return maxMessageSize;
+    }
+
+    /** Returns the configured event handler timeout in milliseconds. */
+    public long getEventTimeoutMs() {
+        return eventTimeoutMs;
+    }
+
+    /** Returns the configured explosion batch timeout in milliseconds. */
+    public long getExplosionTimeoutMs() {
+        return explosionTimeoutMs;
+    }
+
+    /** Returns the configured python executable path, or "auto" for auto-detection. */
+    public String getPythonExecutableOverride() {
+        return pythonExecutableOverride;
+    }
+
     private void copyRuntimeResource(String resourcePath, Path destination) throws IOException {
         try (InputStream input = getResource(resourcePath)) {
             if (input == null) {
@@ -356,7 +424,8 @@ public class PyJavaBridgePlugin extends JavaPlugin {
                 if (watcher != null) {
                     try {
                         watcher.close();
-                    } catch (Exception ignored) {
+                    } catch (Exception e) {
+                        getLogger().fine("Failed to close file watcher: " + e.getMessage());
                     }
                 }
             }

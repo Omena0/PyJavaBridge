@@ -15,7 +15,7 @@ public class PermissionsFacade {
     private final PyJavaBridgePlugin plugin;
     private final Map<UUID, PermissionAttachment> permissionAttachments;
 
-    // #15: Cached LuckPerms reflection handles
+    // Cached LuckPerms reflection handles
     private volatile Object cachedLpApi;
     private volatile boolean lpApiChecked;
     private volatile Class<?> cachedNodeClass;

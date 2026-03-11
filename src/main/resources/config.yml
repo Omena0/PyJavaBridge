@@ -1,0 +1,17 @@
+# PyJavaBridge Configuration
+
+# Maximum message size in bytes (default: 16 MB).
+# Messages larger than this are rejected to prevent out-of-memory errors.
+max-message-size: 16777216
+
+# Event handler timeout in milliseconds (default: 1000).
+# If a Python event handler doesn't respond within this time, it is skipped
+# and a warning is logged.
+event-timeout-ms: 1000
+
+# Block explosion batch timeout in milliseconds (default: 100).
+explosion-timeout-ms: 100
+
+# Python executable path.
+# Set to "auto" to auto-detect (checks .venv first, then system python3/python).
+python-executable: auto

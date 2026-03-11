@@ -21,12 +21,12 @@ import java.util.UUID;
 public class PlayerUuidResolver {
     private static final int MAX_CACHE_SIZE = 1000;
 
-    // #11: Reuse a single HttpClient instance instead of creating one per lookup
+    // Reuse a single HttpClient instance instead of creating one per lookup
     private static final HttpClient HTTP_CLIENT = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(3))
             .build();
 
-    // #12: Proper LRU eviction instead of clear()-on-overflow
+    // Proper LRU eviction instead of clear()-on-overflow
     private final Map<String, UUID> playerUuidCache = Collections.synchronizedMap(
             new LinkedHashMap<String, UUID>(64, 0.75f, true) {
                 @Override
@@ -35,7 +35,7 @@ public class PlayerUuidResolver {
                 }
             });
 
-    // #13: Cached usercache.json parse result with timestamp
+    // Cached usercache.json parse result with timestamp
     private volatile long userCacheLastModified = -1;
     private volatile Map<String, UUID> userCacheParsed = Map.of();
 
@@ -62,7 +62,8 @@ public class PlayerUuidResolver {
                     return uuid;
                 }
             }
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            // Bukkit offline player lookup failed; try Mojang API next
         }
 
         try {
@@ -88,7 +89,8 @@ public class PlayerUuidResolver {
             UUID uuid = UUID.fromString(formatted);
             cacheUuid(key, uuid);
             return uuid;
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            // Mojang API lookup failed (timeout, parse error, etc.)
         }
         if (!Bukkit.getOnlineMode()) {
             try {
@@ -97,7 +99,8 @@ public class PlayerUuidResolver {
                     cacheUuid(key, offline);
                     return offline;
                 }
-            } catch (Exception ignored) {
+            } catch (Exception e) {
+                // Offline-mode UUID generation failed
             }
         }
         return null;
@@ -113,7 +116,7 @@ public class PlayerUuidResolver {
             if (!Files.exists(cachePath)) {
                 return null;
             }
-            // #13: Only re-parse if the file was modified since last read
+            // Only re-parse if the file was modified since last read
             long lastMod = Files.getLastModifiedTime(cachePath).toMillis();
             if (lastMod != userCacheLastModified) {
                 Map<String, UUID> parsed = new LinkedHashMap<>();
@@ -142,7 +145,8 @@ public class PlayerUuidResolver {
                 userCacheLastModified = lastMod;
             }
             return userCacheParsed.get(name.toLowerCase());
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            // usercache.json parse failed; return null
         }
         return null;
     }

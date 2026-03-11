@@ -388,7 +388,7 @@ public class EntitySpawner {
         return null;
     }
 
-    // #14: Cached NMS reflection handles
+    // Cached NMS reflection handles
     private static volatile Method cachedParseTag;
     private static volatile Method cachedGetHandle;
 
@@ -496,14 +496,15 @@ public class EntitySpawner {
         // Use Bukkit API — works on all Paper 1.21+ versions without NMS
         try {
             return world.spawnEntity(location, entityType);
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            // Bukkit API may not support this entity type; fall through to NMS
         }
 
         // NMS fallback with multi-version support
         return spawnNonLivingNms(world, location, entityType);
     }
 
-    // #14: Cached NMS reflection handles for spawnNonLivingNms
+    // Cached NMS reflection handles for spawnNonLivingNms
     private static volatile Method cachedCraftWorldGetHandle;
     private static volatile Method cachedBukkitToMinecraft;
     private static volatile Method cachedBlockPosContaining;
