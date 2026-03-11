@@ -94,6 +94,20 @@ class ProxyBase:
 
         return _connection.call(method=method, args=list(args), handle=self._handle, target=self._target, **kwargs)
 
+    def _call_ff(self, method: str, *args: Any, **kwargs: Any) -> None:
+        """Invoke a bridge method as fire-and-forget (no response expected)."""
+        if _connection is None:
+            raise ConnectionError("Bridge not connected")
+
+        if self._handle is None and self._target == "ref":
+            if kwargs:
+                _connection.call_fire_forget(method="call", args=[self._ref_type, self._ref_id, method, list(args), kwargs], target="ref")
+            else:
+                _connection.call_fire_forget(method="call", args=[self._ref_type, self._ref_id, method, list(args)], target="ref")
+            return
+
+        _connection.call_fire_forget(method=method, args=list(args), handle=self._handle, target=self._target, **kwargs)
+
     def _call_sync(self, method: str, *args: Any, **kwargs: Any) -> Any:
         """Invoke a bridge method synchronously and return the result."""
         if _connection is None:
@@ -139,6 +153,11 @@ class ProxyBase:
             return self.fields[field]
 
         return self._call_sync(method)
+
+    def _invalidate_field(self, *field_names: str) -> None:
+        """Remove cached field values so next access fetches fresh data from Java."""
+        for name in field_names:
+            self.fields.pop(name, None)
 
     def __eq__(self, other: object) -> bool:
         """Check equality."""
@@ -528,11 +547,12 @@ class Entity(ProxyBase):
 
     def teleport(self, location: Location):
         """Teleport to a location."""
-        return self._call("teleport", location)
+        self._invalidate_field("location", "world")
+        self._call_ff("teleport", location)
 
     def remove(self):
         """Remove this object."""
-        return self._call("remove")
+        self._call_ff("remove")
 
     @property
     def velocity(self):
@@ -542,7 +562,7 @@ class Entity(ProxyBase):
     @velocity.setter
     def velocity(self, vector: Vector):
         """Set the velocity value."""
-        return self._call("setVelocity", vector)
+        self._call_ff("setVelocity", vector)
 
     @property
     def is_dead(self):
@@ -567,15 +587,15 @@ class Entity(ProxyBase):
     @fire_ticks.setter
     def fire_ticks(self, ticks: int):
         """Set the fire ticks value."""
-        return self._call("setFireTicks", ticks)
+        self._call_ff("setFireTicks", ticks)
 
     def add_passenger(self, entity: Entity):
         """Add a passenger."""
-        return self._call("addPassenger", entity)
+        self._call_ff("addPassenger", entity)
 
     def remove_passenger(self, entity: Entity):
         """Remove a passenger."""
-        return self._call("removePassenger", entity)
+        self._call_ff("removePassenger", entity)
 
     @property
     def passengers(self):
@@ -590,12 +610,12 @@ class Entity(ProxyBase):
     @custom_name.setter
     def custom_name(self, name: str):
         """Set the custom name value."""
-        return self._call("setCustomName", name)
+        self._call_ff("setCustomName", name)
 
     @custom_name.deleter
     def custom_name(self):
         """Return the custom display name."""
-        return self._call("setCustomName", None)
+        self._call_ff("setCustomName", None)
 
     @property
     def custom_name_visible(self) -> bool:
@@ -605,7 +625,7 @@ class Entity(ProxyBase):
     @custom_name_visible.setter
     def custom_name_visible(self, value: bool):
         """Set the custom name visible value."""
-        return self._call("setCustomNameVisible", value)
+        self._call_ff("setCustomNameVisible", value)
 
     @property
     def uuid(self):
@@ -712,12 +732,12 @@ class Entity(ProxyBase):
     @target.setter
     def target(self, entity: Entity | None = None):
         """Set the target value."""
-        return self._call("setTarget", entity)
+        self._call_ff("setTarget", entity)
 
     @target.deleter
     def target(self):
         """Return the current target entity."""
-        return self._call("setTarget", None)
+        self._call_ff("setTarget", None)
 
     @property
     def is_aware(self):
@@ -727,7 +747,7 @@ class Entity(ProxyBase):
     @is_aware.setter
     def is_aware(self, aware: bool):
         """Set the is aware value."""
-        return self._call("setAware", aware)
+        self._call_ff("setAware", aware)
 
     def pathfind_to(self, location: Location, speed: float = 1.0):
         """Start pathfinding to a location."""
@@ -735,7 +755,7 @@ class Entity(ProxyBase):
 
     def stop_pathfinding(self):
         """Stop the current pathfinding."""
-        return self._call("stopPathfinding")
+        self._call_ff("stopPathfinding")
 
     def has_line_of_sight(self, entity: Entity):
         """Check if line of sight exists."""
@@ -757,11 +777,11 @@ class Entity(ProxyBase):
 
     def remove_all_goals(self):
         """Remove all AI goals from this mob."""
-        return self._call("removeAllGoals")
+        self._call_ff("removeAllGoals")
 
     def damage(self, amount: float):
         """Apply damage to the entity."""
-        return self._call("damage", amount)
+        self._call_ff("damage", amount)
 
     def add_tag(self, tag: str):
         """Add a tag to this entity (shared across all instances with the same UUID)."""
@@ -791,7 +811,7 @@ class Entity(ProxyBase):
     @gravity.setter
     def gravity(self, value: bool):
         """Set the gravity value."""
-        return self._call("setGravity", value)
+        self._call_ff("setGravity", value)
 
     @property
     def glowing(self) -> bool:
@@ -801,7 +821,7 @@ class Entity(ProxyBase):
     @glowing.setter
     def glowing(self, value: bool):
         """Set the glowing value."""
-        return self._call("setGlowing", value)
+        self._call_ff("setGlowing", value)
 
     @property
     def invisible(self) -> bool:
@@ -811,7 +831,7 @@ class Entity(ProxyBase):
     @invisible.setter
     def invisible(self, value: bool):
         """Set the invisible value."""
-        return self._call("setInvisible", value)
+        self._call_ff("setInvisible", value)
 
     @property
     def invulnerable(self) -> bool:
@@ -821,7 +841,7 @@ class Entity(ProxyBase):
     @invulnerable.setter
     def invulnerable(self, value: bool):
         """Set the invulnerable value."""
-        return self._call("setInvulnerable", value)
+        self._call_ff("setInvulnerable", value)
 
     @property
     def silent(self) -> bool:
@@ -831,7 +851,7 @@ class Entity(ProxyBase):
     @silent.setter
     def silent(self, value: bool):
         """Set the silent value."""
-        return self._call("setSilent", value)
+        self._call_ff("setSilent", value)
 
     @property
     def persistent(self) -> bool:
@@ -841,7 +861,7 @@ class Entity(ProxyBase):
     @persistent.setter
     def persistent(self, value: bool):
         """Set the persistent value."""
-        return self._call("setPersistent", value)
+        self._call_ff("setPersistent", value)
 
     @property
     def collidable(self) -> bool:
@@ -851,7 +871,7 @@ class Entity(ProxyBase):
     @collidable.setter
     def collidable(self, value: bool):
         """Set the collidable value."""
-        return self._call("setCollidable", value)
+        self._call_ff("setCollidable", value)
 
     @property
     def portal_cooldown(self) -> int:
@@ -861,7 +881,7 @@ class Entity(ProxyBase):
     @portal_cooldown.setter
     def portal_cooldown(self, ticks: int):
         """Set the portal cooldown value."""
-        return self._call("setPortalCooldown", int(ticks))
+        self._call_ff("setPortalCooldown", int(ticks))
 
     @property
     def max_fire_ticks(self) -> int:
@@ -876,7 +896,7 @@ class Entity(ProxyBase):
     @freeze_ticks.setter
     def freeze_ticks(self, ticks: int):
         """Set the freeze ticks value."""
-        return self._call("setFreezeTicks", int(ticks))
+        self._call_ff("setFreezeTicks", int(ticks))
 
     @property
     def height(self) -> float:
@@ -1312,31 +1332,33 @@ class Player(Entity):
 
     def send_message(self, message: str):
         """Send a message."""
-        return self._call("sendMessage", message)
+        self._call_ff("sendMessage", message)
 
     def chat(self, message: str):
         """Send a chat message as this player."""
-        return self._call("chat", message)
+        self._call_ff("chat", message)
 
     def kick(self, reason: str = ""):
         """Kick the player."""
-        return self._call("kick", reason)
+        self._call_ff("kick", reason)
 
     def teleport(self, location: Location):
         """Teleport to a location."""
-        return self._call("teleport", location)
+        self._invalidate_field("location", "world")
+        self._call_ff("teleport", location)
 
     def give_exp(self, amount: int):
         """Give experience points."""
-        return self._call("giveExp", amount)
+        self._invalidate_field("exp", "level")
+        self._call_ff("giveExp", amount)
 
     def add_effect(self, effect: Effect):
         """Add a effect."""
-        return self._call("addPotionEffect", effect)
+        self._call_ff("addPotionEffect", effect)
 
     def remove_effect(self, effect_type: EffectType):
         """Remove a effect."""
-        return self._call("removePotionEffect", effect_type)
+        self._call_ff("removePotionEffect", effect_type)
 
     @property
     def effects(self):
@@ -1345,7 +1367,8 @@ class Player(Entity):
 
     def set_game_mode(self, mode: GameMode):
         """Set the game mode."""
-        return self._call("setGameMode", mode)
+        self._invalidate_field("gameMode", "game_mode")
+        self._call_ff("setGameMode", mode)
 
     @property
     def scoreboard(self):
@@ -1354,7 +1377,7 @@ class Player(Entity):
 
     def set_scoreboard(self, scoreboard: Scoreboard):
         """Set the scoreboard."""
-        return self._call("setScoreboard", scoreboard)
+        self._call_ff("setScoreboard", scoreboard)
 
     def has_permission(self, permission: str):
         """Check if permission exists."""
@@ -1367,7 +1390,7 @@ class Player(Entity):
 
     def set_op(self, value: bool):
         """Set the op."""
-        return self._call("setOp", value)
+        self._call_ff("setOp", value)
 
     def add_permission(self, permission: str, value: bool = True):
         """Add a permission."""
@@ -1404,15 +1427,15 @@ class Player(Entity):
         if isinstance(sound, str):
             sound = Sound.from_name(sound.upper())
 
-        return self._call("playSound", sound, volume, pitch)
+        self._call_ff("playSound", sound, volume, pitch)
 
     def send_action_bar(self, message: str):
         """Send a action bar."""
-        return self._call("sendActionBar", message)
+        self._call_ff("sendActionBar", message)
 
     def send_title(self, title: str, subtitle: str = "", fade_in: int = 10, stay: int = 70, fade_out: int = 20):
         """Send a title."""
-        return self._call("sendTitle", title, subtitle, fade_in, stay, fade_out)
+        self._call_ff("sendTitle", title, subtitle, fade_in, stay, fade_out)
 
     @property
     def tab_list_header(self):
@@ -1422,7 +1445,7 @@ class Player(Entity):
     @tab_list_header.setter
     def tab_list_header(self, header: str):
         """Set the tab list header value."""
-        return self._call("setTabListHeader", header)
+        self._call_ff("setTabListHeader", header)
 
     @property
     def tab_list_footer(self):
@@ -1432,11 +1455,11 @@ class Player(Entity):
     @tab_list_footer.setter
     def tab_list_footer(self, footer: str):
         """Set the tab list footer value."""
-        return self._call("setTabListFooter", footer)
+        self._call_ff("setTabListFooter", footer)
 
     def set_tab_list_header_footer(self, header: str = "", footer: str = ""):
         """Set the tab list header footer."""
-        return self._call("setTabListHeaderFooter", header, footer)
+        self._call_ff("setTabListHeaderFooter", header, footer)
 
     @property
     def tab_list_name(self):
@@ -1446,15 +1469,17 @@ class Player(Entity):
     @tab_list_name.setter
     def tab_list_name(self, name: str):
         """Set the tab list name value."""
-        return self._call("setPlayerListName", name)
+        self._call_ff("setPlayerListName", name)
 
     def set_health(self, health: float):
         """Set the health."""
-        return self._call("setHealth", health)
+        self._invalidate_field("health")
+        self._call_ff("setHealth", health)
 
     def set_food_level(self, level: int):
         """Set the food level."""
-        return self._call("setFoodLevel", level)
+        self._invalidate_field("foodLevel", "food_level")
+        self._call_ff("setFoodLevel", level)
 
     @property
     def level(self):
@@ -1464,7 +1489,8 @@ class Player(Entity):
     @level.setter
     def level(self, level: int):
         """Set the level value."""
-        return self._call("setLevel", level)
+        self._invalidate_field("level")
+        self._call_ff("setLevel", level)
 
     @property
     def exp(self):
@@ -1474,7 +1500,8 @@ class Player(Entity):
     @exp.setter
     def exp(self, exp: float):
         """Set the exp value."""
-        return self._call("setExp", exp)
+        self._invalidate_field("exp")
+        self._call_ff("setExp", exp)
 
     @property
     def is_flying(self):
@@ -1484,7 +1511,7 @@ class Player(Entity):
     @is_flying.setter
     def is_flying(self, value: bool):
         """Set the is flying value."""
-        return self._call("setFlying", value)
+        self._call_ff("setFlying", value)
 
     @property
     def is_sneaking(self):
@@ -1494,7 +1521,7 @@ class Player(Entity):
     @is_sneaking.setter
     def is_sneaking(self, value: bool):
         """Set the is sneaking value."""
-        return self._call("setSneaking", value)
+        self._call_ff("setSneaking", value)
 
     @property
     def is_sprinting(self):
@@ -1504,15 +1531,15 @@ class Player(Entity):
     @is_sprinting.setter
     def is_sprinting(self, value: bool):
         """Set the is sprinting value."""
-        return self._call("setSprinting", value)
+        self._call_ff("setSprinting", value)
 
     def set_walk_speed(self, speed: float):
         """Set the walk speed."""
-        return self._call("setWalkSpeed", speed)
+        self._call_ff("setWalkSpeed", speed)
 
     def set_fly_speed(self, speed: float):
         """Set the fly speed."""
-        return self._call("setFlySpeed", speed)
+        self._call_ff("setFlySpeed", speed)
 
     @property
     def name(self):
@@ -1595,7 +1622,7 @@ class Player(Entity):
 
     def set_resource_pack(self, url: str, hash: str = "", prompt: str | None = None, required: bool = False):
         """Set the resource pack."""
-        return self._call("setResourcePack", url, hash, required, prompt)
+        self._call_ff("setResourcePack", url, hash, required, prompt)
 
     @property
     def inventory(self):
@@ -1740,7 +1767,7 @@ class Player(Entity):
     @absorption.setter
     def absorption(self, value: float):
         """Set the absorption value."""
-        return self._call("setAbsorptionAmount", float(value))
+        self._call_ff("setAbsorptionAmount", float(value))
 
     @property
     def saturation(self) -> float:
@@ -1750,7 +1777,7 @@ class Player(Entity):
     @saturation.setter
     def saturation(self, value: float):
         """Set the saturation value."""
-        return self._call("setSaturation", float(value))
+        self._call_ff("setSaturation", float(value))
 
     @property
     def exhaustion(self) -> float:
@@ -1760,7 +1787,7 @@ class Player(Entity):
     @exhaustion.setter
     def exhaustion(self, value: float):
         """Set the exhaustion value."""
-        return self._call("setExhaustion", float(value))
+        self._call_ff("setExhaustion", float(value))
 
     @property
     def attack_cooldown(self) -> float:
@@ -1775,7 +1802,7 @@ class Player(Entity):
     @allow_flight.setter
     def allow_flight(self, value: bool):
         """Set the allow flight value."""
-        return self._call("setAllowFlight", value)
+        self._call_ff("setAllowFlight", value)
 
     @property
     def locale(self) -> str:
@@ -1795,11 +1822,11 @@ class Player(Entity):
     # --- Methods needing Java handlers ---
     def hide_player(self, other: Player):
         """Hide this player from another player."""
-        return self._call("hidePlayer", other)
+        self._call_ff("hidePlayer", other)
 
     def show_player(self, other: Player):
         """Show this player to another player."""
-        return self._call("showPlayer", other)
+        self._call_ff("showPlayer", other)
 
     def can_see(self, other: Player) -> bool:
         """Check if this player can see another player."""
@@ -1807,15 +1834,15 @@ class Player(Entity):
 
     def open_book(self, item: Item):
         """Open a written book for the player."""
-        return self._call("openBook", item)
+        self._call_ff("openBook", item)
 
     def send_block_change(self, location: Location, material: str):
         """Send a block change."""
-        return self._call("sendBlockChange", location, material)
+        self._call_ff("sendBlockChange", location, material)
 
     def send_particle(self, particle: str, location: Location, count: int = 1, offset_x: float = 0, offset_y: float = 0, offset_z: float = 0, extra: float = 0):
         """Send a particle."""
-        return self._call("sendParticle", particle, location, count, offset_x, offset_y, offset_z, extra)
+        self._call_ff("sendParticle", particle, location, count, offset_x, offset_y, offset_z, extra)
 
     def get_cooldown(self, material: str) -> int:
         """Get the remaining cooldown ticks for a material."""
@@ -1823,7 +1850,7 @@ class Player(Entity):
 
     def set_cooldown(self, material: str, ticks: int):
         """Set the cooldown."""
-        return self._call("setCooldown", material, ticks)
+        self._call_ff("setCooldown", material, ticks)
 
     def has_cooldown(self, material: str) -> bool:
         """Check if cooldown exists."""
@@ -1839,9 +1866,10 @@ class Player(Entity):
     def set_statistic(self, stat: str, value: int, material_or_entity: str | None = None):
         """Set the statistic."""
         if material_or_entity is not None:
-            return self._call("setStatistic", stat, material_or_entity, value)
+            self._call_ff("setStatistic", stat, material_or_entity, value)
+            return
 
-        return self._call("setStatistic", stat, value)
+        self._call_ff("setStatistic", stat, value)
 
     @property
     def max_health(self) -> float:
@@ -1851,7 +1879,8 @@ class Player(Entity):
     @max_health.setter
     def max_health(self, value: float):
         """Set the max health value."""
-        self._call("setMaxHealth", float(value))
+        self._invalidate_field("health")
+        self._call_ff("setMaxHealth", float(value))
 
     @property
     def bed_spawn_location(self) -> Location | None:
@@ -1868,12 +1897,12 @@ class Player(Entity):
     @bed_spawn_location.setter
     def bed_spawn_location(self, location: Location | None):
         """Set the bed spawn location value."""
-        self._call("setBedSpawnLocation", location)
+        self._call_ff("setBedSpawnLocation", location)
 
     @bed_spawn_location.deleter
     def bed_spawn_location(self):
         """Return the player's bed spawn location."""
-        self._call("setBedSpawnLocation", None)
+        self._call_ff("setBedSpawnLocation", None)
 
     @property
     def compass_target(self) -> Location:
@@ -1887,7 +1916,7 @@ class Player(Entity):
     @compass_target.setter
     def compass_target(self, location: Location):
         """Set the compass target value."""
-        self._call("setCompassTarget", location)
+        self._call_ff("setCompassTarget", location)
 
     # --- PersistentDataContainer ---
     def get_persistent_data(self) -> dict:
@@ -1896,7 +1925,7 @@ class Player(Entity):
 
     def set_persistent_data(self, key: str, value: str):
         """Set the persistent data."""
-        return self._call("setPDC", key, value)
+        self._call_ff("setPDC", key, value)
 
     def remove_persistent_data(self, key: str):
         """Remove a persistent data."""

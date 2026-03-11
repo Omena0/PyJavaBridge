@@ -18,27 +18,41 @@ from bridge.errors import (
 )
 from bridge.types import BridgeCall, EnumValue, _SyncWait
 
-# orjson setup
+# msgpack / orjson / json — attempt fastest available format
+_use_msgpack = False
 try:
-    import orjson as _orjson  # type: ignore[import-not-found]
+    import msgpack as _msgpack  # type: ignore[import-not-found]
+    _use_msgpack = True
 
     def _json_dumps(obj: Any) -> bytes:
-        """Serialize *obj* to compact JSON bytes via orjson."""
-        return _orjson.dumps(obj)
+        """Serialize *obj* to compact msgpack bytes."""
+        return _msgpack.packb(obj, use_bin_type=True)
 
     def _json_loads(data: Any) -> Any:
-        """DeSerialize JSON bytes/str via orjson."""
-        return _orjson.loads(data)
+        """Deserialize msgpack bytes."""
+        return _msgpack.unpackb(data, raw=False)
 
 except (ImportError, ModuleNotFoundError):
+    try:
+        import orjson as _orjson  # type: ignore[import-not-found]
 
-    def _json_dumps(obj: Any) -> bytes:
-        """Serialize *obj* to compact JSON bytes via stdlib json."""
-        return json.dumps(obj, separators=_JSON_SEPARATORS, ensure_ascii=False).encode("utf-8")
+        def _json_dumps(obj: Any) -> bytes:
+            """Serialize *obj* to compact JSON bytes via orjson."""
+            return _orjson.dumps(obj)
 
-    def _json_loads(data: Any) -> Any:
-        """DeSerialize JSON bytes/str via stdlib json."""
-        return json.loads(data)
+        def _json_loads(data: Any) -> Any:
+            """DeSerialize JSON bytes/str via orjson."""
+            return _orjson.loads(data)
+
+    except (ImportError, ModuleNotFoundError):
+
+        def _json_dumps(obj: Any) -> bytes:
+            """Serialize *obj* to compact JSON bytes via stdlib json."""
+            return json.dumps(obj, separators=_JSON_SEPARATORS, ensure_ascii=False).encode("utf-8")
+
+        def _json_loads(data: Any) -> Any:
+            """DeSerialize JSON bytes/str via stdlib json."""
+            return json.loads(data)
 
 # Reused constant to avoid recreating the tuple on every call
 _JSON_SEPARATORS = (",", ":")
@@ -143,7 +157,14 @@ class BridgeConnection:
         self._stdin_fd = sys.stdin.fileno()
         self._thread = threading.Thread(target=self._reader, daemon=True)
         self._thread.start()
-        print(f"[PyJavaBridge] Connected via stdin/stdout")
+        fmt = "msgpack" if _use_msgpack else "json"
+        print(f"[PyJavaBridge] Connected via stdin/stdout ({fmt})")
+        # Handshake MUST be sent as JSON since Java hasn't switched format yet
+        handshake = json.dumps({"type": "handshake", "format": fmt}).encode("utf-8")
+        header = struct.pack("!I", len(handshake))
+        with self._lock:
+            self._stdout.write(header + handshake)
+            self._stdout.flush()
 
     def subscribe(self, event_name: str, once_per_tick: bool, priority: str = "NORMAL", throttle_ms: int = 0):
         """Subscribe to a Bukkit event on the Java side."""
@@ -218,6 +239,18 @@ class BridgeConnection:
 
         self.send(message)
         return BridgeCall(future)
+
+    def call_fire_forget(self, method: str, args: Optional[List[Any]] = None, handle: Optional[int] = None, target: Optional[str] = None, **kwargs: Any) -> None:
+        """Send a call without waiting for a response (fire-and-forget)."""
+        self._maybe_flush_releases()
+        request_id = self._next_id()
+        message = self._build_call_message(request_id, method, args, handle, target, kwargs)
+        message["no_response"] = True
+        if self._batch_stack:
+            self._batch_messages.append(message)
+            return
+
+        self.send(message)
 
     def call_sync(self, method: str, args: Optional[List[Any]] = None, handle: Optional[int] = None, target: Optional[str] = None, **kwargs: Any) -> Any:
         """Send a synchronous call that blocks the current thread until a response."""

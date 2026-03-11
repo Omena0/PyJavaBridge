@@ -212,7 +212,6 @@ public class BridgeSerializer {
             fields.add("gameMode", serialize(player.getGameMode(), seen));
             fields.addProperty("health", player.getHealth());
             fields.addProperty("foodLevel", player.getFoodLevel());
-            fields.add("inventory", serialize(player.getInventory(), seen));
         }
 
         if (value instanceof org.bukkit.entity.Entity entity) {

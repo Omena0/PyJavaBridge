@@ -78,6 +78,12 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+
+import org.msgpack.core.MessagePack;
+import org.msgpack.core.MessagePacker;
+import org.msgpack.core.MessageUnpacker;
+import org.msgpack.core.MessageFormat;
+import org.msgpack.core.buffer.ArrayBufferOutput;
 import org.bukkit.event.Listener;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.player.PlayerQuitEvent;
@@ -100,6 +106,9 @@ public class BridgeInstance {
     private final Map<Integer, CompletableFuture<List<String>>> pendingTabCompletes = new ConcurrentHashMap<>();
     private final java.util.concurrent.atomic.AtomicInteger tabCompleteIdCounter = new java.util.concurrent.atomic.AtomicInteger(0);
     private final Object writeLock = new Object();
+
+    // Serialization format negotiation: default JSON, may switch to msgpack on handshake
+    private volatile boolean useMsgpack = false;
 
     private final BridgeSerializer serializer;
     private final EventDispatcher eventDispatcher;
@@ -253,8 +262,7 @@ public class BridgeInstance {
                 reader.readFully(payload);
                 JsonObject message;
                 try {
-                    message = JsonParser.parseString(new String(payload, StandardCharsets.UTF_8))
-                            .getAsJsonObject();
+                    message = deserializePayload(payload);
                 } catch (Exception e) {
                     plugin.getLogger().severe("[" + name + "] Failed to parse message: " + e.getMessage());
                     continue;
@@ -285,6 +293,7 @@ public class BridgeInstance {
             case "call" -> { handleCall(message, startNano); return; }
             case "call_batch" -> { handleCallBatch(message, startNano); return; }
             case "wait" -> handleWait(message);
+            case "handshake" -> handleHandshake(message);
             case "ready" -> Bukkit.getScheduler().runTaskLater(plugin,
                     () -> sendEvent("server_boot", new JsonObject()),
                     2L);
@@ -383,6 +392,16 @@ public class BridgeInstance {
 
             send(response);
         }, ticks);
+    }
+
+    private void handleHandshake(JsonObject message) {
+        String format = message.has("format") ? message.get("format").getAsString() : "json";
+        if ("msgpack".equals(format)) {
+            useMsgpack = true;
+            plugin.getLogger().info("[" + name + "] Switched to msgpack serialization");
+        } else {
+            plugin.getLogger().info("[" + name + "] Using JSON serialization");
+        }
     }
 
     private void handleRegisterCommand(JsonObject message) {
@@ -763,22 +782,27 @@ public class BridgeInstance {
 
     private void handleCall(JsonObject message, long startNano) {
         int id = message.get("id").getAsInt();
+        boolean noResponse = message.has("no_response") && message.get("no_response").getAsBoolean();
 
         if (isCallThreadSafe(message)) {
             try {
                 Object result = invoke(message);
-                JsonObject response = new JsonObject();
-                response.addProperty("type", "return");
-                response.addProperty("id", id);
-                response.add("result", serialize(result));
-                sendWithTiming(response, startNano);
-            } catch (Exception ex) {
-                Throwable cause = ex;
-                String errorMessage = cause.getMessage();
-                if (errorMessage == null || errorMessage.isBlank()) {
-                    errorMessage = cause.getClass().getSimpleName();
+                if (!noResponse) {
+                    JsonObject response = new JsonObject();
+                    response.addProperty("type", "return");
+                    response.addProperty("id", id);
+                    response.add("result", serialize(result));
+                    sendWithTiming(response, startNano);
                 }
-                sendError(id, errorMessage, cause);
+            } catch (Exception ex) {
+                if (!noResponse) {
+                    Throwable cause = ex;
+                    String errorMessage = cause.getMessage();
+                    if (errorMessage == null || errorMessage.isBlank()) {
+                        errorMessage = cause.getClass().getSimpleName();
+                    }
+                    sendError(id, errorMessage, cause);
+                }
             }
             return;
         }
@@ -786,6 +810,7 @@ public class BridgeInstance {
         CompletableFuture<Object> future = plugin.runOnMainThread(this, () -> invoke(message));
 
         future.whenCompleteAsync((result, error) -> {
+            if (noResponse) return;
             if (error != null) {
                 Throwable cause = error instanceof java.util.concurrent.CompletionException
                         && error.getCause() != null ? error.getCause() : error;
@@ -858,6 +883,7 @@ public class BridgeInstance {
             for (JsonObject callMessage : calls) {
                 int id = callMessage.get("id").getAsInt();
                 ids.add(id);
+                boolean noResponse = callMessage.has("no_response") && callMessage.get("no_response").getAsBoolean();
 
                 if (failed) {
                     continue;
@@ -865,13 +891,14 @@ public class BridgeInstance {
 
                 try {
                     Object result = invoke(callMessage);
-                    JsonObject response = new JsonObject();
 
-                    response.addProperty("type", "return");
-                    response.addProperty("id", id);
-                    response.add("result", serialize(result));
-
-                    responses.add(response);
+                    if (!noResponse) {
+                        JsonObject response = new JsonObject();
+                        response.addProperty("type", "return");
+                        response.addProperty("id", id);
+                        response.add("result", serialize(result));
+                        responses.add(response);
+                    }
 
                 } catch (Exception ex) {
                     failed = true;
@@ -902,16 +929,18 @@ public class BridgeInstance {
         List<JsonObject> batchResponses = new ArrayList<>(calls.size());
         for (JsonObject callMessage : calls) {
             int id = callMessage.get("id").getAsInt();
+            boolean noResponse = callMessage.has("no_response") && callMessage.get("no_response").getAsBoolean();
 
             try {
                 Object result = invoke(callMessage);
-                JsonObject response = new JsonObject();
 
-                response.addProperty("type", "return");
-                response.addProperty("id", id);
-                response.add("result", serialize(result));
-
-                batchResponses.add(response);
+                if (!noResponse) {
+                    JsonObject response = new JsonObject();
+                    response.addProperty("type", "return");
+                    response.addProperty("id", id);
+                    response.add("result", serialize(result));
+                    batchResponses.add(response);
+                }
 
             } catch (Exception ex) {
                 // Flush any accumulated responses first, then send error
@@ -2766,21 +2795,135 @@ public class BridgeInstance {
         return entitySpawner.spawnImagePixels(world, locationObj, pixelsObj);
     }
 
-    // #4: Reusable byte buffer per thread for send() serialization
-    private static final ThreadLocal<java.io.ByteArrayOutputStream> SEND_BUFFER =
-            ThreadLocal.withInitial(() -> new java.io.ByteArrayOutputStream(4096));
+    // ─── msgpack ↔ JsonObject conversion helpers ───
+
+    private JsonObject msgpackToJsonObject(byte[] data) throws IOException {
+        try (MessageUnpacker unpacker = MessagePack.newDefaultUnpacker(data)) {
+            return (JsonObject) unpackValue(unpacker);
+        }
+    }
+
+    private JsonElement unpackValue(MessageUnpacker unpacker) throws IOException {
+        MessageFormat fmt = unpacker.getNextFormat();
+        switch (fmt.getValueType()) {
+            case NIL -> { unpacker.unpackNil(); return com.google.gson.JsonNull.INSTANCE; }
+            case BOOLEAN -> { return new com.google.gson.JsonPrimitive(unpacker.unpackBoolean()); }
+            case INTEGER -> {
+                // Try long first, works for all integer sizes
+                long v = unpacker.unpackLong();
+                if (v == (int) v) return new com.google.gson.JsonPrimitive((int) v);
+                return new com.google.gson.JsonPrimitive(v);
+            }
+            case FLOAT -> { return new com.google.gson.JsonPrimitive(unpacker.unpackDouble()); }
+            case STRING -> { return new com.google.gson.JsonPrimitive(unpacker.unpackString()); }
+            case BINARY -> {
+                int len = unpacker.unpackBinaryHeader();
+                byte[] bin = new byte[len];
+                unpacker.readPayload(bin);
+                // Treat binary as a UTF-8 string for compatibility
+                return new com.google.gson.JsonPrimitive(new String(bin, StandardCharsets.UTF_8));
+            }
+            case ARRAY -> {
+                int size = unpacker.unpackArrayHeader();
+                com.google.gson.JsonArray arr = new com.google.gson.JsonArray(size);
+                for (int i = 0; i < size; i++) arr.add(unpackValue(unpacker));
+                return arr;
+            }
+            case MAP -> {
+                int size = unpacker.unpackMapHeader();
+                JsonObject obj = new JsonObject();
+                for (int i = 0; i < size; i++) {
+                    String key = unpacker.unpackString();
+                    obj.add(key, unpackValue(unpacker));
+                }
+                return obj;
+            }
+            default -> {
+                unpacker.skipValue();
+                return com.google.gson.JsonNull.INSTANCE;
+            }
+        }
+    }
+
+    private byte[] jsonObjectToMsgpack(JsonObject obj) throws IOException {
+        ArrayBufferOutput out = new ArrayBufferOutput();
+        try (MessagePacker packer = MessagePack.newDefaultPacker(out)) {
+            packJsonElement(packer, obj);
+        }
+        return out.toByteArray();
+    }
+
+    private void packJsonElement(MessagePacker packer, JsonElement el) throws IOException {
+        if (el == null || el.isJsonNull()) {
+            packer.packNil();
+        } else if (el.isJsonPrimitive()) {
+            com.google.gson.JsonPrimitive prim = el.getAsJsonPrimitive();
+            if (prim.isBoolean()) {
+                packer.packBoolean(prim.getAsBoolean());
+            } else if (prim.isNumber()) {
+                Number num = prim.getAsNumber();
+                // Check if it's an integer type
+                double d = num.doubleValue();
+                if (d == Math.floor(d) && !Double.isInfinite(d) && d >= Long.MIN_VALUE && d <= Long.MAX_VALUE) {
+                    long l = num.longValue();
+                    if (l >= Integer.MIN_VALUE && l <= Integer.MAX_VALUE) {
+                        packer.packInt((int) l);
+                    } else {
+                        packer.packLong(l);
+                    }
+                } else {
+                    packer.packDouble(d);
+                }
+            } else {
+                packer.packString(prim.getAsString());
+            }
+        } else if (el.isJsonArray()) {
+            com.google.gson.JsonArray arr = el.getAsJsonArray();
+            packer.packArrayHeader(arr.size());
+            for (JsonElement child : arr) {
+                packJsonElement(packer, child);
+            }
+        } else if (el.isJsonObject()) {
+            JsonObject obj = el.getAsJsonObject();
+            packer.packMapHeader(obj.size());
+            for (Map.Entry<String, JsonElement> entry : obj.entrySet()) {
+                packer.packString(entry.getKey());
+                packJsonElement(packer, entry.getValue());
+            }
+        }
+    }
+
+    private byte[] serializePayload(JsonObject obj) {
+        if (useMsgpack) {
+            try {
+                return jsonObjectToMsgpack(obj);
+            } catch (IOException e) {
+                logError("Msgpack serialization failed, falling back to JSON", e);
+            }
+        }
+        return gson.toJson(obj).getBytes(StandardCharsets.UTF_8);
+    }
+
+    private JsonObject deserializePayload(byte[] payload) {
+        if (useMsgpack) {
+            try {
+                return msgpackToJsonObject(payload);
+            } catch (IOException e) {
+                plugin.getLogger().severe("[" + name + "] Msgpack deserialization failed, trying JSON: " + e.getMessage());
+            }
+        }
+        return JsonParser.parseString(new String(payload, StandardCharsets.UTF_8)).getAsJsonObject();
+    }
 
     public void send(JsonObject response) {
         if (writer == null || !running) {
             return;
         }
         try {
-            java.io.ByteArrayOutputStream baos = SEND_BUFFER.get();
-            baos.reset();
-            byte[] json = gson.toJson(response).getBytes(StandardCharsets.UTF_8);
+            byte[] payload = serializePayload(response);
             synchronized (writeLock) {
-                writer.writeInt(json.length);
-                writer.write(json);
+                writer.writeInt(payload.length);
+                writer.write(payload);
                 writer.flush();
             }
             if (plugin.isDebugEnabled()) {
@@ -2803,7 +2946,7 @@ public class BridgeInstance {
         try {
             synchronized (writeLock) {
                 for (JsonObject response : responses) {
-                    byte[] payload = gson.toJson(response).getBytes(StandardCharsets.UTF_8);
+                    byte[] payload = serializePayload(response);
                     writer.writeInt(payload.length);
                     writer.write(payload);
                 }
@@ -2824,7 +2967,7 @@ public class BridgeInstance {
             return;
         }
         try {
-            byte[] payload = gson.toJson(response).getBytes(StandardCharsets.UTF_8);
+            byte[] payload = serializePayload(response);
             synchronized (writeLock) {
                 writer.writeInt(payload.length);
                 writer.write(payload);

@@ -1,5 +1,6 @@
 plugins {
     id 'java'
+    id 'com.gradleup.shadow' version '9.0.0-beta12'
 }
 
 group = 'com.pyjavabridge'
@@ -28,6 +29,7 @@ def paperVersion = '1.21.4-R0.1-SNAPSHOT'
 dependencies {
     compileOnly "io.papermc.paper:paper-api:${paperVersion}"
     compileOnly 'com.comphenix.protocol:ProtocolLib:5.3.0'
+    implementation 'org.msgpack:msgpack-core:0.9.8'
 }
 
 repositories {
@@ -58,9 +60,15 @@ tasks.named('jar') {
     archiveFileName = "${project.name}-${project.version}.jar"
 }
 
+shadowJar {
+    archiveClassifier.set('')
+    archiveFileName = "${project.name}-${project.version}.jar"
+    relocate 'org.msgpack', 'com.pyjavabridge.libs.msgpack'
+}
+
 tasks.register('copyPluginJar', Copy) {
-    dependsOn tasks.named('jar')
-    from tasks.named('jar').flatMap { it.archiveFile }
+    dependsOn tasks.named('shadowJar')
+    from tasks.named('shadowJar').flatMap { it.archiveFile }
     def pluginsDir = layout.projectDirectory.dir("server/plugins")
     into pluginsDir
     doFirst {
@@ -72,8 +80,8 @@ tasks.register('copyPluginJar', Copy) {
 }
 
 tasks.register('copyReleaseJar', Copy) {
-    dependsOn tasks.named('jar')
-    from tasks.named('jar').flatMap { it.archiveFile }
+    dependsOn tasks.named('shadowJar')
+    from tasks.named('shadowJar').flatMap { it.archiveFile }
     into "${rootDir}/releases"
     doFirst {
         file("${rootDir}/releases").mkdirs()

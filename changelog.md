@@ -1,6 +1,138 @@
 
 # Changelog
 
+## 3D
+
+Performance overhaul — fire-and-forget calls, msgpack wire protocol, field cache invalidation, and reduced serialization payload.
+
+### Changes
+
+#### Fire-and-Forget Calls
+
+- Added `call_fire_forget()` to `BridgeConnection` — sends calls with `no_response: true`, skipping Future creation and await
+- Added `_call_ff()` to `ProxyBase` — convenience wrapper for fire-and-forget bridge calls
+- Java `handleCall()` checks `no_response` flag and skips result serialization + response sending
+- Java `executeBatchCalls()` supports `no_response` per-call in both atomic and non-atomic batch paths
+- Converted ~80+ void/setter methods on Entity and Player to fire-and-forget:
+  - Entity: `teleport`, `remove`, velocity setter, `fire_ticks` setter, `add_passenger`/`remove_passenger`, `custom_name` setter, gravity/glowing/invisible/invulnerable/silent/persistent/collidable setters, `portal_cooldown`/`freeze_ticks` setters, `eject`, `leave_vehicle`, `set_rotation`
+  - Entity (Mob): `target` setter, `is_aware` setter, `stop_pathfinding`, `remove_all_goals`
+  - Player: `damage`, `send_message`, `chat`, `kick`, `give_exp`, `add_effect`/`remove_effect`, `set_game_mode`, `set_scoreboard`, `set_op`, `play_sound`, `send_action_bar`, `send_title`, tab list setters, health/food/level/exp setters, flying/sneaking/sprinting setters, walk/fly speed setters, `send_resource_pack`, absorption/saturation/exhaustion setters, `allow_flight` setter, `hide_player`/`show_player`, `open_book`, `send_block_change`, `send_particle`, `set_cooldown`, `set_statistic`, `max_health` setter, `bed_spawn_location`/`compass_target` setters, `set_persistent_data`
+
+#### Field Cache Invalidation
+
+- Added `_invalidate_field()` to `ProxyBase` — removes cached field values so next access fetches fresh data from Java
+- Setters that modify cached values call `_invalidate_field()` before sending the fire-and-forget call, preventing desync:
+  - `teleport` → invalidates `location`, `world`
+  - `give_exp` → invalidates `exp`, `level`
+  - `set_game_mode` → invalidates `gameMode`, `game_mode`
+  - `set_health` → invalidates `health`
+  - `set_food_level` → invalidates `foodLevel`, `food_level`
+  - `level` setter → invalidates `level`
+  - `exp` setter → invalidates `exp`
+  - `max_health` setter → invalidates `health`
+
+#### Reduced Serialization Payload
+
+- Removed `inventory` from Player auto-serialization in `BridgeSerializer` — inventory is now fetched on demand instead of included in every Player object
+
+#### Msgpack Wire Protocol
+
+- Python: 3-tier serialization import chain — msgpack → orjson → stdlib json
+- Python: handshake message sent as JSON on connect to negotiate format with Java
+- Java: `handleHandshake()` switches `useMsgpack` flag on format negotiation
+- Java: `serializePayload()`/`deserializePayload()` helper methods convert JsonObject ↔ msgpack at IPC boundaries
+- Java: full msgpack ↔ Gson `JsonElement` tree conversion (`unpackValue`, `packJsonElement`) handling all types (nil, bool, int, float, string, binary, array, map)
+- Java: `bridgeLoop()`, `send()`, `sendAll()`, `sendWithTiming()` all route through format-aware helpers
+- Build: added `com.gradleup.shadow` plugin, `org.msgpack:msgpack-core:0.9.8` shaded and relocated to `com.pyjavabridge.libs.msgpack`
+- `copyPluginJar` and `copyReleaseJar` tasks updated to depend on `shadowJar`
+
+#### Bug Fixes
+
+- Fixed stray `return self._call_sync(method)` in `_invalidate_field` that would have crashed on every call
+
+## 3C
+
+Plugging some old holes in the API. Full codebase cleanup. New extensions.
+
+### Changes
+
+#### New Extensions
+
+- LootTable: weighted loot pools with conditional entries, rolls, bonus rolls, and stacked item generation
+- PlaceholderRegistry: register `%placeholder%` expansions with per-player context and batch `resolve_many()`
+- TabList: full tab-list customization with header/footer templates, fake entries, groups with prefix/priority sorting
+- Scheduler: cron-like real-world-time scheduling with `@every()` / `@after()` decorators and cancellation
+- StateMachine: per-entity/player state machines with `on_enter`/`on_exit`/`on_tick` callbacks and event-driven transitions
+- Schematic: extracted from Dungeon into standalone module (SchematicCapture.java + schematic.py)
+
+#### New APIs
+
+- `@preserve` decorator: hot-reload state persistence — caches return value to JSON and restores across `/pjb reload`
+- Custom events: `fire_event(event_name, data)` — scripts can fire and listen to custom events across scripts
+- Villager trade API: `Villager.recipes` (get/set), `recipe_count`, `add_recipe()`, `clear_recipes()`
+- Entity subtypes: ArmorStand, Villager, ItemFrame, FallingBlock, AreaEffectCloud proxy classes
+- Entity properties: `velocity`, `fire_ticks`, `custom_name`, `gravity`, `glowing`, `invisible`, `invulnerable`, `silent`, `persistent`, `collidable`, `bounding_box`, `metadata`
+- Entity AI goals: `goal_types`, `remove_goal()`, `remove_all_goals()`
+- Player: `hidePlayer`/`showPlayer`/`canSee`, `openBook`, `sendBlockChange`, `sendParticle`, cooldown management, statistics, `getMaxHealth`/`setMaxHealth`, bed spawn, compass target, PersistentDataContainer access
+- Block: `getDrops`, `getHardness`, `getBlastResistance`, PersistentDataContainer for tile entities
+- Item: durability, enchantments, item flags, `isUnbreakable`/`setUnbreakable`
+- World: game rules, world border, `getHighestBlockAt`, `generateTree`, `getNearbyEntities`, `batchSpawn`, structure API (`save`/`load`/`delete`/`list`), `createWorld`/`deleteWorld`
+- `Entity.__bool__()` via `isValid()`
+
+#### Refactoring & Code Quality
+
+- Comprehensive docstrings added across all Python modules and extensions
+- Whitespace normalization and consistent spacing across Python source
+- Type annotations tightened: lazy imports, Optional callables, assertion guards
+- `str.removeprefix()` modernization replacing `startswith()` + slice
+- `server.players` de-awaited in guild, leaderboard, npc, region (was incorrectly `await`ed)
+- `@preserve` event handlers fixed: lambdas replaced with proper async def functions
+- Gradle deprecation linting enabled: `-Xlint:deprecation`
+- Gradle wrapper (8.5) added and committed
+
+#### Optimizations — Java
+
+- BridgeInstance: 24 pre-sized ArrayList/HashMap allocations (completions, handles, release ids, batch calls, responses, args, tab complete results, merchant recipe ingredients, sign lines, goal types, recipes, lore, item flags, structures, enchantments, spawn batches, tab list setter, process command)
+- BridgeInstance: `getDrops` → `List.copyOf()`, `clearRecipes` → `List.of()`
+- BridgeSerializer: stream→manual loop for list serialization, 6 pre-sized ArrayList/HashMap allocations, early `List.of()` return for null modifiers
+- SchematicCapture: 11 pre-sized collections (HashMap, LinkedHashMap, ArrayList, HashSet), 3 stream→manual loop conversions (sum, sort)
+- EventDispatcher: simplified `getCachedMethod()`, pre-sized lists in `dispatchBlockMulti()`
+- ScriptCommand, PermissionsFacade, RaycastFacade, RegionFacade, EntitySpawner: pre-sized result collections
+
+#### Optimizations — Python
+
+- `_ENUM_TYPE_MAPPING` moved to module-level constant (was recreated on every enum deserialization)
+- `_JSON_SEPARATORS`, `_RESERVED_KWARGS` frozenset, `_MINECRAFT_PREFIXES` tuple: module-level constants
+- `event_batch` handler inlined: avoids temp dict creation and full re-dispatch per payload
+- XYZ key check: direct `"x" in d` instead of `frozenset.issubset(d.keys())`
+- `import math` / `import logging` moved to module-level
+- `__slots__` added to 27 classes across helpers and extensions
+- NPC: squared distance comparison, cached NPC coords outside player loop
+- Region: batch-fetch all player locations once per tick, inline bounds check
+- Mana: cached instance attributes as locals in regen loop
+- Bank: inlined `transfer()` to avoid double `_save()`
+- Levels: eliminated double xp lookup in `add_xp`, `xp_to_next`/`progress` avoid redundant bridge call
+- Ability: inlined `remaining_cooldown` to avoid double `time.time()` + double dict lookup
+- Leaderboard: tuple-based medal lookup
+- Quest: cached locals in async task loops
+- Guild: cached member set reference and pre-formatted message
+- Cooldown: single `.get()` lookup instead of `in` + `[]`
+- `_toml_write_table()`: single-pass scalar/sub-table separation
+- UUID cache eviction: indexed deletion instead of slice allocation
+
+#### Bug Fixes
+
+- Fixed `server.players` incorrectly awaited in guild, leaderboard, npc, region
+- Fixed `@preserve` event handler signature (lambda → async def)
+- Fixed `setLore` NPE when argument is not a list (added else branch with `List.of()`)
+
+#### Documentation & Tooling
+
+- Docs updated for all new extensions (LootTable, Placeholder, TabList, Scheduler, StateMachine)
+- Villager trade API documented
+- Type stubs updated for all new APIs and extensions
+- Gradle wrapper committed
+
 ## 3B
 
 Performance optimization pass — caching, data structures, and hot-path improvements across Java and Python.
