@@ -71,9 +71,21 @@ def _bootstrap(script_path):
 
 The `run_forever()` call blocks until shutdown — all user code runs via asyncio tasks scheduled on this loop.
 
-### 7. Java reader thread
+### 7. Format handshake
 
-`BridgeInstance` creates a dedicated reader thread per script that continuously reads length-prefixed JSON from the process stdout. This thread dispatches responses to the bridge thread queue.
+During `BridgeConnection.__init__()`, Python sends a handshake message (always as JSON) declaring its preferred serialization format:
+
+```json
+{"type": "handshake", "format": "msgpack"}
+```
+
+- If Python has `msgpack` installed, the format is `"msgpack"` — both sides switch to binary msgpack for all subsequent messages
+- Otherwise, the format is `"json"` and nothing changes
+- The handshake is always sent as JSON since Java starts in JSON mode and hasn't switched yet
+
+### 8. Java reader thread
+
+`BridgeInstance` creates a dedicated reader thread per script that continuously reads length-prefixed messages from the process stdout. The first message (the handshake) is always JSON; after processing it, subsequent messages use the negotiated format. This thread dispatches responses to the bridge thread queue.
 
 ---
 

@@ -76,7 +76,7 @@ Each Bukkit type gets custom serialization:
 
 | Type | Fields |
 | ---- | ------ |
-| **Player** | `name`, `uuid`, `location`, `world`, `gameMode`, `health`, `foodLevel`, `inventory` |
+| **Player** | `name`, `uuid`, `location`, `world`, `gameMode`, `health`, `foodLevel` |
 | **Entity** | `uuid`, `type`, `location`, `world`, `is_projectile`, `shooter`/`owner` |
 | **Location** | `x`, `y`, `z`, `yaw`, `pitch`, `world` |
 | **Block** | `x`, `y`, `z`, `location`, `type`, `world`, `inventory` (if container) |
@@ -197,6 +197,52 @@ class ProxyBase:
 ```
 
 ### Attribute access (`__getattr__`)
+
+1. Check `self.fields` first — if the field was serialized, return it immediately (no RPC)
+2. Otherwise, return a `BridgeMethod` wrapper that will dispatch an RPC when called
+
+```python
+player.name         # → fields["name"] (cached, instant)
+player.get_health() # → BridgeMethod → RPC call (round trip)
+```
+
+### Fire-and-forget calls (`_call_ff`)
+
+Void methods and setters use `_call_ff()` to skip waiting for a response:
+
+```python
+def _call_ff(self, method, *args, **kwargs):
+    """Invoke a bridge method as fire-and-forget (no response expected)."""
+    _connection.call_fire_forget(method=method, args=list(args), handle=self._handle, ...)
+```
+
+The call message includes `"no_response": true`. Java executes the method but skips serializing and sending a result. This eliminates round-trip latency for ~80+ Entity and Player methods like `teleport`, `send_message`, `set_health`, etc.
+
+### Field cache invalidation (`_invalidate_field`)
+
+Setters that modify fields cached in `self.fields` must invalidate them to prevent stale reads:
+
+```python
+def _invalidate_field(self, *field_names):
+    """Remove cached field values so next access fetches fresh data from Java."""
+    for name in field_names:
+        self.fields.pop(name, None)
+```
+
+Invalidation happens **before** the fire-and-forget call is sent. This guarantees no desync: the cached value is removed immediately, and the next read will fetch fresh data from Java (by which time the setter will have been processed).
+
+Fields with invalidation:
+
+| Setter | Invalidated Fields |
+| ------ | ------------------- |
+| `teleport` | `location`, `world` |
+| `give_exp` | `exp`, `level` |
+| `set_game_mode` | `gameMode`, `game_mode` |
+| `set_health` | `health` |
+| `set_food_level` | `foodLevel`, `food_level` |
+| `level` setter | `level` |
+| `exp` setter | `exp` |
+| `max_health` setter | `health` |
 
 1. Check `self.fields` first — if the field was serialized, return it immediately (no RPC)
 2. Otherwise, return a `BridgeMethod` wrapper that will dispatch an RPC when called

@@ -127,11 +127,11 @@ The spin-wait catches follow-up calls within **1–3ms** each.
 ```python
 name = await server.name           # Thread-safe → ~0.5ms
 health = await player.get_health() # Main thread → 1-10ms (first call)
-await player.set_health(20)        # Main thread → 1-3ms (chained, caught by spin-wait)
-await player.send_message("Hi")    # Main thread → 1-3ms (chained)
+await player.set_health(20)        # Fire-and-forget → ~0ms (no response wait)
+await player.send_message("Hi")    # Fire-and-forget → ~0ms (no response wait)
 ```
 
-Without chaining awareness, each main-thread call would wait up to 50ms. The spin-wait reduces this to under 3ms for follow-up calls.
+Without fire-and-forget, each void call would pay a full round-trip. With it, setters and void methods return instantly.
 
 ### Why the first call is slower
 
@@ -240,6 +240,43 @@ If **all** calls in a batch are thread-safe, the entire batch executes on the br
 - **`frame()`** — Multiple independent reads. Good for UI updates, data gathering. Reduces N round trips to 1.
 - **`atomic()`** — Related writes where partial failure is bad. Good for inventory operations, multi-step entity setup.
 - **Neither** — Single calls, or when each result is needed before the next call.
+
+---
+
+## Fire-and-Forget Calls
+
+Void methods and setters don't need a return value. Fire-and-forget skips the response entirely, eliminating serialization and round-trip overhead.
+
+### How it works
+
+1. Python sends the call with `"no_response": true`
+2. Java executes the method normally
+3. Java **skips** serializing the result and sending a response
+4. Python never creates a `Future` or `Event` — the call returns immediately
+
+### Wire message
+
+```json
+{"type": "call", "id": 1, "method": "setHealth", "handle": 42, "args_list": [20.0], "no_response": true}
+```
+
+No response is sent back. The `id` is still included for debugging/logging purposes.
+
+### Which methods use it
+
+~80+ methods on Entity and Player are fire-and-forget, including:
+
+- **Entity:** `teleport`, `remove`, velocity/fire_ticks/custom_name setters, gravity/glowing/invisible/invulnerable/silent/persistent/collidable setters, `eject`, `leave_vehicle`, `set_rotation`
+- **Mob:** `target` setter, `is_aware` setter, `stop_pathfinding`, `remove_all_goals`
+- **Player:** `send_message`, `chat`, `kick`, `play_sound`, `send_title`, `send_action_bar`, health/food/level/exp setters, game mode setter, speed setters, `hide_player`/`show_player`, `send_block_change`, `send_particle`, `set_cooldown`, `set_persistent_data`, and more
+
+### Batching support
+
+Fire-and-forget works inside `frame()` and `atomic()` batches. Each call in a `call_batch` can independently have `no_response`, and Java skips responses only for those specific calls.
+
+### Cache invalidation
+
+Setters that change cached proxy fields call `_invalidate_field()` **before** sending the fire-and-forget, ensuring the cache is cleared and the next read fetches fresh data. See [Serialization — Field cache invalidation](serialization.html) for details.
 
 ---
 

@@ -40,19 +40,21 @@ Each Python script runs as a **separate OS process** spawned by the Java plugin.
 
 ## Wire Protocol
 
-All messages use **length-prefixed JSON** over stdin/stdout:
+All messages use **length-prefixed frames** over stdin/stdout:
 
 ```table
 ┌─────────────┬─────────────────────────────┐
 │  4 bytes    │  N bytes                    │
-│  uint32 BE  │  UTF-8 JSON payload         │
+│  uint32 BE  │  payload (msgpack or JSON)  │
 │  (length N) │                             │
 └─────────────┴─────────────────────────────┘
 ```
 
 - **Header:** 4-byte big-endian unsigned integer (payload length)
-- **Payload:** UTF-8 encoded JSON object
-- **Serialization:** Uses `orjson` if available (faster), falls back to `json`
+- **Payload:** msgpack binary or UTF-8 encoded JSON, depending on negotiated format
+- **Format negotiation:** Python sends a `handshake` message (always JSON) on connect declaring its preferred format. Java switches to that format for all subsequent messages.
+- **Serialization chain (Python):** `msgpack` → `orjson` → stdlib `json` — uses the first available library
+- **Serialization chain (Java):** `msgpack-core` (shaded) when negotiated, otherwise Gson
 - **Thread safety:** Python writes are protected by a `threading.Lock` to keep header+payload atomic
 
 ### Example wire message
@@ -73,15 +75,24 @@ Response:
 
 ```python
 def send(self, message):
-    data = _json_dumps(message)          # orjson or json
-    header = struct.pack("!I", len(data)) # 4-byte big-endian length
+    data = _json_dumps(message)           # msgpack, orjson, or json
+    header = struct.pack("!I", len(data))  # 4-byte big-endian length
     with self._lock:
-        self._stdout.write(header)
-        self._stdout.write(data)
+        self._stdout.write(header + data)
         self._stdout.flush()
 ```
 
 The lock ensures header and payload are written atomically — without it, concurrent sends from different tasks could interleave.
+
+### Format negotiation
+
+On startup, Python sends a handshake (always as JSON, since Java starts in JSON mode):
+
+```json
+{"type": "handshake", "format": "msgpack"}
+```
+
+Java processes this and switches its `useMsgpack` flag. All subsequent messages in both directions use the negotiated format. If Python doesn't have `msgpack` installed, the handshake says `"format": "json"` and nothing changes.
 
 ---
 
@@ -91,7 +102,8 @@ The lock ensures header and payload are written atomically — without it, concu
 
 | Type | Purpose | Key Fields |
 | ---- | ------- | ---------- |
-| `call` | Invoke a method | `id`, `method`, `handle` or `target`, `args_list` |
+| `handshake` | Negotiate wire format | `format` (`"msgpack"` or `"json"`) |
+| `call` | Invoke a method | `id`, `method`, `handle` or `target`, `args_list`, `no_response`? |
 | `call_batch` | Batch multiple calls | `atomic`, `messages[]` |
 | `subscribe` | Register event listener | `event`, `priority`, `once_per_tick`, `throttle_ms` |
 | `register_command` | Register a `/command` | `name`, `description`, `usage`, `permission` |
@@ -119,7 +131,7 @@ The lock ensures header and payload are written atomically — without it, concu
 The Python-side reader thread is a daemon thread that blocks on stdin in a loop:
 
 1. Read 4-byte header → decode payload length
-2. Read N bytes of JSON payload → parse
+2. Read N bytes of payload → deserialize (msgpack or JSON, matching negotiated format)
 3. **Sync responses** (`return`/`error` matching a `_pending_sync` ID) → set `threading.Event` directly on the reader thread (fast path, no event loop involvement)
 4. **Async responses** → dispatch to event loop via `call_soon_threadsafe()`
 5. On disconnect → wake all pending waiters with `BridgeError("Connection lost")`
