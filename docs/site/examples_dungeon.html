@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Chat — PyJavaBridge</title>
-  <meta property="og:title" content="Chat — PyJavaBridge">
-  <meta property="og:description" content="Chat broadcast helper">
+  <title>"Dungeon Generator" — PyJavaBridge</title>
+  <meta property="og:title" content=""Dungeon Generator" — PyJavaBridge">
+  <meta property="og:description" content=""Procedural dungeon with rooms, loot, mobs, and lifecycle"">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="PyJavaBridge Docs">
   <meta name="theme-color" content="#6366f1">
@@ -54,19 +54,6 @@
   <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
   <input type="text" id="sidebar-search" placeholder="Search docs…">
 </div>
-<div class="sidebar-section">
-  <div class="sidebar-heading" data-section="on-this-page">On This Page</div>
-  <ul class="sidebar-links">
-    <li><a href="#global-instance">Global Instance</a></li>
-    <li><a href="#methods">Methods</a></li>
-    <li><ul class="toc-sub" data-parent="methods">
-      <li><a href="#broadcast">broadcast</a></li>
-    </ul></li>
-    <li><a href="#chat-vs-serverbroadcast">Chat vs Server.broadcast</a></li>
-    <li><a href="#example-announcement-system">Example: Announcement system</a></li>
-  </ul>
-</div>
-
 <div class="sidebar-section">
   <div class="sidebar-heading collapsed" data-section="getting-started">Getting Started</div>
   <ul class="sidebar-links">
@@ -185,7 +172,7 @@
   <div class="sidebar-heading collapsed" data-section="utilities">Utilities</div>
   <ul class="sidebar-links">
     <li><a href="raycast.html">Raycast</a></li>
-    <li><a href="chat.html" class="active">Chat</a></li>
+    <li><a href="chat.html">Chat</a></li>
     <li><a href="reflect.html">Reflect</a></li>
   </ul>
 </div>
@@ -206,46 +193,240 @@
   <!-- Main -->
   <main class="main">
     <div class="content">
-      <p class="subtitle">Chat broadcast helper</p>
-      <h1 id="chat">Chat</h1>
-<p>The <code>Chat</code> helper provides broadcast functionality. An instance is available as the global <code>chat</code> variable.</p>
-<hr />
-<h2 id="global-instance">Global Instance</h2>
-<pre><code class="language-python"><span class="kw">from</span> bridge <span class="kw">import</span> chat
-</code></pre>
-<hr />
-<h2 id="methods">Methods</h2>
-<h3 id="broadcast">broadcast</h3>
-<pre><code class="language-python"><span class="kw">await</span> chat.broadcast(message)
-</code></pre>
-<p>Send a message to all online players.</p>
-<ul>
-<li><strong>Parameters:</strong></li>
-<li><code>message</code> (<code>str</code>) — Message text. Supports <code>§</code> color codes.</li>
-<li><strong>Returns:</strong> <code>Awaitable[None]</code></li>
-</ul>
-<pre><code class="language-python"><span class="kw">await</span> chat.broadcast(<span class="st">&quot;§a§lServer restarting in 5 minutes!&quot;</span>)
-</code></pre>
-<hr />
-<h2 id="chat-vs-serverbroadcast">Chat vs Server.broadcast</h2>
-<p>Both <code>chat.broadcast()</code> and <code>server.broadcast()</code> send messages to all players:</p>
-<pre><code class="language-python"><span class="cm"># These are equivalent</span>
-<span class="kw">await</span> chat.broadcast(<span class="st">&quot;Hello everyone!&quot;</span>)
-<span class="kw">await</span> server.broadcast(<span class="st">&quot;Hello everyone!&quot;</span>)
-</code></pre>
-<p>The <code>chat</code> helper exists for convenience and semantic clarity when your script is focused on chat operations.</p>
-<hr />
-<h2 id="example-announcement-system">Example: Announcement system</h2>
-<pre><code class="language-python"><span class="kw">from</span> bridge <span class="kw">import</span> *
+      <p class="subtitle">"Procedural dungeon with rooms, loot, mobs, and lifecycle"</p>
+      <h1 id="dungeon-generator">Dungeon Generator</h1>
+<p>An advanced example using the <strong>Dungeon</strong> extension to create a
+procedurally generated dungeon with loot pools, mob spawning,
+lifecycle events, and management commands.</p>
+<div class="callout callout-info"><p><strong>Prerequisites:</strong>
+- Build rooms in-game using <code>/bridge schem</code> (see the
+  <a href="../extensions/dungeon.html">Dungeon docs</a> for details).
+- Save them as <code>.droom</code> files and place them in a <code>crypt_rooms/</code>
+  folder next to this script.</p></div>
+<p>Drop this file into <code>plugins/PyJavaBridge/scripts/</code> and reload the server.</p>
+<pre><code class="language-python"><span class="cm"># type: ignore</span>
+<span class="st">&quot;&quot;&quot;Example: Creating and running a dungeon with .droom room files.
 
-<span class="dc">@command</span>(<span class="st">&quot;Announce a message&quot;</span>)
-<span class="kw">async</span> <span class="kw">def</span> announce(player: Player, args: list[str]):
-    <span class="kw">if</span> <span class="kw">not</span> args:
-        <span class="kw">await</span> player.send_message(<span class="st">&quot;§cUsage: /announce &lt;message&gt;&quot;</span>)
+Setup:
+1. Build rooms in-game.
+2. Place chests and name them [loot:common], [loot:rare], etc.
+3. Run /bridge schem &lt;x&gt; &lt;y&gt; &lt;z&gt; &lt;width&gt; &lt;height&gt; &lt;depth&gt; to capture them.
+4. Edit the saved .droom files to add exit definitions, set type, and loot pools.
+   Exits use exact coordinates: exit: x,y,z &lt;facing&gt; &lt;WxH&gt; [tag]
+
+5. Put the .droom files in a rooms/ folder next to this script.
+&quot;&quot;&quot;</span>
+
+<span class="kw">from</span> bridge <span class="kw">import</span> *
+<span class="cm"># Dungeon and loot_pool come from the extensions package — they are</span>
+<span class="cm"># not part of the core bridge API.</span>
+<span class="kw">from</span> bridge.extensions <span class="kw">import</span> Dungeon, loot_pool
+<span class="kw">import</span> random
+<span class="kw">import</span> inspect
+
+
+<span class="cm"># ── Register Loot Generators ───────────────────────────────────────</span>
+<span class="cm"># A loot pool is a function that fills a chest's inventory when a room</span>
+<span class="cm"># containing a chest tagged [loot:&lt;pool_name&gt;] is generated.</span>
+<span class="cm">#</span>
+<span class="cm"># The @loot_pool decorator registers the function under the given name.</span>
+<span class="cm"># It receives:</span>
+<span class="cm">#   - inventory: the chest Inventory to fill</span>
+<span class="cm">#   - room:      the Room instance the chest belongs to</span>
+
+<span class="dc">@loot_pool</span>(<span class="st">&quot;common&quot;</span>)
+<span class="kw">def</span> fill_common(inventory, room):
+    <span class="st">&quot;&quot;&quot;Fill a common loot chest with basic supplies.&quot;&quot;&quot;</span>
+    <span class="cm"># ItemBuilder creates items with a fluent API.</span>
+    <span class="cm"># .amount() sets the stack size.  .build() produces the final Item.</span>
+    inventory.add_item(ItemBuilder(<span class="st">&quot;BREAD&quot;</span>).amount(<span class="nb">8</span>).build())
+    inventory.add_item(ItemBuilder(<span class="st">&quot;IRON_INGOT&quot;</span>).amount(<span class="nb">3</span>).build())
+    inventory.add_item(ItemBuilder(<span class="st">&quot;ARROW&quot;</span>).amount(<span class="nb">16</span>).build())
+
+
+<span class="dc">@loot_pool</span>(<span class="st">&quot;rare&quot;</span>)
+<span class="kw">def</span> fill_rare(inventory, room):
+    <span class="st">&quot;&quot;&quot;Fill a rare loot chest with enchanted gear.&quot;&quot;&quot;</span>
+    inventory.add_item(
+        ItemBuilder(<span class="st">&quot;DIAMOND_SWORD&quot;</span>)
+        .name(<span class="st">&quot;§bFrostbite&quot;</span>)                  <span class="cm"># Custom display name (§b = aqua)</span>
+        .enchant(<span class="st">&quot;sharpness&quot;</span>, <span class="nb">3</span>)              <span class="cm"># Apply Sharpness III</span>
+        .lore(<span class="st">&quot;§7A blade of ancient ice&quot;</span>)     <span class="cm"># Gray italic lore text</span>
+        .glow()                               <span class="cm"># Add enchantment glint</span>
+        .build()
+    )
+    inventory.add_item(ItemBuilder(<span class="st">&quot;GOLDEN_APPLE&quot;</span>).amount(<span class="nb">2</span>).build())
+
+
+<span class="dc">@loot_pool</span>(<span class="st">&quot;boss&quot;</span>)
+<span class="kw">def</span> fill_boss(inventory, room):
+    <span class="st">&quot;&quot;&quot;Fill the boss room reward chest with top-tier loot.&quot;&quot;&quot;</span>
+    inventory.add_item(
+        ItemBuilder(<span class="st">&quot;NETHERITE_CHESTPLATE&quot;</span>)
+        .name(<span class="st">&quot;§5Crypt Lord's Plate&quot;</span>)         <span class="cm"># Dark purple name</span>
+        .enchant(<span class="st">&quot;protection&quot;</span>, <span class="nb">5</span>)             <span class="cm"># Stacking all four protection types</span>
+        .enchant(<span class="st">&quot;blast_protection&quot;</span>, <span class="nb">5</span>)       <span class="cm"># makes this truly overpowered</span>
+        .enchant(<span class="st">&quot;projectile_protection&quot;</span>, <span class="nb">5</span>)
+        .enchant(<span class="st">&quot;fire_protection&quot;</span>, <span class="nb">5</span>)
+        .unbreakable()                        <span class="cm"># Never loses durability</span>
+        .glow()
+        .lore(<span class="st">&quot;§7Taken from the crypt lord's corpse&quot;</span>)
+        .build()
+    )
+    inventory.add_item(ItemBuilder(<span class="st">&quot;DIAMOND&quot;</span>).amount(<span class="nb">16</span>).build())
+
+
+<span class="cm"># ── Define the Dungeon ─────────────────────────────────────────────</span>
+<span class="cm"># The Dungeon object describes a dungeon *template*.  It doesn't exist</span>
+<span class="cm"># in the world yet — call create_instance() to actually build one.</span>
+<span class="cm">#</span>
+<span class="cm"># rooms_dir:     folder containing .droom files (relative to this script)</span>
+<span class="cm"># room_count:    target number of rooms to generate</span>
+<span class="cm"># branch_factor: 0 = long corridors (depth-first), 1 = wide (breadth-first)</span>
+<span class="cm"># start_room:    the .droom file to use as the entrance (without extension)</span>
+
+crypt = Dungeon(
+    name=<span class="st">&quot;Ancient Crypt&quot;</span>,
+    rooms_dir=<span class="st">&quot;crypt_rooms&quot;</span>,
+    room_count=<span class="nb">50</span>,
+    branch_factor=<span class="nb">0.8</span>,
+    description=<span class="st">&quot;A crumbling crypt filled with undead horrors.&quot;</span>,
+    difficulty=<span class="nb">3</span>,
+    start_room=<span class="st">&quot;entrance&quot;</span>,  <span class="cm"># loads entrance.droom</span>
+)
+
+
+<span class="cm"># ── Dungeon Event Handlers ─────────────────────────────────────────</span>
+<span class="cm"># Dungeon instances emit lifecycle events that you can hook into.</span>
+<span class="cm"># Decorate handlers with @crypt.&lt;event_name&gt;.</span>
+
+<span class="dc">@crypt</span>.on_enter
+<span class="kw">async</span> <span class="kw">def</span> on_enter(instance, player):
+    <span class="st">&quot;&quot;&quot;Greet the player entering the dungeon.&quot;&quot;&quot;</span>
+    <span class="cm"># instance is the live DungeonInstance; instance.rooms lists all</span>
+    <span class="cm"># generated rooms.  instance.dungeon is the Dungeon template.</span>
+    player.send_message(<span class="st">&quot;§5You descend into the Ancient Crypt...&quot;</span>)
+    player.send_message(
+        <span class="st">f&quot;§7Rooms: {len(instance.rooms)} | Difficulty: {instance.dungeon.difficulty}&quot;</span>
+    )
+    player.play_sound(<span class="st">&quot;ambient_cave&quot;</span>)
+
+
+<span class="dc">@crypt</span>.on_complete
+<span class="kw">async</span> <span class="kw">def</span> on_complete(instance):
+    <span class="st">&quot;&quot;&quot;Announce dungeon completion and schedule cleanup.&quot;&quot;&quot;</span>
+    <span class="kw">for</span> p <span class="kw">in</span> instance.players:
+        p.send_message(<span class="st">&quot;§a§lDungeon Complete! §7The Ancient Crypt trembles...&quot;</span>)
+        p.play_sound(<span class="st">&quot;ui_toast_challenge_complete&quot;</span>)
+
+    <span class="cm"># server.after(ticks) is a coroutine that resolves after N ticks.</span>
+    <span class="cm"># 600 ticks = 30 seconds at 20 TPS.</span>
+    <span class="kw">await</span> server.after(<span class="nb">600</span>)
+    <span class="cm"># destroy() removes all placed blocks and restores the original terrain.</span>
+    <span class="kw">await</span> instance.destroy()
+
+
+<span class="dc">@crypt</span>.on_room_enter
+<span class="kw">async</span> <span class="kw">def</span> on_room_enter(player, room):
+    <span class="st">&quot;&quot;&quot;Notify the player which room they entered.&quot;&quot;&quot;</span>
+    <span class="cm"># room.template holds the static data from the .droom file.</span>
+    player.send_message(
+        <span class="st">f&quot;§8Entering: §f{room.template.name} §7({room.template.type})&quot;</span>
+    )
+
+
+<span class="dc">@crypt</span>.on_room_clear
+<span class="kw">async</span> <span class="kw">def</span> on_room_clear(room):
+    <span class="st">&quot;&quot;&quot;Log when a room is cleared (all mobs defeated).&quot;&quot;&quot;</span>
+    print(<span class="st">f&quot;Room {room.template.name} at {room.origin} cleared!&quot;</span>)
+
+
+<span class="cm"># ── Mob Spawning on Room Generation ────────────────────────────────</span>
+<span class="cm"># on_room_generate fires for each room as the dungeon is being built.</span>
+<span class="cm"># This is where you spawn enemies or set up traps.</span>
+
+<span class="dc">@crypt</span>.on_room_generate
+<span class="kw">async</span> <span class="kw">def</span> spawn_room_mobs(room, world):
+    <span class="st">&quot;&quot;&quot;Spawn zombies proportional to room area.&quot;&quot;&quot;</span>
+    <span class="cm"># Calculate how many mobs to spawn based on room floor area.</span>
+    area = max(<span class="nb">1</span>, room.template.width * room.template.depth)
+    count = max(<span class="nb">1</span>, area // <span class="nb">25</span>)  <span class="cm"># roughly 1 zombie per 25 blocks of floor</span>
+
+    <span class="cm"># room.center gives the (x, y, z) center of the room.</span>
+    cx, cy, cz = room.center
+
+    <span class="kw">for</span> _ <span class="kw">in</span> range(count):
+        <span class="cm"># Add a small random offset so mobs don't stack on the same spot.</span>
+        loc = (cx + random.uniform(-<span class="nb">1</span>, <span class="nb">1</span>), cy, cz + random.uniform(-<span class="nb">1</span>, <span class="nb">1</span>))
+        <span class="kw">try</span>:
+            <span class="cm"># world.spawn_entity() may be sync or async depending on</span>
+            <span class="cm"># the entity type — inspect.isawaitable handles both cases.</span>
+            r = world.spawn_entity(loc, <span class="st">&quot;zombie&quot;</span>)
+            <span class="kw">if</span> inspect.isawaitable(r):
+                <span class="kw">await</span> r
+        <span class="kw">except</span> Exception:
+            <span class="cm"># Silently skip if spawning fails (e.g. location is inside a wall).</span>
+            <span class="kw">pass</span>
+
+
+<span class="cm"># ── Commands ────────────────────────────────────────────────────────</span>
+
+<span class="dc">@command</span>(<span class="st">&quot;Start a dungeon run&quot;</span>)
+<span class="kw">async</span> <span class="kw">def</span> dungeon(event: Event):
+    <span class="st">&quot;&quot;&quot;Create and enter a dungeon instance at the player's location.&quot;&quot;&quot;</span>
+    player = event.player
+    loc = player.location
+
+    <span class="cm"># Use the player's current position as the dungeon origin.</span>
+    origin = (int(loc.x), int(loc.y), int(loc.z))
+
+    <span class="kw">try</span>:
+        <span class="cm"># create_instance() generates rooms, fills loot pools, fires</span>
+        <span class="cm"># on_room_generate, and returns a DungeonInstance.</span>
+        instance = <span class="kw">await</span> crypt.create_instance(
+            players=[player],
+            origin=origin,
+            world=player.world,
+        )
+
+        <span class="cm"># List the generated rooms for debugging / fun.</span>
+        player.send_message(<span class="st">f&quot;§dGenerated {len(instance.rooms)} rooms:&quot;</span>)
+        <span class="kw">for</span> room <span class="kw">in</span> instance.rooms:
+            player.send_message(
+                <span class="st">f&quot;  §8{room.origin} §f{room.template.name} §7({room.template.type})&quot;</span>
+            )
+    <span class="kw">except</span> RuntimeError <span class="kw">as</span> e:
+        player.send_message(<span class="st">f&quot;§c{e}&quot;</span>)
+
+
+<span class="dc">@command</span>(<span class="st">&quot;Destroy active dungeon&quot;</span>)
+<span class="kw">async</span> <span class="kw">def</span> dungeon_destroy(event: Event):
+    <span class="st">&quot;&quot;&quot;Destroy the most recent dungeon instance.&quot;&quot;&quot;</span>
+    <span class="cm"># crypt.instances holds all live instances of this dungeon template.</span>
+    <span class="kw">if</span> <span class="kw">not</span> crypt.instances:
+        event.player.send_message(<span class="st">&quot;§7No active dungeon instances.&quot;</span>)
         <span class="kw">return</span>
 
-    message = <span class="st">&quot; &quot;</span>.join(args)
-    <span class="kw">await</span> chat.broadcast(<span class="st">f&quot;§6§l[Announcement] §f{message}&quot;</span>)
+    <span class="cm"># Grab the latest instance and tear it down.</span>
+    instance = crypt.instances[-<span class="nb">1</span>]
+    <span class="kw">await</span> instance.destroy()
+    event.player.send_message(<span class="st">&quot;§eDungeon destroyed and blocks restored.&quot;</span>)
+
+
+<span class="dc">@command</span>(<span class="st">&quot;List dungeon instances&quot;</span>)
+<span class="kw">async</span> <span class="kw">def</span> dungeon_list(event: Event):
+    <span class="st">&quot;&quot;&quot;List all active dungeon instances.&quot;&quot;&quot;</span>
+    <span class="kw">if</span> <span class="kw">not</span> crypt.instances:
+        event.player.send_message(<span class="st">&quot;§7No active dungeon instances.&quot;</span>)
+        <span class="kw">return</span>
+
+    <span class="kw">for</span> inst <span class="kw">in</span> crypt.instances:
+        event.player.send_message(
+            <span class="st">f&quot;§dInstance #{inst.instance_id} §7- &quot;</span>
+            <span class="st">f&quot;{inst.progress:.0%} complete, &quot;</span>
+            <span class="st">f&quot;{len(inst.players)} player(s), &quot;</span>
+            <span class="st">f&quot;{len(inst.rooms)} rooms&quot;</span>
+        )
 </code></pre>
 
     </div>

@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Chat — PyJavaBridge</title>
-  <meta property="og:title" content="Chat — PyJavaBridge">
-  <meta property="og:description" content="Chat broadcast helper">
+  <title>"Temporary Ban" — PyJavaBridge</title>
+  <meta property="og:title" content=""Temporary Ban" — PyJavaBridge">
+  <meta property="og:description" content=""Ban system with durations, persistence, and login enforcement"">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="PyJavaBridge Docs">
   <meta name="theme-color" content="#6366f1">
@@ -54,19 +54,6 @@
   <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
   <input type="text" id="sidebar-search" placeholder="Search docs…">
 </div>
-<div class="sidebar-section">
-  <div class="sidebar-heading" data-section="on-this-page">On This Page</div>
-  <ul class="sidebar-links">
-    <li><a href="#global-instance">Global Instance</a></li>
-    <li><a href="#methods">Methods</a></li>
-    <li><ul class="toc-sub" data-parent="methods">
-      <li><a href="#broadcast">broadcast</a></li>
-    </ul></li>
-    <li><a href="#chat-vs-serverbroadcast">Chat vs Server.broadcast</a></li>
-    <li><a href="#example-announcement-system">Example: Announcement system</a></li>
-  </ul>
-</div>
-
 <div class="sidebar-section">
   <div class="sidebar-heading collapsed" data-section="getting-started">Getting Started</div>
   <ul class="sidebar-links">
@@ -185,7 +172,7 @@
   <div class="sidebar-heading collapsed" data-section="utilities">Utilities</div>
   <ul class="sidebar-links">
     <li><a href="raycast.html">Raycast</a></li>
-    <li><a href="chat.html" class="active">Chat</a></li>
+    <li><a href="chat.html">Chat</a></li>
     <li><a href="reflect.html">Reflect</a></li>
   </ul>
 </div>
@@ -206,46 +193,188 @@
   <!-- Main -->
   <main class="main">
     <div class="content">
-      <p class="subtitle">Chat broadcast helper</p>
-      <h1 id="chat">Chat</h1>
-<p>The <code>Chat</code> helper provides broadcast functionality. An instance is available as the global <code>chat</code> variable.</p>
-<hr />
-<h2 id="global-instance">Global Instance</h2>
-<pre><code class="language-python"><span class="kw">from</span> bridge <span class="kw">import</span> chat
-</code></pre>
-<hr />
-<h2 id="methods">Methods</h2>
-<h3 id="broadcast">broadcast</h3>
-<pre><code class="language-python"><span class="kw">await</span> chat.broadcast(message)
-</code></pre>
-<p>Send a message to all online players.</p>
-<ul>
-<li><strong>Parameters:</strong></li>
-<li><code>message</code> (<code>str</code>) — Message text. Supports <code>§</code> color codes.</li>
-<li><strong>Returns:</strong> <code>Awaitable[None]</code></li>
-</ul>
-<pre><code class="language-python"><span class="kw">await</span> chat.broadcast(<span class="st">&quot;§a§lServer restarting in 5 minutes!&quot;</span>)
-</code></pre>
-<hr />
-<h2 id="chat-vs-serverbroadcast">Chat vs Server.broadcast</h2>
-<p>Both <code>chat.broadcast()</code> and <code>server.broadcast()</code> send messages to all players:</p>
-<pre><code class="language-python"><span class="cm"># These are equivalent</span>
-<span class="kw">await</span> chat.broadcast(<span class="st">&quot;Hello everyone!&quot;</span>)
-<span class="kw">await</span> server.broadcast(<span class="st">&quot;Hello everyone!&quot;</span>)
-</code></pre>
-<p>The <code>chat</code> helper exists for convenience and semantic clarity when your script is focused on chat operations.</p>
-<hr />
-<h2 id="example-announcement-system">Example: Announcement system</h2>
-<pre><code class="language-python"><span class="kw">from</span> bridge <span class="kw">import</span> *
+      <p class="subtitle">"Ban system with durations, persistence, and login enforcement"</p>
+      <h1 id="temporary-ban-system">Temporary Ban System</h1>
+<p>A full-featured ban command that supports permanent bans, timed bans
+with human-readable durations (e.g. <code>2h30m</code>), optional reasons, and
+automatic enforcement on login.</p>
+<div class="callout callout-info"><p><strong>Note:</strong> This example stores bans in memory.  They will be lost on
+server restart.  For production use, swap the <code>bans</code> dict for a
+<a href="config.html"><code>Config</code></a> or database.</p></div>
+<p>Drop this file into <code>plugins/PyJavaBridge/scripts/</code> and reload the server.
+Requires the <code>humanfriendly</code> pip package: <code>pip install humanfriendly</code>.</p>
+<pre><code class="language-python"><span class="st">&quot;&quot;&quot;Ban users for customizable amounts of time.&quot;&quot;&quot;</span>
 
-<span class="dc">@command</span>(<span class="st">&quot;Announce a message&quot;</span>)
-<span class="kw">async</span> <span class="kw">def</span> announce(player: Player, args: list[str]):
-    <span class="kw">if</span> <span class="kw">not</span> args:
-        <span class="kw">await</span> player.send_message(<span class="st">&quot;§cUsage: /announce &lt;message&gt;&quot;</span>)
+<span class="cm"># humanfriendly provides format_timespan() which turns seconds into</span>
+<span class="cm"># readable strings like &quot;2 hours and 30 minutes&quot;.</span>
+<span class="kw">from</span> humanfriendly <span class="kw">import</span> format_timespan
+<span class="kw">from</span> time <span class="kw">import</span> time <span class="kw">as</span> time_now
+<span class="kw">from</span> bridge <span class="kw">import</span> *
+<span class="kw">from</span> typing <span class="kw">import</span> Optional
+<span class="kw">import</span> re
+
+<span class="cm"># ─── In-Memory Ban Storage ──────────────────────────────────────────</span>
+<span class="cm"># Keys are player UUIDs (strings).</span>
+<span class="cm"># Values are tuples: (expire_timestamp_or_None, reason_string).</span>
+<span class="cm"># If the timestamp is None, the ban is permanent.</span>
+bans = {}
+
+
+<span class="cm"># ─── Duration Parser ───────────────────────────────────────────────</span>
+<span class="cm"># Converts strings like &quot;2h30m&quot; or &quot;7d&quot; into total seconds.</span>
+<span class="cm"># Supported units: s (seconds), m (minutes), h (hours), d (days),</span>
+<span class="cm"># w (weeks), mo (months ≈ 30 days), y (years ≈ 365 days).</span>
+
+<span class="kw">def</span> parse_time(time: str) -&gt; int:
+    <span class="st">&quot;&quot;&quot;Parse a human-readable time string (e.g. '2h30m') into seconds.&quot;&quot;&quot;</span>
+    <span class="kw">if</span> <span class="kw">not</span> time:
+        <span class="kw">raise</span> ValueError('Time string <span class="kw">is</span> required')
+
+    <span class="cm"># Map each unit suffix to its value in seconds.</span>
+    units = {
+        's': <span class="nb">1</span>,
+        'm': <span class="nb">60</span>,
+        'h': <span class="nb">3600</span>,
+        'd': <span class="nb">86400</span>,
+        'w': <span class="nb">604800</span>,
+        'mo': <span class="nb">2592000</span>,   <span class="cm"># ~30 days</span>
+        'y': <span class="nb">31536000</span>,   <span class="cm"># ~365 days</span>
+    }
+
+    <span class="cm"># Regex captures pairs like (&quot;2&quot;, &quot;h&quot;) or (&quot;30&quot;, &quot;m&quot;).</span>
+    <span class="cm"># 'mo' must come before single-char units so it matches first.</span>
+    pattern = re.compile(r'(\d+)(mo|[smhdwy])', re.IGNORECASE)
+    total = <span class="nb">0</span>
+    time_str = time.strip().lower()
+    idx = <span class="nb">0</span>
+
+    <span class="kw">for</span> match <span class="kw">in</span> pattern.finditer(time_str):
+        <span class="cm"># Make sure there are no gaps between matches (rejects &quot;2x3h&quot;).</span>
+        <span class="kw">if</span> match.start() != idx:
+            <span class="kw">raise</span> ValueError(<span class="st">f&quot;Invalid time format: {time}&quot;</span>)
+
+        value = int(match.group(<span class="nb">1</span>))
+        unit = match.group(<span class="nb">2</span>)
+
+        <span class="kw">if</span> unit <span class="kw">not</span> <span class="kw">in</span> units:
+            <span class="kw">raise</span> ValueError(<span class="st">f&quot;Unknown time unit: {unit}&quot;</span>)
+
+        total += value * units[unit]
+        idx = match.end()
+
+    <span class="cm"># If we didn't consume the entire string, the format is invalid.</span>
+    <span class="kw">if</span> idx != len(time_str):
+        <span class="kw">raise</span> ValueError(<span class="st">f&quot;Invalid time format: {time}&quot;</span>)
+
+    <span class="kw">return</span> total
+
+
+<span class="cm"># ─── Ban Command ────────────────────────────────────────────────────</span>
+<span class="cm"># Usage:  /ban &lt;player&gt; [duration] [reason]</span>
+<span class="cm"># - duration is optional: omit it for a permanent ban.</span>
+<span class="cm"># - reason is optional: defaults to &quot;Ban hammer has spoken!&quot;</span>
+<span class="cm">#</span>
+<span class="cm"># The 't' and 'r' parameter names are short because players type them</span>
+<span class="cm"># as positional arguments in chat.</span>
+
+<span class="dc">@command</span>('Ban someone <span class="kw">for</span> a specified time <span class="kw">or</span> permanently')
+<span class="kw">async</span> <span class="kw">def</span> ban(event: Event, user: str, t: Optional[str] = <span class="kw">None</span>, r: Optional[str] = <span class="kw">None</span>):
+    <span class="st">&quot;&quot;&quot;Ban a player for a specified time or permanently.&quot;&quot;&quot;</span>
+    <span class="kw">global</span> bans
+
+    <span class="cm"># Only server operators can ban players.</span>
+    <span class="kw">if</span> <span class="kw">not</span> event.player.is_op:
+        event.player.send_message('No permission!')
+        event.player.play_sound('block_note_block_bass')
         <span class="kw">return</span>
 
-    message = <span class="st">&quot; &quot;</span>.join(args)
-    <span class="kw">await</span> chat.broadcast(<span class="st">f&quot;§6§l[Announcement] §f{message}&quot;</span>)
+    <span class="cm"># Look up the target player by name.</span>
+    target = Player(name=user)
+
+    <span class="cm"># Parse the duration (None means permanent).</span>
+    duration = parse_time(t) <span class="kw">if</span> t <span class="kw">else</span> <span class="kw">None</span>
+    reason = r <span class="kw">or</span> <span class="st">&quot;Ban hammer has spoken!&quot;</span>
+
+    <span class="cm"># Build the kick message the banned player will see.</span>
+    reason_text = (
+        <span class="st">f&quot;You have been {'permanently ' if not duration else ''}banned&quot;</span>
+        <span class="st">f&quot;{f'\nFor {format_timespan(duration)}' if duration else ''}&quot;</span>
+        <span class="st">f&quot;\nReason: {reason}&quot;</span>
+    )
+
+    <span class="cm"># Kick the player immediately so they see the ban message.</span>
+    <span class="kw">await</span> target.kick(reason_text)
+
+    <span class="cm"># Store the ban: expire timestamp (or None for permanent) + reason.</span>
+    bans[target.uuid] = (time_now() + duration <span class="kw">if</span> duration <span class="kw">else</span> <span class="kw">None</span>, reason)
+
+    <span class="cm"># Confirm to the operator.</span>
+    event.player.send_message(
+        <span class="st">f&quot;{user} has been {'permanently ' if not duration else ''}banned &quot;</span>
+        <span class="st">f&quot;{f'for {format_timespan(duration)}' if duration else ''}&quot;</span>
+    )
+
+
+<span class="cm"># ─── Unban Command ─────────────────────────────────────────────────</span>
+<span class="cm"># Usage:  /unban &lt;player&gt;</span>
+<span class="cm"># Removes the player from the ban dict so they can rejoin.</span>
+
+<span class="dc">@command</span>('Unban someone')
+<span class="kw">async</span> <span class="kw">def</span> unban(event: Event, user: str):
+    <span class="st">&quot;&quot;&quot;Unban a previously banned player.&quot;&quot;&quot;</span>
+    <span class="kw">global</span> bans
+
+    <span class="kw">if</span> <span class="kw">not</span> event.player.is_op:
+        event.player.send_message('No permission!')
+        event.player.play_sound(Sound.from_name('BLOCK_NOTE_BLOCK_BASS'))
+        <span class="kw">return</span>
+
+    target = Player(name=user)
+
+    <span class="cm"># Check that the player is actually banned before trying to remove.</span>
+    <span class="kw">if</span> target.uuid <span class="kw">not</span> <span class="kw">in</span> bans:
+        event.player.send_message(<span class="st">&quot;That user is not banned&quot;</span>)
+        event.player.play_sound(Sound.from_name('BLOCK_NOTE_BLOCK_BASS'))
+        <span class="kw">return</span>
+
+    <span class="cm"># Remove the ban entry.</span>
+    bans.pop(target.uuid)
+
+    event.player.send_message(<span class="st">f&quot;{user} has been unbanned.&quot;</span>)
+
+
+<span class="cm"># ─── Login Enforcement ─────────────────────────────────────────────</span>
+<span class="cm"># When a banned player tries to join, we check if their ban has</span>
+<span class="cm"># expired.  If it has, we silently remove it and let them in.</span>
+<span class="cm"># If it hasn't, we kick them again with the remaining time.</span>
+
+<span class="dc">@event</span>
+<span class="kw">async</span> <span class="kw">def</span> player_join(event: Event):
+    <span class="st">&quot;&quot;&quot;Kick banned players on join if their ban is still active.&quot;&quot;&quot;</span>
+    <span class="kw">global</span> bans
+    uuid = event.player.uuid
+
+    <span class="cm"># Player isn't banned — nothing to do.</span>
+    <span class="kw">if</span> uuid <span class="kw">not</span> <span class="kw">in</span> bans:
+        <span class="kw">return</span>
+
+    time, reason = bans[uuid]
+
+    <span class="cm"># For timed bans, compute seconds remaining.</span>
+    <span class="kw">if</span> time:
+        time -= time_now()
+
+    <span class="cm"># If the ban has expired, clean it up and let the player join.</span>
+    <span class="kw">if</span> time <span class="kw">and</span> time &lt;= <span class="nb">0</span>:
+        bans.pop(uuid)
+        <span class="kw">return</span>
+
+    <span class="cm"># Ban is still active — kick the player with an updated message.</span>
+    event.player.kick(
+        <span class="st">f&quot;You have been {'permanently ' if not time else ''}banned&quot;</span>
+        <span class="st">f&quot;{f'\nFor {format_timespan(time)}' if time else ''}&quot;</span>
+        <span class="st">f&quot;\nReason: {reason}&quot;</span>
+    )
 </code></pre>
 
     </div>

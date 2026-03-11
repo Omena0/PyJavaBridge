@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Chat — PyJavaBridge</title>
-  <meta property="og:title" content="Chat — PyJavaBridge">
-  <meta property="og:description" content="Chat broadcast helper">
+  <title>"Commands & GUI" — PyJavaBridge</title>
+  <meta property="og:title" content=""Commands & GUI" — PyJavaBridge">
+  <meta property="og:description" content=""Commands, raycast teleport, inventory GUIs, and click events"">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="PyJavaBridge Docs">
   <meta name="theme-color" content="#6366f1">
@@ -54,19 +54,6 @@
   <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
   <input type="text" id="sidebar-search" placeholder="Search docs…">
 </div>
-<div class="sidebar-section">
-  <div class="sidebar-heading" data-section="on-this-page">On This Page</div>
-  <ul class="sidebar-links">
-    <li><a href="#global-instance">Global Instance</a></li>
-    <li><a href="#methods">Methods</a></li>
-    <li><ul class="toc-sub" data-parent="methods">
-      <li><a href="#broadcast">broadcast</a></li>
-    </ul></li>
-    <li><a href="#chat-vs-serverbroadcast">Chat vs Server.broadcast</a></li>
-    <li><a href="#example-announcement-system">Example: Announcement system</a></li>
-  </ul>
-</div>
-
 <div class="sidebar-section">
   <div class="sidebar-heading collapsed" data-section="getting-started">Getting Started</div>
   <ul class="sidebar-links">
@@ -185,7 +172,7 @@
   <div class="sidebar-heading collapsed" data-section="utilities">Utilities</div>
   <ul class="sidebar-links">
     <li><a href="raycast.html">Raycast</a></li>
-    <li><a href="chat.html" class="active">Chat</a></li>
+    <li><a href="chat.html">Chat</a></li>
     <li><a href="reflect.html">Reflect</a></li>
   </ul>
 </div>
@@ -206,46 +193,143 @@
   <!-- Main -->
   <main class="main">
     <div class="content">
-      <p class="subtitle">Chat broadcast helper</p>
-      <h1 id="chat">Chat</h1>
-<p>The <code>Chat</code> helper provides broadcast functionality. An instance is available as the global <code>chat</code> variable.</p>
-<hr />
-<h2 id="global-instance">Global Instance</h2>
-<pre><code class="language-python"><span class="kw">from</span> bridge <span class="kw">import</span> chat
-</code></pre>
-<hr />
-<h2 id="methods">Methods</h2>
-<h3 id="broadcast">broadcast</h3>
-<pre><code class="language-python"><span class="kw">await</span> chat.broadcast(message)
-</code></pre>
-<p>Send a message to all online players.</p>
-<ul>
-<li><strong>Parameters:</strong></li>
-<li><code>message</code> (<code>str</code>) — Message text. Supports <code>§</code> color codes.</li>
-<li><strong>Returns:</strong> <code>Awaitable[None]</code></li>
-</ul>
-<pre><code class="language-python"><span class="kw">await</span> chat.broadcast(<span class="st">&quot;§a§lServer restarting in 5 minutes!&quot;</span>)
-</code></pre>
-<hr />
-<h2 id="chat-vs-serverbroadcast">Chat vs Server.broadcast</h2>
-<p>Both <code>chat.broadcast()</code> and <code>server.broadcast()</code> send messages to all players:</p>
-<pre><code class="language-python"><span class="cm"># These are equivalent</span>
-<span class="kw">await</span> chat.broadcast(<span class="st">&quot;Hello everyone!&quot;</span>)
-<span class="kw">await</span> server.broadcast(<span class="st">&quot;Hello everyone!&quot;</span>)
-</code></pre>
-<p>The <code>chat</code> helper exists for convenience and semantic clarity when your script is focused on chat operations.</p>
-<hr />
-<h2 id="example-announcement-system">Example: Announcement system</h2>
+      <p class="subtitle">"Commands, raycast teleport, inventory GUIs, and click events"</p>
+      <h1 id="commands-gui">Commands &amp; GUI</h1>
+<p>This script demonstrates several core PyJavaBridge features:
+registering chat commands, using raycast for teleportation,
+creating inventory-based GUIs, and handling inventory click/drag events.</p>
+<p>Drop this file into <code>plugins/PyJavaBridge/scripts/</code> and reload the server.</p>
 <pre><code class="language-python"><span class="kw">from</span> bridge <span class="kw">import</span> *
+<span class="kw">from</span> typing <span class="kw">import</span> Optional
 
-<span class="dc">@command</span>(<span class="st">&quot;Announce a message&quot;</span>)
-<span class="kw">async</span> <span class="kw">def</span> announce(player: Player, args: list[str]):
-    <span class="kw">if</span> <span class="kw">not</span> args:
-        <span class="kw">await</span> player.send_message(<span class="st">&quot;§cUsage: /announce &lt;message&gt;&quot;</span>)
+<span class="cm"># ─── Simple Command ─────────────────────────────────────────────────</span>
+<span class="cm"># The @command decorator registers a chat command whose name matches</span>
+<span class="cm"># the function name.  The string argument becomes the command's</span>
+<span class="cm"># description (shown in /help).</span>
+<span class="cm">#</span>
+<span class="cm"># Every command handler receives an Event object.  event.player is the</span>
+<span class="cm"># Player who ran the command.</span>
+
+<span class="dc">@command</span>(<span class="st">&quot;Hello world command&quot;</span>)
+<span class="kw">async</span> <span class="kw">def</span> helloworld(event: Event):
+    <span class="st">&quot;&quot;&quot;Send a Hello World message to the player.&quot;&quot;&quot;</span>
+    <span class="cm"># send_message() delivers a chat message only to this player.</span>
+    event.player.send_message(<span class="st">&quot;Hello, World!&quot;</span>)
+
+
+<span class="cm"># ─── Command with Arguments ────────────────────────────────────────</span>
+<span class="cm"># Extra function parameters after `event` become command arguments.</span>
+<span class="cm"># Optional parameters (with a default) are not required in-game.</span>
+<span class="cm"># PJB auto-generates the usage string from the function signature.</span>
+
+<span class="dc">@command</span>(<span class="st">&quot;Greet command&quot;</span>)
+<span class="kw">async</span> <span class="kw">def</span> greet(event: Event, name: Optional[str] = <span class="kw">None</span>):
+    <span class="st">&quot;&quot;&quot;Greet a player by name.&quot;&quot;&quot;</span>
+    <span class="cm"># If the player doesn't supply a name, fall back to their own name.</span>
+    event.player.send_message(<span class="st">f&quot;Hello, {name or event.player.name}!&quot;</span>)
+
+
+<span class="cm"># ─── Raycast &amp; Teleport ────────────────────────────────────────────</span>
+<span class="cm"># raycast() fires an invisible ray through the world and returns the</span>
+<span class="cm"># first block it hits (or None if it reaches max distance).</span>
+<span class="cm">#</span>
+<span class="cm"># Arguments: world name, origin (x,y,z), direction (yaw, pitch),</span>
+<span class="cm">#            max distance, step size, ignore fluids.</span>
+<span class="cm">#</span>
+<span class="cm"># This example casts straight down from y=320 at (0.5, 0.5) to find</span>
+<span class="cm"># the highest block, then teleports the player on top of it.</span>
+
+<span class="dc">@command</span>(<span class="st">&quot;Teleport to spawn&quot;</span>)
+<span class="kw">async</span> <span class="kw">def</span> spawn(event: Event):
+    <span class="st">&quot;&quot;&quot;Teleport the player to spawn using raycast.&quot;&quot;&quot;</span>
+    <span class="cm"># Cast a ray straight down (pitch 90°) from build limit.</span>
+    ray = <span class="kw">await</span> raycast('world', (<span class="nb">0.5</span>, <span class="nb">320</span>, <span class="nb">0.5</span>), (<span class="nb">0</span>, <span class="nb">90</span>), <span class="nb">384</span>, <span class="nb">0.5</span>, <span class="kw">False</span>)
+
+    <span class="kw">if</span> ray <span class="kw">is</span> <span class="kw">not</span> <span class="kw">None</span>:
+        <span class="cm"># ray.y is the top of the block we hit; add 0.5 so the player</span>
+        <span class="cm"># stands on top rather than inside the block.</span>
+        event.player.teleport(Location(<span class="nb">0.5</span>, ray.y + <span class="nb">0.5</span>, <span class="nb">0.5</span>, world='world'))
+
+
+<span class="cm"># ─── Inventory GUI ──────────────────────────────────────────────────</span>
+<span class="cm"># Inventories can be used as custom GUIs.  Create an Inventory with a</span>
+<span class="cm"># size (must be a multiple of 9) and a title, then open it for a</span>
+<span class="cm"># player.  Items placed inside act as clickable buttons.</span>
+
+<span class="dc">@command</span>(<span class="st">&quot;open test gui&quot;</span>)
+<span class="kw">async</span> <span class="kw">def</span> gui(event: Event):
+    <span class="st">&quot;&quot;&quot;Open a test inventory GUI.&quot;&quot;&quot;</span>
+    <span class="cm"># Create a filler pane with a blank name so it looks decorative.</span>
+    pane = Item('light_gray_stained_glass_pane')
+    <span class="kw">await</span> pane.set_name(<span class="st">&quot; &quot;</span>)
+
+    <span class="cm"># Fill all 27 slots (3 rows × 9 columns) with the filler pane.</span>
+    inv = Inventory(<span class="nb">3</span> * <span class="nb">9</span>, title=<span class="st">&quot;Test GUI&quot;</span>, contents=[pane <span class="kw">for</span> _ <span class="kw">in</span> range(<span class="nb">3</span> * <span class="nb">9</span>)])
+
+    <span class="cm"># Place a special item in the center slot (row 1, column 4 → slot 13).</span>
+    totem = Item('totem_of_undying')
+    <span class="kw">await</span> totem.set_name(<span class="st">&quot;Bing chilling&quot;</span>)
+    inv.set_item(<span class="nb">9</span> + <span class="nb">4</span>, totem)
+
+    <span class="cm"># Open the inventory for the player who ran the command.</span>
+    inv.open(event.player)
+
+
+<span class="cm"># ─── Handling Inventory Clicks ──────────────────────────────────────</span>
+<span class="cm"># To make a GUI interactive, listen for the inventory_click event.</span>
+<span class="cm"># Check event.inventory.title to make sure the click happened in YOUR</span>
+<span class="cm"># GUI (other plugins may have inventories open too).</span>
+<span class="cm">#</span>
+<span class="cm"># Always call event.cancel() to prevent the player from taking items</span>
+<span class="cm"># out of the GUI.</span>
+
+<span class="dc">@event</span>
+<span class="kw">async</span> <span class="kw">def</span> inventory_click(event: Event):
+    <span class="st">&quot;&quot;&quot;Handle clicks in the test GUI.&quot;&quot;&quot;</span>
+    <span class="cm"># Ignore clicks in inventories that aren't ours.</span>
+    <span class="kw">if</span> event.inventory.title != 'Test GUI':
         <span class="kw">return</span>
 
-    message = <span class="st">&quot; &quot;</span>.join(args)
-    <span class="kw">await</span> chat.broadcast(<span class="st">f&quot;§6§l[Announcement] §f{message}&quot;</span>)
+    <span class="cm"># Cancel the click so items can't be moved out of the GUI.</span>
+    event.cancel()
+
+    <span class="cm"># Slot 13 (9 + 4) is where we placed the totem.</span>
+    <span class="kw">if</span> event.slot == <span class="nb">9</span> + <span class="nb">4</span>:
+        <span class="cm"># Play the totem revival sound and send a chat message.</span>
+        event.player.play_sound(Sound.from_name('ITEM_TOTEM_USE'))
+        event.player.send_message('Bing chilling')
+        <span class="cm"># Close the GUI after the player clicks the button.</span>
+        event.inventory.close()
+
+
+<span class="cm"># ─── Preventing Drags ──────────────────────────────────────────────</span>
+<span class="cm"># Players can also drag items across slots.  Cancel that too so the</span>
+<span class="cm"># GUI stays intact.</span>
+
+<span class="dc">@event</span>
+<span class="kw">async</span> <span class="kw">def</span> inventory_drag(event: Event):
+    <span class="st">&quot;&quot;&quot;Cancel drags in the test GUI.&quot;&quot;&quot;</span>
+    <span class="kw">if</span> event.inventory.title == 'Test GUI':
+        event.cancel()
+
+
+<span class="cm"># ─── Viewing Another Player's Inventory ────────────────────────────</span>
+<span class="cm"># Player(name=...) looks up an online player by name.  Accessing</span>
+<span class="cm"># .inventory returns their real inventory, and .open() shows it to</span>
+<span class="cm"># another player.</span>
+
+<span class="dc">@command</span>(<span class="st">&quot;Open someones inv&quot;</span>)
+<span class="kw">async</span> <span class="kw">def</span> invsee(event: Event, p: str):
+    <span class="st">&quot;&quot;&quot;Open another player's inventory.&quot;&quot;&quot;</span>
+    <span class="cm"># Don't let players open their own inventory through this command –</span>
+    <span class="cm"># it would cause a confusing double-open.</span>
+    <span class="kw">if</span> p == event.player.name:
+        event.player.send_message(<span class="st">&quot;You cannot open your own inventory!&quot;</span>)
+        event.player.play_sound(Sound.from_name('BLOCK_NOTE_BLOCK_BASS'))
+        <span class="kw">return</span>
+
+    <span class="cm"># Look up the target by name and open their inventory for the caller.</span>
+    Player(name=p).inventory.open(event.player)
 </code></pre>
 
     </div>

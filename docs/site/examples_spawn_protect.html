@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Chat — PyJavaBridge</title>
-  <meta property="og:title" content="Chat — PyJavaBridge">
-  <meta property="og:description" content="Chat broadcast helper">
+  <title>"Spawn Protection" — PyJavaBridge</title>
+  <meta property="og:title" content=""Spawn Protection" — PyJavaBridge">
+  <meta property="og:description" content=""Prevent building near spawn with block events"">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="PyJavaBridge Docs">
   <meta name="theme-color" content="#6366f1">
@@ -54,19 +54,6 @@
   <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
   <input type="text" id="sidebar-search" placeholder="Search docs…">
 </div>
-<div class="sidebar-section">
-  <div class="sidebar-heading" data-section="on-this-page">On This Page</div>
-  <ul class="sidebar-links">
-    <li><a href="#global-instance">Global Instance</a></li>
-    <li><a href="#methods">Methods</a></li>
-    <li><ul class="toc-sub" data-parent="methods">
-      <li><a href="#broadcast">broadcast</a></li>
-    </ul></li>
-    <li><a href="#chat-vs-serverbroadcast">Chat vs Server.broadcast</a></li>
-    <li><a href="#example-announcement-system">Example: Announcement system</a></li>
-  </ul>
-</div>
-
 <div class="sidebar-section">
   <div class="sidebar-heading collapsed" data-section="getting-started">Getting Started</div>
   <ul class="sidebar-links">
@@ -185,7 +172,7 @@
   <div class="sidebar-heading collapsed" data-section="utilities">Utilities</div>
   <ul class="sidebar-links">
     <li><a href="raycast.html">Raycast</a></li>
-    <li><a href="chat.html" class="active">Chat</a></li>
+    <li><a href="chat.html">Chat</a></li>
     <li><a href="reflect.html">Reflect</a></li>
   </ul>
 </div>
@@ -206,46 +193,66 @@
   <!-- Main -->
   <main class="main">
     <div class="content">
-      <p class="subtitle">Chat broadcast helper</p>
-      <h1 id="chat">Chat</h1>
-<p>The <code>Chat</code> helper provides broadcast functionality. An instance is available as the global <code>chat</code> variable.</p>
-<hr />
-<h2 id="global-instance">Global Instance</h2>
-<pre><code class="language-python"><span class="kw">from</span> bridge <span class="kw">import</span> chat
-</code></pre>
-<hr />
-<h2 id="methods">Methods</h2>
-<h3 id="broadcast">broadcast</h3>
-<pre><code class="language-python"><span class="kw">await</span> chat.broadcast(message)
-</code></pre>
-<p>Send a message to all online players.</p>
-<ul>
-<li><strong>Parameters:</strong></li>
-<li><code>message</code> (<code>str</code>) — Message text. Supports <code>§</code> color codes.</li>
-<li><strong>Returns:</strong> <code>Awaitable[None]</code></li>
-</ul>
-<pre><code class="language-python"><span class="kw">await</span> chat.broadcast(<span class="st">&quot;§a§lServer restarting in 5 minutes!&quot;</span>)
-</code></pre>
-<hr />
-<h2 id="chat-vs-serverbroadcast">Chat vs Server.broadcast</h2>
-<p>Both <code>chat.broadcast()</code> and <code>server.broadcast()</code> send messages to all players:</p>
-<pre><code class="language-python"><span class="cm"># These are equivalent</span>
-<span class="kw">await</span> chat.broadcast(<span class="st">&quot;Hello everyone!&quot;</span>)
-<span class="kw">await</span> server.broadcast(<span class="st">&quot;Hello everyone!&quot;</span>)
-</code></pre>
-<p>The <code>chat</code> helper exists for convenience and semantic clarity when your script is focused on chat operations.</p>
-<hr />
-<h2 id="example-announcement-system">Example: Announcement system</h2>
+      <p class="subtitle">"Prevent building near spawn with block events"</p>
+      <h1 id="spawn-protection">Spawn Protection</h1>
+<p>A compact script that prevents players from breaking, placing, or
+exploding blocks within 15 blocks of spawn.  It shows how to listen
+for block-related events and cancel them conditionally.</p>
+<p>Drop this file into <code>plugins/PyJavaBridge/scripts/</code> and reload the server.</p>
 <pre><code class="language-python"><span class="kw">from</span> bridge <span class="kw">import</span> *
 
-<span class="dc">@command</span>(<span class="st">&quot;Announce a message&quot;</span>)
-<span class="kw">async</span> <span class="kw">def</span> announce(player: Player, args: list[str]):
-    <span class="kw">if</span> <span class="kw">not</span> args:
-        <span class="kw">await</span> player.send_message(<span class="st">&quot;§cUsage: /announce &lt;message&gt;&quot;</span>)
-        <span class="kw">return</span>
+<span class="cm"># ─── Server Load Event ──────────────────────────────────────────────</span>
+<span class="cm"># The &quot;load&quot; event fires once when the script is first loaded by the</span>
+<span class="cm"># plugin.  It's a good place for initialization or broadcast messages.</span>
 
-    message = <span class="st">&quot; &quot;</span>.join(args)
-    <span class="kw">await</span> chat.broadcast(<span class="st">f&quot;§6§l[Announcement] §f{message}&quot;</span>)
+<span class="dc">@event</span>
+<span class="kw">async</span> <span class="kw">def</span> load(event: Event):
+    <span class="st">&quot;&quot;&quot;Broadcast a start message on server load.&quot;&quot;&quot;</span>
+    <span class="cm"># server.broadcast() sends a message to every online player.</span>
+    server.broadcast(<span class="st">&quot;server start&quot;</span>)
+
+
+<span class="cm"># ─── Block Break Protection ────────────────────────────────────────</span>
+<span class="cm"># The function name &quot;block_break&quot; matches the Bukkit BlockBreakEvent.</span>
+<span class="cm"># PJB automatically routes it to this handler.</span>
+<span class="cm">#</span>
+<span class="cm"># event.block gives you the Block being broken, which has .x, .y, .z</span>
+<span class="cm"># coordinates.  We use the Manhattan distance on the X/Z plane to</span>
+<span class="cm"># define a diamond-shaped protected zone around (0, 0).</span>
+
+<span class="dc">@event</span>
+<span class="kw">async</span> <span class="kw">def</span> block_break(event: Event):
+    <span class="st">&quot;&quot;&quot;Cancel block breaking near spawn.&quot;&quot;&quot;</span>
+    <span class="cm"># Manhattan distance from spawn on the horizontal plane.</span>
+    <span class="kw">if</span> (abs(event.block.x) + abs(event.block.z)) &lt; <span class="nb">15</span>:
+        <span class="cm"># Tell the player why their action was denied.</span>
+        event.player.send_message(<span class="st">&quot;You cannot break blocks there!&quot;</span>)
+        <span class="cm"># event.cancel() prevents the block from actually being broken.</span>
+        <span class="kw">await</span> event.cancel()
+
+
+<span class="cm"># ─── Block Place Protection ────────────────────────────────────────</span>
+<span class="cm"># Same logic as block_break, but for BlockPlaceEvent.  Both events</span>
+<span class="cm"># expose event.block and event.player.</span>
+
+<span class="dc">@event</span>
+<span class="kw">async</span> <span class="kw">def</span> block_place(event: Event):
+    <span class="st">&quot;&quot;&quot;Cancel block placing near spawn.&quot;&quot;&quot;</span>
+    <span class="kw">if</span> (abs(event.block.x) + abs(event.block.z)) &lt; <span class="nb">15</span>:
+        event.player.send_message(<span class="st">&quot;You cannot place blocks there!&quot;</span>)
+        <span class="kw">await</span> event.cancel()
+
+
+<span class="cm"># ─── Explosion Protection ──────────────────────────────────────────</span>
+<span class="cm"># block_explode covers TNT, creepers, and other explosions.  Note that</span>
+<span class="cm"># there is no event.player here (explosions aren't always caused by a</span>
+<span class="cm"># player), so we just silently cancel without a message.</span>
+
+<span class="dc">@event</span>
+<span class="kw">async</span> <span class="kw">def</span> block_explode(event: Event):
+    <span class="st">&quot;&quot;&quot;Cancel explosions near spawn.&quot;&quot;&quot;</span>
+    <span class="kw">if</span> (abs(event.block.x) + abs(event.block.z)) &lt; <span class="nb">15</span>:
+        event.cancel()
 </code></pre>
 
     </div>
