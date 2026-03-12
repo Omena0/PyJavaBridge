@@ -1,9 +1,9 @@
 ---
-title: "Spawn Protection"
+title: "Spawn Protect Example"
 subtitle: "Prevent building near spawn with block events"
 ---
 
-# Spawn Protection
+# Spawn Protect Example
 
 A compact script that prevents players from breaking, placing, or
 exploding blocks within 15 blocks of spawn.  It shows how to listen

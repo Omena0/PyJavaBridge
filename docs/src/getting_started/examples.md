@@ -9,10 +9,10 @@ Full working scripts that demonstrate PyJavaBridge features. Each example is a s
 
 | Example | Description | Concepts |
 | ------- | ----------- | -------- |
-| [Commands & GUI](examples_command.html) | Commands, raycast teleport, inventory GUIs, click events | `@command`, `@event`, `Inventory`, `raycast`, `Player` |
-| [Spawn Protection](examples_spawn_protect.html) | Prevent building near spawn with block events | `@event`, `event.cancel()`, block coordinates |
-| [Temporary Ban](examples_tempban.html) | Ban system with durations, persistence, and login enforcement | `@command`, `@event`, `Player`, state management |
-| [Dungeon Generator](examples_dungeon.html) | Procedural dungeon with rooms, loot, mobs, and lifecycle | `Dungeon`, `ItemBuilder`, `@command`, extension events |
+| [Commands Example](examples_command.html) | Commands, raycast teleport, inventory GUIs, click events | `@command`, `@event`, `Inventory`, `raycast`, `Player` |
+| [Spawn Protect Example](examples_spawn_protect.html) | Prevent building near spawn with block events | `@event`, `event.cancel()`, block coordinates |
+| [Tempban Example](examples_tempban.html) | Ban system with durations, persistence, and login enforcement | `@command`, `@event`, `Player`, state management |
+| [Dungeon Example](examples_dungeon.html) | Procedural dungeon with rooms, loot, mobs, and lifecycle | `Dungeon`, `ItemBuilder`, `@command`, extension events |
 
 ---
 

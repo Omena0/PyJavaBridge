@@ -1,9 +1,9 @@
 ---
-title: "Temporary Ban"
+title: "Tempban Example"
 subtitle: "Ban system with durations, persistence, and login enforcement"
 ---
 
-# Temporary Ban System
+# Tempban Example
 
 A full-featured ban command that supports permanent bans, timed bans
 with human-readable durations (e.g. `2h30m`), optional reasons, and

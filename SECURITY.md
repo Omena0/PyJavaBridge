@@ -6,6 +6,8 @@ I will not do backports for any reason.
 
 If you have an issue in a version that is no longer supported, backport the latest version yourself and make a pull request.
 
+Most versions should work without many changes.
+
 ## Reporting a Vulnerability
 
 DM me on discord (@Omena0), with an explanation.

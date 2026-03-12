@@ -1,9 +1,9 @@
 ---
-title: "Commands & GUI"
+title: "Commands Example"
 subtitle: "Commands, raycast teleport, inventory GUIs, and click events"
 ---
 
-# Commands & GUI
+# Commands Example
 
 This script demonstrates several core PyJavaBridge features:
 registering chat commands, using raycast for teleportation,

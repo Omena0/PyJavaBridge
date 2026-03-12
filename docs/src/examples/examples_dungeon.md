@@ -1,9 +1,9 @@
 ---
-title: "Dungeon Generator"
+title: "Dungeon Example"
 subtitle: "Procedural dungeon with rooms, loot, mobs, and lifecycle"
 ---
 
-# Dungeon Generator
+# Dungeon Example
 
 An advanced example using the **Dungeon** extension to create a
 procedurally generated dungeon with loot pools, mob spawning,

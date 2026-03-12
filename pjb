@@ -232,7 +232,7 @@ def build_symbol_index(docs_dir):
     """
     symbols = []
 
-    for md_file in sorted(docs_dir.glob("*.md")):
+    for md_file in sorted(docs_dir.glob("**/*.md")):
         content = md_file.read_text(encoding="utf-8")
         lines = content.split("\n")
 
@@ -269,7 +269,7 @@ def build_symbol_index(docs_dir):
                     "section": None,
                     "qualified": class_name,
                     "desc": subtitle or desc,
-                    "file": md_file.stem,
+                    "file": str(md_file.relative_to(docs_dir).with_suffix('')),
                     "line": i + 1,
                 })
 
@@ -290,7 +290,7 @@ def build_symbol_index(docs_dir):
                     "qualified": f"{class_name}.{member}",
                     "desc": desc,
                     "sig": sig,
-                    "file": md_file.stem,
+                    "file": str(md_file.relative_to(docs_dir).with_suffix('')),
                     "line": i + 1,
                 })
 
@@ -337,12 +337,18 @@ def _strip_md(line):
     return line
 
 
+def _sort_key(s):
+    """Sort key that orders _ after letters (replace _ with ~ which sorts after z)."""
+    return s.lower().replace('_', '~')
+
+
 # Extension doc file stems (matches Extensions section in docs/build.py)
 _EXT_FILES = {
-    "imagedisplay", "meshdisplay", "quest", "dialog", "bank", "shop",
-    "trade", "ability", "mana", "combat", "levels", "region", "party",
-    "guild", "customitem", "leaderboard", "visualeffect", "playerdatastore",
-    "dungeon",
+    "ability", "bank", "combat", "customitem", "dialog", "dungeon",
+    "guild", "imagedisplay", "leaderboard", "levels", "loottable",
+    "mana", "meshdisplay", "party", "placeholder", "playerdatastore",
+    "quest", "region", "scheduler", "shop", "statemachine", "tablist",
+    "trade", "visualeffect",
 }
 _EXT_TAG = " \033[33m[ext]\033[0m"
 
@@ -582,7 +588,7 @@ def cmd_search(query):
         if not members:
             print(f"No class '{query[:-1]}' found")
             return
-        ext = _EXT_TAG if members[0]['file'] in _EXT_FILES else ""
+        ext = _EXT_TAG if Path(members[0]['file']).stem in _EXT_FILES else ""
         print(f"\033[1m{members[0]['class_name']}\033[0m  \033[90m({members[0]['file']}.md)\033[0m{ext}")
         current_section = None
         for s in members:
@@ -605,14 +611,14 @@ def cmd_search(query):
             if s["class_name"].lower() == class_q and member_q in s["name"].lower():
                 exact = s["name"].lower() == member_q
                 results.append((0 if exact else 1, s))
-        results.sort(key=lambda x: (x[0], x[1]["qualified"]))
+        results.sort(key=lambda x: (x[0], _sort_key(x[1]["qualified"])))
         if not results:
             print(f"No symbol '{query}' found")
             return
         for _, s in results:
             # If the user asked for the exact member, show the full member block
             if s['name'].lower() == member_q:
-                ext = _EXT_TAG if s['file'] in _EXT_FILES else ""
+                ext = _EXT_TAG if Path(s['file']).stem in _EXT_FILES else ""
                 print(f"  \033[90m{s['class_name']}.\033[0m\033[36m{s['name']}\033[0m  \033[90m({s['section'] or 'class'})\033[0m{ext}")
                 md_path = docs_dir / f"{s['file']}.md"
                 if md_path.exists():
@@ -622,23 +628,41 @@ def cmd_search(query):
                     print(desc)
             else:
                 desc = f"  \033[90m{s['desc']}\033[0m" if s['desc'] else ""
-                ext = _EXT_TAG if s['file'] in _EXT_FILES else ""
+                ext = _EXT_TAG if Path(s['file']).stem in _EXT_FILES else ""
                 print(f"  \033[90m{s['class_name']}.\033[0m\033[36m{s['name']}\033[0m  \033[90m({s['section'] or 'class'})\033[0m{ext}{desc}")
 
     else:
         # "Player" → match class names, or fall back to member names
         q = query.lower()
         classes = [s for s in symbols if not s["name"] and q in s["class_name"].lower()]
-        classes.sort(key=lambda s: (s["class_name"].lower() != q, s["class_name"]))
+        def _class_rank(s):
+            cn = s["class_name"].lower()
+            if cn == q:
+                return (0, _sort_key(s["class_name"]))
+            if cn.startswith(q):
+                return (1, _sort_key(s["class_name"]))
+            return (2, _sort_key(s["class_name"]))
+        classes.sort(key=_class_rank)
+        # If there's an exact match, only show that
+        if any(s["class_name"].lower() == q for s in classes):
+            classes = [s for s in classes if s["class_name"].lower() == q]
         if classes:
+            lines_printed = 0
             for s in classes:
-                ext = _EXT_TAG if s['file'] in _EXT_FILES else ""
+                ext = _EXT_TAG if Path(s['file']).stem in _EXT_FILES else ""
                 # Show the class-level doc text (everything before first ### member)
                 md_path = docs_dir / f"{s['file']}.md"
                 if md_path.exists():
-                    print(_get_class_doc(md_path, ext))
+                    doc = _get_class_doc(md_path, ext)
                 else:
-                    print(f"  \033[36;1m{s['class_name']}\033[0m{ext}")
+                    doc = f"  \033[36;1m{s['class_name']}\033[0m{ext}"
+                doc_lines = doc.count('\n') + 1
+                if lines_printed > 0 and lines_printed + doc_lines > 50:
+                    remaining = len(classes) - classes.index(s)
+                    print(f"\n  \033[90m... and {remaining} more result(s)\033[0m")
+                    break
+                print(doc)
+                lines_printed += doc_lines
 
         else:
             # No class match → search member names across all classes
@@ -652,12 +676,12 @@ def cmd_search(query):
                     results.append((1, s))
                 elif q in s["name"].lower():
                     results.append((2, s))
-            results.sort(key=lambda x: (x[0], x[1]["qualified"]))
+            results.sort(key=lambda x: (x[0], _sort_key(x[1]["qualified"])))
             if not results:
                 print(f"No symbols matching '{query}'")
                 return
             for _, s in results:
-                ext = _EXT_TAG if s['file'] in _EXT_FILES else ""
+                ext = _EXT_TAG if Path(s['file']).stem in _EXT_FILES else ""
                 print(f"  \033[90m{s['class_name']}.\033[0m\033[36m{s['name']}\033[0m  \033[90m({s['section'] or 'class'})\033[0m{ext}")
 
 def cmd_events(filter_str=None):
