@@ -3527,6 +3527,15 @@ class ItemBuilder:
         self._custom_model_data = int(value)
         return self
 
+    def model(self, model: str) -> ItemBuilder:
+        """Set the new 1.21.11 `item_model` property.
+
+        `model` should be a resource location string (e.g. "myns:models/item/custom_sword").
+        This writes the value into the built item's `item_model` field.
+        """
+        self._item_model = str(model)
+        return self
+
     def attributes(self, attrs: List[Dict[str, Any]]) -> ItemBuilder:
         """Set item attributes."""
         self._attributes = list(attrs)
@@ -3576,6 +3585,9 @@ class ItemBuilder:
 
         if self._item_flags:
             fields["item_flags"] = list(self._item_flags)
+
+        if getattr(self, "_item_model", None) is not None:
+            fields["item_model"] = self._item_model
 
         return Item(handle=None, fields=fields)
 
@@ -4145,4 +4157,47 @@ class ReflectFacade(ProxyBase):
 server = Server(target="server")
 chat = ChatFacade(target="chat")
 reflect = ReflectFacade(target="reflect")
+
+
+class Datapack(ProxyBase):
+    """Runtime datapack API proxy.
+
+    Use this to register datapack-like definitions at runtime without writing files.
+    Methods send JSON-like structures to the Java side for (future) application to
+    server registries.
+    """
+
+    def __init__(self, target: str = "datapack"):
+        super().__init__(target=target)
+
+    def register_model(self, namespace: str, path: str, model_json: Dict[str, Any]):
+        return self._call("registerModel", namespace, path, model_json)
+
+    def register_advancement(self, namespace: str, path: str, advancement_json: Dict[str, Any]):
+        return self._call("registerAdvancement", namespace, path, advancement_json)
+
+    def register_predicate(self, namespace: str, path: str, predicate_json: Dict[str, Any]):
+        return self._call("registerPredicate", namespace, path, predicate_json)
+
+    def register_worldgen(self, namespace: str, category: str, path: str, json_obj: Dict[str, Any]):
+        return self._call("registerWorldgen", namespace, category, path, json_obj)
+
+    def register_tag(self, namespace: str, tag_type: str, tag_id: str, values: List[str], replace: bool = False):
+        return self._call("registerTag", namespace, tag_type, tag_id, values, replace)
+
+    def register_registry_entry(self, namespace: str, registry: str, path: str, entry_json: Dict[str, Any]):
+        return self._call("registerRegistryEntry", namespace, registry, path, entry_json)
+
+    def register_damage_type(self, namespace: str, id: str, json_obj: Dict[str, Any]):
+        return self._call("registerDamageType", namespace, id, json_obj)
+
+    def register_chat_type(self, namespace: str, id: str, json_obj: Dict[str, Any]):
+        return self._call("registerChatType", namespace, id, json_obj)
+
+    def apply_all(self):
+        """Request the Java side to apply all registered entries to the server.
+
+        Note: runtime application may be best-effort depending on server capabilities.
+        """
+        return self._call("applyAll")
 
