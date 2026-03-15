@@ -40,8 +40,8 @@ def _handle_release(handle: Optional[int]) -> None:
         return
 
     count = _handle_refcounts.get(handle, 0)
-    if count <= 0:
-        return
+
+    assert count > 0, "Cannot release zero handles."
 
     if count == 1:
         _handle_refcounts.pop(handle, None)
@@ -881,7 +881,7 @@ class Entity(ProxyBase):
     @portal_cooldown.setter
     def portal_cooldown(self, ticks: int):
         """Set the portal cooldown value."""
-        self._call_ff("setPortalCooldown", int(ticks))
+        self._call_ff("setPortalCooldown", ticks)
 
     @property
     def max_fire_ticks(self) -> int:
@@ -896,7 +896,7 @@ class Entity(ProxyBase):
     @freeze_ticks.setter
     def freeze_ticks(self, ticks: int):
         """Set the freeze ticks value."""
-        self._call_ff("setFreezeTicks", int(ticks))
+        self._call_ff("setFreezeTicks", ticks)
 
     @property
     def height(self) -> float:
@@ -1067,7 +1067,7 @@ class Villager(Entity):
     @villager_level.setter
     def villager_level(self, value: int):
         """Set the villager level value."""
-        self._call("setVillagerLevel", int(value))
+        self._call("setVillagerLevel", value)
 
     @property
     def villager_experience(self) -> int:
@@ -1077,7 +1077,7 @@ class Villager(Entity):
     @villager_experience.setter
     def villager_experience(self, value: int):
         """Set the villager experience value."""
-        self._call("setVillagerExperience", int(value))
+        self._call("setVillagerExperience", value)
 
     @property
     def recipes(self) -> list[dict]:
@@ -1172,7 +1172,7 @@ class ItemFrame(Entity):
     @item_drop_chance.setter
     def item_drop_chance(self, value: float):
         """Set the item drop chance value."""
-        self._call("setItemDropChance", float(value))
+        self._call("setItemDropChance", value)
 
 class FallingBlock(Entity):
     """FallingBlock entity."""
@@ -1210,7 +1210,7 @@ class FallingBlock(Entity):
     @damage_per_block.setter
     def damage_per_block(self, value: float):
         """Set the damage per block value."""
-        self._call("setDamagePerBlock", float(value))
+        self._call("setDamagePerBlock", value)
 
     @property
     def max_damage(self) -> int:
@@ -1220,7 +1220,7 @@ class FallingBlock(Entity):
     @max_damage.setter
     def max_damage(self, value: int):
         """Set the max damage value."""
-        self._call("setMaxDamage", int(value))
+        self._call("setMaxDamage", value)
 
 class AreaEffectCloud(Entity):
     """AreaEffectCloud entity with radius and effect properties."""
@@ -1233,7 +1233,7 @@ class AreaEffectCloud(Entity):
     @radius.setter
     def radius(self, value: float):
         """Set the radius value."""
-        self._call("setRadius", float(value))
+        self._call("setRadius", value)
 
     @property
     def color(self):
@@ -1253,7 +1253,7 @@ class AreaEffectCloud(Entity):
     @duration.setter
     def duration(self, ticks: int):
         """Set the duration value."""
-        self._call("setDuration", int(ticks))
+        self._call("setDuration", ticks)
 
     @property
     def wait_time(self) -> int:
@@ -1263,7 +1263,7 @@ class AreaEffectCloud(Entity):
     @wait_time.setter
     def wait_time(self, ticks: int):
         """Set the wait time value."""
-        self._call("setWaitTime", int(ticks))
+        self._call("setWaitTime", ticks)
 
     @property
     def radius_on_use(self) -> float:
@@ -1273,7 +1273,7 @@ class AreaEffectCloud(Entity):
     @radius_on_use.setter
     def radius_on_use(self, value: float):
         """Set the radius on use value."""
-        self._call("setRadiusOnUse", float(value))
+        self._call("setRadiusOnUse", value)
 
     @property
     def radius_per_tick(self) -> float:
@@ -1283,7 +1283,7 @@ class AreaEffectCloud(Entity):
     @radius_per_tick.setter
     def radius_per_tick(self, value: float):
         """Set the radius per tick value."""
-        self._call("setRadiusPerTick", float(value))
+        self._call("setRadiusPerTick", value)
 
     @property
     def particle(self):
@@ -1590,7 +1590,7 @@ class Player(Entity):
 
                 return result_text
 
-            raise Exception(f"Could not get UUID: {self}")
+            raise Exception(f"Could not get UUID: {self}") # sourcery skip: raise-specific-error
 
         except Exception as exc:
             raise BridgeError(f"Failed to synchronously resolve uuid: {exc}") from exc
@@ -1767,7 +1767,7 @@ class Player(Entity):
     @absorption.setter
     def absorption(self, value: float):
         """Set the absorption value."""
-        self._call_ff("setAbsorptionAmount", float(value))
+        self._call_ff("setAbsorptionAmount", value)
 
     @property
     def saturation(self) -> float:
@@ -1777,7 +1777,7 @@ class Player(Entity):
     @saturation.setter
     def saturation(self, value: float):
         """Set the saturation value."""
-        self._call_ff("setSaturation", float(value))
+        self._call_ff("setSaturation", value)
 
     @property
     def exhaustion(self) -> float:
@@ -1787,7 +1787,7 @@ class Player(Entity):
     @exhaustion.setter
     def exhaustion(self, value: float):
         """Set the exhaustion value."""
-        self._call_ff("setExhaustion", float(value))
+        self._call_ff("setExhaustion", value)
 
     @property
     def attack_cooldown(self) -> float:
@@ -1880,7 +1880,7 @@ class Player(Entity):
     def max_health(self, value: float):
         """Set the max health value."""
         self._invalidate_field("health")
-        self._call_ff("setMaxHealth", float(value))
+        self._call_ff("setMaxHealth", value)
 
     @property
     def bed_spawn_location(self) -> Location | None:
@@ -2121,7 +2121,11 @@ class World(ProxyBase):
         if isinstance(material, str):
             material = Material.from_name(material.upper())
 
-        return _connection.call(target="region", method="setBlock", args=[self, int(x), int(y), int(z), material, apply_physics])
+        return _connection.call(
+            target="region",
+            method="setBlock",
+            args=[self, x, y, z, material, apply_physics],
+        )
 
     def fill(self, pos1: Any, pos2: Any, material: Any, apply_physics: bool = False):
         """Fill a rectangular region with a block type."""
@@ -2150,7 +2154,11 @@ class World(ProxyBase):
         if isinstance(material, str):
             material = Material.from_name(material.upper())
 
-        return _connection.call(target="region", method="sphere", args=[self, float(cx), float(cy), float(cz), float(radius), material, hollow])
+        return _connection.call(
+            target="region",
+            method="sphere",
+            args=[self, float(cx), float(cy), float(cz), radius, material, hollow],
+        )
 
     def fill_cylinder(self, center: Any, radius: float, height: int, material: Any, hollow: bool = False):
         """Fill a cylinder of blocks at a location."""
@@ -2158,7 +2166,20 @@ class World(ProxyBase):
         if isinstance(material, str):
             material = Material.from_name(material.upper())
 
-        return _connection.call(target="region", method="cylinder", args=[self, float(cx), float(cy), float(cz), float(radius), int(height), material, hollow])
+        return _connection.call(
+            target="region",
+            method="cylinder",
+            args=[
+                self,
+                float(cx),
+                float(cy),
+                float(cz),
+                radius,
+                height,
+                material,
+                hollow,
+            ],
+        )
 
     def fill_line(self, start: Any, end: Any, material: Any):
         """Fill a line of blocks between two points."""
@@ -2846,7 +2867,7 @@ class Block(ProxyBase):
     @furnace_burn_time.setter
     def furnace_burn_time(self, ticks: int):
         """Set the furnace burn time value."""
-        return self._call("setFurnaceBurnTime", int(ticks))
+        return self._call("setFurnaceBurnTime", ticks)
 
     @property
     def furnace_cook_time(self) -> int:
@@ -2856,7 +2877,7 @@ class Block(ProxyBase):
     @furnace_cook_time.setter
     def furnace_cook_time(self, ticks: int):
         """Set the furnace cook time value."""
-        return self._call("setFurnaceCookTime", int(ticks))
+        return self._call("setFurnaceCookTime", ticks)
 
     @property
     def furnace_cook_time_total(self) -> int:
