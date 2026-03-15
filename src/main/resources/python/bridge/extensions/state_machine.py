@@ -116,7 +116,7 @@ class StateMachine:
         if name in self._states:
             self._initial = name
 
-    def _key(self, entity) -> str:
+    def _key(self, entity) -> str:  # sourcery skip: remove-unnecessary-cast
         """Get a unique key for the entity."""
         if hasattr(entity, "uuid"):
             return str(entity.uuid)

@@ -181,7 +181,7 @@ class QuestTree:
     def current_depth(self, player: Any) -> int:
         """Handle current depth."""
         for i, layer in enumerate(self._tree):
-            if not all(q.status(player) == "completed" for q in layer):
+            if any(q.status(player) != "completed" for q in layer):
                 return i
 
         return len(self._tree)

@@ -28,10 +28,11 @@ class ImageDisplay:
         if isinstance(image, str):
             try:
                 from PIL import Image as PILImage  # type: ignore[import-not-found]
-            except ImportError:
+            except ImportError as e:
                 raise ImportError(
                     "Pillow is required for loading images from file paths. "
-                    "Install with: pip install Pillow")
+                    "Install with: pip install Pillow"
+                ) from e
 
             img = PILImage.open(image).convert("RGBA")
             return int(img.size[0]), int(img.size[1]), list(img.getdata())  # type: ignore[arg-type]
@@ -72,7 +73,7 @@ class ImageDisplay:
 
         yaw = float(getattr(location, 'yaw', 0.0))
         pitch = float(getattr(location, 'pitch', 0.0))
-        pixel_scale = float(pixel_size) * 8
+        pixel_scale = pixel_size * 8
         pixel_step = pixel_scale / 8
         scale_x = pixel_scale
         scale_y = pixel_scale/2
@@ -94,7 +95,7 @@ class ImageDisplay:
             right_x = fwd_z
             right_y = 0.0
             right_z = -fwd_x
-            right_len = math.sqrt((right_x * right_x) + (right_y * right_y) + (right_z * right_z))
+            right_len = math.sqrt(right_x * right_x + right_y**2 + right_z * right_z)
             if right_len <= 1e-9:
                 right_x, right_y, right_z = 1.0, 0.0, 0.0
             else:
@@ -283,9 +284,10 @@ class ImageDisplay:
     def _update_argb(self, argb_list: list[int]) -> None:
         """Update entities from a flat ARGB int list (one per entity)."""
         entries: list[list[int]] = []
-        for i, entity in enumerate(self._entities):
-            if i < len(argb_list) and entity._handle is not None:
-                entries.append([entity._handle, argb_list[i]])
-
+        entries.extend(
+            [entity._handle, argb_list[i]]
+            for i, entity in enumerate(self._entities)
+            if i < len(argb_list) and entity._handle is not None
+        )
         if entries and bridge._connection is not None:  # type: ignore[attr-defined]
             bridge._connection.send_fire_forget("update_entities", entries=entries)  # type: ignore[attr-defined]

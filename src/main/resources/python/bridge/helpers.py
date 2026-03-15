@@ -918,9 +918,8 @@ class Menu:
         size = self._rows * 9
         for slot in range(size):
             row, col = divmod(slot, 9)
-            if row == 0 or row == self._rows - 1 or col == 0 or col == 8:
-                if slot not in self._items:
-                    self._items[slot] = MenuItem(item)
+            if (row == 0 or row == self._rows - 1 or col == 0 or col == 8) and slot not in self._items:
+                self._items[slot] = MenuItem(item)
 
     def open(self, player: Any):
         """Open this menu for a player."""
@@ -969,10 +968,10 @@ class Paginator(Menu):
         super().__init__(title, rows)
         self._pages: List[Dict[int, MenuItem]] = [{}]
         self._page_index: Dict[str, int] = {}  # player uuid -> current page
-        usable = (self._rows - 1) * 9  # last row reserved for nav
         if items:
             page: Dict[int, MenuItem] = {}
             slot = 0
+            usable = (self._rows - 1) * 9  # last row reserved for nav
             for mi in items:
                 page[slot] = mi
                 slot += 1
