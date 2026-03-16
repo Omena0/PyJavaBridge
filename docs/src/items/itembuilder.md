@@ -163,6 +163,17 @@ Set custom model data for resource packs.
 - **Parameters:**
   - `value` (`int`) — Model data value.
 
+### model
+
+```python
+builder.model("myns:item/custom_sword")
+```
+
+Set the 1.21.11 `item_model` property which points to a model definition resource.
+
+- **Parameters:**
+  - `model` (`str`) — Resource location string (e.g. `"myns:item/custom_sword"`).
+
 ### attributes
 
 ```python

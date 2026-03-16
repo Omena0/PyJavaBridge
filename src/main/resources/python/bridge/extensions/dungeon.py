@@ -422,14 +422,17 @@ class RoomTemplate:
 
     def to_droom(self) -> str:
         """Serialize back to ``.droom`` format."""
-        lines: List[str] = []
-        lines.append(f"type: {self.type}")
+        lines: List[str] = [f"type: {self.type}"]
         if self.weight != 10:
             lines.append(f"weight: {self.weight}")
 
-        lines.append(f"width: {self.width}")
-        lines.append(f"height: {self.height}")
-        lines.append(f"depth: {self.depth}")
+        lines.extend(
+            (
+                f"width: {self.width}",
+                f"height: {self.height}",
+                f"depth: {self.depth}",
+            )
+        )
         if self.loot:
             pairs = " ".join(f"{t}={p}" for t, p in self.loot.items())
             lines.append(f"loot: {pairs}")
@@ -437,27 +440,21 @@ class RoomTemplate:
         lines.append("")
 
         # Write exit definitions
-        for ex in self.exits:
-            lines.append(f"exit: {ex.serialize()}")
-
+        lines.extend(f"exit: {ex.serialize()}" for ex in self.exits)
         if self.exits:
             lines.append("")
 
         # Write key definitions (skip ~ since it's hardcoded)
-        for ch, block_def in sorted(self.key_map.items()):
-            if ch == "~":
-                continue
+        lines.extend(
+            f"{ch}: {block_def}"
+            for ch, block_def in sorted(self.key_map.items())
+            if ch != "~"
+        )
+        lines.extend(("", "---"))
 
-            lines.append(f"{ch}: {block_def}")
-
-        lines.append("")
-        lines.append("---")
-
-        # Build reverse map: full block string -> key char
-        reverse: Dict[str, str] = {}
-        for ch, block_def in self.key_map.items():
-            reverse[f"minecraft:{block_def}"] = ch
-
+        reverse: Dict[str, str] = {
+            f"minecraft:{block_def}": ch for ch, block_def in self.key_map.items()
+        }
         # Encode blocks as fill/set operations
         ops = _compute_ops(self.blocks, reverse, self.width, self.height, self.depth)
         lines.append(_ops_to_text(ops))
@@ -650,10 +647,10 @@ class PlacedRoom:
     def _build_bulk_ops(self) -> List[list]:
         """Build absolute-coordinate operation list for Java bulk paste."""
         ox, oy, oz = self.origin
-        reverse: Dict[str, str] = {}
-        for ch, block_def in self.template.key_map.items():
-            reverse[f"minecraft:{block_def}"] = ch
-
+        reverse: Dict[str, str] = {
+            f"minecraft:{block_def}": ch
+            for ch, block_def in self.template.key_map.items()
+        }
         ops = _compute_ops(
             self.template.blocks, reverse,
             self.template.width, self.template.height, self.template.depth,
@@ -741,7 +738,7 @@ async def _fill_loot(room: PlacedRoom, world: Any):
                 if not match:
                     continue
 
-                tag = match.group(1)
+                tag = match[1]
                 pool = room.template.loot.get(tag, tag)
                 gen = _loot_generators.get(pool)
                 if not gen:
@@ -854,11 +851,10 @@ class _DungeonGenerator:
             template: RoomTemplate) -> bool:
         """Check if placing *template* at *origin* overlaps any placed room."""
         new_min, new_max = _room_aabb(origin, template)
-        for pmin, pmax in self._aabbs:
-            if _aabb_overlaps(new_min, new_max, pmin, pmax):
-                return True
-
-        return False
+        return any(
+            _aabb_overlaps(new_min, new_max, pmin, pmax)
+            for pmin, pmax in self._aabbs
+        )
 
     # -- candidate search ------------------------------------------------------
     def _candidates_for_exit(
@@ -973,7 +969,7 @@ class _DungeonGenerator:
 
             # Prefer exits that meet the minimum candidates threshold
             above = [s for s in scored if s[0] >= self.min_candidates]
-            pool = above if above else scored
+            pool = above or scored
 
             # Pick an exit weighted by branch_factor.
             # High branch_factor → prefer shallow (low depth) exits (more branching).
@@ -993,8 +989,9 @@ class _DungeonGenerator:
 
             # Remove this exit from open list
             open_exits = [
-                item for item in open_exits
-                if not (item[0] is source_room and item[1] == src_eidx)
+                item
+                for item in open_exits
+                if item[0] is not source_room or item[1] != src_eidx
             ]
 
             # Shuffle candidates, penalising rooms that were recently placed.
@@ -1087,10 +1084,6 @@ class _DungeonGenerator:
                     cap_count += 1
                     found = True
                     break
-                else:
-                    # None fit — leave this exit
-                    pass
-
                 break
 
             if not found:
@@ -1279,7 +1272,8 @@ class DungeonInstance:
         if not self.rooms:
             return 1.0
 
-        return sum(1 for r in self.rooms if r.cleared) / len(self.rooms)
+        return sum(bool(r.cleared)
+               for r in self.rooms) / len(self.rooms)
 
     @property
     def is_complete(self) -> bool:
@@ -1472,7 +1466,7 @@ class Dungeon:
         self._room_generate_handlers: List[Callable[..., Any]] = []
         self._room_clear_handlers: List[Callable[..., Any]] = []
 
-        # Customisation
+        # Customization
         self.type_limits: Dict[str, int] = {}
 
         # Auto-load templates

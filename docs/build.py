@@ -323,9 +323,10 @@ def build_toc_sidebar(toc_tokens, current_slug):
         children = token.get("children", [])
         if children:
             toc_parts.append(f'    <li><ul class="toc-sub" data-parent="{token["id"]}">')
-            for child in children:
-                toc_parts.append(f'      <li><a href="#{child["id"]}">{child["name"]}</a></li>')
-
+            toc_parts.extend(
+                f'      <li><a href="#{child["id"]}">{child["name"]}</a></li>'
+                for child in children
+            )
             toc_parts.append('    </ul></li>')
 
     toc_parts.extend(('  </ul>', '</div>'))
@@ -455,7 +456,7 @@ def build_page(slug):
     sidebar = build_toc_sidebar(toc_tokens, slug)
 
     # Build OG description from subtitle or first paragraph
-    og_description = subtitle if subtitle else f"{title} — PyJavaBridge documentation"
+    og_description = subtitle or f"{title} — PyJavaBridge documentation"
 
     # Render template
     out_html = TEMPLATE.format(

@@ -98,13 +98,11 @@ class Dialog:
                 result = next_step(player)
                 if asyncio.iscoroutine(result):
                     await result
-        else:
-            # No answers — auto-advance or end
-            if entry.delay is not None:
-                try:
-                    await server.after(int(entry.delay * 20))
-                except Exception:
-                    pass
+        elif entry.delay is not None:
+            try:
+                await server.after(int(entry.delay * 20))
+            except Exception:
+                pass
 
         if not entry.answers:
             self._active.pop(puuid, None)

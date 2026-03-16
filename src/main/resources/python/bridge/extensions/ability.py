@@ -77,9 +77,8 @@ class Ability:
                 asyncio.ensure_future(player.send_message(msg))
                 return False
 
-        if self._can_use_handler is not None:
-            if not self._can_use_handler(self, player):
-                return False
+        if self._can_use_handler is not None and not self._can_use_handler(self, player):
+            return False
 
         # Check mana
         if self.use_cost is not None and self._mana_store is not None:

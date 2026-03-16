@@ -128,6 +128,7 @@ public class BridgeInstance {
     private final MetricsFacade metricsFacade;
     private final RefFacade refFacade;
     private final CommandsFacade commandsFacade;
+    private final DatapackFacade datapackFacade;
 
     private DataInputStream reader;
     private DataOutputStream writer;
@@ -149,6 +150,7 @@ public class BridgeInstance {
         this.metricsFacade = new MetricsFacade(plugin);
         this.refFacade = new RefFacade(this);
         this.commandsFacade = new CommandsFacade(plugin, this);
+        this.datapackFacade = new DatapackFacade(plugin);
 
         Bukkit.getPluginManager().registerEvents(new Listener() {
             @EventHandler
@@ -2671,6 +2673,7 @@ public class BridgeInstance {
             case "ref" -> refFacade;
             case "reflect" -> reflectFacade;
             case "commands" -> commandsFacade;
+            case "datapack" -> datapackFacade;
             case "region" -> regionFacade;
             case "particle", "particles" -> particleFacade;
             default -> throw new IllegalArgumentException("Unknown target: " + targetName);
