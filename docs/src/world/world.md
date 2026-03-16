@@ -222,7 +222,7 @@ Spawn an entity by type name.
 ### spawn_particle
 
 ```python
-await world.spawn_particle(particle, location, count=1, offset_x=0, offset_y=0, offset_z=0, extra=0)
+await world.spawn_particle(particle, location, count=1, offset_x=0, offset_y=0, offset_z=0, extra=0, data=None, force=False)
 ```
 
 Spawn particles visible to all players in the world.
@@ -233,10 +233,14 @@ Spawn particles visible to all players in the world.
   - `count` (`int`) — Number of particles.
   - `offset_x/y/z` (`float`) — Random offset range on each axis.
   - `extra` (`float`) — Extra data (usually speed).
+  - `data` (`Any`) — Particle-specific data (e.g. DustOptions for DUST). Most particles don't accept data.
+  - `force` (`bool`) — If `True`, send the particle to all players within 512 blocks, ignoring client particle settings. Default `False` (normal 32-block range).
 - **Returns:** `Awaitable[None]`
 
 ```python
 await world.spawn_particle(Particle.FLAME, player.location, count=50, offset_x=0.5, offset_y=1, offset_z=0.5)
+# Force particles visible at long range
+await world.spawn_particle(Particle.END_ROD, loc, count=10, force=True)
 ```
 
 ### play_sound

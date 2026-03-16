@@ -134,6 +134,15 @@ class ProxyBase:
             super().__setattr__(name, value)
             return
 
+        # Check for @property setters on the class hierarchy
+        for cls in type(self).__mro__:
+            if name in cls.__dict__:
+                desc = cls.__dict__[name]
+                if isinstance(desc, property) and desc.fset is not None:
+                    desc.fset(self, value)
+                    return
+                break
+
         if self._handle is None and self._target == "ref":
             _connection.call(method="setAttr", args=[self._ref_type, self._ref_id, name, value], target="ref")
             return
@@ -2015,9 +2024,27 @@ class World(ProxyBase):
         """Set the difficulty value."""
         return self._call("setDifficulty", difficulty)
 
-    def spawn_particle(self, particle: Particle, location: Location, count: int = 1, offset_x: float = 0, offset_y: float = 0, offset_z: float = 0, extra: float = 0):
-        """Spawn particles at a location."""
-        return self._call("spawnParticle", particle, location, count, offset_x, offset_y, offset_z, extra)
+    def spawn_particle(self, particle: Particle, location: Location, count: int = 1, offset_x: float = 0, offset_y: float = 0, offset_z: float = 0, extra: float = 0, data=None, force: bool = False):
+        """Spawn particles at a location.
+
+        Args:
+            data: Particle-specific data (e.g. DustOptions for DUST). Most particles don't accept data.
+        """
+        # Particles that accept data arguments (Bukkit Particle.getDataType() != Void)
+        _PARTICLES_WITH_DATA = frozenset({
+            "BLOCK", "BLOCK_MARKER", "FALLING_DUST", "DUST", "DUST_COLOR_TRANSITION",
+            "ITEM", "SCULK_CHARGE", "SHRIEK", "VIBRATION", "TRAIL",
+            "ENTITY_EFFECT",
+        })
+        name = particle.name if hasattr(particle, 'name') else str(particle)
+        if data is not None and name.upper() not in _PARTICLES_WITH_DATA:
+            raise ValueError(
+                f"Particle {name} does not accept data. "
+                f"Only these particles accept data: {', '.join(sorted(_PARTICLES_WITH_DATA))}"
+            )
+        if data is not None:
+            return self._call("spawnParticle", particle, location, count, offset_x, offset_y, offset_z, data)
+        return self._call("spawnParticle", particle, location, count, offset_x, offset_y, offset_z, extra, force)
 
     def play_sound(self, location: Location, sound: Sound, volume: float = 1.0, pitch: float = 1.0):
         """Play a sound."""

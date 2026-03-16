@@ -453,7 +453,14 @@ public class BridgeInstance {
         }
 
         plugin.getLogger().info("[" + name + "] Registering command /" + commandName);
-        plugin.registerScriptCommand(commandName, this, permission, completions, hasDynamicTabComplete);
+
+        // Must run on main thread to avoid ConcurrentModificationException
+        // when the server iterates the command map (e.g. SimpleHelpMap.initializeCommands).
+        final Map<Integer, List<String>> finalCompletions = completions;
+        plugin.runOnMainThread(this, () -> {
+            plugin.registerScriptCommand(commandName, BridgeInstance.this, permission, finalCompletions, hasDynamicTabComplete);
+            return null;
+        });
     }
 
     private void handleTabCompleteResponse(JsonObject message) {
@@ -1255,7 +1262,8 @@ public class BridgeInstance {
             Double y = list.get(1) instanceof Number n ? n.doubleValue() : null;
             Double z = list.get(2) instanceof Number n ? n.doubleValue() : null;
             if (x != null && y != null && z != null) {
-                return new Location(context.getWorld(), x, y, z);
+                World w = context != null ? context.getWorld() : null;
+                return new Location(w, x, y, z);
             }
         }
         return null;
@@ -1430,6 +1438,41 @@ public class BridgeInstance {
                     }
                     return result;
                 }
+            }
+            return null;
+        }
+        if ("spawnParticle".equals(method) && args.size() >= 2) {
+            Object particleArg = args.get(0);
+            String particleName = particleArg instanceof EnumValue ev ? ev.name : String.valueOf(particleArg);
+            Particle particle;
+            try {
+                particle = Particle.valueOf(particleName.toUpperCase());
+            } catch (IllegalArgumentException ex) {
+                throw new IllegalArgumentException("Unknown particle: " + particleName);
+            }
+            Location loc = toLocation(args.get(1), null);
+            if (loc == null && args.get(1) instanceof Location l) loc = l;
+            if (loc != null) {
+                loc.setWorld(world);
+                int count = args.size() > 2 && args.get(2) instanceof Number n ? n.intValue() : 1;
+                double offX = args.size() > 3 && args.get(3) instanceof Number n ? n.doubleValue() : 0;
+                double offY = args.size() > 4 && args.get(4) instanceof Number n ? n.doubleValue() : 0;
+                double offZ = args.size() > 5 && args.get(5) instanceof Number n ? n.doubleValue() : 0;
+                double extra = args.size() > 6 && args.get(6) instanceof Number n ? n.doubleValue() : 0;
+                boolean force = args.size() > 7 && args.get(7) instanceof Boolean b && b;
+                world.spawnParticle(particle, loc, count, offX, offY, offZ, extra, null, force);
+            }
+            return null;
+        }
+        if ("createExplosion".equals(method) && args.size() >= 2) {
+            Location loc = toLocation(args.get(0), null);
+            if (loc == null && args.get(0) instanceof Location l) loc = l;
+            if (loc != null) {
+                loc.setWorld(world);
+                float power = args.size() > 1 && args.get(1) instanceof Number n ? n.floatValue() : 4.0f;
+                boolean setFire = args.size() > 2 && args.get(2) instanceof Boolean b && b;
+                boolean breakBlocks = args.size() <= 3 || !(args.get(3) instanceof Boolean b2) || b2;
+                world.createExplosion(loc, power, setFire, breakBlocks);
             }
             return null;
         }
@@ -2629,7 +2672,7 @@ public class BridgeInstance {
             case "reflect" -> reflectFacade;
             case "commands" -> commandsFacade;
             case "region" -> regionFacade;
-            case "particle" -> particleFacade;
+            case "particle", "particles" -> particleFacade;
             default -> throw new IllegalArgumentException("Unknown target: " + targetName);
         };
     }

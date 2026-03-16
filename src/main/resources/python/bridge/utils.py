@@ -32,9 +32,13 @@ def _extract_xyz(pos: tuple[int] | Any) -> tuple:
     if isinstance(pos, (list, tuple)) and len(pos) >= 3:
         return float(pos[0]), float(pos[1]), float(pos[2])
 
-    from bridge.wrappers import Vector
+    from bridge.wrappers import Vector, Location
+
     if isinstance(pos, Vector):
         return float(pos.x), float(pos.y), float(pos.z)
+
+    if isinstance(pos, Location):
+        return pos.x, pos.y, pos.z
 
     raise BridgeError(f"Cannot extract (x, y, z) from {type(pos).__name__}")
 
