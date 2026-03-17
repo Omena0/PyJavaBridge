@@ -7,6 +7,7 @@ Usage:
 """
 
 import re
+import shutil
 import sys
 from pathlib import Path
 
@@ -237,6 +238,7 @@ def build_symbol_index(docs_dir):
         lines = content.split("\n")
 
         class_name = md_file.stem.capitalize()
+        is_enum_doc = md_file.stem == "enums"
         section = ""
         subtitle = ""
         in_code_block = False
@@ -275,6 +277,40 @@ def build_symbol_index(docs_dir):
 
             elif stripped.startswith("## ") and not stripped.startswith("### "):
                 section = stripped.lstrip("# ").strip()
+
+                # docs/src/helpers/enums.md stores enum "classes" as ## headings.
+                # Index them as top-level symbols so queries like "ItemFlag" work.
+                if is_enum_doc and " " not in section:
+                    class_name = section
+                    desc = _get_desc_after(lines, i)
+                    symbols.append({
+                        "class_name": class_name,
+                        "name": None,
+                        "section": None,
+                        "qualified": class_name,
+                        "desc": desc,
+                        "file": str(md_file.relative_to(docs_dir).with_suffix('')),
+                        "line": i + 1,
+                        "enum_section_line": i + 1,
+                    })
+
+            elif is_enum_doc and class_name and stripped.startswith("| `"):
+                # docs/src/helpers/enums.md stores enum values in markdown tables.
+                # Index values as members so queries like "ItemFlag." work.
+                m = re.match(r"\|\s*`([^`]+)`\s*\|", stripped)
+                if m:
+                    member = m.group(1).strip()
+                    if member and member != "Name":
+                        symbols.append({
+                            "class_name": class_name,
+                            "name": member,
+                            "section": "Values",
+                            "qualified": f"{class_name}.{member}",
+                            "desc": "",
+                            "sig": None,
+                            "file": str(md_file.relative_to(docs_dir).with_suffix('')),
+                            "line": i + 1,
+                        })
 
             elif stripped.startswith("### "):
                 member = stripped.lstrip("# ").strip()
@@ -329,6 +365,73 @@ def _get_signature(lines, heading_idx, member):
                 return f"({m.group(1)})"
     return None
 
+def _load_stub_enum_values():
+    """Load enum constants from bridge __init__.pyi for richer completion."""
+    candidates = [
+        SCRIPT_DIR.parent / "src" / "main" / "resources" / "python" / "bridge" / "__init__.pyi",
+        SCRIPT_DIR / "src" / "main" / "resources" / "python" / "bridge" / "__init__.pyi",
+        Path.cwd() / "src" / "main" / "resources" / "python" / "bridge" / "__init__.pyi",
+    ]
+    stub_path = next((p for p in candidates if p.is_file()), None)
+    if stub_path is None:
+        return {}
+
+    out = {}
+    current_class = None
+    for raw in stub_path.read_text(encoding="utf-8").splitlines():
+        m_class = re.match(r"^class\s+(\w+)\(EnumValue\):", raw)
+        if m_class:
+            current_class = m_class.group(1)
+            out.setdefault(current_class, [])
+            continue
+
+        if current_class is None:
+            continue
+
+        if raw.startswith("class "):
+            current_class = None
+            continue
+
+        m_member = re.match(r"^\s+([A-Z][A-Z0-9_]*)\s*:\s*ClassVar\[", raw)
+        if m_member:
+            out[current_class].append(m_member.group(1))
+
+    return out
+
+def _merge_stub_enum_symbols(symbols):
+    """Add enum constants from stubs when docs are incomplete."""
+    enum_values = _load_stub_enum_values()
+    if not enum_values:
+        return symbols
+
+    class_meta = {}
+    for s in symbols:
+        if s.get("name") is None:
+            class_meta.setdefault(s["class_name"], s)
+
+    existing = {(s["class_name"], s.get("name")) for s in symbols}
+    for class_name, members in enum_values.items():
+        meta = class_meta.get(class_name)
+        if meta is None:
+            continue
+        for member in members:
+            key = (class_name, member)
+            if key in existing:
+                continue
+            symbols.append({
+                "class_name": class_name,
+                "name": member,
+                "section": "Values",
+                "qualified": f"{class_name}.{member}",
+                "desc": "",
+                "sig": None,
+                "file": meta.get("file", "helpers/enums"),
+                "line": meta.get("line", 1),
+            })
+            existing.add(key)
+
+    return symbols
+
 def _strip_md(line):
     """Strip markdown formatting from a line for terminal display."""
     line = re.sub(r'\[([^\]]*)\]\([^)]*\)', r'\1', line)  # links
@@ -340,6 +443,34 @@ def _strip_md(line):
 def _sort_key(s):
     """Sort key that orders _ after letters (replace _ with ~ which sorts after z)."""
     return s.lower().replace('_', '~')
+
+def _print_compact_members(members):
+    """Print members as a width-wrapped comma-separated list."""
+    values = []
+    for s in members:
+        sig = s.get('sig', '') or ''
+        values.append(f".{s['name']}{sig}")
+
+    term_cols = shutil.get_terminal_size((120, 20)).columns
+    indent = "  "
+    max_width = max(30, term_cols - len(indent))
+
+    line_parts = []
+    line_len = 0
+    for value in values:
+        part = value if not line_parts else f", {value}"
+        part_len = len(part)
+
+        if line_parts and line_len + part_len > max_width:
+            print(f"{indent}\033[36m{''.join(line_parts)}\033[0m")
+            line_parts = [value]
+            line_len = len(value)
+        else:
+            line_parts.append(part)
+            line_len += part_len
+
+    if line_parts:
+        print(f"{indent}\033[36m{''.join(line_parts)}\033[0m")
 
 
 # Extension doc file stems (matches Extensions section in docs/build.py)
@@ -572,6 +703,49 @@ def _get_member_doc(md_path, heading_line):
 
     return "\n".join(collapsed)
 
+def _get_enum_section_doc(md_path, heading_line):
+    """Extract a ## section block (used for enum docs in enums.md)."""
+    content = md_path.read_text(encoding="utf-8")
+    lines = content.split("\n")
+
+    out = []
+    in_code_block = False
+    start = max(0, heading_line - 1)
+
+    for j in range(start, len(lines)):
+        line = lines[j]
+        stripped = line.strip()
+
+        if stripped.startswith("```"):
+            in_code_block = not in_code_block
+            continue
+
+        if not in_code_block and j > start and stripped.startswith("## "):
+            break
+
+        if in_code_block:
+            out.append(f"  {_highlight_python(line.rstrip())}")
+        elif stripped.startswith("## ") and j == start:
+            title = stripped.lstrip('# ').strip()
+            out.append(f"  \033[36;1m# {title}\033[0m")
+        elif stripped.startswith("- "):
+            out.append(f"  {_strip_md(line.rstrip())}")
+        elif stripped:
+            out.append(f"  {_strip_md(line.rstrip())}")
+        else:
+            out.append("")
+
+    while out and not out[-1].strip():
+        out.pop()
+
+    collapsed = []
+    for line in out:
+        if not line.strip() and collapsed and not collapsed[-1].strip():
+            continue
+        collapsed.append(line)
+
+    return "\n".join(collapsed)
+
 def cmd_search(query):
     docs_dir = find_docs_dir()
     if docs_dir is None:
@@ -579,7 +753,7 @@ def cmd_search(query):
         print("Run this from the PyJavaBridge project root.")
         sys.exit(1)
 
-    symbols = build_symbol_index(docs_dir)
+    symbols = _merge_stub_enum_symbols(build_symbol_index(docs_dir))
 
     if query.endswith("."):
         # "Player." → list all members of that class
@@ -591,14 +765,28 @@ def cmd_search(query):
         ext = _EXT_TAG if Path(members[0]['file']).stem in _EXT_FILES else ""
         print(f"\033[1m{members[0]['class_name']}\033[0m  \033[90m({members[0]['file']}.md)\033[0m{ext}")
         current_section = None
-        for s in members:
-            section = s['section'] or ''
+        section_members = []
+        for s in members + [None]:
+            if s is None:
+                section = None
+            else:
+                section = s['section'] or ''
+
             if section != current_section:
+                if current_section and section_members:
+                    if current_section == "Values":
+                        _print_compact_members(section_members)
+                    else:
+                        for m in section_members:
+                            sig = m.get('sig', '') or ''
+                            print(f"  \033[90m###\033[0m \033[36m.{m['name']}{sig}\033[0m")
+                section_members = []
                 current_section = section
                 if section:
                     print(f" \033[90m## {section}\033[0m")
-            sig = s.get('sig', '') or ''
-            print(f"  \033[90m###\033[0m \033[36m.{s['name']}{sig}\033[0m")
+
+            if s is not None:
+                section_members.append(s)
 
     elif "." in query:
         # "Player.name" → find specific member(s)
@@ -647,13 +835,22 @@ def cmd_search(query):
         if any(s["class_name"].lower() == q for s in classes):
             classes = [s for s in classes if s["class_name"].lower() == q]
         if classes:
+            members_by_class = {}
+            for sym in symbols:
+                if sym.get("name"):
+                    members_by_class.setdefault(sym["class_name"], []).append(sym)
             lines_printed = 0
             for s in classes:
                 ext = _EXT_TAG if Path(s['file']).stem in _EXT_FILES else ""
                 # Show the class-level doc text (everything before first ### member)
                 md_path = docs_dir / f"{s['file']}.md"
                 if md_path.exists():
-                    doc = _get_class_doc(md_path, ext)
+                    if s.get("enum_section_line"):
+                        doc = _get_enum_section_doc(md_path, s["enum_section_line"])
+                        if ext:
+                            doc = doc.replace("\033[0m", f"\033[0m{ext}", 1)
+                    else:
+                        doc = _get_class_doc(md_path, ext)
                 else:
                     doc = f"  \033[36;1m{s['class_name']}\033[0m{ext}"
                 doc_lines = doc.count('\n') + 1
@@ -663,6 +860,14 @@ def cmd_search(query):
                     break
                 print(doc)
                 lines_printed += doc_lines
+
+                # For exact class matches, also show indexed members (useful for enums).
+                if s["class_name"].lower() == q:
+                    members = members_by_class.get(s["class_name"], [])
+                    if members:
+                        members = sorted(members, key=lambda m: _sort_key(m["name"]))
+                        print("  \033[90m## Values\033[0m")
+                        _print_compact_members(members)
 
         else:
             # No class match → search member names across all classes

@@ -3,12 +3,30 @@ from __future__ import annotations
 
 import json
 import os
+from pathlib import Path
 from typing import Any, Dict, Optional
+
+
+def _resolve_playerdata_dir() -> str:
+    """Resolve an absolute playerdata directory for all runtime layouts."""
+    base_dir = os.environ.get("PJB_DATA_DIR")
+    if base_dir:
+        return str(Path(base_dir).resolve() / "playerdata")
+
+    script_path = os.environ.get("PYJAVABRIDGE_SCRIPT")
+    if script_path:
+        script = Path(script_path).resolve()
+        scripts_dir = script.parent
+        if scripts_dir.name == "scripts":
+            return str((scripts_dir.parent / "playerdata").resolve())
+
+    # Fallback for legacy environments without bridge env vars.
+    return str((Path("plugins") / "PyJavaBridge" / "playerdata").resolve())
 
 class PlayerDataStore:
     """Global per-player data store with dict-style access.
 
-    Data is automatically saved to ``plugins/PyJavaBridge/playerdata/<name>.json``.
+    Data is automatically saved to ``plugins/PyJavaBridge/playerdata/<name>/<uuid>.json``.
 
     Example::
         store = PlayerDataStore("stats")
@@ -16,7 +34,7 @@ class PlayerDataStore:
         print(store[player]["kills"])  # 10
     """
 
-    _DATA_DIR = "plugins/PyJavaBridge/playerdata"
+    _DATA_DIR = _resolve_playerdata_dir()
     __slots__ = ("name", "_data", "_dir")
 
     def __init__(self, name: str = "default"):

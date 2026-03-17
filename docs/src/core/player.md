@@ -138,6 +138,48 @@ Whether the player is sneaking (shift held).
 
 Whether the player is sprinting.
 
+### is_hand_raised
+
+- **Type:** `bool`
+
+Whether the player is currently using an item (holding right-click).
+
+### hand_raised
+
+- **Type:** [`EquipmentSlot`](enums.md) `| None`
+
+Which hand is currently being used (`EquipmentSlot.HAND` or `EquipmentSlot.OFF_HAND`). `None` if the player is not using an item.
+
+### is_blocking
+
+- **Type:** `bool`
+
+Whether the player is actively blocking (for example with a shield).
+
+### item_in_use
+
+- **Type:** [`Item`](item.md) `| None`
+
+The item currently being used by the player.
+
+### item_in_use_ticks
+
+- **Type:** `int`
+
+How many ticks the current `item_in_use` has been used.
+
+### is_sleeping
+
+- **Type:** `bool`
+
+Whether the player is currently sleeping in a bed.
+
+### sleep_ticks
+
+- **Type:** `int`
+
+How long the player has been sleeping, in ticks.
+
 ### scoreboard
 
 - **Type:** [`Scoreboard`](scoreboard.md)

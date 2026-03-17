@@ -132,6 +132,7 @@ public class PyJavaBridgePlugin extends JavaPlugin {
         }
 
         instances.clear();
+        ScriptCommand.unregisterAllScriptCommands(getLogger());
     }
 
     private void startScripts(Path scriptsDir, Path runtimeDir) {
@@ -182,6 +183,7 @@ public class PyJavaBridgePlugin extends JavaPlugin {
         }
 
         instances.clear();
+        ScriptCommand.unregisterAllScriptCommands(getLogger());
         startScripts(getDataFolder().toPath().resolve("scripts"), getDataFolder().toPath().resolve("runtime"));
     }
 

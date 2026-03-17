@@ -43,6 +43,9 @@ public class EventSubscription implements Listener {
             if (!eventClass.isInstance(event)) {
                 return;
             }
+            if (!instanceRef.isRunning()) {
+                return;
+            }
             if (oncePerTickRef) {
                 long tick = pluginRef.getCurrentTick();
                 if (tick == lastTick) {
@@ -62,7 +65,8 @@ public class EventSubscription implements Listener {
     }
 
     public void register() {
-        Bukkit.getPluginManager().registerEvent(eventClass, this, this.priority, executor, pluginRef, true);
+        // Do not ignore cancelled events: some events (e.g. interact air) are pre-cancelled by Bukkit.
+        Bukkit.getPluginManager().registerEvent(eventClass, this, this.priority, executor, pluginRef, false);
     }
 
     public void unregister() {

@@ -1,6 +1,6 @@
 """Type stubs for bridge — auto-completion & static analysis."""
 from __future__ import annotations
-from typing import Any, Awaitable, Callable, Dict, Iterator, List, Optional
+from typing import Any, Awaitable, Callable, ClassVar, Dict, Iterator, List, Optional
 
 from bridge.connection import BridgeConnection
 from bridge.wrappers import ProxyBase as ProxyBase
@@ -41,37 +41,419 @@ class PermissionError(BridgeError): ...  # noqa: A001
 class Material(EnumValue):
     def __init__(self, name: str, _name: str | None = None) -> None: ...
 
-class Biome(EnumValue): ...
-class EffectType(EnumValue): ...
-class AttributeType(EnumValue): ...
-class GameMode(EnumValue): ...
-class Sound(EnumValue): ...
-class Particle(EnumValue): ...
-class Difficulty(EnumValue): ...
-class DamageCause(EnumValue): ...
-class ItemFlag(EnumValue): ...
-class EquipmentSlot(EnumValue): ...
-class DyeColor(EnumValue): ...
-class SpawnReason(EnumValue): ...
-class EntityCategory(EnumValue): ...
-class EntityPose(EnumValue): ...
-class BlockFace(EnumValue): ...
-class TreeType(EnumValue): ...
-class WeatherType(EnumValue): ...
-class WorldType(EnumValue): ...
-class Action(EnumValue): ...
-class ChatColor(EnumValue): ...
-class EventPriority(EnumValue): ...
-class TeleportCause(EnumValue): ...
-class InventoryType(EnumValue): ...
-class Billboard(EnumValue): ...
-class BarFlag(EnumValue): ...
+class Biome(EnumValue):
+    ...
 
-class BarColor(EnumValue): ...
-class BarStyle(EnumValue): ...
-class EntityType(EnumValue): ...
+class EffectType(EnumValue):
+    SPEED: ClassVar[EffectType]
+    SLOWNESS: ClassVar[EffectType]
+    HASTE: ClassVar[EffectType]
+    MINING_FATIGUE: ClassVar[EffectType]
+    STRENGTH: ClassVar[EffectType]
+    INSTANT_HEALTH: ClassVar[EffectType]
+    INSTANT_DAMAGE: ClassVar[EffectType]
+    JUMP_BOOST: ClassVar[EffectType]
+    REGENERATION: ClassVar[EffectType]
+    RESISTANCE: ClassVar[EffectType]
+    FIRE_RESISTANCE: ClassVar[EffectType]
+    WATER_BREATHING: ClassVar[EffectType]
+    INVISIBILITY: ClassVar[EffectType]
+    BLINDNESS: ClassVar[EffectType]
+    NIGHT_VISION: ClassVar[EffectType]
+    POISON: ClassVar[EffectType]
+    WITHER: ClassVar[EffectType]
+    ABSORPTION: ClassVar[EffectType]
+    SATURATION: ClassVar[EffectType]
+    GLOWING: ClassVar[EffectType]
+    LEVITATION: ClassVar[EffectType]
+    SLOW_FALLING: ClassVar[EffectType]
+
+class AttributeType(EnumValue):
+    GENERIC_MAX_HEALTH: ClassVar[AttributeType]
+    GENERIC_MOVEMENT_SPEED: ClassVar[AttributeType]
+    GENERIC_ATTACK_DAMAGE: ClassVar[AttributeType]
+    GENERIC_ATTACK_SPEED: ClassVar[AttributeType]
+    GENERIC_ARMOR: ClassVar[AttributeType]
+    GENERIC_ARMOR_TOUGHNESS: ClassVar[AttributeType]
+    GENERIC_KNOCKBACK_RESISTANCE: ClassVar[AttributeType]
+    GENERIC_LUCK: ClassVar[AttributeType]
+    GENERIC_FLYING_SPEED: ClassVar[AttributeType]
+
+class GameMode(EnumValue):
+    SURVIVAL: ClassVar[GameMode]
+    CREATIVE: ClassVar[GameMode]
+    ADVENTURE: ClassVar[GameMode]
+    SPECTATOR: ClassVar[GameMode]
+
+class Sound(EnumValue):
+    ENTITY_EXPERIENCE_ORB_PICKUP: ClassVar[Sound]
+    BLOCK_NOTE_BLOCK_BASS: ClassVar[Sound]
+    BLOCK_NOTE_BLOCK_PLING: ClassVar[Sound]
+    ENTITY_PLAYER_LEVELUP: ClassVar[Sound]
+    ITEM_TOTEM_USE: ClassVar[Sound]
+    ENTITY_ENDER_DRAGON_GROWL: ClassVar[Sound]
+    UI_BUTTON_CLICK: ClassVar[Sound]
+
+class Particle(EnumValue):
+    FLAME: ClassVar[Particle]
+    HEART: ClassVar[Particle]
+    VILLAGER_HAPPY: ClassVar[Particle]
+    EXPLOSION_LARGE: ClassVar[Particle]
+    REDSTONE: ClassVar[Particle]
+    SMOKE_NORMAL: ClassVar[Particle]
+    CRIT: ClassVar[Particle]
+    SPELL_MOB: ClassVar[Particle]
+    END_ROD: ClassVar[Particle]
+    TOTEM: ClassVar[Particle]
+
+class Difficulty(EnumValue):
+    PEACEFUL: ClassVar[Difficulty]
+    EASY: ClassVar[Difficulty]
+    NORMAL: ClassVar[Difficulty]
+    HARD: ClassVar[Difficulty]
+
+class DamageCause(EnumValue):
+    CONTACT: ClassVar[DamageCause]
+    ENTITY_ATTACK: ClassVar[DamageCause]
+    ENTITY_SWEEP_ATTACK: ClassVar[DamageCause]
+    PROJECTILE: ClassVar[DamageCause]
+    SUFFOCATION: ClassVar[DamageCause]
+    FALL: ClassVar[DamageCause]
+    FIRE: ClassVar[DamageCause]
+    FIRE_TICK: ClassVar[DamageCause]
+    LAVA: ClassVar[DamageCause]
+    DROWNING: ClassVar[DamageCause]
+    BLOCK_EXPLOSION: ClassVar[DamageCause]
+    ENTITY_EXPLOSION: ClassVar[DamageCause]
+    VOID: ClassVar[DamageCause]
+    LIGHTNING: ClassVar[DamageCause]
+    STARVATION: ClassVar[DamageCause]
+    POISON: ClassVar[DamageCause]
+    MAGIC: ClassVar[DamageCause]
+    WITHER: ClassVar[DamageCause]
+    FALLING_BLOCK: ClassVar[DamageCause]
+    FLY_INTO_WALL: ClassVar[DamageCause]
+    HOT_FLOOR: ClassVar[DamageCause]
+    CRAMMING: ClassVar[DamageCause]
+    FREEZE: ClassVar[DamageCause]
+
+class ItemFlag(EnumValue):
+    HIDE_ADDITIONAL_TOOLTIP: ClassVar[ItemFlag]
+    HIDE_ARMOR_TRIM: ClassVar[ItemFlag]
+    HIDE_ATTRIBUTE_MODIFIERS: ClassVar[ItemFlag]
+    HIDE_ATTRIBUTES: ClassVar[ItemFlag]
+    HIDE_AXOLOTL_VARIANT: ClassVar[ItemFlag]
+    HIDE_BANNER_PATTERNS: ClassVar[ItemFlag]
+    HIDE_BASE_COLOR: ClassVar[ItemFlag]
+    HIDE_BEES: ClassVar[ItemFlag]
+    HIDE_BLOCK_ENTITY_DATA: ClassVar[ItemFlag]
+    HIDE_BLOCK_STATE: ClassVar[ItemFlag]
+    HIDE_BLOCKS_ATTACKS: ClassVar[ItemFlag]
+    HIDE_BREAK_SOUND: ClassVar[ItemFlag]
+    HIDE_BUCKET_ENTITY_DATA: ClassVar[ItemFlag]
+    HIDE_BUNDLE_CONTENTS: ClassVar[ItemFlag]
+    HIDE_CAN_BREAK: ClassVar[ItemFlag]
+    HIDE_CAN_PLACE_ON: ClassVar[ItemFlag]
+    HIDE_CAT_COLLAR: ClassVar[ItemFlag]
+    HIDE_CAT_VARIANT: ClassVar[ItemFlag]
+    HIDE_CHARGED_PROJECTILES: ClassVar[ItemFlag]
+    HIDE_CHICKEN_VARIANT: ClassVar[ItemFlag]
+    HIDE_CONSUMABLE: ClassVar[ItemFlag]
+    HIDE_CONTAINER: ClassVar[ItemFlag]
+    HIDE_CONTAINER_LOOT: ClassVar[ItemFlag]
+    HIDE_COW_VARIANT: ClassVar[ItemFlag]
+    HIDE_CREATIVE_SLOT_LOCK: ClassVar[ItemFlag]
+    HIDE_CUSTOM_DATA: ClassVar[ItemFlag]
+    HIDE_CUSTOM_MODEL_DATA: ClassVar[ItemFlag]
+    HIDE_CUSTOM_NAME: ClassVar[ItemFlag]
+    HIDE_DAMAGE: ClassVar[ItemFlag]
+    HIDE_DAMAGE_RESISTANT: ClassVar[ItemFlag]
+    HIDE_DEATH_PROTECTION: ClassVar[ItemFlag]
+    HIDE_DEBUG_STICK_STATE: ClassVar[ItemFlag]
+    HIDE_DESTROYS: ClassVar[ItemFlag]
+    HIDE_DYE: ClassVar[ItemFlag]
+    HIDE_DYED_COLOR: ClassVar[ItemFlag]
+    HIDE_ENCHANTABLE: ClassVar[ItemFlag]
+    HIDE_ENCHANTMENT_GLINT_OVERRIDE: ClassVar[ItemFlag]
+    HIDE_ENCHANTMENTS: ClassVar[ItemFlag]
+    HIDE_ENCHANTS: ClassVar[ItemFlag]
+    HIDE_ENTITY_DATA: ClassVar[ItemFlag]
+    HIDE_EQUIPPABLE: ClassVar[ItemFlag]
+    HIDE_FIREWORK_EXPLOSION: ClassVar[ItemFlag]
+    HIDE_FIREWORKS: ClassVar[ItemFlag]
+    HIDE_FOOD: ClassVar[ItemFlag]
+    HIDE_FOX_VARIANT: ClassVar[ItemFlag]
+    HIDE_FROG_VARIANT: ClassVar[ItemFlag]
+    HIDE_GLIDER: ClassVar[ItemFlag]
+    HIDE_HORSE_VARIANT: ClassVar[ItemFlag]
+    HIDE_INSTRUMENT: ClassVar[ItemFlag]
+    HIDE_INTANGIBLE_PROJECTILE: ClassVar[ItemFlag]
+    HIDE_ITEM_MODEL: ClassVar[ItemFlag]
+    HIDE_ITEM_NAME: ClassVar[ItemFlag]
+    HIDE_JUKEBOX_PLAYABLE: ClassVar[ItemFlag]
+    HIDE_LLAMA_VARIANT: ClassVar[ItemFlag]
+    HIDE_LOCK: ClassVar[ItemFlag]
+    HIDE_LODESTONE_TRACKER: ClassVar[ItemFlag]
+    HIDE_LORE: ClassVar[ItemFlag]
+    HIDE_MAP_COLOR: ClassVar[ItemFlag]
+    HIDE_MAP_DECORATIONS: ClassVar[ItemFlag]
+    HIDE_MAP_ID: ClassVar[ItemFlag]
+    HIDE_MAP_POST_PROCESSING: ClassVar[ItemFlag]
+    HIDE_MAX_DAMAGE: ClassVar[ItemFlag]
+    HIDE_MAX_STACK_SIZE: ClassVar[ItemFlag]
+    HIDE_MOOSHROOM_VARIANT: ClassVar[ItemFlag]
+    HIDE_NOTE_BLOCK_SOUND: ClassVar[ItemFlag]
+    HIDE_OMINOUS_BOTTLE_AMPLIFIER: ClassVar[ItemFlag]
+    HIDE_PAINTING_VARIANT: ClassVar[ItemFlag]
+    HIDE_PARROT_VARIANT: ClassVar[ItemFlag]
+    HIDE_PIG_VARIANT: ClassVar[ItemFlag]
+    HIDE_PLACED_ON: ClassVar[ItemFlag]
+    HIDE_POT_DECORATIONS: ClassVar[ItemFlag]
+    HIDE_POTION_CONTENTS: ClassVar[ItemFlag]
+    HIDE_POTION_DURATION_SCALE: ClassVar[ItemFlag]
+    HIDE_PROFILE: ClassVar[ItemFlag]
+    HIDE_PROVIDES_BANNER_PATTERNS: ClassVar[ItemFlag]
+    HIDE_PROVIDES_TRIM_MATERIAL: ClassVar[ItemFlag]
+    HIDE_RABBIT_VARIANT: ClassVar[ItemFlag]
+    HIDE_RARITY: ClassVar[ItemFlag]
+    HIDE_RECIPES: ClassVar[ItemFlag]
+    HIDE_REPAIR_COST: ClassVar[ItemFlag]
+    HIDE_REPAIRABLE: ClassVar[ItemFlag]
+    HIDE_SALMON_SIZE: ClassVar[ItemFlag]
+    HIDE_SHEEP_COLOR: ClassVar[ItemFlag]
+    HIDE_SHULKER_COLOR: ClassVar[ItemFlag]
+    HIDE_STORED_ENCHANTMENTS: ClassVar[ItemFlag]
+    HIDE_SUSPICIOUS_STEW_EFFECTS: ClassVar[ItemFlag]
+    HIDE_TOOL: ClassVar[ItemFlag]
+    HIDE_TOOLTIP_DISPLAY: ClassVar[ItemFlag]
+    HIDE_TOOLTIP_STYLE: ClassVar[ItemFlag]
+    HIDE_TRIM: ClassVar[ItemFlag]
+    HIDE_TROPICAL_FISH_BASE_COLOR: ClassVar[ItemFlag]
+    HIDE_TROPICAL_FISH_PATTERN: ClassVar[ItemFlag]
+    HIDE_TROPICAL_FISH_PATTERN_COLOR: ClassVar[ItemFlag]
+    HIDE_UNBREAKABLE: ClassVar[ItemFlag]
+    HIDE_USE_COOLDOWN: ClassVar[ItemFlag]
+    HIDE_USE_REMAINDER: ClassVar[ItemFlag]
+    HIDE_VILLAGER_VARIANT: ClassVar[ItemFlag]
+    HIDE_WEAPON: ClassVar[ItemFlag]
+    HIDE_WOLF_COLLAR: ClassVar[ItemFlag]
+    HIDE_WOLF_SOUND_VARIANT: ClassVar[ItemFlag]
+    HIDE_WOLF_VARIANT: ClassVar[ItemFlag]
+    HIDE_WRITABLE_BOOK_CONTENT: ClassVar[ItemFlag]
+    HIDE_WRITTEN_BOOK_CONTENT: ClassVar[ItemFlag]
+
+class EquipmentSlot(EnumValue):
+    HAND: ClassVar[EquipmentSlot]
+    OFF_HAND: ClassVar[EquipmentSlot]
+    HEAD: ClassVar[EquipmentSlot]
+    CHEST: ClassVar[EquipmentSlot]
+    LEGS: ClassVar[EquipmentSlot]
+    FEET: ClassVar[EquipmentSlot]
+
+class DyeColor(EnumValue):
+    WHITE: ClassVar[DyeColor]
+    ORANGE: ClassVar[DyeColor]
+    MAGENTA: ClassVar[DyeColor]
+    LIGHT_BLUE: ClassVar[DyeColor]
+    YELLOW: ClassVar[DyeColor]
+    LIME: ClassVar[DyeColor]
+    PINK: ClassVar[DyeColor]
+    GRAY: ClassVar[DyeColor]
+    LIGHT_GRAY: ClassVar[DyeColor]
+    CYAN: ClassVar[DyeColor]
+    PURPLE: ClassVar[DyeColor]
+    BLUE: ClassVar[DyeColor]
+    BROWN: ClassVar[DyeColor]
+    GREEN: ClassVar[DyeColor]
+    RED: ClassVar[DyeColor]
+    BLACK: ClassVar[DyeColor]
+
+class SpawnReason(EnumValue):
+    NATURAL: ClassVar[SpawnReason]
+    SPAWNER: ClassVar[SpawnReason]
+    EGG: ClassVar[SpawnReason]
+    BREEDING: ClassVar[SpawnReason]
+    COMMAND: ClassVar[SpawnReason]
+    CUSTOM: ClassVar[SpawnReason]
+    LIGHTNING: ClassVar[SpawnReason]
+    VILLAGE_DEFENSE: ClassVar[SpawnReason]
+    BUILD_IRONGOLEM: ClassVar[SpawnReason]
+    BUILD_SNOWMAN: ClassVar[SpawnReason]
+    CURED: ClassVar[SpawnReason]
+    DROWNED: ClassVar[SpawnReason]
+    JOCKEY: ClassVar[SpawnReason]
+    REINFORCEMENTS: ClassVar[SpawnReason]
+
+class EntityCategory(EnumValue):
+    NONE: ClassVar[EntityCategory]
+    UNDEAD: ClassVar[EntityCategory]
+    ARTHROPOD: ClassVar[EntityCategory]
+    ILLAGER: ClassVar[EntityCategory]
+    WATER: ClassVar[EntityCategory]
+
+class EntityPose(EnumValue):
+    STANDING: ClassVar[EntityPose]
+    FALL_FLYING: ClassVar[EntityPose]
+    SLEEPING: ClassVar[EntityPose]
+    SWIMMING: ClassVar[EntityPose]
+    SPIN_ATTACK: ClassVar[EntityPose]
+    SNEAKING: ClassVar[EntityPose]
+    DYING: ClassVar[EntityPose]
+    SITTING: ClassVar[EntityPose]
+
+class BlockFace(EnumValue):
+    NORTH: ClassVar[BlockFace]
+    SOUTH: ClassVar[BlockFace]
+    EAST: ClassVar[BlockFace]
+    WEST: ClassVar[BlockFace]
+    UP: ClassVar[BlockFace]
+    DOWN: ClassVar[BlockFace]
+    NORTH_EAST: ClassVar[BlockFace]
+    NORTH_WEST: ClassVar[BlockFace]
+    SOUTH_EAST: ClassVar[BlockFace]
+    SOUTH_WEST: ClassVar[BlockFace]
+    SELF: ClassVar[BlockFace]
+
+class TreeType(EnumValue):
+    TREE: ClassVar[TreeType]
+    BIG_TREE: ClassVar[TreeType]
+    BIRCH: ClassVar[TreeType]
+    REDWOOD: ClassVar[TreeType]
+    TALL_REDWOOD: ClassVar[TreeType]
+    JUNGLE: ClassVar[TreeType]
+    SMALL_JUNGLE: ClassVar[TreeType]
+    JUNGLE_BUSH: ClassVar[TreeType]
+    SWAMP: ClassVar[TreeType]
+    ACACIA: ClassVar[TreeType]
+    DARK_OAK: ClassVar[TreeType]
+    CHERRY: ClassVar[TreeType]
+
+class WeatherType(EnumValue):
+    CLEAR: ClassVar[WeatherType]
+    DOWNFALL: ClassVar[WeatherType]
+
+class WorldType(EnumValue):
+    NORMAL: ClassVar[WorldType]
+    FLAT: ClassVar[WorldType]
+    LARGE_BIOMES: ClassVar[WorldType]
+    AMPLIFIED: ClassVar[WorldType]
+
+class Action(EnumValue):
+    LEFT_CLICK_BLOCK: ClassVar[Action]
+    RIGHT_CLICK_BLOCK: ClassVar[Action]
+    LEFT_CLICK_AIR: ClassVar[Action]
+    RIGHT_CLICK_AIR: ClassVar[Action]
+    PHYSICAL: ClassVar[Action]
+
+class ChatColor(EnumValue):
+    BLACK: ClassVar[ChatColor]
+    DARK_BLUE: ClassVar[ChatColor]
+    DARK_GREEN: ClassVar[ChatColor]
+    DARK_AQUA: ClassVar[ChatColor]
+    DARK_RED: ClassVar[ChatColor]
+    DARK_PURPLE: ClassVar[ChatColor]
+    GOLD: ClassVar[ChatColor]
+    GRAY: ClassVar[ChatColor]
+    DARK_GRAY: ClassVar[ChatColor]
+    BLUE: ClassVar[ChatColor]
+    GREEN: ClassVar[ChatColor]
+    AQUA: ClassVar[ChatColor]
+    RED: ClassVar[ChatColor]
+    LIGHT_PURPLE: ClassVar[ChatColor]
+    YELLOW: ClassVar[ChatColor]
+    WHITE: ClassVar[ChatColor]
+    BOLD: ClassVar[ChatColor]
+    ITALIC: ClassVar[ChatColor]
+    UNDERLINE: ClassVar[ChatColor]
+    STRIKETHROUGH: ClassVar[ChatColor]
+    RESET: ClassVar[ChatColor]
+
+class EventPriority(EnumValue):
+    LOWEST: ClassVar[EventPriority]
+    LOW: ClassVar[EventPriority]
+    NORMAL: ClassVar[EventPriority]
+    HIGH: ClassVar[EventPriority]
+    HIGHEST: ClassVar[EventPriority]
+    MONITOR: ClassVar[EventPriority]
+
+class TeleportCause(EnumValue):
+    ENDER_PEARL: ClassVar[TeleportCause]
+    COMMAND: ClassVar[TeleportCause]
+    PLUGIN: ClassVar[TeleportCause]
+    NETHER_PORTAL: ClassVar[TeleportCause]
+    END_PORTAL: ClassVar[TeleportCause]
+    CHORUS_FRUIT: ClassVar[TeleportCause]
+    SPECTATE: ClassVar[TeleportCause]
+    UNKNOWN: ClassVar[TeleportCause]
+
+class InventoryType(EnumValue):
+    CHEST: ClassVar[InventoryType]
+    CRAFTING: ClassVar[InventoryType]
+    DISPENSER: ClassVar[InventoryType]
+    DROPPER: ClassVar[InventoryType]
+    FURNACE: ClassVar[InventoryType]
+    HOPPER: ClassVar[InventoryType]
+    PLAYER: ClassVar[InventoryType]
+    WORKBENCH: ClassVar[InventoryType]
+    ENCHANTING: ClassVar[InventoryType]
+    BREWING: ClassVar[InventoryType]
+    ANVIL: ClassVar[InventoryType]
+    BEACON: ClassVar[InventoryType]
+    SHULKER_BOX: ClassVar[InventoryType]
+    BARREL: ClassVar[InventoryType]
+    BLAST_FURNACE: ClassVar[InventoryType]
+    SMOKER: ClassVar[InventoryType]
+    MERCHANT: ClassVar[InventoryType]
+
+class Billboard(EnumValue):
+    FIXED: ClassVar[Billboard]
+    VERTICAL: ClassVar[Billboard]
+    HORIZONTAL: ClassVar[Billboard]
+    CENTER: ClassVar[Billboard]
+
+class BarFlag(EnumValue):
+    DARKEN_SKY: ClassVar[BarFlag]
+    PLAY_BOSS_MUSIC: ClassVar[BarFlag]
+    CREATE_FOG: ClassVar[BarFlag]
+
+class BarColor(EnumValue):
+    PINK: ClassVar[BarColor]
+    BLUE: ClassVar[BarColor]
+    RED: ClassVar[BarColor]
+    GREEN: ClassVar[BarColor]
+    YELLOW: ClassVar[BarColor]
+    PURPLE: ClassVar[BarColor]
+    WHITE: ClassVar[BarColor]
+
+class BarStyle(EnumValue):
+    SOLID: ClassVar[BarStyle]
+    SEGMENTED_6: ClassVar[BarStyle]
+    SEGMENTED_10: ClassVar[BarStyle]
+    SEGMENTED_12: ClassVar[BarStyle]
+    SEGMENTED_20: ClassVar[BarStyle]
+
+class EntityType(EnumValue):
+    ...
 
 class Enchantment(EnumValue):
+    SHARPNESS: ClassVar[Enchantment]
+    SMITE: ClassVar[Enchantment]
+    PROTECTION: ClassVar[Enchantment]
+    FIRE_PROTECTION: ClassVar[Enchantment]
+    EFFICIENCY: ClassVar[Enchantment]
+    SILK_TOUCH: ClassVar[Enchantment]
+    FORTUNE: ClassVar[Enchantment]
+    UNBREAKING: ClassVar[Enchantment]
+    MENDING: ClassVar[Enchantment]
+    INFINITY: ClassVar[Enchantment]
+    POWER: ClassVar[Enchantment]
+    PUNCH: ClassVar[Enchantment]
+    FLAME: ClassVar[Enchantment]
+    LOOTING: ClassVar[Enchantment]
+    THORNS: ClassVar[Enchantment]
+    DEPTH_STRIDER: ClassVar[Enchantment]
+    FROST_WALKER: ClassVar[Enchantment]
+    FEATHER_FALLING: ClassVar[Enchantment]
     @classmethod
     def all(cls) -> BridgeCall: ...
     @classmethod
@@ -465,6 +847,13 @@ class Player(Entity):
     primary_group: str | None
     effects: list[Effect]
     attack_cooldown: float
+    is_hand_raised: bool
+    hand_raised: EquipmentSlot | None
+    is_blocking: bool
+    item_in_use: Item | None
+    item_in_use_ticks: int
+    is_sleeping: bool
+    sleep_ticks: int
     locale: str
     ping: int
     client_brand: str
@@ -1335,7 +1724,7 @@ _connection: BridgeConnection
 def fire_event(event_name: str, data: dict | None = None) -> None: ...
 
 # Decorators (from decorators.py)
-def event(func: Callable[[Event], Any] | None = None, *, once_per_tick: bool = False, priority: str = "NORMAL", throttle_ms: int = 0) -> Callable[..., Any]: ...
+def event(func: Callable[[Event], Any] | None = None, *, once_per_tick: bool = False, priority: str | EventPriority = "NORMAL", throttle_ms: int = 0) -> Callable[..., Any]: ...
 def task(func: Callable[[], Any] | None = None, *, interval: int = 20, delay: int = 0) -> Callable[..., Any]: ...
 def command(description: str | None = None, *, name: str | None = None, permission: str | None = None, tab_complete: dict | None = None) -> Callable[..., Any]: ...
 def preserve(func: Callable[[], Any]) -> Callable[[], Any]: ...

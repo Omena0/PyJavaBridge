@@ -13,6 +13,7 @@ __all__ = ["event", "task", "command", "preserve"]
 
 from bridge.utils import _command_signature_params, _parse_command_tokens
 from bridge.connection import BridgeConnection
+from bridge.types import EventPriority
 
 # Injected by bridge.__init__ during _bootstrap()
 _connection:BridgeConnection = None  # type: ignore[assignment]
@@ -22,7 +23,7 @@ def print(*args):
     """Redirect print to stderr so stdout stays reserved for IPC."""
     _print(*args, file=sys.stderr)
 
-def event(func: Optional[Callable] = None, *, once_per_tick: bool = False, priority: str = "NORMAL", throttle_ms: int = 0):
+def event(func: Optional[Callable] = None, *, once_per_tick: bool = False, priority: str | EventPriority = "NORMAL", throttle_ms: int = 0):
     """
     Register an async event handler.
 
@@ -31,7 +32,8 @@ def event(func: Optional[Callable] = None, *, once_per_tick: bool = False, prior
 
     Args:
         once_per_tick: If true, the handler is throttled to once per tick.
-        priority: Bukkit EventPriority (LOWEST, LOW, NORMAL, HIGH, HIGHEST, MONITOR).
+        priority: Bukkit EventPriority name or EventPriority value
+            (LOWEST, LOW, NORMAL, HIGH, HIGHEST, MONITOR).
         throttle_ms: Minimum milliseconds between event dispatches (0 = no throttle).
     """
     def decorator(handler: Callable) -> Callable:
@@ -63,12 +65,17 @@ def task(func: Optional[Callable] = None, *, interval: int = 20, delay: int = 0)
     def decorator(handler: Callable) -> Callable:
         """Register *handler* as a repeating async task."""
         from bridge import server
+        started = False
 
         async def _loop():
             """Run the task repeatedly at the configured interval."""
             try:
                 if delay > 0:
-                    await server.after(delay)
+                    try:
+                        await server.after(delay)
+                    except Exception:
+                        # Fallback to local sleep if bridge wait is briefly unavailable.
+                        await asyncio.sleep(max(delay / 20.0, 0.05))
 
                 while _connection is not None and _connection._thread.is_alive():
                     try:
@@ -78,11 +85,36 @@ def task(func: Optional[Callable] = None, *, interval: int = 20, delay: int = 0)
                     except Exception as e:
                         print(f"[PyJavaBridge] Task {handler.__name__} error: {e}")
 
-                    await server.after(interval)
+                    try:
+                        await server.after(interval)
+                    except Exception as e:
+                        # Do not terminate the task loop on transient bridge/scheduler issues.
+                        print(f"[PyJavaBridge] Task {handler.__name__} wait error: {e}")
+                        await asyncio.sleep(max(interval / 20.0, 0.05))
             except Exception:
                 pass
 
-        _connection.on("server_boot", lambda _: asyncio.ensure_future(_loop()))
+        def _start_loop(_: Any = None):
+            """Start the task loop once."""
+            nonlocal started
+            if started:
+                return
+
+            started = True
+            asyncio.ensure_future(_loop())
+
+        async def _on_server_boot(_: Any):
+            """Async wrapper for server_boot registration type expectations."""
+            _start_loop()
+
+        _connection.on("server_boot", _on_server_boot)
+
+        async def _start_fallback_once():
+            """Fallback starter if server_boot is missed during a reload race."""
+            await asyncio.sleep(0.25)
+            _start_loop()
+
+        asyncio.ensure_future(_start_fallback_once())
         return handler
 
     if func is None:

@@ -8,6 +8,8 @@ import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import io.papermc.paper.registry.RegistryAccess;
+import io.papermc.paper.registry.RegistryKey;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Bukkit;
@@ -20,12 +22,14 @@ import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.data.BlockData;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
 import org.bukkit.entity.Tameable;
 import org.bukkit.entity.AnimalTamer;
 import org.bukkit.inventory.InventoryHolder;
+import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.projectiles.BlockProjectileSource;
@@ -295,7 +299,7 @@ public class BridgeSerializer {
                     fields.add("attributes", attributes);
                 }
             }
-            fields.add("nbt", serialize(itemStack.serialize(), seen));
+            fields.add("nbt", serialize(parseItemNbtForBridge(itemStack.serialize()), seen));
         }
 
         if (value instanceof org.bukkit.potion.PotionEffect effect) {
@@ -695,6 +699,45 @@ public class BridgeSerializer {
 
                         if (fields.has("attributes")) {
                             applyAttributes(meta, fields.get("attributes"));
+                        }
+
+                        if (fields.has("enchantments") && fields.get("enchantments").isJsonObject()) {
+                            JsonObject enchants = fields.getAsJsonObject("enchantments");
+                            for (Map.Entry<String, JsonElement> entry : enchants.entrySet()) {
+                                String enchName = entry.getKey();
+                                int level = entry.getValue().getAsInt();
+
+                                NamespacedKey enchKey = enchName.contains(":")
+                                        ? NamespacedKey.fromString(enchName.toLowerCase())
+                                        : NamespacedKey.minecraft(enchName.toLowerCase());
+                                if (enchKey == null) {
+                                    continue;
+                                }
+
+                                Registry<Enchantment> enchantmentRegistry = RegistryAccess.registryAccess().getRegistry(RegistryKey.ENCHANTMENT);
+                                Enchantment enchantment = enchantmentRegistry.get(enchKey);
+                                if (enchantment != null) {
+                                    meta.addEnchant(enchantment, level, true);
+                                }
+                            }
+                        }
+
+                        if (fields.has("unbreakable")) {
+                            meta.setUnbreakable(fields.get("unbreakable").getAsBoolean());
+                        }
+
+                        JsonElement itemFlagsElement = fields.has("item_flags")
+                                ? fields.get("item_flags")
+                                : fields.get("itemFlags");
+                        if (itemFlagsElement != null && itemFlagsElement.isJsonArray()) {
+                            for (JsonElement flagElement : itemFlagsElement.getAsJsonArray()) {
+                                if (!flagElement.isJsonNull()) {
+                                    try {
+                                        meta.addItemFlags(ItemFlag.valueOf(flagElement.getAsString().toUpperCase()));
+                                    } catch (IllegalArgumentException ignored) {
+                                    }
+                                }
+                            }
                         }
 
                         stack.setItemMeta(meta);
@@ -1188,5 +1231,248 @@ public class BridgeSerializer {
             return value;
         }
         return value.substring(0, 1).toUpperCase() + value.substring(1);
+    }
+
+    private Map<String, Object> parseItemNbtForBridge(Map<String, Object> rawNbt) {
+        Map<String, Object> out = new HashMap<>(rawNbt);
+        Object componentsObj = out.get("components");
+        if (!(componentsObj instanceof Map<?, ?> componentsMap)) {
+            return out;
+        }
+
+        Map<String, Object> parsedComponents = new HashMap<>(componentsMap.size());
+        for (Map.Entry<?, ?> entry : componentsMap.entrySet()) {
+            String key = String.valueOf(entry.getKey());
+            Object value = entry.getValue();
+            if (value instanceof String text) {
+                String trimmed = text.trim();
+                if ((trimmed.startsWith("{") && trimmed.endsWith("}"))
+                        || (trimmed.startsWith("[") && trimmed.endsWith("]"))) {
+                    try {
+                        parsedComponents.put(key, parseSnbt(trimmed));
+                        continue;
+                    } catch (RuntimeException ignored) {
+                        // Keep original string value if parsing fails.
+                    }
+                }
+            }
+            parsedComponents.put(key, value);
+        }
+
+        out.put("components", parsedComponents);
+        return out;
+    }
+
+    private Object parseSnbt(String snbt) {
+        return new SnbtParser(snbt).parse();
+    }
+
+    private static final class SnbtParser {
+        private final String text;
+        private int index;
+
+        private SnbtParser(String text) {
+            this.text = text;
+            this.index = 0;
+        }
+
+        private Object parse() {
+            skipWhitespace();
+            Object value = parseValue();
+            skipWhitespace();
+            if (index != text.length()) {
+                throw new IllegalArgumentException("Trailing characters in SNBT");
+            }
+            return value;
+        }
+
+        private Object parseValue() {
+            skipWhitespace();
+            char ch = peek();
+            if (ch == '{') {
+                return parseCompound();
+            }
+            if (ch == '[') {
+                return parseList();
+            }
+            if (ch == '"' || ch == '\'') {
+                return parseQuotedString();
+            }
+            return parseTokenValue(parseToken());
+        }
+
+        private Map<String, Object> parseCompound() {
+            expect('{');
+            Map<String, Object> map = new HashMap<>();
+            skipWhitespace();
+            if (peek() == '}') {
+                index++;
+                return map;
+            }
+
+            while (true) {
+                skipWhitespace();
+                String key;
+                char ch = peek();
+                if (ch == '"' || ch == '\'') {
+                    key = parseQuotedString();
+                } else {
+                    key = parseKeyToken();
+                }
+
+                skipWhitespace();
+                expect(':');
+                Object value = parseValue();
+                map.put(key, value);
+
+                skipWhitespace();
+                char next = peek();
+                if (next == ',') {
+                    index++;
+                    continue;
+                }
+                if (next == '}') {
+                    index++;
+                    break;
+                }
+                throw new IllegalArgumentException("Expected ',' or '}' in compound");
+            }
+
+            return map;
+        }
+
+        private List<Object> parseList() {
+            expect('[');
+            List<Object> list = new ArrayList<>();
+            skipWhitespace();
+            if (peek() == ']') {
+                index++;
+                return list;
+            }
+
+            while (true) {
+                list.add(parseValue());
+                skipWhitespace();
+                char next = peek();
+                if (next == ',') {
+                    index++;
+                    continue;
+                }
+                if (next == ']') {
+                    index++;
+                    break;
+                }
+                throw new IllegalArgumentException("Expected ',' or ']' in list");
+            }
+
+            return list;
+        }
+
+        private String parseQuotedString() {
+            char quote = peek();
+            if (quote != '"' && quote != '\'') {
+                throw new IllegalArgumentException("Expected quoted string");
+            }
+            index++;
+
+            StringBuilder sb = new StringBuilder();
+            while (index < text.length()) {
+                char ch = text.charAt(index++);
+                if (ch == '\\') {
+                    if (index >= text.length()) {
+                        throw new IllegalArgumentException("Invalid escape sequence");
+                    }
+                    sb.append(text.charAt(index++));
+                    continue;
+                }
+                if (ch == quote) {
+                    return sb.toString();
+                }
+                sb.append(ch);
+            }
+            throw new IllegalArgumentException("Unterminated quoted string");
+        }
+
+        private String parseKeyToken() {
+            int start = index;
+            while (index < text.length()) {
+                char ch = text.charAt(index);
+                if (Character.isWhitespace(ch) || ch == ':' || ch == ',' || ch == '}' || ch == ']') {
+                    break;
+                }
+                index++;
+            }
+            if (start == index) {
+                throw new IllegalArgumentException("Expected key token");
+            }
+            return text.substring(start, index);
+        }
+
+        private String parseToken() {
+            int start = index;
+            while (index < text.length()) {
+                char ch = text.charAt(index);
+                if (Character.isWhitespace(ch) || ch == ',' || ch == '}' || ch == ']') {
+                    break;
+                }
+                index++;
+            }
+            if (start == index) {
+                throw new IllegalArgumentException("Expected token");
+            }
+            return text.substring(start, index);
+        }
+
+        private Object parseTokenValue(String token) {
+            if (token.equalsIgnoreCase("true")) return true;
+            if (token.equalsIgnoreCase("false")) return false;
+
+            if (token.length() > 1) {
+                char suffix = Character.toLowerCase(token.charAt(token.length() - 1));
+                String base = token.substring(0, token.length() - 1);
+
+                try {
+                    if (suffix == 'b') {
+                        int v = Integer.parseInt(base);
+                        if (v == 0 || v == 1) return v == 1;
+                        return v;
+                    }
+                    if (suffix == 's') return Integer.parseInt(base);
+                    if (suffix == 'l') return Long.parseLong(base);
+                    if (suffix == 'f' || suffix == 'd') return Double.parseDouble(base);
+                } catch (NumberFormatException ignored) {
+                }
+            }
+
+            try {
+                if (token.indexOf('.') >= 0 || token.indexOf('e') >= 0 || token.indexOf('E') >= 0) {
+                    return Double.parseDouble(token);
+                }
+                return Integer.parseInt(token);
+            } catch (NumberFormatException ignored) {
+            }
+
+            return token;
+        }
+
+        private void skipWhitespace() {
+            while (index < text.length() && Character.isWhitespace(text.charAt(index))) {
+                index++;
+            }
+        }
+
+        private char peek() {
+            if (index >= text.length()) {
+                throw new IllegalArgumentException("Unexpected end of SNBT");
+            }
+            return text.charAt(index);
+        }
+
+        private void expect(char expected) {
+            if (peek() != expected) {
+                throw new IllegalArgumentException("Expected '" + expected + "'");
+            }
+            index++;
+        }
     }
 }

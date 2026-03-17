@@ -230,10 +230,23 @@ public class BridgeInstance {
             }
         }
 
-        for (EventSubscription subscription : subscriptions.values()) {
-            subscription.unregister();
+        if (!subscriptions.isEmpty()) {
+            try {
+                plugin.runOnMainThread(this, () -> {
+                    for (EventSubscription subscription : subscriptions.values()) {
+                        subscription.unregister();
+                    }
+                    subscriptions.clear();
+                    return null;
+                }).get(2, TimeUnit.SECONDS);
+            } catch (Exception e) {
+                // Fallback best-effort cleanup if main-thread scheduling is unavailable.
+                for (EventSubscription subscription : subscriptions.values()) {
+                    subscription.unregister();
+                }
+                subscriptions.clear();
+            }
         }
-        subscriptions.clear();
 
         closeQuietly(reader);
         closeQuietly(writer);
@@ -3164,6 +3177,7 @@ public class BridgeInstance {
 
         env.put("PYJAVABRIDGE_RUNTIME", runtimeDir.toString());
         env.put("PYJAVABRIDGE_SCRIPT", scriptPath.toAbsolutePath().toString());
+        env.put("PJB_DATA_DIR", plugin.getDataFolder().toPath().toAbsolutePath().toString());
 
         boolean isWindows = System.getProperty("os.name", "").toLowerCase().contains("win");
 

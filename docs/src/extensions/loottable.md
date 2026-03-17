@@ -70,6 +70,18 @@ Generate loot from all pools.
   - `luck` *(float)* — Luck factor for bonus rolls.
 - **Returns:** `list[dict]` — Item dicts with `"material"` and `"amount"` keys.
 
+#### .generate_into(inventory, context=None, luck=0.0)
+
+Generate loot and insert directly into an inventory.
+
+- **Parameters:**
+  - `inventory` (`Inventory`) — Target inventory.
+  - `context` *(Any)* — Context passed to conditions.
+  - `luck` *(float)* — Luck factor for bonus rolls.
+- **Returns:** `list[Item]` — Inserted items.
+
+Items are spread across random slots (vanilla-style chest distribution).
+
 #### .generate_stacked(context=None, luck=0.0)
 
 Generate loot and combine items of the same material into stacks.
@@ -95,7 +107,7 @@ pool = LootPool(name="pool", rolls=1, bonus_rolls=0)
 Add an entry to this pool.
 
 - **Parameters:**
-  - `item` — Material name string or item dict (`{"material": ..., "amount": ...}`).
+  - `item` — Material name string, `Item` object, or item dict (`{"material": ..., "amount": ...}`).
   - `weight` *(int)* — Relative probability weight. Default `1`.
   - `min_amount` *(int)* — Minimum stack size. Default `1`.
   - `max_amount` *(int)* — Maximum stack size. Default `1`.
@@ -117,6 +129,18 @@ def only_hard(ctx):
 Generate loot from this pool only.
 
 - **Returns:** `list[dict]`
+
+#### .generate_into(inventory, context=None, luck=0.0)
+
+Generate pool loot and insert into an inventory.
+
+- **Parameters:**
+  - `inventory` (`Inventory`) — Target inventory.
+  - `context` *(Any)* — Context passed to conditions.
+  - `luck` *(float)* — Luck factor for bonus rolls.
+- **Returns:** `list[Item]`
+
+Items are spread across random slots (vanilla-style chest distribution).
 
 ---
 

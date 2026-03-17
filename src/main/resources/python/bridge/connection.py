@@ -64,6 +64,7 @@ _print = __builtins__["print"] if isinstance(__builtins__, dict) else __builtins
 
 # Pre-allocated frozenset for the common {x,y,z} location/vector check in deserialization
 _XYZ_KEYS = frozenset(("x", "y", "z"))
+_SYNC_CALL_TIMEOUT_SECONDS = 3.0
 
 # Late-bound imports — avoids circular import overhead on every call.
 # Populated once on first use via _ensure_lazy_imports().
@@ -166,10 +167,11 @@ class BridgeConnection:
             self._stdout.write(header + handshake)
             self._stdout.flush()
 
-    def subscribe(self, event_name: str, once_per_tick: bool, priority: str = "NORMAL", throttle_ms: int = 0):
+    def subscribe(self, event_name: str, once_per_tick: bool, priority: str | EnumValue = "NORMAL", throttle_ms: int = 0):
         """Subscribe to a Bukkit event on the Java side."""
-        print(f"[PyJavaBridge] Subscribing to {event_name} once_per_tick={once_per_tick} priority={priority} throttle_ms={throttle_ms}")
-        self.send({"type": "subscribe", "event": event_name, "once_per_tick": once_per_tick, "priority": priority, "throttle_ms": throttle_ms})
+        priority_name = priority.name if isinstance(priority, EnumValue) else str(priority)
+        print(f"[PyJavaBridge] Subscribing to {event_name} once_per_tick={once_per_tick} priority={priority_name} throttle_ms={throttle_ms}")
+        self.send({"type": "subscribe", "event": event_name, "once_per_tick": once_per_tick, "priority": priority_name, "throttle_ms": throttle_ms})
 
     def register_command(self, name: str, permission: Optional[str] = None, completions: Optional[dict] = None, has_tab_complete: bool = False):
         """Register a command name with the server."""
@@ -259,7 +261,13 @@ class BridgeConnection:
         self._pending_sync[request_id] = wait
         message = self._build_call_message(request_id, method, args, handle, target, kwargs)
         self.send(message)
-        wait.event.wait()
+        # Never block forever on sync calls; connection loss/reload can otherwise hang shutdown.
+        signaled = wait.event.wait(timeout=_SYNC_CALL_TIMEOUT_SECONDS)
+        if not signaled:
+            self._pending_sync.pop(request_id, None)
+            raise ConnectionError(
+                f"Synchronous bridge call timed out after {_SYNC_CALL_TIMEOUT_SECONDS:.1f}s: {method}"
+            )
         if wait.error is not None:
             raise wait.error
 
@@ -273,7 +281,12 @@ class BridgeConnection:
         msg: Dict[str, Any] = {"type": msg_type, "id": request_id}
         msg.update(fields)
         self.send(msg)
-        wait.event.wait()
+        signaled = wait.event.wait(timeout=_SYNC_CALL_TIMEOUT_SECONDS)
+        if not signaled:
+            self._pending_sync.pop(request_id, None)
+            raise ConnectionError(
+                f"Synchronous bridge message timed out after {_SYNC_CALL_TIMEOUT_SECONDS:.1f}s: {msg_type}"
+            )
         if wait.error is not None:
             raise wait.error
 
@@ -589,6 +602,24 @@ class BridgeConnection:
 
             return
 
+        # Command events originate from Bukkit command handling and can deadlock
+        # if handlers synchronously call back into Java before event_done is sent.
+        if event_name.startswith("command_"):
+            async def _run_detached(handler: Callable[[Any], Any]) -> None:
+                try:
+                    result = handler(payload)
+                    if inspect.isawaitable(result):
+                        await result
+                except Exception as exc:
+                    print(f"[PyJavaBridge] Handler error: {exc}")
+
+            for handler in handlers:
+                asyncio.create_task(_run_detached(handler))
+
+            if event_id is not None:
+                self.send({"type": "event_done", "id": event_id})
+            return
+
         results: List[Any] = []
         try:
             if len(handlers) == 1:
@@ -667,6 +698,15 @@ class BridgeConnection:
     async def _handle_shutdown(self):
         """Handle server shutdown."""
         _ensure_lazy_imports()
+        try:
+            # Prevent proxy __del__ methods from issuing bridge calls while tearing down.
+            import bridge.wrappers as _wrappers
+            mark = getattr(_wrappers, "_mark_shutting_down", None)
+            if callable(mark):
+                mark()
+        except Exception:
+            pass
+
         try:
             for ref in _State_cls._instances:
                 try:

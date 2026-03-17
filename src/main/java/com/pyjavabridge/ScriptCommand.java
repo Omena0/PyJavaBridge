@@ -5,12 +5,14 @@ import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandMap;
 import org.bukkit.command.CommandSender;
+import org.bukkit.command.SimpleCommandMap;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.logging.Logger;
 
 /**
@@ -67,19 +69,13 @@ class ScriptCommand extends Command {
         }
 
         String commandName = name.toLowerCase();
-        Command existing = map.getCommand(commandName);
-
-        if (existing instanceof ScriptCommand scriptCommand) {
-            scriptCommand.setInstance(instance);
-            if (permission != null) {
-                scriptCommand.setScriptPermission(permission);
-            }
-            if (completions != null) {
-                scriptCommand.setCompletions(completions);
-            }
-            scriptCommand.setDynamicTabComplete(hasDynamicTabComplete);
+        boolean rebound = rebindExistingScriptCommands(map, commandName, instance, permission, completions,
+                hasDynamicTabComplete, logger);
+        if (rebound) {
             return;
         }
+
+        Command existing = map.getCommand(commandName);
 
         if (existing != null) {
             logger.warning("Command /" + commandName + " already registered by another plugin.");
@@ -96,6 +92,59 @@ class ScriptCommand extends Command {
         map.register("pyjavabridge", cmd);
     }
 
+    @SuppressWarnings("unchecked")
+    private static boolean rebindExistingScriptCommands(CommandMap map, String commandName,
+            BridgeInstance instance, String permission, Map<Integer, List<String>> completions,
+            boolean hasDynamicTabComplete, Logger logger) {
+        boolean updated = false;
+
+        Command direct = map.getCommand(commandName);
+        if (direct instanceof ScriptCommand scriptCommand) {
+            applyRegistration(scriptCommand, instance, permission, completions, hasDynamicTabComplete);
+            updated = true;
+        }
+
+        if (!(map instanceof SimpleCommandMap simpleMap)) {
+            return updated;
+        }
+
+        try {
+            Field knownCommandsField = SimpleCommandMap.class.getDeclaredField("knownCommands");
+            knownCommandsField.setAccessible(true);
+            Map<String, Command> knownCommands = (Map<String, Command>) knownCommandsField.get(simpleMap);
+
+            String namespacedKey = "pyjavabridge:" + commandName;
+            for (Map.Entry<String, Command> entry : knownCommands.entrySet()) {
+                String key = entry.getKey();
+                if (!(commandName.equals(key) || namespacedKey.equals(key))) {
+                    continue;
+                }
+
+                Command cmd = entry.getValue();
+                if (cmd instanceof ScriptCommand scriptCommand) {
+                    applyRegistration(scriptCommand, instance, permission, completions, hasDynamicTabComplete);
+                    updated = true;
+                }
+            }
+        } catch (Exception e) {
+            logger.fine("Could not inspect knownCommands for /" + commandName + ": " + e.getMessage());
+        }
+
+        return updated;
+    }
+
+    private static void applyRegistration(ScriptCommand scriptCommand, BridgeInstance instance,
+            String permission, Map<Integer, List<String>> completions, boolean hasDynamicTabComplete) {
+        scriptCommand.setInstance(instance);
+        if (permission != null) {
+            scriptCommand.setScriptPermission(permission);
+        }
+        if (completions != null) {
+            scriptCommand.setCompletions(completions);
+        }
+        scriptCommand.setDynamicTabComplete(hasDynamicTabComplete);
+    }
+
     private static CommandMap getCommandMap(Logger logger) {
         try {
             Field field = Bukkit.getServer().getClass().getDeclaredField("commandMap");
@@ -106,6 +155,44 @@ class ScriptCommand extends Command {
         } catch (Exception e) {
             logger.warning("Failed to access commandMap: " + e.getMessage());
             return null;
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    static void unregisterAllScriptCommands(Logger logger) {
+        CommandMap map = getCommandMap(logger);
+        if (!(map instanceof SimpleCommandMap simpleMap)) {
+            return;
+        }
+
+        try {
+            Field knownCommandsField = SimpleCommandMap.class.getDeclaredField("knownCommands");
+            knownCommandsField.setAccessible(true);
+            Map<String, Command> knownCommands = (Map<String, Command>) knownCommandsField.get(simpleMap);
+
+            Set<String> keysToRemove = new java.util.HashSet<>();
+            for (Map.Entry<String, Command> entry : knownCommands.entrySet()) {
+                if (entry.getValue() instanceof ScriptCommand) {
+                    keysToRemove.add(entry.getKey());
+                }
+            }
+
+            for (String key : keysToRemove) {
+                Command command = knownCommands.get(key);
+                if (command instanceof ScriptCommand scriptCommand) {
+                    try {
+                        scriptCommand.unregister(simpleMap);
+                    } catch (Exception ignored) {
+                    }
+                }
+                try {
+                    knownCommands.remove(key);
+                } catch (UnsupportedOperationException ignored) {
+                    // Some server implementations expose unmodifiable map views.
+                }
+            }
+        } catch (Exception e) {
+            logger.warning("Failed to unregister script commands: " + e.getMessage());
         }
     }
 

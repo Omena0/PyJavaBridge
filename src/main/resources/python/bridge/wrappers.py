@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import asyncio
+import atexit
 import inspect
 import math
 import sys
@@ -18,6 +19,15 @@ from bridge.connection import BridgeConnection
 _connection:BridgeConnection = None  # type: ignore[assignment]
 _player_uuid_cache: Dict[str, str] = {}
 _PLAYER_UUID_CACHE_MAX = 1000
+_SHUTTING_DOWN = False
+
+def _mark_shutting_down() -> None:
+    """Disable bridge calls from destructors during interpreter teardown."""
+    global _SHUTTING_DOWN, _connection
+    _SHUTTING_DOWN = True
+    _connection = None  # type: ignore[assignment]
+
+atexit.register(_mark_shutting_down)
 
 # Handle reference counting: track how many Python proxy objects share each Java handle.
 # Only release a handle when the last proxy referencing it is garbage collected.
@@ -25,6 +35,9 @@ _handle_refcounts: Dict[int, int] = {}
 
 def _handle_acquire(handle: Optional[int]) -> None:
     """Increment the reference count for a Java handle."""
+    if _SHUTTING_DOWN:
+        return
+
     if handle is not None:
         old = _handle_refcounts.get(handle, 0)
         _handle_refcounts[handle] = old + 1
@@ -36,6 +49,9 @@ def _handle_acquire(handle: Optional[int]) -> None:
 
 def _handle_release(handle: Optional[int]) -> None:
     """Decrement the reference count; queue a Java-side release when it hits zero."""
+    if _SHUTTING_DOWN:
+        return
+
     if handle is None:
         return
 
@@ -78,8 +94,14 @@ class ProxyBase:
 
     def __del__(self):
         """Release the proxy handle on garbage collection."""
-        handle = self.__dict__.get("_handle")
-        _handle_release(handle)
+        try:
+            handle = self.__dict__.get("_handle")
+            release_fn = globals().get("_handle_release")
+            if callable(release_fn):
+                release_fn(handle)
+        except Exception:
+            # Destructors must never raise during interpreter shutdown.
+            pass
 
     def _call(self, method: str, *args: Any, **kwargs: Any) -> BridgeCall:
         """Invoke a bridge method asynchronously."""
@@ -1541,6 +1563,41 @@ class Player(Entity):
     def is_sprinting(self, value: bool):
         """Set the is sprinting value."""
         self._call_ff("setSprinting", value)
+
+    @property
+    def is_hand_raised(self) -> bool:
+        """Whether the player is currently using an item (holding right-click)."""
+        return self._call_sync("isHandRaised")
+
+    @property
+    def hand_raised(self):
+        """The hand currently being used (main/off-hand), if any."""
+        return self._call_sync("getHandRaised")
+
+    @property
+    def is_blocking(self) -> bool:
+        """Whether the player is actively blocking (for example with a shield)."""
+        return self._call_sync("isBlocking")
+
+    @property
+    def item_in_use(self):
+        """The item currently being used by the player."""
+        return self._call_sync("getItemInUse")
+
+    @property
+    def item_in_use_ticks(self) -> int:
+        """How many ticks the current item has been in use."""
+        return self._call_sync("getItemInUseTicks")
+
+    @property
+    def is_sleeping(self) -> bool:
+        """Whether the player is currently sleeping in a bed."""
+        return self._call_sync("isSleeping")
+
+    @property
+    def sleep_ticks(self) -> int:
+        """How long the player has been sleeping (ticks)."""
+        return self._call_sync("getSleepTicks")
 
     def set_walk_speed(self, speed: float):
         """Set the walk speed."""
