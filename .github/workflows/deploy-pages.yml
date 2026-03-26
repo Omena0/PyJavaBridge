@@ -29,9 +29,18 @@ jobs:
         with:
           python-version: '3.12'
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Node tools
+        run: |
+          npm install --no-audit --no-fund --no-save html-minifier-next critical
+
       - name: Build docs
         run: |
-          pip install markdown
+          pip install markdown zstandard
           python docs/build.py
 
       - name: Setup Pages
