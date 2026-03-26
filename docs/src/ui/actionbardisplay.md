@@ -36,7 +36,7 @@ display[player] = text
 Start showing persistent action bar text to a player.
 
 - **Parameters:**
-  - `player` ([`Player`](player.md)) — Target player.
+  - `player` (`Player`) — Target player.
   - `text` (`str`) — Action bar text. Supports `§` color codes.
 
 ### Get text

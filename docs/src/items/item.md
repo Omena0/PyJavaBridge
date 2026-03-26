@@ -18,7 +18,7 @@ Item(material=None, amount=1, name=None, lore=None, custom_model_data=None, attr
 Create an item.
 
 - **Parameters:**
-  - `material` ([`Material`](enums.md) `| str | None`) — Item material.
+  - `material` (`Material` `| str | None`) — Item material.
   - `amount` (`int`) — Stack size. Default 1.
   - `name` (`str | None`) — Display name. Supports `§` color codes.
   - `lore` (`list[str] | None`) — Lore lines.
@@ -44,11 +44,11 @@ entity = await Item.drop(material, location, amount=1, **kwargs)
 Drop an item entity at a location.
 
 - **Parameters:**
-  - `material` ([`Material`](enums.md) `| str`) — Item material.
-  - `location` ([`Location`](location.md)) — Where to drop.
+  - `material` (`Material` `| str`) — Item material.
+  - `location` (`Location`) — Where to drop.
   - `amount` (`int`) — Stack size. Default 1.
   - `**kwargs` — Additional item properties.
-- **Returns:** `Awaitable[`[`Entity`](entity.md)`]` — The dropped item entity.
+- **Returns:** `Awaitable[Entity]` — The dropped item entity.
 
 ```python
 await Item.drop("DIAMOND", player.location, amount=5)
@@ -63,8 +63,8 @@ await Item.give(player, material, amount=1, **kwargs)
 Give an item directly to a player's inventory.
 
 - **Parameters:**
-  - `player` ([`Player`](player.md)) — The recipient.
-  - `material` ([`Material`](enums.md) `| str`) — Item material.
+  - `player` (`Player`) — The recipient.
+  - `material` (`Material` `| str`) — Item material.
   - `amount` (`int`) — Stack size. Default 1.
   - `**kwargs` — Additional item properties.
 - **Returns:** `Awaitable[None]`
@@ -79,7 +79,7 @@ await Item.give(player, "GOLDEN_APPLE", 3)
 
 ### type
 
-- **Type:** [`Material`](enums.md)
+- **Type:** `Material`
 
 The item's material type.
 
@@ -246,7 +246,7 @@ copy = await item.clone()
 
 Create a deep copy of this item.
 
-- **Returns:** `Awaitable[`[`Item`](#)`]`
+- **Returns:** `Awaitable[``Item``]`
 
 ### is_similar
 
@@ -257,7 +257,7 @@ result = await item.is_similar(other)
 Check if two items are similar (same type, name, lore — ignoring amount).
 
 - **Parameters:**
-  - `other` ([`Item`](#)) — The item to compare.
+  - `other` (`Item`) — The item to compare.
 - **Returns:** `Awaitable[bool]`
 
 ---

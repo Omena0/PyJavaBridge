@@ -25,8 +25,8 @@ result = await raycast(
 ```
 
 - **Parameters:**
-  - `world` ([`World`](world.md) `| str`) — The world to raycast in.
-  - `start` ([`Vector`](vector.md) `| tuple[float,float,float]`) — Ray origin (x, y, z).
+  - `world` (`World` `| str`) — The world to raycast in.
+  - `start` (`Vector` `| tuple[float,float,float]`) — Ray origin (x, y, z).
   - `direction` (`tuple[float, float]`) — Direction as `(yaw, pitch)` in degrees.
   - `max_distance` (`float`) — Maximum ray distance in blocks. Default 64.0.
   - `ray_size` (`float`) — Ray thickness for entity detection. Default 0.2.
@@ -81,13 +81,13 @@ Z coordinate of the hit point.
 
 ### entity
 
-- **Type:** [`Entity`](entity.md) `| None`
+- **Type:** `Entity` `| None`
 
 The entity that was hit, or `None` if a block was hit.
 
 ### block
 
-- **Type:** [`Block`](block.md) `| None`
+- **Type:** `Block` `| None`
 
 The block that was hit, or `None` if an entity was hit.
 

@@ -5,7 +5,7 @@ subtitle: 3D direction and velocity
 
 # Vector
 
-A `Vector` is a simple 3D coordinate used for velocities, offsets, and directional calculations. Unlike [`Location`](location.md), a Vector has no world, yaw, or pitch.
+A `Vector` is a simple 3D coordinate used for velocities, offsets, and directional calculations. Unlike `Location`, a Vector has no world, yaw, or pitch.
 
 ---
 

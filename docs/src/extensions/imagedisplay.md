@@ -18,7 +18,7 @@ ImageDisplay(location, image, pixel_size=..., dual_sided=False, dual_side_mode="
 Create and spawn an image display.
 
 - **Parameters:**
-  - `location` ([`Location`](location.md)) — Spawn position.
+  - `location` (`Location`) — Spawn position.
   - `image` — Image source. Accepts:
     - `str` — File path (relative to plugin data folder, or absolute).
     - PIL `Image` object — Used directly (requires Pillow).
@@ -63,7 +63,7 @@ display.teleport(location)
 Move the display. This is synchronous.
 
 - **Parameters:**
-  - `location` ([`Location`](location.md)) — New position.
+  - `location` (`Location`) — New position.
 
 ### update
 

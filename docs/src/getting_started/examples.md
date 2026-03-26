@@ -23,4 +23,4 @@ Full working scripts that demonstrate PyJavaBridge features. Each example is a s
 3. **Name your event handlers after the event:** `async def block_break(event)` handles `block_break` events
 4. **Commands auto-register:** The function name becomes the command name
 5. **Cancel events to prevent default behavior:** `event.cancel()`
-6. **Use the [`Config`](config.html) class for persistence** instead of global dictionaries
+6. **Use the `Config` class for persistence** instead of global dictionaries

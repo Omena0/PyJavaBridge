@@ -20,7 +20,7 @@ progress = await Advancement.grant(player, key)
 Grant an advancement to a player (awards all remaining criteria).
 
 - **Parameters:**
-  - `player` ([`Player`](player.md)) — Target player.
+  - `player` (`Player`) — Target player.
   - `key` (`str`) — Advancement key in `namespace:path` format.
 - **Returns:** `Awaitable[`[`AdvancementProgress`](#advancementprogress)`]`
 
@@ -37,7 +37,7 @@ progress = await Advancement.revoke(player, key)
 Revoke an advancement from a player (removes all awarded criteria).
 
 - **Parameters:**
-  - `player` ([`Player`](player.md)) — Target player.
+  - `player` (`Player`) — Target player.
   - `key` (`str`) — Advancement key in `namespace:path` format.
 - **Returns:** `Awaitable[`[`AdvancementProgress`](#advancementprogress)`]`
 

@@ -5,13 +5,13 @@ subtitle: Enum types reference
 
 # Enums
 
-PyJavaBridge wraps Minecraft's Java enums as [`EnumValue`](enumvalue.md) subclasses. Each enum type supports attribute-style access (`EnumType.VALUE_NAME`) and `from_name("VALUE_NAME")`.
+PyJavaBridge wraps Minecraft's Java enums as `EnumValue` subclasses. Each enum type supports attribute-style access (`EnumType.VALUE_NAME`) and `from_name("VALUE_NAME")`.
 
 ---
 
 ## How Enums Work
 
-All enum types inherit from [`EnumValue`](enumvalue.md):
+All enum types inherit from `EnumValue`:
 
 ```python
 # Attribute-style access
@@ -22,7 +22,7 @@ sound = Sound.ENTITY_EXPERIENCE_ORB_PICKUP
 material = Material.from_name("DIAMOND_SWORD")
 ```
 
-See the [`EnumValue`](enumvalue.md) page for full details.
+See the `EnumValue` page for full details.
 
 ---
 

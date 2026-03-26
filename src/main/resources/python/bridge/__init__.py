@@ -52,6 +52,7 @@ def _bootstrap(script_path: str):
     from bridge import decorators as _dec_mod
     from bridge import api as _api_mod
     from bridge.extensions import npc as _npc_mod
+    from bridge.extensions import client_mod as _client_mod_mod
 
     _conn_mod._connection = _connection  # type: ignore[attr-defined]
     _wrap_mod._connection = _connection
@@ -62,6 +63,7 @@ def _bootstrap(script_path: str):
     _dec_mod._connection = _connection
     _api_mod._connection = _connection
     _npc_mod._connection = _connection
+    _client_mod_mod._connection = _connection
 
     # Prime player cache
     from bridge.utils import _prime_player_cache

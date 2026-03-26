@@ -988,6 +988,11 @@ public class BridgeSerializer {
             return CONVERSION_FAIL;
         }
 
+        // Convert JsonObject -> Map for methods that accept Map parameters
+        if (arg instanceof com.google.gson.JsonObject jsonObj && java.util.Map.class.isAssignableFrom(parameterType)) {
+            return deserializeArgsObject(jsonObj);
+        }
+
         if (parameterType.isInstance(arg)) {
             return arg;
         }

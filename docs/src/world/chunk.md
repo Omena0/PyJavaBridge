@@ -18,7 +18,7 @@ Chunk(world=None, x=None, z=None)
 Reference a chunk by world and chunk coordinates.
 
 - **Parameters:**
-  - `world` ([`World`](world.md) `| str | None`) — The world.
+  - `world` (`World` `| str | None`) — The world.
   - `x` (`int | None`) — Chunk X coordinate (block X ÷ 16).
   - `z` (`int | None`) — Chunk Z coordinate (block Z ÷ 16).
 
@@ -52,7 +52,7 @@ Chunk Z coordinate.
 
 ### world
 
-- **Type:** [`World`](world.md)
+- **Type:** `World`
 
 The world this chunk is in.
 

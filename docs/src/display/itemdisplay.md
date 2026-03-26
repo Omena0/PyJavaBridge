@@ -18,8 +18,8 @@ ItemDisplay(location, item, billboard="FIXED")
 Create and spawn an item display entity.
 
 - **Parameters:**
-  - `location` ([`Location`](location.md)) — Spawn position.
-  - `item` ([`Item`](item.md) `| str`) — The item to display. If a string, interprets as a material name.
+  - `location` (`Location`) — Spawn position.
+  - `item` (`Item` `| str`) — The item to display. If a string, interprets as a material name.
   - `billboard` (`str`) — Billboard mode. Default `"FIXED"`.
 
 | Billboard | Description |
@@ -60,7 +60,7 @@ display.teleport(location)
 Move the display entity. This is synchronous.
 
 - **Parameters:**
-  - `location` ([`Location`](location.md)) — New position.
+  - `location` (`Location`) — New position.
 
 ### remove
 

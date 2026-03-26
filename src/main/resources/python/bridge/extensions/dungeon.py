@@ -28,8 +28,8 @@ A ``.droom`` file has two sections separated by a ``---`` line:
     exit: 8,0,4 +x 3x3
     exit: 4,3,0 -z 2x2 upper
 
-``facing`` is one of ``+x  -x  +y  -y  +z  -z``.
-``tag`` is optional and defaults to ``WxH`` (e.g. ``3x3``).
+`$1` is one of ``+x  -x  +y  -y  +z  -z``.
+`$1` is optional and defaults to `$1` (e.g. ``3x3``).
 Exits connect when they share the same **tag** and **size**, facing
 opposite directions.
 
@@ -40,7 +40,7 @@ opposite directions.
 ``~`` is always air (hardcoded, no definition needed).
 
 **Block data** (after the ``---`` separator)::
-    One operation per line using ``fill`` and ``set`` commands.
+    One operation per line using `$1` and `$1` commands.
     Coordinates are local to the room (0-indexed).
 
     ``fill x1 y1 z1 x2 y2 z2 KEY`` — fill a rectangular region with KEY.
@@ -48,10 +48,10 @@ opposite directions.
 
     Air blocks are omitted unless needed for overwriting.  Operations
     are allowed to **overwrite** previous results — for example a hollow
-    room can be expressed as a solid ``fill`` followed by an air ``fill``
+    room can be expressed as a solid `$1` followed by an air `$1`
     for the interior.  The encoder uses a two-phase algorithm:
     volumetric fills first (with overwriting), then greedy box meshing
-    for the remaining blocks.  Each ``fill`` maps to a single
+    for the remaining blocks.  Each `$1` maps to a single
     ``world.fill()`` call at paste time.
 
 Example ``.droom`` file::
@@ -375,8 +375,8 @@ class RoomTemplate:
 
         Interprets markers with type ``"exit"`` as exits and markers with
         type ``"spawn"`` as mob spawns.  All other metadata keys from the
-        schematic's header are preserved as dungeon metadata (``type``,
-        ``weight``, ``loot``).
+        schematic's header are preserved as dungeon metadata (`$1`,
+        `$1`, `$1`).
         """
         exits: List[Exit] = []
         for m in schem.markers_by_type("exit"):
@@ -1434,7 +1434,7 @@ class Dungeon:
         description:    Flavour text.
         difficulty:     Integer difficulty rating.
         start_room:     Name of the starting room template (without extension).
-                        If ``None``, the first loaded template is used.
+                        If `$1`, the first loaded template is used.
     """
 
     def __init__(self, name: str, rooms_dir: str,

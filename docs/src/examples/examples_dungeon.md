@@ -1,6 +1,6 @@
 ---
-title: "Dungeon Example"
-subtitle: "Procedural dungeon with rooms, loot, mobs, and lifecycle"
+title: Dungeon Example
+subtitle: Procedural dungeon with rooms, loot, mobs, and lifecycle
 ---
 
 # Dungeon Example

@@ -1,7 +1,7 @@
 """CustomItem extension — registered custom items with a global registry.
 
 Extends :class:`~bridge.wrappers.ItemBuilder` so every fluent builder
-method (``name``, ``lore``, ``enchant``, ``glow``, etc.) is available
+method (`$1`, `$1`, `$1`, `$1`, etc.) is available
 directly on CustomItem instances.
 """
 from __future__ import annotations

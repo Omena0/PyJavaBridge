@@ -20,8 +20,8 @@ await Attribute.apply(player, attribute_type, base_value)
 Set an attribute's base value for a player.
 
 - **Parameters:**
-  - `player` ([`Player`](player.md)) — Target player.
-  - `attribute_type` ([`AttributeType`](enums.md) `| str`) — Attribute to modify.
+  - `player` (`Player`) — Target player.
+  - `attribute_type` (`AttributeType` `| str`) — Attribute to modify.
   - `base_value` (`float`) — New base value.
 - **Returns:** `Awaitable[Any]`
 
@@ -39,7 +39,7 @@ await Attribute.apply(player, AttributeType.GENERIC_MOVEMENT_SPEED, 0.2)
 
 ### attribute_type
 
-- **Type:** [`AttributeType`](enums.md)
+- **Type:** `AttributeType`
 
 The type of this attribute.
 

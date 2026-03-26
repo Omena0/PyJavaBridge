@@ -21,7 +21,7 @@ Register a shaped crafting recipe.
 
 - **Parameters:**
   - `key` (`str`) — Unique recipe identifier.
-  - `result` ([`Material`](enums.md) `| str`) — Material of the crafted item.
+  - `result` (`Material` `| str`) — Material of the crafted item.
   - `shape` (`list[str]`) — 1–3 strings representing crafting grid rows. Use single characters as placeholders and spaces for empty slots.
   - `ingredients` (`dict[str, Material | str]`) — Maps each character in `shape` to a material.
   - `amount` (`int`) — Number of items produced (default `1`).
@@ -60,7 +60,7 @@ Register a shapeless crafting recipe (ingredients can go in any slot).
 
 - **Parameters:**
   - `key` (`str`) — Unique recipe identifier.
-  - `result` ([`Material`](enums.md) `| str`) — Material of the crafted item.
+  - `result` (`Material` `| str`) — Material of the crafted item.
   - `ingredients` (`list[Material | str]`) — List of required materials.
   - `amount` (`int`) — Number of items produced (default `1`).
 - **Returns:** `Awaitable[str]` — The recipe key.
@@ -83,8 +83,8 @@ Register a furnace smelting recipe.
 
 - **Parameters:**
   - `key` (`str`) — Unique recipe identifier.
-  - `input` ([`Material`](enums.md) `| str`) — Material to smelt.
-  - `result` ([`Material`](enums.md) `| str`) — Material produced.
+  - `input` (`Material` `| str`) — Material to smelt.
+  - `result` (`Material` `| str`) — Material produced.
   - `experience` (`float`) — XP awarded per smelt (default `0`).
   - `cook_time` (`int`) — Cook time in ticks (default `200` = 10 seconds).
   - `amount` (`int`) — Number of items produced (default `1`).

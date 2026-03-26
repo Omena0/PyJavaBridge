@@ -157,6 +157,7 @@ Extensions are imported separately via `from bridge.extensions import ...`.
 | [TabList](tablist.md) | Advanced tab list management |
 | [Placeholder](placeholder.md) | Placeholder string registry |
 | [LootTable](loottable.md) | Loot table generation |
+| [ClientMod](clientmod.md) | Client capability bridge with permissions, commands, and data channel |
 
 ### Examples
 

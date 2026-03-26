@@ -5,7 +5,7 @@ subtitle: Player API — extends Entity
 
 # Player
 
-`Player` extends [`Entity`](entity.md) with player-specific functionality: health, hunger, experience, permissions, inventory, tab list, game mode, and more.
+`Player` extends `Entity` with player-specific functionality: health, hunger, experience, permissions, inventory, tab list, game mode, and more.
 
 ---
 
@@ -44,13 +44,13 @@ The player's UUID.
 
 ### location
 
-- **Type:** [`Location`](location.md)
+- **Type:** `Location`
 
 Current player location.
 
 ### world
 
-- **Type:** [`World`](world.md)
+- **Type:** `World`
 
 The world the player is in.
 
@@ -68,19 +68,19 @@ Hunger level (0–20, 20 = full).
 
 ### game_mode
 
-- **Type:** [`GameMode`](enums.md)
+- **Type:** `GameMode`
 
 Current game mode (e.g. `GameMode.SURVIVAL`, `GameMode.CREATIVE`).
 
 ### inventory
 
-- **Type:** [`Inventory`](inventory.md)
+- **Type:** `Inventory`
 
 The player's inventory (36 slots + armor + offhand).
 
 ### held_item
 
-- **Type:** [`Item`](item.md)
+- **Type:** `Item`
 
 The item currently in the player's main hand. Returns an `Item` proxy (may be air if the hand is empty).
 
@@ -146,7 +146,7 @@ Whether the player is currently using an item (holding right-click).
 
 ### hand_raised
 
-- **Type:** [`EquipmentSlot`](enums.md) `| None`
+- **Type:** `EquipmentSlot` `| None`
 
 Which hand is currently being used (`EquipmentSlot.HAND` or `EquipmentSlot.OFF_HAND`). `None` if the player is not using an item.
 
@@ -158,7 +158,7 @@ Whether the player is actively blocking (for example with a shield).
 
 ### item_in_use
 
-- **Type:** [`Item`](item.md) `| None`
+- **Type:** `Item` `| None`
 
 The item currently being used by the player.
 
@@ -182,7 +182,7 @@ How long the player has been sleeping, in ticks.
 
 ### scoreboard
 
-- **Type:** [`Scoreboard`](scoreboard.md)
+- **Type:** `Scoreboard`
 
 The player's current scoreboard.
 
@@ -280,7 +280,7 @@ The player's maximum health. Default is 20.0 (10 hearts).
 
 ### bed_spawn_location
 
-- **Type:** [`Location`](location.md) `| None`
+- **Type:** `Location` `| None`
 - **Settable:** `player.bed_spawn_location = location`
 - **Deletable:** `del player.bed_spawn_location`
 
@@ -288,7 +288,7 @@ The player's bed/respawn location. `None` if not set.
 
 ### compass_target
 
-- **Type:** [`Location`](location.md)
+- **Type:** `Location`
 - **Settable:** `player.compass_target = location`
 
 The location the player's compass points to.
@@ -347,10 +347,10 @@ await player.kick("§cYou have been banned!")
 await player.teleport(location)
 ```
 
-Teleport the player. Inherited from [`Entity`](entity.md).
+Teleport the player. Inherited from `Entity`.
 
 - **Parameters:**
-  - `location` ([`Location`](location.md)) — Destination.
+  - `location` (`Location`) — Destination.
 - **Returns:** `Awaitable[None]`
 
 ### give_exp
@@ -422,7 +422,7 @@ await player.set_game_mode(mode)
 Set the player's game mode.
 
 - **Parameters:**
-  - `mode` ([`GameMode`](enums.md)) — The game mode.
+  - `mode` (`GameMode`) — The game mode.
 - **Returns:** `Awaitable[None]`
 
 ```python
@@ -510,7 +510,7 @@ await player.set_scoreboard(scoreboard)
 Set the player's active scoreboard.
 
 - **Parameters:**
-  - `scoreboard` ([`Scoreboard`](scoreboard.md)) — The scoreboard to display.
+  - `scoreboard` (`Scoreboard`) — The scoreboard to display.
 - **Returns:** `Awaitable[None]`
 
 ### hide_player
@@ -522,7 +522,7 @@ await player.hide_player(other)
 Hide another player from this player.
 
 - **Parameters:**
-  - `other` ([`Player`](#)) — The player to hide.
+  - `other` (`Player`) — The player to hide.
 - **Returns:** `Awaitable[None]`
 
 ### show_player
@@ -534,7 +534,7 @@ await player.show_player(other)
 Show a previously hidden player to this player.
 
 - **Parameters:**
-  - `other` ([`Player`](#)) — The player to show.
+  - `other` (`Player`) — The player to show.
 - **Returns:** `Awaitable[None]`
 
 ### can_see
@@ -546,7 +546,7 @@ visible = await player.can_see(other)
 Check if this player can see another player.
 
 - **Parameters:**
-  - `other` ([`Player`](#)) — The player to check.
+  - `other` (`Player`) — The player to check.
 - **Returns:** `Awaitable[bool]`
 
 ### open_book
@@ -558,7 +558,7 @@ await player.open_book(item)
 Open a written book for the player.
 
 - **Parameters:**
-  - `item` ([`Item`](item.md)) — A written book item.
+  - `item` (`Item`) — A written book item.
 - **Returns:** `Awaitable[None]`
 
 ### send_block_change
@@ -570,7 +570,7 @@ await player.send_block_change(location, material)
 Send a fake block change to the player (client-side only).
 
 - **Parameters:**
-  - `location` ([`Location`](location.md)) — The block location.
+  - `location` (`Location`) — The block location.
   - `material` (`str`) — The material to display.
 - **Returns:** `Awaitable[None]`
 
@@ -583,8 +583,8 @@ await player.send_particle(particle, location, count=1, offset_x=0, offset_y=0, 
 Send a particle effect to the player.
 
 - **Parameters:**
-  - `particle` ([`Particle`](enums.md) `| str`) — The particle type.
-  - `location` ([`Location`](location.md)) — Where to spawn the particle.
+  - `particle` (`Particle` `| str`) — The particle type.
+  - `location` (`Location`) — Where to spawn the particle.
   - `count` (`int`) — Number of particles. Default `1`.
   - `offset_x` (`float`) — Random offset on X axis.
   - `offset_y` (`float`) — Random offset on Y axis.
@@ -740,7 +740,7 @@ effects = player.effects
 
 Get a list of the player's active potion effects.
 
-- **Type:** `list[`[`Effect`](effect.md)`]`
+- **Type:** `list[Effect]`
 
 ```python
 for effect in player.effects:
@@ -756,7 +756,7 @@ await player.add_effect(effect)
 Apply a potion effect to the player.
 
 - **Parameters:**
-  - `effect` ([`Effect`](effect.md)) — The effect to apply.
+  - `effect` (`Effect`) — The effect to apply.
 - **Returns:** `Awaitable[None]`
 
 ```python
@@ -772,7 +772,7 @@ await player.remove_effect(effect_type)
 Remove an active potion effect.
 
 - **Parameters:**
-  - `effect_type` ([`EffectType`](enums.md)) — The effect type to remove.
+  - `effect_type` (`EffectType`) — The effect type to remove.
 - **Returns:** `Awaitable[None]`
 
 ---
@@ -788,7 +788,7 @@ await player.play_sound(sound, volume=1.0, pitch=1.0)
 Play a sound to the player at their location.
 
 - **Parameters:**
-  - `sound` ([`Sound`](enums.md)) — The sound to play.
+  - `sound` (`Sound`) — The sound to play.
   - `volume` (`float`) — Volume. Default 1.0.
   - `pitch` (`float`) — Pitch. Default 1.0.
 - **Returns:** `Awaitable[None]`
@@ -1054,7 +1054,7 @@ player.deposit(100)
 player.withdraw(50)
 ```
 
-Requires `Player._default_bank` to be set to a [`Bank`](bank.md) instance.
+Requires `Player._default_bank` to be set to a `Bank` instance.
 
 ### mana
 
@@ -1065,7 +1065,7 @@ current = player.mana
 player.mana = 50
 ```
 
-Requires `Player._default_mana_store` to be set to a [`ManaStore`](mana.md) instance.
+Requires `Player._default_mana_store` to be set to a `ManaStore` instance.
 
 ### xp / player_level
 
@@ -1076,4 +1076,4 @@ xp = player.xp
 lvl = player.player_level
 ```
 
-Requires `Player._default_level_system` to be set to a [`LevelSystem`](levels.md) instance.
+Requires `Player._default_level_system` to be set to a `LevelSystem` instance.

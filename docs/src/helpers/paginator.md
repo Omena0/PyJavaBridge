@@ -5,7 +5,7 @@ subtitle: Multi-page menu
 
 # Paginator
 
-`Paginator` extends [`Menu`](menu.md) with multi-page navigation. The last row is reserved for prev/next buttons and a page indicator.
+`Paginator` extends `Menu` with multi-page navigation. The last row is reserved for prev/next buttons and a page indicator.
 
 ---
 

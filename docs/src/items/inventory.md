@@ -20,7 +20,7 @@ Create a new inventory.
 - **Parameters:**
   - `size` (`int`) — Number of slots. Must be a multiple of 9 (9, 18, 27, 36, 45, 54). Default 9.
   - `title` (`str`) — Display title shown when opened. Supports `§` color codes. Default `""`.
-  - `contents` (`list[`[`Item`](item.md)`] | None`) — Initial items. Default `None` (empty).
+  - `contents` (`list[Item] | None`) — Initial items. Default `None` (empty).
 
 ```python
 gui = Inventory(27, "§6Rewards Chest")
@@ -38,7 +38,7 @@ Total number of slots.
 
 ### contents
 
-- **Type:** `list[`[`Item`](item.md)`]`
+- **Type:** `list[Item]`
 
 List of items in the inventory. Empty slots are `None`.
 
@@ -62,7 +62,7 @@ Index of the first empty slot, or `-1` if the inventory is full.
 
 ### viewers
 
-- **Type:** `list[`[`Player`](player.md)`]`
+- **Type:** `list[Player]`
 
 Players currently viewing this inventory.
 
@@ -110,7 +110,7 @@ await inventory.open(player)
 Open this inventory as a GUI for a player.
 
 - **Parameters:**
-  - `player` ([`Player`](player.md)) — The player who will see the GUI.
+  - `player` (`Player`) — The player who will see the GUI.
 - **Returns:** `Awaitable[Any]`
 
 ```python
@@ -128,7 +128,7 @@ await inventory.close(player=None)
 Close this inventory for a player.
 
 - **Parameters:**
-  - `player` ([`Player`](player.md) `| None`) — The player to close for, or `None` to close for all viewers.
+  - `player` (`Player` `| None`) — The player to close for, or `None` to close for all viewers.
 - **Returns:** `Awaitable[Any]`
 
 ### add_item
@@ -140,7 +140,7 @@ await inventory.add_item(item)
 Add an item to the first available slot.
 
 - **Parameters:**
-  - `item` ([`Item`](item.md)) — The item to add.
+  - `item` (`Item`) — The item to add.
 - **Returns:** `Awaitable[Any]` — Any items that didn't fit.
 
 ```python
@@ -156,7 +156,7 @@ await inventory.remove_item(item)
 Remove an item from the inventory.
 
 - **Parameters:**
-  - `item` ([`Item`](item.md)) — The item to remove.
+  - `item` (`Item`) — The item to remove.
 - **Returns:** `Awaitable[Any]` — Any items that couldn't be removed.
 
 ### get_item
@@ -169,7 +169,7 @@ Get the item in a specific slot.
 
 - **Parameters:**
   - `slot` (`int`) — Slot index (0-based).
-- **Returns:** `Awaitable[`[`Item`](item.md)`]` — The item, or `None` if empty.
+- **Returns:** `Awaitable[Item]` — The item, or `None` if empty.
 
 ### set_item
 
@@ -181,7 +181,7 @@ Set the item in a specific slot.
 
 - **Parameters:**
   - `slot` (`int`) — Slot index (0-based).
-  - `item` ([`Item`](item.md)) — The item to place.
+  - `item` (`Item`) — The item to place.
 - **Returns:** `Awaitable[None]`
 
 ```python
@@ -197,7 +197,7 @@ result = await inventory.contains(material, amount=1)
 Check if the inventory contains at least `amount` of the given material.
 
 - **Parameters:**
-  - `material` ([`Material`](enums.md)) — Material to check for.
+  - `material` (`Material`) — Material to check for.
   - `amount` (`int`) — Minimum amount. Default 1.
 - **Returns:** `Awaitable[bool]`
 
@@ -235,4 +235,4 @@ async def shop(player: Player, args: list[str]):
     await gui.open(player)
 ```
 
-> **Tip:** For a higher-level GUI system with click handlers, see the [`Menu`](menu.md) class.
+> **Tip:** For a higher-level GUI system with click handlers, see the `Menu` class.

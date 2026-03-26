@@ -8,5 +8,8 @@ bin
 # MC Server
 server
 
+# Client mod repo
+client_mod
+
 # Cache
 __pycache__/

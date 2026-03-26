@@ -1,6 +1,6 @@
 ---
-title: "Tempban Example"
-subtitle: "Ban system with durations, persistence, and login enforcement"
+title: Tempban Example
+subtitle: Ban system with durations, persistence, and login enforcement
 ---
 
 # Tempban Example
@@ -11,7 +11,7 @@ automatic enforcement on login.
 
 > **Note:** This example stores bans in memory.  They will be lost on
 > server restart.  For production use, swap the `bans` dict for a
-> [`Config`](config.html) or database.
+> `Config` or database.
 
 Drop this file into `plugins/PyJavaBridge/scripts/` and reload the server.
 Requires the `humanfriendly` pip package: `pip install humanfriendly`.

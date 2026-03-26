@@ -61,6 +61,14 @@ public class EventDispatcher {
 
     /** Serializes and sends a Bukkit event to the Python script. */
     public void sendEvent(Event event, String eventName) {
+        sendEvent(event, eventName, null);
+    }
+
+    /** Serializes and sends a Bukkit event to the Python script with an override
+     * that controls whether the dispatcher should wait for the script to
+     * complete handling (non-blocking = true => do not wait).
+     */
+    public void sendEvent(Event event, String eventName, Boolean nonBlockingOverride) {
         if (eventName.equalsIgnoreCase("block_explode")) {
             if (event instanceof BlockExplodeEvent blockExplodeEvent) {
                 handleBlockExplode(blockExplodeEvent.blockList(), event, eventName);
@@ -74,12 +82,11 @@ public class EventDispatcher {
         }
         if (event instanceof EntityExplodeEvent && eventName.equalsIgnoreCase("entity_explode")) {
             JsonObject payload = baseEventPayload(event, eventName);
-            dispatchCancellableEvent(event, eventName, payload, CancelMode.EVENT, plugin.getEventTimeoutMs());
+            dispatchCancellableEvent(event, eventName, payload, CancelMode.EVENT, plugin.getEventTimeoutMs(), nonBlockingOverride);
             return;
         }
-
         JsonObject payload = baseEventPayload(event, eventName);
-        dispatchCancellableEvent(event, eventName, payload, CancelMode.EVENT, plugin.getEventTimeoutMs());
+        dispatchCancellableEvent(event, eventName, payload, CancelMode.EVENT, plugin.getEventTimeoutMs(), nonBlockingOverride);
     }
 
     private JsonObject baseEventPayload(Event event, String eventName) {
@@ -133,22 +140,37 @@ public class EventDispatcher {
     }
 
     private boolean dispatchCancellableEvent(Event event, String eventName, JsonObject payload,
-            CancelMode cancelMode, long timeoutMs) {
+            CancelMode cancelMode, long timeoutMs, Boolean nonBlockingOverride) {
         boolean cancellable = event instanceof org.bukkit.event.Cancellable;
+        // Treat certain non-cancellable events (notably `player_join`) as
+        // waitable so scripts can perform asynchronous work and signal
+        // completion via `event_done` before the server continues.
+        boolean waitForCompletion;
+        if (nonBlockingOverride != null) {
+            // nonBlockingOverride==true -> do not wait
+            waitForCompletion = !nonBlockingOverride;
+        } else {
+            waitForCompletion = cancellable || "player_join".equalsIgnoreCase(eventName);
+        }
+
         int eventId = -1;
-        if (cancellable) {
+        if (waitForCompletion) {
             eventId = plugin.nextEventId();
             payload.addProperty("id", eventId);
             PendingEvent pending = new PendingEvent();
-            pending.cancellable = (org.bukkit.event.Cancellable) event;
+            if (cancellable) {
+                pending.cancellable = (org.bukkit.event.Cancellable) event;
+            }
             pending.event = event;
             pending.id = eventId;
             pendingEvents.put(eventId, pending);
         }
+
         sendEvent(eventName, payload);
-        if (!cancellable) {
+        if (!waitForCompletion) {
             return false;
         }
+
         PendingEvent pending = pendingEvents.get(eventId);
         if (pending != null) {
             try {
@@ -163,7 +185,9 @@ public class EventDispatcher {
                 }
                 boolean cancelRequested = pending.cancelRequested.get();
                 if (pending.chatOverride != null && isChatEvent(pending.event)) {
-                    pending.cancellable.setCancelled(true);
+                    if (pending.cancellable != null) {
+                        pending.cancellable.setCancelled(true);
+                    }
                     String message = pending.chatOverride;
                     Bukkit.getScheduler().runTask(plugin,
                             () -> Bukkit.getServer().broadcast(net.kyori.adventure.text.Component.text(message)));
@@ -177,7 +201,7 @@ public class EventDispatcher {
                 if (pending.targetOverrideSet && pending.event instanceof EntityTargetEvent targetEvent) {
                     targetEvent.setTarget(pending.targetOverride instanceof org.bukkit.entity.LivingEntity le ? le : null);
                 }
-                if (cancelRequested && cancelMode == CancelMode.EVENT) {
+                if (cancelRequested && cancelMode == CancelMode.EVENT && pending.cancellable != null) {
                     pending.cancellable.setCancelled(true);
                 }
                 if (pending.latch.getCount() > 0 && timeoutMs >= 100) {
@@ -187,7 +211,11 @@ public class EventDispatcher {
                 pendingEvents.remove(eventId);
             }
         }
-        return cancellable && ((org.bukkit.event.Cancellable) event).isCancelled();
+
+        if (cancellable) {
+            return ((org.bukkit.event.Cancellable) event).isCancelled();
+        }
+        return false;
     }
 
     @SuppressWarnings("deprecation")

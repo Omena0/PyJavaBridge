@@ -14,7 +14,7 @@ from typing import Any, Awaitable, Callable, Dict, List, Optional, cast
 from bridge.types import async_task
 
 from bridge.errors import (
-    BridgeError, ConnectionError, _make_bridge_error,
+    ConnectionError, _make_bridge_error,
 )
 from bridge.types import BridgeCall, EnumValue, _SyncWait
 
@@ -167,11 +167,23 @@ class BridgeConnection:
             self._stdout.write(header + handshake)
             self._stdout.flush()
 
-    def subscribe(self, event_name: str, once_per_tick: bool, priority: str | EnumValue = "NORMAL", throttle_ms: int = 0):
-        """Subscribe to a Bukkit event on the Java side."""
+    def subscribe(self, event_name: str, once_per_tick: bool, priority: str | EnumValue = "NORMAL", throttle_ms: int = 0, non_blocking: bool = False):
+        """Subscribe to a Bukkit event on the Java side.
+
+        Adds support for an optional `non_blocking` flag that scripts may
+        pass (legacy compatibility). When provided the flag will be sent
+        to the Java plugin to influence dispatch behaviour.
+        """
         priority_name = priority.name if isinstance(priority, EnumValue) else str(priority)
-        print(f"[PyJavaBridge] Subscribing to {event_name} once_per_tick={once_per_tick} priority={priority_name} throttle_ms={throttle_ms}")
-        self.send({"type": "subscribe", "event": event_name, "once_per_tick": once_per_tick, "priority": priority_name, "throttle_ms": throttle_ms})
+        print(f"[PyJavaBridge] Subscribing to {event_name} once_per_tick={once_per_tick} priority={priority_name} throttle_ms={throttle_ms} non_blocking={non_blocking}")
+        self.send({
+            "type": "subscribe",
+            "event": event_name,
+            "once_per_tick": once_per_tick,
+            "priority": priority_name,
+            "throttle_ms": throttle_ms,
+            "non_blocking": non_blocking,
+        })
 
     def register_command(self, name: str, permission: Optional[str] = None, completions: Optional[dict] = None, has_tab_complete: bool = False):
         """Register a command name with the server."""

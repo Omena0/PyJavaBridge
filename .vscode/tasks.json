@@ -1,0 +1,72 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Build client_mod",
+      "type": "shell",
+      "command": "./gradlew :client_mod:build -x test",
+      "problemMatcher": [],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "Run client_mod",
+      "type": "shell",
+      "command": "./gradlew :client_mod:runClient -PquickPlayMultiplayer=${input:quickPlayServer}",
+      "dependsOn": "Build client_mod",
+      "problemMatcher": [],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "panel": "new"
+      }
+    },
+    {
+      "label": "Run client_mod (debug)",
+      "type": "shell",
+      "command": "./gradlew :client_mod:runClient -PquickPlayMultiplayer=${input:quickPlayServer} -PdebugPort=${input:debugPort}",
+      "dependsOn": "Build client_mod",
+      "isBackground": true,
+      "problemMatcher": {
+        "owner": "pjb-run",
+        "pattern": [
+          {
+            "regexp": "^(.*)$",
+            "message": 1
+          }
+        ],
+        "background": {
+          "activeOnStart": false,
+          "beginsPattern": "^> Task :client_mod:runClient",
+          "endsPattern": "Listening for transport dt_socket|Listening on port|Started Minecraft server"
+        }
+      },
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "panel": "new"
+      }
+    }
+  ],
+  "inputs": [
+    {
+      "id": "quickPlayServer",
+      "type": "promptString",
+      "description": "Server to auto-join via Quick Play (host:port)",
+      "default": "localhost:25565"
+    },
+    {
+      "id": "debugPort",
+      "type": "promptString",
+      "description": "JDWP debug port for runClient",
+      "default": "40296"
+    }
+  ]
+}

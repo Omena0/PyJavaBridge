@@ -5,7 +5,7 @@ subtitle: Custom item registry
 
 # CustomItem [ext]
 
-`CustomItem` extends [`ItemBuilder`](itembuilder.html) with a global registry.
+`CustomItem` extends `ItemBuilder` with a global registry.
 All fluent builder methods (`name()`, `lore()`, `enchant()`, `glow()`, etc.) are inherited.
 
 ```python
@@ -30,7 +30,7 @@ Automatically registered in the global registry.
 
 ## Methods
 
-All [`ItemBuilder`](itembuilder.html) methods are available, plus:
+All `ItemBuilder` methods are available, plus:
 
 ### give(player, amount=1)
 

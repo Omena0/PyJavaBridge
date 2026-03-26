@@ -5,7 +5,7 @@ subtitle: Simple sidebar helper
 
 # Sidebar
 
-`Sidebar` is a high-level helper that wraps [`Scoreboard`](scoreboard.md) and [`Objective`](objective.md) to make creating sidebar displays simple. It handles score ordering and line management automatically.
+`Sidebar` is a high-level helper that wraps `Scoreboard` and `Objective` to make creating sidebar displays simple. It handles score ordering and line management automatically.
 
 ---
 
@@ -91,7 +91,7 @@ sidebar.show(player)
 Display this sidebar to a player. This is synchronous — it assigns a scoreboard to the player.
 
 - **Parameters:**
-  - `player` ([`Player`](player.md)) — Player to show the sidebar to.
+  - `player` (`Player`) — Player to show the sidebar to.
 
 ---
 
@@ -138,4 +138,4 @@ async def player_join(e: Event):
     sb.show(p)
 ```
 
-> **Note:** `Sidebar` creates its own internal scoreboard and objective. If you need multiple objectives or teams, use the lower-level [`Scoreboard`](scoreboard.md) API.
+> **Note:** `Sidebar` creates its own internal scoreboard and objective. If you need multiple objectives or teams, use the lower-level `Scoreboard` API.

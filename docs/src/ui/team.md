@@ -5,7 +5,7 @@ subtitle: Scoreboard team API
 
 # Team
 
-A `Team` groups players on a [`Scoreboard`](scoreboard.md) for shared prefixes, suffixes, colors, and friendly-fire settings.
+A `Team` groups players on a `Scoreboard` for shared prefixes, suffixes, colors, and friendly-fire settings.
 
 ---
 
@@ -21,8 +21,8 @@ Create a new team. This is synchronous.
 
 - **Parameters:**
   - `name` (`str`) — Internal team name.
-  - `scoreboard` ([`Scoreboard`](scoreboard.md) `| None`) — Scoreboard to register on. If `None`, uses the main scoreboard.
-- **Returns:** [`Team`](#)
+  - `scoreboard` (`Scoreboard` `| None`) — Scoreboard to register on. If `None`, uses the main scoreboard.
+- **Returns:** `Team`
 
 ```python
 red = Team.create("red")

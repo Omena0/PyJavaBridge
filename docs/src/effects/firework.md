@@ -18,10 +18,10 @@ entity = await Firework.launch(location, effects=None, power=1)
 Spawn a firework rocket at a location.
 
 - **Parameters:**
-  - `location` ([`Location`](location.md)) — Where to spawn the firework.
+  - `location` (`Location`) — Where to spawn the firework.
   - `effects` (`list[FireworkEffect | dict] | None`) — List of effects. Defaults to a plain white burst if omitted.
   - `power` (`int`) — Flight duration / height (0–127, default `1`). Higher = goes higher before detonating.
-- **Returns:** `Awaitable[`[`Entity`](entity.md)`]`
+- **Returns:** `Awaitable[Entity]`
 
 ```python
 await Firework.launch(player.location)

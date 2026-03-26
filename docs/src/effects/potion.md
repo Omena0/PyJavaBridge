@@ -5,7 +5,7 @@ subtitle: Legacy potion API
 
 # Potion
 
-The `Potion` class provides a legacy interface for applying potion effects. For new code, prefer using [`Effect`](effect.md) directly.
+The `Potion` class provides a legacy interface for applying potion effects. For new code, prefer using `Effect` directly.
 
 ---
 
@@ -20,8 +20,8 @@ await Potion.apply(player, effect_type=None, duration=0, amplifier=0, ambient=Fa
 Apply a potion effect to a player. This is functionally identical to [`Effect.apply`](effect.md#apply).
 
 - **Parameters:**
-  - `player` ([`Player`](player.md)) — Target player.
-  - `effect_type` ([`EffectType`](enums.md) `| str | None`) — Effect type.
+  - `player` (`Player`) — Target player.
+  - `effect_type` (`EffectType` `| str | None`) — Effect type.
   - `duration` (`int`) — Duration in ticks (20 ticks = 1 second). Default 0.
   - `amplifier` (`int`) — Effect level minus 1. Default 0.
   - `ambient` (`bool`) — Beacon-style translucent particles. Default `False`.
@@ -53,7 +53,7 @@ The potion level.
 
 ## Recommendation
 
-Use [`Effect`](effect.md) for all new code:
+Use `Effect` for all new code:
 
 ```python
 # Preferred

@@ -1,10 +1,16 @@
 package com.pyjavabridge;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.pyjavabridge.client.ClientModChannelBridge;
 import com.pyjavabridge.util.CallableTask;
 import com.pyjavabridge.util.DebugManager;
 import com.pyjavabridge.util.PlayerUuidResolver;
 
 import org.bukkit.Bukkit;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
@@ -38,6 +44,7 @@ public class PyJavaBridgePlugin extends JavaPlugin {
     private final Map<String, BridgeInstance> instances = new ConcurrentHashMap<>();
     private final DebugManager debugManager = new DebugManager();
     private final PlayerUuidResolver uuidResolver = new PlayerUuidResolver();
+    private final Gson gson = new Gson();
     private Thread fileWatcherThread;
     private volatile boolean watchEnabled = false;
 
@@ -49,6 +56,7 @@ public class PyJavaBridgePlugin extends JavaPlugin {
 
     private final AtomicInteger eventCounter = new AtomicInteger(1);
     private PacketBridge packetBridge;
+    private ClientModChannelBridge clientModBridge;
 
     // Config values (loaded from config.yml)
     private int maxMessageSize = 16_777_216;
@@ -96,14 +104,30 @@ public class PyJavaBridgePlugin extends JavaPlugin {
             drainMainThreadQueue();
         }, 1L, 1L);
 
-        // Initialize ProtocolLib packet bridge if available
-        if (getServer().getPluginManager().getPlugin("ProtocolLib") != null) {
-            try {
-                packetBridge = new PacketBridge(this);
-                getLogger().info("ProtocolLib detected — packet API enabled");
-            } catch (Exception e) {
-                getLogger().warning("ProtocolLib found but packet API could not be initialized: " + e.getMessage());
-            }
+        // Attempt to initialize optional ProtocolLib PacketBridge
+        try {
+            packetBridge = new PacketBridge(this);
+            getLogger().info("PacketBridge: ProtocolLib integration enabled");
+        } catch (Throwable t) {
+            packetBridge = null;
+            getLogger().info("PacketBridge: ProtocolLib not available or failed to initialize: " + (t.getMessage() == null ? t.getClass().getSimpleName() : t.getMessage()));
+        }
+
+        try {
+            clientModBridge = new ClientModChannelBridge(this);
+            clientModBridge.registerChannels();
+            getLogger().info("Client mod packet bridge enabled on channel " + com.pyjavabridge.client.ClientModProtocol.CHANNEL);
+            Bukkit.getPluginManager().registerEvents(new Listener() {
+                @EventHandler
+                public void onPlayerQuit(PlayerQuitEvent event) {
+                    if (clientModBridge != null) {
+                        clientModBridge.onPlayerQuit(event.getPlayer());
+                    }
+                }
+            }, this);
+        } catch (Exception e) {
+            getLogger().warning("Client mod bridge could not be initialized: " + e.getMessage());
+            clientModBridge = null;
         }
 
         startScripts(scriptsDir, runtimeDir);
@@ -115,6 +139,11 @@ public class PyJavaBridgePlugin extends JavaPlugin {
 
         if (packetBridge != null) {
             packetBridge.removeAllListeners();
+        }
+
+        if (clientModBridge != null) {
+            clientModBridge.shutdown();
+            clientModBridge = null;
         }
 
         if (mainThreadPump != null) {
@@ -205,6 +234,11 @@ public class PyJavaBridgePlugin extends JavaPlugin {
 
     public UUID resolvePlayerUuidByName(String name) {
         return uuidResolver.resolvePlayerUuidByName(name);
+    }
+
+    /** Returns a snapshot of active BridgeInstance objects. */
+    public java.util.Collection<BridgeInstance> getBridgeInstances() {
+        return instances.values();
     }
 
     public void sendScriptMessage(String fromScript, String toScript, com.google.gson.JsonElement data) {
@@ -325,7 +359,11 @@ public class PyJavaBridgePlugin extends JavaPlugin {
 
             } catch (Exception ex) {
                 future.completeExceptionally(ex);
-                instance.logError("Main-thread call failed", ex);
+                if (ex instanceof com.pyjavabridge.util.EntityGoneException) {
+                    getLogger().fine("Main-thread call failed (entity gone): " + ex.getMessage());
+                } else {
+                    instance.logError("Main-thread call failed", ex);
+                }
             }
         };
 
@@ -472,16 +510,74 @@ public class PyJavaBridgePlugin extends JavaPlugin {
         return eventCounter.getAndIncrement();
     }
 
-    public PacketBridge getPacketBridge() {
-        return packetBridge;
+    public ClientModChannelBridge getClientModBridge() {
+        return clientModBridge;
     }
 
     public boolean hasPacketBridge() {
         return packetBridge != null;
     }
 
+    public PacketBridge getPacketBridge() {
+        return packetBridge;
+    }
+
+    public void emitClientModDataEvent(Player player, Map<String, Object> data) {
+        JsonObject payload = new JsonObject();
+        payload.addProperty("player_uuid", player.getUniqueId().toString());
+        payload.addProperty("player_name", player.getName());
+        payload.add("data", gson.toJsonTree(data == null ? Map.of() : data));
+        for (BridgeInstance instance : instances.values()) {
+            if (instance.isRunning()) {
+                instance.sendEvent("client_mod_data", payload);
+            }
+        }
+    }
+
+    public void emitClientModPermissionEvent(Player player, Map<String, Object> data) {
+        JsonObject payload = new JsonObject();
+        payload.addProperty("player_uuid", player.getUniqueId().toString());
+        payload.addProperty("player_name", player.getName());
+        payload.add("data", gson.toJsonTree(data == null ? Map.of() : data));
+        for (BridgeInstance instance : instances.values()) {
+            if (instance.isRunning()) {
+                instance.sendEvent("client_mod_permission", payload);
+            }
+        }
+    }
+
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        // Handle permission decisions sent via chat/clicks: /pjbperm <reqId> <accept|deny> [remember]
+        if (command.getName().equalsIgnoreCase("pjbperm")) {
+            if (!(sender instanceof Player player)) {
+                sender.sendMessage("\u00a7cThis command can only be used by a player.");
+                return true;
+            }
+            if (args.length < 2) {
+                player.sendMessage("\u00a7eUsage: /pjbperm <requestId> <accept|deny> [remember]");
+                return true;
+            }
+            int reqId;
+            try {
+                reqId = Integer.parseInt(args[0]);
+            } catch (NumberFormatException ex) {
+                player.sendMessage("\u00a7cInvalid request id: " + args[0]);
+                return true;
+            }
+            String act = args[1].toLowerCase();
+            boolean allow = act.equals("accept") || act.equals("allow") || act.equals("yes");
+            boolean remember = args.length >= 3 && (args[2].equalsIgnoreCase("remember") || args[2].equalsIgnoreCase("true"));
+
+            if (getClientModBridge() == null) {
+                player.sendMessage("\u00a7cClient-mod bridge not available.");
+                return true;
+            }
+
+            getClientModBridge().handlePermissionDecisionFromChat(player, reqId, allow, remember);
+            player.sendMessage(allow ? "\u00a7aPermission decision sent: accepted" : "\u00a7ePermission decision sent: denied");
+            return true;
+        }
         if (args.length == 0) {
             sender.sendMessage("\u00a7eUsage: /bridge reload [<script>] | debug | plugins | watch | schem <x> <y> <z> <w> <h> <d>");
             return true;

@@ -1,6 +1,6 @@
 ---
-title: "Commands Example"
-subtitle: "Commands, raycast teleport, inventory GUIs, and click events"
+title: Commands Example
+subtitle: Commands, raycast teleport, inventory GUIs, and click events
 ---
 
 # Commands Example

@@ -114,15 +114,38 @@ public class PacketBridge {
 
     private PacketType resolvePacketType(String name, PacketType.Protocol protocol, PacketType.Sender sender) {
         String upper = name.toUpperCase();
-        // O(1) lookup instead of iterating all PacketType values
-        if (protocol == PacketType.Protocol.PLAY && sender == PacketType.Sender.SERVER) {
-            PacketType result = PLAY_SERVER_TYPES.get(upper);
-            if (result != null) return result;
-        } else if (protocol == PacketType.Protocol.PLAY && sender == PacketType.Sender.CLIENT) {
-            PacketType result = PLAY_CLIENT_TYPES.get(upper);
-            if (result != null) return result;
+        // Try exact / suffix matches first (robust across ProtocolLib enum naming)
+        for (PacketType t : PacketType.values()) {
+            if (t.getProtocol() != protocol || t.getSender() != sender) continue;
+            String tname = t.name().toUpperCase();
+            if (tname.equals(upper) || tname.endsWith("_" + upper) || tname.endsWith(upper)) {
+                return t;
+            }
         }
-        return ALL_TYPES.get(upper);
+
+        // Fallback: try any packet name that matches the requested suffix
+        for (PacketType t : PacketType.values()) {
+            String tname = t.name().toUpperCase();
+            if (tname.equals(upper) || tname.endsWith("_" + upper) || tname.endsWith(upper)) {
+                return t;
+            }
+        }
+
+        // Additional heuristic: for JOIN_GAME, some ProtocolLib builds name this
+        // packet `LOGIN` (or similar). Try to find a PLAY/SERVER packet whose
+        // name contains LOGIN or JOIN and return the first match.
+        if ("JOIN_GAME".equalsIgnoreCase(upper)) {
+            for (PacketType t : PacketType.values()) {
+                if (t.getProtocol() != protocol || t.getSender() != sender) continue;
+                String tname = t.name().toUpperCase();
+                if (tname.contains("LOGIN") || tname.contains("JOIN")) {
+                    plugin.getLogger().info("PacketBridge: using alias packet type '" + tname + "' for JOIN_GAME");
+                    return t;
+                }
+            }
+        }
+
+        return null;
     }
 
     private JsonObject serializePacket(PacketContainer packet, String name) {

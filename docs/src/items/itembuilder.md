@@ -5,7 +5,7 @@ subtitle: Fluent item construction
 
 # ItemBuilder
 
-A fluent builder for constructing [`Item`](item.md) objects. Every setter method returns `self`, allowing chained calls.
+A fluent builder for constructing `Item` objects. Every setter method returns `self`, allowing chained calls.
 
 ---
 
@@ -18,7 +18,7 @@ ItemBuilder(material)
 Start building an item with the given material.
 
 - **Parameters:**
-  - `material` ([`Material`](enums.md) `| str`) — Item material.
+  - `material` (`Material` `| str`) — Item material.
 
 ```python
 sword = (
@@ -45,8 +45,8 @@ builder = ItemBuilder.from_item(item)
 Create a builder pre-filled with settings from an existing item.
 
 - **Parameters:**
-  - `item` ([`Item`](item.md)) — Existing item to copy.
-- **Returns:** [`ItemBuilder`](#)
+  - `item` (`Item`) — Existing item to copy.
+- **Returns:** `ItemBuilder`
 
 ```python
 builder = ItemBuilder.from_item(existing_item)
@@ -228,8 +228,8 @@ Add item flags to hide information from the tooltip.
 item = builder.build()
 ```
 
-Construct the final [`Item`](item.md) from the builder state.
+Construct the final `Item` from the builder state.
 
-- **Returns:** [`Item`](item.md)
+- **Returns:** `Item`
 
 > **Note:** `build()` is synchronous. The resulting `Item` can be used immediately in inventory operations, give, drop, etc.

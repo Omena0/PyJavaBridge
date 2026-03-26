@@ -55,6 +55,18 @@ from bridge.extensions.state_machine import StateMachine, State
 from bridge.extensions.scheduler import Scheduler, ScheduledTask
 from bridge.extensions.placeholder import PlaceholderRegistry
 from bridge.extensions.loot_table import LootTable, LootPool, LootEntry
+from bridge.extensions.client_mod import (
+    is_available,
+    send_command,
+    send_data,
+    register_script,
+    set_permissions,
+    get_permissions,
+    register_request_data,
+    unregister_request_data,
+    on_client_data,
+    on_permission_change,
+)
 
 __all__ = [
     "NPC",
@@ -83,4 +95,7 @@ __all__ = [
     "Scheduler", "ScheduledTask",
     "PlaceholderRegistry",
     "LootTable", "LootPool", "LootEntry",
+    "is_available", "send_command", "send_data", "register_script", "set_permissions",
+    "get_permissions", "register_request_data", "unregister_request_data",
+    "on_client_data", "on_permission_change",
 ]

@@ -44,13 +44,13 @@ The world environment (NORMAL, NETHER, THE_END).
 
 ### entities
 
-- **Type:** `list[`[`Entity`](entity.md)`]`
+- **Type:** `list[Entity]`
 
 All entities currently in the world, including players, mobs, dropped items, etc.
 
 ### players
 
-- **Type:** `list[`[`Player`](player.md)`]`
+- **Type:** `list[Player]`
 
 All players currently in this world.
 
@@ -76,14 +76,14 @@ Absolute world time that is not reset by sleeping.
 
 ### difficulty
 
-- **Type:** [`Difficulty`](enums.md)
+- **Type:** `Difficulty`
 - **Settable:** `world.difficulty = Difficulty.HARD`
 
 World difficulty level.
 
 ### spawn_location
 
-- **Type:** [`Location`](location.md)
+- **Type:** `Location`
 - **Settable:** `world.spawn_location = location`
 
 The world's spawn location.
@@ -167,7 +167,7 @@ Get the block at specific coordinates.
   - `x` (`int`) — X coordinate.
   - `y` (`int`) — Y coordinate.
   - `z` (`int`) — Z coordinate.
-- **Returns:** `Awaitable[`[`Block`](block.md)`]`
+- **Returns:** `Awaitable[Block]`
 
 ```python
 block = await world.block_at(0, 64, 0)
@@ -185,7 +185,7 @@ Get the chunk at chunk coordinates.
 - **Parameters:**
   - `x` (`int`) — Chunk X (block X ÷ 16).
   - `z` (`int`) — Chunk Z (block Z ÷ 16).
-- **Returns:** `Awaitable[`[`Chunk`](chunk.md)`]`
+- **Returns:** `Awaitable[Chunk]`
 
 ### spawn
 
@@ -196,10 +196,10 @@ entity = await world.spawn(location, entity_cls, **kwargs)
 Spawn an entity at a location.
 
 - **Parameters:**
-  - `location` ([`Location`](location.md)) — Spawn position.
+  - `location` (`Location`) — Spawn position.
   - `entity_cls` (`type | EntityType | str`) — Entity type to spawn.
   - `**kwargs` — Additional spawn options.
-- **Returns:** `Awaitable[`[`Entity`](entity.md)`]`
+- **Returns:** `Awaitable[Entity]`
 
 ```python
 zombie = await world.spawn(Location(0, 64, 0), EntityType.ZOMBIE)
@@ -214,10 +214,10 @@ entity = await world.spawn_entity(location, entity_type, **kwargs)
 Spawn an entity by type name.
 
 - **Parameters:**
-  - `location` ([`Location`](location.md)) — Spawn position.
-  - `entity_type` ([`EntityType`](enums.md) `| str`) — Entity type.
+  - `location` (`Location`) — Spawn position.
+  - `entity_type` (`EntityType` `| str`) — Entity type.
   - `**kwargs` — Additional options.
-- **Returns:** `Awaitable[`[`Entity`](entity.md)`]`
+- **Returns:** `Awaitable[Entity]`
 
 ### spawn_particle
 
@@ -228,8 +228,8 @@ await world.spawn_particle(particle, location, count=1, offset_x=0, offset_y=0, 
 Spawn particles visible to all players in the world.
 
 - **Parameters:**
-  - `particle` ([`Particle`](enums.md)) — Particle type.
-  - `location` ([`Location`](location.md)) — Center position.
+  - `particle` (`Particle`) — Particle type.
+  - `location` (`Location`) — Center position.
   - `count` (`int`) — Number of particles.
   - `offset_x/y/z` (`float`) — Random offset range on each axis.
   - `extra` (`float`) — Extra data (usually speed).
@@ -252,8 +252,8 @@ await world.play_sound(location, sound, volume=1.0, pitch=1.0)
 Play a sound at a location, audible to nearby players.
 
 - **Parameters:**
-  - `location` ([`Location`](location.md)) — Sound source position.
-  - `sound` ([`Sound`](enums.md)) — Sound to play.
+  - `location` (`Location`) — Sound source position.
+  - `sound` (`Sound`) — Sound to play.
   - `volume` (`float`) — Volume. Default 1.0.
   - `pitch` (`float`) — Pitch. Default 1.0.
 - **Returns:** `Awaitable[None]`
@@ -267,8 +267,8 @@ entity = await world.strike_lightning(location)
 Strike lightning at a location. This deals damage and starts fires.
 
 - **Parameters:**
-  - `location` ([`Location`](location.md)) — Strike position.
-- **Returns:** `Awaitable[`[`Entity`](entity.md)`]` — The lightning entity.
+  - `location` (`Location`) — Strike position.
+- **Returns:** `Awaitable[Entity]` — The lightning entity.
 
 ### strike_lightning_effect
 
@@ -279,7 +279,7 @@ await world.strike_lightning_effect(location)
 Strike visual-only lightning (no damage, no fire).
 
 - **Parameters:**
-  - `location` ([`Location`](location.md)) — Strike position.
+  - `location` (`Location`) — Strike position.
 - **Returns:** `Awaitable[None]`
 
 ---
@@ -400,7 +400,7 @@ Get the highest non-air block at the given X/Z coordinates.
 - **Parameters:**
   - `x` (`int`) — X coordinate.
   - `z` (`int`) — Z coordinate.
-- **Returns:** `Awaitable[`[`Block`](block.md)`]`
+- **Returns:** `Awaitable[Block]`
 
 ### generate_tree
 
@@ -411,7 +411,7 @@ result = await world.generate_tree(location, tree_type)
 Generate a tree at the given location.
 
 - **Parameters:**
-  - `location` ([`Location`](location.md)) — Base location.
+  - `location` (`Location`) — Base location.
   - `tree_type` (`str`) — Tree type (e.g. `"OAK"`, `"BIRCH"`, `"JUNGLE"`).
 - **Returns:** `Awaitable[bool]`
 
@@ -426,7 +426,7 @@ Asynchronously load a chunk at chunk coordinates.
 - **Parameters:**
   - `x` (`int`) — Chunk X.
   - `z` (`int`) — Chunk Z.
-- **Returns:** `Awaitable[`[`Chunk`](chunk.md)`]`
+- **Returns:** `Awaitable[Chunk]`
 
 ---
 
@@ -441,11 +441,11 @@ entities = await world.get_nearby_entities(location, dx, dy, dz)
 Get entities within a bounding box centered on a location.
 
 - **Parameters:**
-  - `location` ([`Location`](location.md)) — Center.
+  - `location` (`Location`) — Center.
   - `dx` (`float`) — Half-width on X axis.
   - `dy` (`float`) — Half-height on Y axis.
   - `dz` (`float`) — Half-width on Z axis.
-- **Returns:** `Awaitable[list[`[`Entity`](entity.md)`]]`
+- **Returns:** `Awaitable[list[Entity]]`
 
 ### find_entities
 
@@ -456,11 +456,11 @@ entities = await world.find_entities(location, radius, predicate=None, entity_ty
 Find entities within a radius, optionally filtered by type.
 
 - **Parameters:**
-  - `location` ([`Location`](location.md)) — Center.
+  - `location` (`Location`) — Center.
   - `radius` (`float`) — Search radius.
   - `predicate` (`callable | None`) — Optional filter function.
   - `entity_type` (`str | None`) — Optional entity type name filter.
-- **Returns:** `Awaitable[list[`[`Entity`](entity.md)`]]`
+- **Returns:** `Awaitable[list[Entity]]`
 
 ### batch_spawn
 
@@ -472,7 +472,7 @@ Spawn multiple entities in a single call.
 
 - **Parameters:**
   - `specs` (`list[dict]`) — List of spawn specifications, each with `type`, `location`, and optional extra fields.
-- **Returns:** `Awaitable[list[`[`Entity`](entity.md)`]]`
+- **Returns:** `Awaitable[list[Entity]]`
 
 ### ray_trace
 
@@ -483,8 +483,8 @@ result = await world.ray_trace(start, direction, max_distance)
 Perform a ray trace from a start location in a direction.
 
 - **Parameters:**
-  - `start` ([`Location`](location.md)) — Start position.
-  - `direction` ([`Vector`](vector.md)) — Direction vector.
+  - `start` (`Location`) — Start position.
+  - `direction` (`Vector`) — Direction vector.
   - `max_distance` (`float`) — Maximum trace distance.
 - **Returns:** `Awaitable[dict | None]` — Hit result or `None`.
 
@@ -527,7 +527,7 @@ Replace blocks asynchronously over multiple ticks.
 
 ## Region Utilities
 
-These methods operate on regions of blocks in the world. Position arguments accept [`Location`](location.md), `tuple[int,int,int]`, or [`Vector`](vector.md).
+These methods operate on regions of blocks in the world. Position arguments accept `Location`, `tuple[int,int,int]`, or `Vector`.
 
 ### set_block
 
@@ -539,7 +539,7 @@ Set a single block.
 
 - **Parameters:**
   - `x, y, z` (`int`) — Block coordinates.
-  - `material` ([`Material`](enums.md) `| str`) — Block material.
+  - `material` (`Material` `| str`) — Block material.
   - `apply_physics` (`bool`) — Whether to trigger physics updates. Default `False`.
 - **Returns:** `Awaitable[int]` — Number of blocks changed (0 or 1).
 
@@ -554,7 +554,7 @@ Fill a cuboid region with a material.
 - **Parameters:**
   - `pos1` — First corner.
   - `pos2` — Opposite corner.
-  - `material` ([`Material`](enums.md) `| str`) — Block material.
+  - `material` (`Material` `| str`) — Block material.
   - `apply_physics` (`bool`) — Default `False`.
 - **Returns:** `Awaitable[int]` — Number of blocks changed.
 
@@ -573,8 +573,8 @@ Replace all blocks of one material with another in a region.
 - **Parameters:**
   - `pos1` — First corner.
   - `pos2` — Opposite corner.
-  - `from_material` ([`Material`](enums.md) `| str`) — Material to replace.
-  - `to_material` ([`Material`](enums.md) `| str`) — Replacement material.
+  - `from_material` (`Material` `| str`) — Material to replace.
+  - `to_material` (`Material` `| str`) — Replacement material.
 - **Returns:** `Awaitable[int]` — Number of blocks replaced.
 
 ```python
@@ -592,7 +592,7 @@ Fill a sphere with a material.
 - **Parameters:**
   - `center` — Center position.
   - `radius` (`float`) — Sphere radius in blocks.
-  - `material` ([`Material`](enums.md) `| str`) — Block material.
+  - `material` (`Material` `| str`) — Block material.
   - `hollow` (`bool`) — If `True`, only the shell is filled.
 - **Returns:** `Awaitable[int]` — Number of blocks changed.
 
@@ -612,7 +612,7 @@ Fill a vertical cylinder.
   - `center` — Center of the base.
   - `radius` (`float`) — Cylinder radius.
   - `height` (`int`) — Height in blocks.
-  - `material` ([`Material`](enums.md) `| str`) — Block material.
+  - `material` (`Material` `| str`) — Block material.
   - `hollow` (`bool`) — If `True`, only the walls are filled.
 - **Returns:** `Awaitable[int]`
 
@@ -627,7 +627,7 @@ Place blocks along a line between two points.
 - **Parameters:**
   - `start` — Start position.
   - `end` — End position.
-  - `material` ([`Material`](enums.md) `| str`) — Block material.
+  - `material` (`Material` `| str`) — Block material.
 - **Returns:** `Awaitable[int]`
 
 ---
@@ -647,7 +647,7 @@ Draw a line of particles between two points.
 - **Parameters:**
   - `start` — Start position.
   - `end` — End position.
-  - `particle` ([`Particle`](enums.md) `| str`) — Particle type.
+  - `particle` (`Particle` `| str`) — Particle type.
   - `density` (`float`) — Particles per block. Default 4.0.
 - **Returns:** `Awaitable[int]` — Number of particles spawned.
 
@@ -662,7 +662,7 @@ Draw a sphere of particles.
 - **Parameters:**
   - `center` — Center position.
   - `radius` (`float`) — Sphere radius.
-  - `particle` ([`Particle`](enums.md) `| str`) — Particle type.
+  - `particle` (`Particle` `| str`) — Particle type.
   - `density` (`float`) — Particles per block. Default 4.0.
   - `hollow` (`bool`) — If `True`, only surface particles. Default `True`.
 - **Returns:** `Awaitable[int]`
@@ -678,7 +678,7 @@ Draw a cuboid of particles.
 - **Parameters:**
   - `pos1` — First corner.
   - `pos2` — Opposite corner.
-  - `particle` ([`Particle`](enums.md) `| str`) — Particle type.
+  - `particle` (`Particle` `| str`) — Particle type.
   - `density` (`float`) — Default 4.0.
   - `hollow` (`bool`) — Default `True`.
 - **Returns:** `Awaitable[int]`
@@ -694,7 +694,7 @@ Draw a horizontal ring of particles.
 - **Parameters:**
   - `center` — Center position.
   - `radius` (`float`) — Ring radius.
-  - `particle` ([`Particle`](enums.md) `| str`) — Particle type.
+  - `particle` (`Particle` `| str`) — Particle type.
   - `density` (`float`) — Default 4.0.
 - **Returns:** `Awaitable[int]`
 
@@ -711,11 +711,11 @@ entity = await world.spawn_at_player(player, entity_type, offset=None, **kwargs)
 Spawn an entity at a player's current position with an optional offset.
 
 - **Parameters:**
-  - `player` ([`Player`](player.md)) — The player.
-  - `entity_type` ([`EntityType`](enums.md) `| str`) — Entity type to spawn.
-  - `offset` ([`Vector`](vector.md) `| tuple | None`) — Offset from player position.
+  - `player` (`Player`) — The player.
+  - `entity_type` (`EntityType` `| str`) — Entity type to spawn.
+  - `offset` (`Vector` `| tuple | None`) — Offset from player position.
   - `**kwargs` — Additional spawn options.
-- **Returns:** `Awaitable[`[`Entity`](entity.md)`]`
+- **Returns:** `Awaitable[Entity]`
 
 ```python
 zombie = await world.spawn_at_player(player, "ZOMBIE", offset=(2, 0, 0))
@@ -730,11 +730,11 @@ entity = await world.spawn_projectile(shooter, entity_type, velocity=None, **kwa
 Spawn a projectile from an entity with an optional initial velocity.
 
 - **Parameters:**
-  - `shooter` ([`Entity`](entity.md)) — The entity shooting the projectile.
-  - `entity_type` ([`EntityType`](enums.md) `| str`) — Projectile type (e.g. `"ARROW"`, `"FIREBALL"`).
-  - `velocity` ([`Vector`](vector.md) `| tuple | None`) — Initial velocity.
+  - `shooter` (`Entity`) — The entity shooting the projectile.
+  - `entity_type` (`EntityType` `| str`) — Projectile type (e.g. `"ARROW"`, `"FIREBALL"`).
+  - `velocity` (`Vector` `| tuple | None`) — Initial velocity.
   - `**kwargs` — Additional options.
-- **Returns:** `Awaitable[`[`Entity`](entity.md)`]`
+- **Returns:** `Awaitable[Entity]`
 
 ### spawn_with_nbt
 
@@ -745,11 +745,11 @@ entity = await world.spawn_with_nbt(location, entity_type, nbt, **kwargs)
 Spawn an entity with custom SNBT (Stringified NBT) data.
 
 - **Parameters:**
-  - `location` ([`Location`](location.md)) — Spawn position.
-  - `entity_type` ([`EntityType`](enums.md) `| str`) — Entity type.
+  - `location` (`Location`) — Spawn position.
+  - `entity_type` (`EntityType` `| str`) — Entity type.
   - `nbt` (`str`) — SNBT string.
   - `**kwargs` — Additional options.
-- **Returns:** `Awaitable[`[`Entity`](entity.md)`]`
+- **Returns:** `Awaitable[Entity]`
 
 ```python
 await world.spawn_with_nbt(loc, "ZOMBIE", '{IsBaby:1b,CustomName:\'{"text":"Baby Zombie"}\'}')
@@ -768,7 +768,7 @@ await world.create_explosion(location, power=4.0, fire=False)
 Create an explosion at the given location.
 
 - **Parameters:**
-  - `location` ([`Location`](location.md)) — Center of the explosion.
+  - `location` (`Location`) — Center of the explosion.
   - `power` (`float`) — Explosion power. Default 4.0 (TNT-strength).
   - `fire` (`bool`) — Whether the explosion sets fire. Default `False`.
 - **Returns:** `Awaitable[None]`
@@ -786,9 +786,9 @@ entities = await world.entities_near(location, radius)
 Get all entities within a radius of the location.
 
 - **Parameters:**
-  - `location` ([`Location`](location.md)) — Center position.
+  - `location` (`Location`) — Center position.
   - `radius` (`float`) — Search radius in blocks.
-- **Returns:** `Awaitable[list[`[`Entity`](entity.md)`]]`
+- **Returns:** `Awaitable[list[Entity]]`
 
 ```python
 nearby = await world.entities_near(player.location, 10)
@@ -802,12 +802,12 @@ for e in nearby:
 blocks = world.blocks_near(location, radius)
 ```
 
-Get all blocks within a cubic radius of the location. **Synchronous** — returns a pre-built list of [`Block`](block.md) proxies.
+Get all blocks within a cubic radius of the location. **Synchronous** — returns a pre-built list of `Block` proxies.
 
 - **Parameters:**
-  - `location` ([`Location`](location.md)) — Center position.
+  - `location` (`Location`) — Center position.
   - `radius` (`int`) — Cubic radius in blocks.
-- **Returns:** `list[`[`Block`](block.md)`]`
+- **Returns:** `list[Block]`
 
 ```python
 for block in world.blocks_near(player.location, 3):
