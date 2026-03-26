@@ -1819,7 +1819,7 @@ class Player(Entity):
 
     @property
     def player_level(self) -> int:
-        """Shortcut: level from the default LevelSystem (distinct from vanilla ``level``)."""
+        """Shortcut: level from the default LevelSystem (distinct from vanilla `$1`)."""
         if Player._default_level_system is None:
             raise RuntimeError("No default LevelSystem set")
 

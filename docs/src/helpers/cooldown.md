@@ -19,7 +19,7 @@ Create a cooldown tracker.
 
 - **Parameters:**
   - `seconds` (`float`) — Cooldown duration in seconds. Default 1.0.
-  - `on_expire` (`Callable[[`[`Player`](player.md)`], Any] | None`) — Callback invoked when a player's cooldown expires. Default `None`.
+  - `on_expire` (`Callable[[Player], Any] | None`) — Callback invoked when a player's cooldown expires. Default `None`.
 
 ```python
 ability_cd = Cooldown(seconds=5.0)
@@ -42,7 +42,7 @@ The cooldown duration in seconds.
 
 ### on_expire
 
-- **Type:** `Callable[[`[`Player`](player.md)`], Any] | None`
+- **Type:** `Callable[[Player], Any] | None`
 
 Callback invoked when the cooldown expires for a player.
 
@@ -59,7 +59,7 @@ is_ready = cooldown.check(player)
 Check if the player's cooldown has expired. If ready, **automatically starts a new cooldown**.
 
 - **Parameters:**
-  - `player` ([`Player`](player.md)) — Player to check.
+  - `player` (`Player`) — Player to check.
 - **Returns:** `bool` — `True` if the cooldown was ready (and has now been reset), `False` if still on cooldown.
 
 ```python
@@ -83,7 +83,7 @@ time_left = cooldown.remaining(player)
 Get the remaining cooldown time for a player.
 
 - **Parameters:**
-  - `player` ([`Player`](player.md)) — Player to check.
+  - `player` (`Player`) — Player to check.
 - **Returns:** `float` — Remaining seconds, or 0.0 if ready.
 
 ### reset
@@ -95,7 +95,7 @@ cooldown.reset(player)
 Manually reset (clear) a player's cooldown, making the ability immediately available.
 
 - **Parameters:**
-  - `player` ([`Player`](player.md)) — Player to reset.
+  - `player` (`Player`) — Player to reset.
 
 ---
 

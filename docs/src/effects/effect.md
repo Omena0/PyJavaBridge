@@ -18,7 +18,7 @@ Effect(effect_type=None, duration=0, amplifier=0, ambient=False, particles=True,
 Create an effect.
 
 - **Parameters:**
-  - `effect_type` ([`EffectType`](enums.md) `| str | None`) — The effect type (e.g. `"SPEED"`, `EffectType.INVISIBILITY`).
+  - `effect_type` (`EffectType` `| str | None`) — The effect type (e.g. `"SPEED"`, `EffectType.INVISIBILITY`).
   - `duration` (`int`) — Duration in ticks (20 ticks = 1 second). Default 0.
   - `amplifier` (`int`) — Effect level minus 1. Speed II = amplifier 1. Default 0.
   - `ambient` (`bool`) — Whether the effect came from a beacon (translucent particles). Default `False`.
@@ -44,8 +44,8 @@ await Effect.apply(player, effect_type=None, duration=0, amplifier=0, ambient=Fa
 Create and apply an effect to a player in one call.
 
 - **Parameters:**
-  - `player` ([`Player`](player.md)) — Target player.
-  - `effect_type` ([`EffectType`](enums.md) `| str | None`) — Effect type.
+  - `player` (`Player`) — Target player.
+  - `effect_type` (`EffectType` `| str | None`) — Effect type.
   - `duration` (`int`) — Duration in ticks. Default 0.
   - `amplifier` (`int`) — Effect level minus 1. Default 0.
   - `ambient` (`bool`) — Beacon-style particles. Default `False`.
@@ -63,7 +63,7 @@ await Effect.apply(player, "SPEED", duration=600, amplifier=1)
 
 ### type
 
-- **Type:** [`EffectType`](enums.md)
+- **Type:** `EffectType`
 
 The effect type.
 
@@ -111,7 +111,7 @@ Create a copy of this effect with a different duration.
 
 - **Parameters:**
   - `duration` (`int`) — New duration in ticks.
-- **Returns:** `Awaitable[`[`Effect`](#)`]`
+- **Returns:** `Awaitable[``Effect``]`
 
 ```python
 base = Effect("SPEED", 100, amplifier=2)
@@ -128,7 +128,7 @@ Create a copy of this effect with a different amplifier.
 
 - **Parameters:**
   - `amplifier` (`int`) — New amplifier.
-- **Returns:** `Awaitable[`[`Effect`](#)`]`
+- **Returns:** `Awaitable[``Effect``]`
 
 ---
 

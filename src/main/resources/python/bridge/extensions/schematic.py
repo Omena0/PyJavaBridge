@@ -13,7 +13,7 @@ A ``.bschem`` file has two sections separated by a ``---`` line:
     depth: 9
     custom_key: custom_value
 
-``width``, ``height``, and ``depth`` are required.  All other keys
+`$1`, `$1`, and `$1` are required.  All other keys
 are stored as arbitrary metadata.
 
 **Marker definitions** (``marker: type x,y,z [key=value ...]``)::
@@ -31,14 +31,14 @@ of interest, loot positions, or anything else.
 ``~`` is always air (hardcoded, no definition needed).
 
 **Block data** (after the ``---`` separator)::
-    One operation per line using ``fill`` and ``set`` commands.
+    One operation per line using `$1` and `$1` commands.
     Coordinates are local to the schematic (0-indexed).
 
     ``fill x1 y1 z1 x2 y2 z2 KEY`` — fill a rectangular region with KEY.
     ``set x y z KEY``               — place a single block.
 
     Operations may overwrite previous results — for example a hollow
-    room can be expressed as a solid ``fill`` followed by an air ``fill``
+    room can be expressed as a solid `$1` followed by an air `$1`
     for the interior.
 
 Example ``.bschem`` file::

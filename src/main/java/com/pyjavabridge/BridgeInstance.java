@@ -1,5 +1,6 @@
 package com.pyjavabridge;
 
+import com.pyjavabridge.client.ClientModFacade;
 import com.pyjavabridge.event.EventSubscription;
 import com.pyjavabridge.event.PendingEvent;
 import com.pyjavabridge.facade.*;
@@ -102,6 +103,8 @@ public class BridgeInstance {
     private final Gson gson = new Gson();
     private final ObjectRegistry registry = new ObjectRegistry();
     private final Map<String, EventSubscription> subscriptions = new ConcurrentHashMap<>();
+    // Per-subscription non-blocking flags (true -> fire-and-forget)
+    private final Map<String, Boolean> subscriptionNonBlocking = new ConcurrentHashMap<>();
     private final Map<UUID, PermissionAttachment> permissionAttachments = new ConcurrentHashMap<>();
 
     private static final Object UNHANDLED = new Object();
@@ -129,6 +132,7 @@ public class BridgeInstance {
     private final RefFacade refFacade;
     private final CommandsFacade commandsFacade;
     private final DatapackFacade datapackFacade;
+    private final ClientModFacade clientModFacade;
 
     private DataInputStream reader;
     private DataOutputStream writer;
@@ -151,6 +155,7 @@ public class BridgeInstance {
         this.refFacade = new RefFacade(this);
         this.commandsFacade = new CommandsFacade(plugin, this);
         this.datapackFacade = new DatapackFacade(plugin);
+        this.clientModFacade = new ClientModFacade(plugin);
 
         Bukkit.getPluginManager().registerEvents(new Listener() {
             @EventHandler
@@ -186,6 +191,20 @@ public class BridgeInstance {
 
     public boolean hasSubscription(String eventName) {
         return subscriptions.containsKey(eventName);
+    }
+
+    /**
+     * Diagnostic helper: return a snapshot of registered subscription keys.
+     */
+    public java.util.Set<String> getSubscriptionNames() {
+        return new java.util.HashSet<>(subscriptions.keySet());
+    }
+
+    /**
+     * Returns an unmodifiable view of subscription keys for diagnostics.
+     */
+    public java.util.Set<String> getSubscriptionKeys() {
+        return java.util.Collections.unmodifiableSet(subscriptions.keySet());
     }
 
     /** Starts the Python process and bridge communication thread. */
@@ -234,7 +253,9 @@ public class BridgeInstance {
             try {
                 plugin.runOnMainThread(this, () -> {
                     for (EventSubscription subscription : subscriptions.values()) {
-                        subscription.unregister();
+                        if (subscription != null) {
+                            subscription.unregister();
+                        }
                     }
                     subscriptions.clear();
                     return null;
@@ -242,7 +263,9 @@ public class BridgeInstance {
             } catch (Exception e) {
                 // Fallback best-effort cleanup if main-thread scheduling is unavailable.
                 for (EventSubscription subscription : subscriptions.values()) {
-                    subscription.unregister();
+                    if (subscription != null) {
+                        subscription.unregister();
+                    }
                 }
                 subscriptions.clear();
             }
@@ -797,7 +820,8 @@ public class BridgeInstance {
 
     private void handleSubscribe(JsonObject message) {
         String eventName = message.get("event").getAsString();
-
+        boolean nonBlocking = message.has("non_blocking") && message.get("non_blocking").getAsBoolean();
+        // Store non-blocking preference for diagnostics and dispatch decisions
         boolean oncePerTick = message.has("once_per_tick") && message.get("once_per_tick").getAsBoolean();
         long throttleMs = message.has("throttle_ms") ? message.get("throttle_ms").getAsLong() : 0L;
         EventPriority priority = EventPriority.NORMAL;
@@ -817,24 +841,36 @@ public class BridgeInstance {
             plugin.getLogger().info(
                     "[" + name + "] Subscribing to event " + eventName + " (oncePerTick=" + oncePerTick + ")");
 
-            if (eventName.equalsIgnoreCase("block_explode")) {
+                if (eventName.equalsIgnoreCase("block_explode")) {
                 EventSubscription blockSub = new EventSubscription(plugin, this, eventName, oncePerTick,
                         priority, throttleMs, org.bukkit.event.block.BlockExplodeEvent.class);
 
                 blockSub.register();
                 subscriptions.put(eventName + "#block", blockSub);
+                subscriptionNonBlocking.put(eventName + "#block", nonBlocking);
                 EventSubscription entitySub = new EventSubscription(plugin, this, eventName, oncePerTick,
                         priority, throttleMs, org.bukkit.event.entity.EntityExplodeEvent.class);
 
                 entitySub.register();
                 subscriptions.put(eventName + "#entity", entitySub);
+                subscriptionNonBlocking.put(eventName + "#entity", nonBlocking);
 
             } else {
-                EventSubscription subscription = new EventSubscription(plugin, this, eventName, oncePerTick,
-                        priority, throttleMs);
+                try {
+                    EventSubscription subscription = new EventSubscription(plugin, this, eventName, oncePerTick,
+                            priority, throttleMs);
 
-                subscription.register();
-                subscriptions.put(eventName, subscription);
+                    subscription.register();
+                    subscriptions.put(eventName, subscription);
+                    subscriptionNonBlocking.put(eventName, nonBlocking);
+                } catch (ClassNotFoundException cnf) {
+                    // Not a real Bukkit event – register a script-only subscription marker so
+                    // script handlers (which registered locally) will still receive our
+                    // programmatic dispatches (via instance.hasSubscription).
+                    plugin.getLogger().info("[" + name + "] Registered script-only subscription for " + eventName);
+                    subscriptions.put(eventName, null);
+                    subscriptionNonBlocking.put(eventName, nonBlocking);
+                }
             }
 
         } catch (Exception ex) {
@@ -850,11 +886,30 @@ public class BridgeInstance {
             try {
                 Object result = invoke(message);
                 if (!noResponse) {
-                    JsonObject response = new JsonObject();
-                    response.addProperty("type", "return");
-                    response.addProperty("id", id);
-                    response.add("result", serialize(result));
-                    sendWithTiming(response, startNano);
+                    if (result instanceof java.util.concurrent.CompletableFuture<?> nestedFuture) {
+                        nestedFuture.whenComplete((value, error) -> {
+                            if (noResponse) return;
+                            if (error != null) {
+                                Throwable cause = error instanceof java.util.concurrent.CompletionException && error.getCause() != null
+                                        ? error.getCause() : error;
+                                String errorMessage = cause.getMessage();
+                                if (errorMessage == null || errorMessage.isBlank()) errorMessage = cause.getClass().getSimpleName();
+                                sendError(id, errorMessage, cause);
+                            } else {
+                                JsonObject response = new JsonObject();
+                                response.addProperty("type", "return");
+                                response.addProperty("id", id);
+                                response.add("result", serialize(value));
+                                sendWithTiming(response, startNano);
+                            }
+                        });
+                    } else {
+                        JsonObject response = new JsonObject();
+                        response.addProperty("type", "return");
+                        response.addProperty("id", id);
+                        response.add("result", serialize(result));
+                        sendWithTiming(response, startNano);
+                    }
                 }
             } catch (Exception ex) {
                 if (!noResponse) {
@@ -883,13 +938,32 @@ public class BridgeInstance {
                 sendError(id, errorMessage, cause);
 
             } else {
-                JsonObject response = new JsonObject();
+                if (result instanceof java.util.concurrent.CompletableFuture<?> nested) {
+                    nested.whenComplete((value, nestedError) -> {
+                        if (noResponse) return;
+                        if (nestedError != null) {
+                            Throwable cause = nestedError instanceof java.util.concurrent.CompletionException && nestedError.getCause() != null
+                                    ? nestedError.getCause() : nestedError;
+                            String errorMessage = cause.getMessage();
+                            if (errorMessage == null || errorMessage.isBlank()) errorMessage = cause.getClass().getSimpleName();
+                            sendError(id, errorMessage, cause);
+                        } else {
+                            JsonObject response = new JsonObject();
+                            response.addProperty("type", "return");
+                            response.addProperty("id", id);
+                            response.add("result", serialize(value));
+                            sendWithTiming(response, startNano);
+                        }
+                    });
+                } else {
+                    JsonObject response = new JsonObject();
 
-                response.addProperty("type", "return");
-                response.addProperty("id", id);
-                response.add("result", serialize(result));
+                    response.addProperty("type", "return");
+                    response.addProperty("id", id);
+                    response.add("result", serialize(result));
 
-                sendWithTiming(response, startNano);
+                    sendWithTiming(response, startNano);
+                }
             }
         });
     }
@@ -1054,6 +1128,10 @@ public class BridgeInstance {
             // Server: only specific read-only info methods
             if ("server".equals(target)) {
                 return THREAD_SAFE_SERVER_METHODS.contains(method);
+            }
+            // Client mod: allow availability and permission queries off-main-thread
+            if ("client_mod".equals(target)) {
+                return "isAvailable".equals(method) || "getPermissions".equals(method);
             }
             return false;
         }
@@ -2362,59 +2440,6 @@ public class BridgeInstance {
             }
             return names;
         }
-        // Packet API
-        if ("listenPacketSend".equals(method) && args.size() >= 1) {
-            if (!plugin.hasPacketBridge()) return "ProtocolLib not available";
-            String packetName = String.valueOf(args.get(0));
-            plugin.getPacketBridge().listenSend(packetName, (player, data) -> {
-                JsonObject payload = new JsonObject();
-                payload.addProperty("direction", "send");
-                payload.addProperty("packet_type", packetName);
-                payload.add("fields", data);
-                payload.add("player", serializer.serialize(player));
-                eventDispatcher.sendEvent("packet_send", payload);
-            });
-            return true;
-        }
-        if ("listenPacketReceive".equals(method) && args.size() >= 1) {
-            if (!plugin.hasPacketBridge()) return "ProtocolLib not available";
-            String packetName = String.valueOf(args.get(0));
-            plugin.getPacketBridge().listenReceive(packetName, (player, data) -> {
-                JsonObject payload = new JsonObject();
-                payload.addProperty("direction", "receive");
-                payload.addProperty("packet_type", packetName);
-                payload.add("fields", data);
-                payload.add("player", serializer.serialize(player));
-                eventDispatcher.sendEvent("packet_receive", payload);
-            });
-            return true;
-        }
-        if ("removePacketListener".equals(method) && args.size() >= 1) {
-            if (!plugin.hasPacketBridge()) return "ProtocolLib not available";
-            plugin.getPacketBridge().removeListener(String.valueOf(args.get(0)));
-            return true;
-        }
-        if ("sendPacket".equals(method) && args.size() >= 3) {
-            if (!plugin.hasPacketBridge()) return "ProtocolLib not available";
-            Object playerObj = args.get(0);
-            String packetName = String.valueOf(args.get(1));
-            Object fieldsObj = args.get(2);
-            if (playerObj instanceof org.bukkit.entity.Player player && fieldsObj instanceof Map<?,?> map) {
-                JsonObject fields = new JsonObject();
-                for (Map.Entry<?, ?> entry : map.entrySet()) {
-                    String k = String.valueOf(entry.getKey());
-                    Object v = entry.getValue();
-                    if (v instanceof Number n) fields.addProperty(k, n);
-                    else if (v instanceof Boolean b) fields.addProperty(k, b);
-                    else if (v instanceof String s) fields.addProperty(k, s);
-                }
-                plugin.getPacketBridge().sendPacket(player, packetName, fields);
-            }
-            return true;
-        }
-        if ("hasPacketApi".equals(method)) {
-            return plugin.hasPacketBridge();
-        }
         // StructureManager
         if ("saveStructure".equals(method) && args.size() >= 5) {
             String structName = String.valueOf(args.get(0));
@@ -2645,6 +2670,29 @@ public class BridgeInstance {
                 }
             }
         }
+        // Build diagnostic log for why reflective dispatch failed
+        try {
+            StringBuilder sb = new StringBuilder();
+            sb.append("Method not found: ").append(method).append(" on ").append(target.getClass().getName()).append(".\n");
+            sb.append("Available methods with same name:\n");
+            int found = 0;
+            for (Method m : methods) {
+                if (!m.getName().equals(method)) continue;
+                found++;
+                sb.append(" - ").append(m.toString()).append("\n");
+            }
+            if (found == 0) {
+                sb.append(" (no methods with exact name found)\n");
+            }
+            sb.append("Provided args (count=").append(args.size()).append("): ");
+            for (Object a : args) {
+                sb.append(a == null ? "null" : a.getClass().getName()).append(", ");
+            }
+            plugin.getLogger().warning(sb.toString());
+        } catch (Throwable t) {
+            plugin.getLogger().warning("Method not found: " + method + " on " + target.getClass().getName());
+        }
+
         throw new NoSuchMethodException("Method not found: " + method + " on " + target.getClass().getName());
     }
 
@@ -2689,6 +2737,7 @@ public class BridgeInstance {
             case "datapack" -> datapackFacade;
             case "region" -> regionFacade;
             case "particle", "particles" -> particleFacade;
+            case "client_mod" -> clientModFacade;
             default -> throw new IllegalArgumentException("Unknown target: " + targetName);
         };
     }
@@ -2893,7 +2942,29 @@ public class BridgeInstance {
     }
 
     public void sendEvent(Event event, String eventName) {
-        eventDispatcher.sendEvent(event, eventName);
+        // Determine if any local subscriptions for this event declared
+        // non-blocking semantics. If the scripts explicitly subscribed
+        // with non_blocking=true for all matching keys, treat this as
+        // fire-and-forget (do not wait for completion).
+        Boolean nonBlockingOverride = null;
+        java.util.List<String> matching = new java.util.ArrayList<>();
+        for (String key : subscriptions.keySet()) {
+            if (key.equalsIgnoreCase(eventName) || key.startsWith(eventName + "#")) {
+                matching.add(key);
+            }
+        }
+        if (!matching.isEmpty()) {
+            boolean allNonBlocking = true;
+            for (String k : matching) {
+                if (!subscriptionNonBlocking.getOrDefault(k, false)) {
+                    allNonBlocking = false;
+                    break;
+                }
+            }
+            nonBlockingOverride = allNonBlocking;
+        }
+
+        eventDispatcher.sendEvent(event, eventName, nonBlockingOverride);
     }
 
     public Entity spawnEntityWithOptions(World world, Object locationObj, Object typeObj,

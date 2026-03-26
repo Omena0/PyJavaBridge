@@ -88,7 +88,7 @@ class BridgeCall(Awaitable[Any]):
 
     Accepts either an ``asyncio.Future`` or a coroutine.  Coroutines are
     automatically scheduled as tasks so they run in the background even
-    if the caller never ``await``-s the result.
+    if the caller never `$1`-s the result.
     """
     def __init__(self, future_or_coro):
         """Wrap a future or coroutine as a BridgeCall."""
@@ -114,7 +114,7 @@ def async_task(func: Callable[..., Any]) -> Callable[..., BridgeCall]:
 
     The decorated function, when called, immediately schedules the
     coroutine as a background task and returns a :class:`BridgeCall`.
-    Callers can ``await`` the result or ignore it — either way the
+    Callers can `$1` the result or ignore it — either way the
     work runs.
     """
     @functools.wraps(func)

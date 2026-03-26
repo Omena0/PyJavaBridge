@@ -1,0 +1,27 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "java",
+      "name": "Run Fabric Client (Build + Attach)",
+      "request": "attach",
+      "hostName": "localhost",
+      "port": "${input:debugPort}",
+      "preLaunchTask": "Run client_mod (debug)"
+    }
+  ],
+  "inputs": [
+    {
+      "id": "quickPlayServer",
+      "type": "promptString",
+      "description": "Server to auto-join via Quick Play (host:port)",
+      "default": "localhost:25565"
+    },
+    {
+      "id": "debugPort",
+      "type": "promptString",
+      "description": "JDWP debug port to attach",
+      "default": "40296"
+    }
+  ]
+}

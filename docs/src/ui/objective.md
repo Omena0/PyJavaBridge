@@ -5,7 +5,7 @@ subtitle: Scoreboard objective API
 
 # Objective
 
-An `Objective` tracks a score for each player on a [`Scoreboard`](scoreboard.md). Objectives can be displayed in the sidebar, below name tags, or in the tab list.
+An `Objective` tracks a score for each player on a `Scoreboard`. Objectives can be displayed in the sidebar, below name tags, or in the tab list.
 
 ---
 
@@ -23,8 +23,8 @@ Create a new objective. This is synchronous.
   - `name` (`str`) — Internal objective name (unique per scoreboard).
   - `criteria` (`str`) — Score criteria. See [Criteria table](#criteria-types) below.
   - `display_name` (`str`) — Name displayed to players. Default `""`.
-  - `scoreboard` ([`Scoreboard`](scoreboard.md) `| None`) — Scoreboard to register on. If `None`, uses the main scoreboard.
-- **Returns:** [`Objective`](#)
+  - `scoreboard` (`Scoreboard` `| None`) — Scoreboard to register on. If `None`, uses the main scoreboard.
+- **Returns:** `Objective`
 
 ```python
 obj = Objective.create("kills", "dummy", "§6Kill Count")
@@ -141,4 +141,4 @@ async def player_join(e: Event):
     await e.player.set_scoreboard(board)
 ```
 
-> **Tip:** For a simpler sidebar API that handles line management automatically, see [`Sidebar`](sidebar.md).
+> **Tip:** For a simpler sidebar API that handles line management automatically, see `Sidebar`.

@@ -13,7 +13,7 @@ The `Event` class is the proxy object passed to your `@event` handlers. It expos
 
 ### player
 
-- **Type:** [`Player`](player.md) | `None`
+- **Type:** `Player` | `None`
 
 The player involved in the event. Available for all player-related events (`player_join`, `player_chat`, `player_interact`, etc.).
 
@@ -25,43 +25,43 @@ async def player_join(e):
 
 ### entity
 
-- **Type:** [`Entity`](entity.md) | `None`
+- **Type:** `Entity` | `None`
 
 The entity involved in the event. Available for entity events (`entity_damage`, `entity_death`, etc.).
 
 ### block
 
-- **Type:** [`Block`](block.md) | `None`
+- **Type:** `Block` | `None`
 
 The block involved in the event. Available for block events (`block_break`, `block_place`, etc.).
 
 ### world
 
-- **Type:** [`World`](world.md) | `None`
+- **Type:** `World` | `None`
 
 The world where the event occurred. If the event doesn't directly provide a world, it is automatically derived from the event's `location`, `entity`, or `player` — so `event.world` works reliably for most events.
 
 ### location
 
-- **Type:** [`Location`](location.md) | `None`
+- **Type:** `Location` | `None`
 
 The location relevant to the event. If the event doesn't directly provide a location, it is derived from the event's `entity` or `player`.
 
 ### item
 
-- **Type:** [`Item`](item.md) | `None`
+- **Type:** `Item` | `None`
 
 The item involved in the event. Available for interact events, inventory events, etc.
 
 ### inventory
 
-- **Type:** [`Inventory`](inventory.md) | `None`
+- **Type:** `Inventory` | `None`
 
 The inventory involved in the event. Available for `inventory_click`, `inventory_close`, etc.
 
 ### chunk
 
-- **Type:** [`Chunk`](chunk.md) | `None`
+- **Type:** `Chunk` | `None`
 
 The chunk involved in the event.
 
@@ -73,7 +73,7 @@ The inventory slot index for `inventory_click` events.
 
 ### damager
 
-- **Type:** [`Entity`](entity.md) | [`Block`](block.md) | `None`
+- **Type:** `Entity` | `Block` | `None`
 
 The source of damage for `entity_damage` events. Can be an entity (attacker, projectile) or a block (cactus, lava).
 
@@ -127,13 +127,13 @@ The chat message for `player_chat`, join/quit message for `player_join`/`player_
 
 ### velocity
 
-- **Type:** [`Vector`](vector.md) | `None`
+- **Type:** `Vector` | `None`
 
 The velocity involved in the event (e.g. for projectile launch events).
 
 ### from_location / to_location
 
-- **Type:** [`Location`](location.md) | `None`
+- **Type:** `Location` | `None`
 
 For movement events (`player_move`, `player_teleport`): the start (`from`) and end (`to`) locations.
 

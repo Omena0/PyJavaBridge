@@ -18,11 +18,11 @@ Block(world=None, x=None, y=None, z=None, material=None)
 Create a block reference.
 
 - **Parameters:**
-  - `world` ([`World`](world.md) `| str | None`) — World reference.
+  - `world` (`World` `| str | None`) — World reference.
   - `x` (`int | None`) — X coordinate.
   - `y` (`int | None`) — Y coordinate.
   - `z` (`int | None`) — Z coordinate.
-  - `material` ([`Material`](enums.md) `| str | None`) — Block material.
+  - `material` (`Material` `| str | None`) — Block material.
 
 ---
 
@@ -37,9 +37,9 @@ block = await Block.create(location, material)
 Create (place) a block at a location.
 
 - **Parameters:**
-  - `location` ([`Location`](location.md)) — Where to place the block.
-  - `material` ([`Material`](enums.md) `| str`) — Block material.
-- **Returns:** `Awaitable[`[`Block`](#)`]`
+  - `location` (`Location`) — Where to place the block.
+  - `material` (`Material` `| str`) — Block material.
+- **Returns:** `Awaitable[``Block``]`
 
 ```python
 block = await Block.create(player.location.add(0, -1, 0), Material.DIAMOND_BLOCK)
@@ -69,19 +69,19 @@ Block Z coordinate.
 
 ### type
 
-- **Type:** [`Material`](enums.md)
+- **Type:** `Material`
 
 The block's material type.
 
 ### location
 
-- **Type:** [`Location`](location.md)
+- **Type:** `Location`
 
 The block's location.
 
 ### world
 
-- **Type:** [`World`](world.md)
+- **Type:** `World`
 
 The world this block is in.
 
@@ -106,7 +106,7 @@ Light level at this block (0–15).
 
 ### biome
 
-- **Type:** [`Biome`](enums.md)
+- **Type:** `Biome`
 - **Settable:** `block.biome = Biome.DESERT`
 
 The biome at this block's location.
@@ -164,7 +164,7 @@ await block.set_type(material)
 Change the block's material.
 
 - **Parameters:**
-  - `material` ([`Material`](enums.md)) — The new material.
+  - `material` (`Material`) — The new material.
 - **Returns:** `Awaitable[None]`
 
 ```python
@@ -192,7 +192,7 @@ drops = await block.get_drops(tool=None)
 Get the block's drops with an optional tool.
 
 - **Parameters:**
-  - `tool` ([`Item`](item.md) `| None`) — The tool used to mine. `None` for bare hand.
+  - `tool` (`Item` `| None`) — The tool used to mine. `None` for bare hand.
 - **Returns:** `Awaitable[list]`
 
 ---
@@ -203,7 +203,7 @@ These work on blocks that hold inventories (chests, hoppers, dispensers, dropper
 
 ### inventory
 
-- **Type:** [`Inventory`](inventory.md) `| None`
+- **Type:** `Inventory` `| None`
 
 The block's inventory, or `None` if the block isn't a container.
 
@@ -369,7 +369,7 @@ await block.set_biome(biome)
 Change the biome at this block's position. Property syntax: `block.biome = Biome.DESERT`.
 
 - **Parameters:**
-  - `biome` ([`Biome`](enums.md)) — The new biome.
+  - `biome` (`Biome`) — The new biome.
 - **Returns:** `Awaitable[None]`
 
 ---

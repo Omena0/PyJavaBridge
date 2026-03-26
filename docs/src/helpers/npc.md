@@ -16,8 +16,8 @@ npc = await NPC.spawn(location, entity_type="VILLAGER", name="Guard")
 ```
 
 - **Parameters:**
-  - `location` ([`Location`](location.md)) — Where to spawn the NPC.
-  - `entity_type` ([`EntityType`](enums.md) `| str`) — Mob type. Default `"VILLAGER"`.
+  - `location` (`Location`) — Where to spawn the NPC.
+  - `entity_type` (`EntityType` `| str`) — Mob type. Default `"VILLAGER"`.
   - `name` (`str | None`) — Display name shown above the NPC.
   - `**kwargs` — Extra spawn options passed to `Entity.spawn`.
 - **Returns:** `Awaitable[NPC]`
@@ -37,7 +37,7 @@ shopkeeper = await NPC.spawn(player.location, entity_type="VILLAGER", name="§aS
 npc.entity  # → Entity
 ```
 
-The underlying [`Entity`](entity.md) instance.
+The underlying `Entity` instance.
 
 ### uuid
 
@@ -125,7 +125,7 @@ await npc.move_to(location, speed=1.0)
 Move the NPC to a location using pathfinding. Temporarily enables AI.
 
 - **Parameters:**
-  - `location` ([`Location`](location.md)) — Destination.
+  - `location` (`Location`) — Destination.
   - `speed` (`float`) — Speed multiplier. Default `1.0`.
 
 ### follow_path
@@ -137,7 +137,7 @@ await npc.follow_path(waypoints, loop=False, speed=1.0, delay=0.5)
 Make the NPC walk through a list of waypoints.
 
 - **Parameters:**
-  - `waypoints` (`list[`[`Location`](location.md)`]`) — Locations to visit in order.
+  - `waypoints` (`list[Location]`) — Locations to visit in order.
   - `loop` (`bool`) — If `True`, repeat the path endlessly.
   - `speed` (`float`) — Speed multiplier.
   - `delay` (`float`) — Seconds between each waypoint. Default `0.5`.

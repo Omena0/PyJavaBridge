@@ -1,6 +1,6 @@
 ---
-title: "Spawn Protect Example"
-subtitle: "Prevent building near spawn with block events"
+title: Spawn Protect Example
+subtitle: Prevent building near spawn with block events
 ---
 
 # Spawn Protect Example

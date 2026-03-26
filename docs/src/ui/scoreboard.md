@@ -19,7 +19,7 @@ board = Scoreboard.create()
 
 Create a new empty scoreboard. This is synchronous.
 
-- **Returns:** [`Scoreboard`](#)
+- **Returns:** `Scoreboard`
 
 ```python
 board = Scoreboard.create()
@@ -32,13 +32,13 @@ await player.set_scoreboard(board)
 
 ### objectives
 
-- **Type:** `list[`[`Objective`](objective.md)`]`
+- **Type:** `list[Objective]`
 
 All objectives registered on this scoreboard.
 
 ### teams
 
-- **Type:** `list[`[`Team`](team.md)`]`
+- **Type:** `list[Team]`
 
 All teams registered on this scoreboard.
 
@@ -58,7 +58,7 @@ Register a new objective. This is synchronous.
   - `name` (`str`) — Internal name (unique per scoreboard).
   - `criteria` (`str`) — Criteria type (e.g. `"dummy"`, `"health"`, `"playerKillCount"`).
   - `display_name` (`str`) — Display name shown in the sidebar/tab. Default `""`.
-- **Returns:** [`Objective`](objective.md)
+- **Returns:** `Objective`
 
 ```python
 obj = board.register_objective("kills", "dummy", "§c§lKill Count")
@@ -74,7 +74,7 @@ Get an existing objective by name.
 
 - **Parameters:**
   - `name` (`str`) — Internal objective name.
-- **Returns:** [`Objective`](objective.md)
+- **Returns:** `Objective`
 
 ### register_team
 
@@ -86,7 +86,7 @@ Register a new team. This is synchronous.
 
 - **Parameters:**
   - `name` (`str`) — Internal name (unique per scoreboard).
-- **Returns:** [`Team`](team.md)
+- **Returns:** `Team`
 
 ```python
 red_team = board.register_team("red")
@@ -104,7 +104,7 @@ Get an existing team by name.
 
 - **Parameters:**
   - `name` (`str`) — Internal team name.
-- **Returns:** [`Team`](team.md)
+- **Returns:** `Team`
 
 ### clear_slot
 
@@ -141,4 +141,4 @@ async def entity_death(e: Event):
         # Score tracking happens automatically via the scoreboard API
 ```
 
-> **See also:** [`Sidebar`](sidebar.md) for a simpler high-level sidebar helper.
+> **See also:** `Sidebar` for a simpler high-level sidebar helper.

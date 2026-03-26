@@ -11,6 +11,10 @@ commands:
     description: Manage PyJavaBridge
     usage: /bridge reload [<script>] | /bridge debug
     permission: pyjavabridge.admin
+  pjbperm:
+    description: Reply to a client permission request (internal)
+    usage: /pjbperm <requestId> <accept|deny> [remember]
+    permission: false
 permissions:
   pyjavabridge.admin:
     default: op

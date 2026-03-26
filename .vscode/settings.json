@@ -3,7 +3,8 @@
         "https://www.schemastore.org/bukkit-plugin.json": "file:///home/omena0/Github/PyJavaBridge/src/main/resources/plugin.yml"
     },
     "java.compile.nullAnalysis.mode": "automatic",
-    "python-envs.defaultEnvManager": "ms-python.python:system",
+    "java.import.gradle.nestedProjects": true,
+    "python-envs.defaultEnvManager": "ms-python.python:venv",
     "java.configuration.updateBuildConfiguration": "automatic",
     "python.defaultInterpreterPath": "/home/omena0/Github/PyJavaBridge/.venv/bin/python"
 }

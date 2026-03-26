@@ -5,7 +5,7 @@ subtitle: Base entity proxy
 
 # Entity
 
-`Entity` is the base class for all entities in the game — mobs, animals, projectiles, dropped items, etc. [`Player`](player.md) extends this class.
+`Entity` is the base class for all entities in the game — mobs, animals, projectiles, dropped items, etc. `Player` extends this class.
 
 ---
 
@@ -37,10 +37,10 @@ entity = await Entity.spawn(entity_type, location, **kwargs)
 Spawn a new entity at a location.
 
 - **Parameters:**
-  - `entity_type` ([`EntityType`](enums.md) `| str`) — The type of entity to spawn.
-  - `location` ([`Location`](location.md)) — Where to spawn the entity.
+  - `entity_type` (`EntityType` `| str`) — The type of entity to spawn.
+  - `location` (`Location`) — Where to spawn the entity.
   - `**kwargs` — Additional spawn options.
-- **Returns:** `Awaitable[`[`Entity`](#)`]`
+- **Returns:** `Awaitable[``Entity``]`
 
 ```python
 zombie = await Entity.spawn(EntityType.ZOMBIE, player.location)
@@ -59,31 +59,31 @@ The entity's universally unique identifier.
 
 ### type
 
-- **Type:** [`EntityType`](enums.md)
+- **Type:** `EntityType`
 
 The entity type (e.g. `EntityType.ZOMBIE`, `EntityType.ARROW`).
 
 ### location
 
-- **Type:** [`Location`](location.md)
+- **Type:** `Location`
 
 The entity's current location. Re-fetched each access.
 
 ### world
 
-- **Type:** [`World`](world.md)
+- **Type:** `World`
 
 The world the entity is in.
 
 ### inventory
 
-- **Type:** [`Inventory`](inventory.md)
+- **Type:** `Inventory`
 
 The entity's inventory / equipment. For mobs, this is their equipment slots.
 
 ### held_item
 
-- **Type:** [`Item`](item.md)
+- **Type:** `Item`
 
 The item in the entity's main hand equipment slot.
 
@@ -101,7 +101,7 @@ The entity's vertical rotation in degrees (from its location).
 
 ### look_direction
 
-- **Type:** [`Vector`](vector.md)
+- **Type:** `Vector`
 
 Normalized direction vector computed from the entity's yaw and pitch. Useful for spawning projectiles or offsetting positions in front of the entity.
 
@@ -114,7 +114,7 @@ await fireball.set_velocity(direction)
 
 ### velocity
 
-- **Type:** [`Vector`](vector.md)
+- **Type:** `Vector`
 - **Settable:** `entity.velocity = Vector(0, 1, 0)`
 
 The entity's current velocity vector.
@@ -152,7 +152,7 @@ Remaining fire ticks. 0 means not on fire. Each tick at 20 TPS, so 100 = 5 secon
 
 ### passengers
 
-- **Type:** `list[`[`Entity`](#)`]`
+- **Type:** `list[``Entity``]`
 
 Entities riding on top of this entity.
 
@@ -179,7 +179,7 @@ Whether this entity is a projectile (arrow, snowball, trident, etc.).
 
 ### shooter
 
-- **Type:** [`Entity`](#) | [`Player`](player.md) | [`Block`](block.md) | `None`
+- **Type:** `Entity` | `Player` | `Block` | `None`
 
 For projectiles, the entity or block that launched it. `None` for non-projectiles.
 
@@ -191,7 +191,7 @@ Whether this entity is a tameable animal that has been tamed (wolf, cat, horse, 
 
 ### owner
 
-- **Type:** [`Player`](player.md) | `None`
+- **Type:** `Player` | `None`
 
 The player who caused/owns this entity. Works for:
 
@@ -216,7 +216,7 @@ Name of the owning player, if known.
 
 ### source
 
-- **Type:** [`Entity`](#) | [`Player`](player.md) | `None`
+- **Type:** `Entity` | `Player` | `None`
 
 The entity that created this entity. For example, the player who lit a TNT block, or the witch that threw a potion.
 
@@ -353,7 +353,7 @@ await entity.teleport(location)
 Teleport the entity to a new location.
 
 - **Parameters:**
-  - `location` ([`Location`](location.md)) — Destination.
+  - `location` (`Location`) — Destination.
 - **Returns:** `Awaitable[None]`
 
 ```python
@@ -379,7 +379,7 @@ await entity.set_velocity(vector)
 Set the entity's velocity. Useful for launching entities, knockback effects, etc.
 
 - **Parameters:**
-  - `vector` ([`Vector`](vector.md)) — The velocity vector. Each component is in blocks/tick.
+  - `vector` (`Vector`) — The velocity vector. Each component is in blocks/tick.
 - **Returns:** `Awaitable[None]`
 
 ```python
@@ -413,7 +413,7 @@ success = await entity.add_passenger(entity)
 Make another entity ride on top of this one.
 
 - **Parameters:**
-  - `entity` ([`Entity`](#)) — The entity to add as a passenger.
+  - `entity` (`Entity`) — The entity to add as a passenger.
 - **Returns:** `Awaitable[bool]` — `True` if the passenger was added successfully.
 
 ### remove_passenger
@@ -425,7 +425,7 @@ success = await entity.remove_passenger(entity)
 Remove a riding entity.
 
 - **Parameters:**
-  - `entity` ([`Entity`](#)) — The passenger to remove.
+  - `entity` (`Entity`) — The passenger to remove.
 - **Returns:** `Awaitable[bool]`
 
 ### set_custom_name
@@ -489,7 +489,7 @@ target = entity.target
 
 Get the mob's current attack target.
 
-- **Type:** [`Entity`](#) `| None`
+- **Type:** `Entity` `| None`
 - **Settable:** `entity.target = player`
 - **Deletable:** `del entity.target` (clears target)
 
@@ -502,7 +502,7 @@ await entity.set_target(target)
 Set the mob's attack target. Pass `None` to clear. You can also use property syntax.
 
 - **Parameters:**
-  - `target` ([`Entity`](#) `| None`) — The entity to target.
+  - `target` (`Entity` `| None`) — The entity to target.
 - **Returns:** `Awaitable[None]`
 
 ```python
@@ -548,7 +548,7 @@ result = entity.pathfind_to(location, speed=1.0)
 Make the mob pathfind to a location using Paper's Pathfinder API.
 
 - **Parameters:**
-  - `location` ([`Location`](location.md)) — Destination.
+  - `location` (`Location`) — Destination.
   - `speed` (`float`) — Movement speed multiplier. Default `1.0`.
 - **Returns:** `bool` — `True` if a path was found.
 
@@ -575,7 +575,7 @@ can_see = entity.has_line_of_sight(other)
 Check if this mob has line of sight to another entity.
 
 - **Parameters:**
-  - `other` ([`Entity`](#)) — The entity to check visibility for.
+  - `other` (`Entity`) — The entity to check visibility for.
 - **Returns:** `bool`
 
 ```python
@@ -592,7 +592,7 @@ await entity.look_at(location)
 Make the mob face a location.
 
 - **Parameters:**
-  - `location` ([`Location`](location.md)) — The location to look at.
+  - `location` (`Location`) — The location to look at.
 - **Returns:** `Awaitable[None]`
 
 ```python

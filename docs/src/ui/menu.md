@@ -5,7 +5,7 @@ subtitle: GUI menu system
 
 # Menu
 
-`Menu` is a high-level inventory GUI system with click handlers. It wraps [`Inventory`](inventory.md) with per-slot click callbacks using [`MenuItem`](menuitem.md).
+`Menu` is a high-level inventory GUI system with click handlers. It wraps `Inventory` with per-slot click callbacks using `MenuItem`.
 
 ---
 
@@ -55,7 +55,7 @@ menu[slot] = menu_item
 
 - **Parameters:**
   - `slot` (`int`) — Slot index (0-based, left-to-right, top-to-bottom).
-  - `menu_item` ([`MenuItem`](menuitem.md)) — Item with click handler.
+  - `menu_item` (`MenuItem`) — Item with click handler.
 
 ### Get a slot
 
@@ -63,7 +63,7 @@ menu[slot] = menu_item
 item = menu[slot]
 ```
 
-- **Returns:** [`MenuItem`](menuitem.md) `| None`
+- **Returns:** `MenuItem` `| None`
 
 ### Delete a slot
 
@@ -84,7 +84,7 @@ menu.fill_border(item)
 Fill the border slots with a decorative item. This is synchronous.
 
 - **Parameters:**
-  - `item` ([`Item`](item.md)) — Item to use for the border.
+  - `item` (`Item`) — Item to use for the border.
 
 ```python
 shop = Menu("§6§lShop", rows=3)
@@ -100,7 +100,7 @@ menu.open(player)
 Open this menu for a player. This is synchronous.
 
 - **Parameters:**
-  - `player` ([`Player`](player.md)) — Player to show the menu to.
+  - `player` (`Player`) — Player to show the menu to.
 
 > **Tip:** You can safely open a new menu from inside a click handler. The bridge handles the close/re-open race condition automatically.
 
@@ -113,4 +113,4 @@ main = Menu("§6Main Menu", rows=1)
 main[0] = MenuItem(Item("REDSTONE", name="§cSettings"), on_click=on_settings_click)
 ```
 
-> **Tip:** See [`MenuItem`](menuitem.md) for click handler details and examples.
+> **Tip:** See `MenuItem` for click handler details and examples.

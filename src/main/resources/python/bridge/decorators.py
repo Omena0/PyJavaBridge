@@ -23,24 +23,28 @@ def print(*args):
     """Redirect print to stderr so stdout stays reserved for IPC."""
     _print(*args, file=sys.stderr)
 
-def event(func: Optional[Callable] = None, *, once_per_tick: bool = False, priority: str | EventPriority = "NORMAL", throttle_ms: int = 0):
+def event(func: Optional[Callable] = None, *, once_per_tick: bool = False, priority: str | EventPriority = "NORMAL", throttle_ms: int = 0, non_blocking: bool = False):
     """
+    :decorator: event()
+
     Register an async event handler.
 
     The handler name is mapped to a Bukkit/Paper event class using snake_case
     (e.g., player_join -> PlayerJoinEvent). Events are registered on demand.
 
-    Args:
-        once_per_tick: If true, the handler is throttled to once per tick.
-        priority: Bukkit EventPriority name or EventPriority value
-            (LOWEST, LOW, NORMAL, HIGH, HIGHEST, MONITOR).
-        throttle_ms: Minimum milliseconds between event dispatches (0 = no throttle).
+    :param bool once_per_tick: If True, the handler is only run once per tick
+    :param priority: Event priority.
+    :type priority: EventPriority or string
+    :param int throttle_ms: Throttle to only run every n milliseconds.
+    :param bool non_blocking: Ignore the return value of the event. Server will not wait for event completion.
     """
     def decorator(handler: Callable) -> Callable:
         """Register *handler* for the event derived from its name."""
         event_name = handler.__name__
         _connection.on(event_name, handler)
-        _connection.subscribe(event_name, once_per_tick, priority, throttle_ms)
+        # Preserve backwards-compatible subscribe signature while forwarding
+        # the optional `non_blocking` flag which some scripts may declare.
+        _connection.subscribe(event_name, once_per_tick, priority, throttle_ms, non_blocking)
 
         def _unregister():
             """Remove this handler from the event bus."""

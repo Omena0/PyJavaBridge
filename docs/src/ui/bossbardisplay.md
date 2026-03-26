@@ -5,7 +5,7 @@ subtitle: Per-player boss bar manager
 
 # BossBarDisplay
 
-`BossBarDisplay` is a high-level wrapper around [`BossBar`](bossbar.md) that manages per-player visibility and integrates with [`Cooldown`](cooldown.md) for automatic progress animation.
+`BossBarDisplay` is a high-level wrapper around `BossBar` that manages per-player visibility and integrates with `Cooldown` for automatic progress animation.
 
 ---
 
@@ -85,7 +85,7 @@ display.show(player)
 Show the boss bar to a player. This is synchronous.
 
 - **Parameters:**
-  - `player` ([`Player`](player.md)) — Player to show the bar to.
+  - `player` (`Player`) — Player to show the bar to.
 
 ### hide
 
@@ -96,7 +96,7 @@ display.hide(player)
 Hide the boss bar from a player. This is synchronous.
 
 - **Parameters:**
-  - `player` ([`Player`](player.md)) — Player to hide from.
+  - `player` (`Player`) — Player to hide from.
 
 ### link_to
 
@@ -104,11 +104,11 @@ Hide the boss bar from a player. This is synchronous.
 display.link_to(cooldown, player)
 ```
 
-Link this bar to a [`Cooldown`](cooldown.md) — the bar progress will automatically animate to reflect the remaining cooldown time.
+Link this bar to a `Cooldown` — the bar progress will automatically animate to reflect the remaining cooldown time.
 
 - **Parameters:**
-  - `cooldown` ([`Cooldown`](cooldown.md)) — The cooldown to track.
-  - `player` ([`Player`](player.md)) — The player to display the cooldown bar to.
+  - `cooldown` (`Cooldown`) — The cooldown to track.
+  - `player` (`Player`) — The player to display the cooldown bar to.
 
 ```python
 cd = Cooldown(seconds=10.0)
@@ -179,4 +179,4 @@ async def ability(player: Player, args: list[str]):
     await player.send_message(f"§aUsed {args[0]}!")
 ```
 
-> **See also:** [`BossBar`](bossbar.md) for the lower-level boss bar API, [`Cooldown`](cooldown.md) for standalone cooldown tracking.
+> **See also:** `BossBar` for the lower-level boss bar API, `Cooldown` for standalone cooldown tracking.

@@ -21,10 +21,10 @@ Create a new boss bar. This is synchronous.
 
 - **Parameters:**
   - `title` (`str`) — Bar title text. Supports `§` color codes.
-  - `color` ([`BarColor`](enums.md) `| None`) — Bar color. Default `None` (PINK).
-  - `style` ([`BarStyle`](enums.md) `| None`) — Bar segmentation style. Default `None` (SOLID).
-  - `players` (`list[`[`Player`](player.md)`] | None`) — Players who can see the bar. Default `None`.
-- **Returns:** [`BossBar`](#)
+  - `color` (`BarColor` `| None`) — Bar color. Default `None` (PINK).
+  - `style` (`BarStyle` `| None`) — Bar segmentation style. Default `None` (SOLID).
+  - `players` (`list[Player] | None`) — Players who can see the bar. Default `None`.
+- **Returns:** `BossBar`
 
 ```python
 bar = BossBar.create(
@@ -52,13 +52,13 @@ Progress value from 0.0 (empty) to 1.0 (full).
 
 ### color
 
-- **Type:** [`BarColor`](enums.md)
+- **Type:** `BarColor`
 
 Current bar color.
 
 ### style
 
-- **Type:** [`BarStyle`](enums.md)
+- **Type:** `BarStyle`
 
 Current segmentation style.
 
@@ -81,7 +81,7 @@ await bar.add_player(player)
 Show this bar to a player.
 
 - **Parameters:**
-  - `player` ([`Player`](player.md)) — Player to add.
+  - `player` (`Player`) — Player to add.
 - **Returns:** `Awaitable[None]`
 
 ### remove_player
@@ -93,7 +93,7 @@ await bar.remove_player(player)
 Hide this bar from a player.
 
 - **Parameters:**
-  - `player` ([`Player`](player.md)) — Player to remove.
+  - `player` (`Player`) — Player to remove.
 - **Returns:** `Awaitable[None]`
 
 ### set_title
@@ -133,7 +133,7 @@ await bar.set_color(color)
 Change the bar color.
 
 - **Parameters:**
-  - `color` ([`BarColor`](enums.md)) — New color.
+  - `color` (`BarColor`) — New color.
 - **Returns:** `Awaitable[None]`
 
 ### set_style
@@ -145,7 +145,7 @@ await bar.set_style(style)
 Change the bar segmentation style.
 
 - **Parameters:**
-  - `style` ([`BarStyle`](enums.md)) — New style.
+  - `style` (`BarStyle`) — New style.
 - **Returns:** `Awaitable[None]`
 
 ### set_visible
@@ -202,4 +202,4 @@ async def entity_damage(e: Event):
         await boss_bar.set_title(f"§c§lDragon §7- §c{int(hp_pct * 100)}%")
 ```
 
-> **See also:** [`BossBarDisplay`](bossbardisplay.md) for a higher-level wrapper with cooldown linking.
+> **See also:** `BossBarDisplay` for a higher-level wrapper with cooldown linking.

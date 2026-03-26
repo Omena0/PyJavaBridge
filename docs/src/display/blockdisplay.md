@@ -18,7 +18,7 @@ BlockDisplay(location, block_type, billboard="FIXED")
 Create and spawn a block display entity.
 
 - **Parameters:**
-  - `location` ([`Location`](location.md)) — Spawn position.
+  - `location` (`Location`) — Spawn position.
   - `block_type` (`str`) — Block material name (e.g. `"DIAMOND_BLOCK"`, `"STONE"`).
   - `billboard` (`str`) — Billboard mode. Default `"FIXED"`.
 
@@ -60,7 +60,7 @@ display.teleport(location)
 Move the display entity. This is synchronous.
 
 - **Parameters:**
-  - `location` ([`Location`](location.md)) — New position.
+  - `location` (`Location`) — New position.
 
 ### remove
 

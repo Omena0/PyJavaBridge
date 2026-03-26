@@ -5,7 +5,7 @@ subtitle: Clickable item for Menu slots
 
 # MenuItem
 
-A `MenuItem` wraps an [`Item`](item.md) with an optional click callback.
+A `MenuItem` wraps an `Item` with an optional click callback.
 
 ## Constructor
 
@@ -14,8 +14,8 @@ MenuItem(item, on_click=None)
 ```
 
 - **Parameters:**
-  - `item` ([`Item`](item.md) `| str`) — The display item. If a string, creates an `Item` with that material.
-  - `on_click` (`Callable[[`[`Player`](player.md)`, `[`Event`](event.md)`], Any] | None`) — Click callback. Receives the clicking player and the click event. Default `None`.
+  - `item` (`Item` `| str`) — The display item. If a string, creates an `Item` with that material.
+  - `on_click` (`Callable[[Player, Event], Any] | None`) — Click callback. Receives the clicking player and the click event. Default `None`.
 
 ```python
 # Simple display item
@@ -32,13 +32,13 @@ MenuItem(
 
 ### item
 
-- **Type:** [`Item`](item.md)
+- **Type:** `Item`
 
 The display item.
 
 ### on_click
 
-- **Type:** `Callable[[`[`Player`](player.md)`, `[`Event`](event.md)`], Any] | None`
+- **Type:** `Callable[[Player, Event], Any] | None`
 
 Click callback.
 
@@ -115,4 +115,4 @@ async def delhome(player: Player, args: list[str]):
     menu.open(player)
 ```
 
-> **Tip:** For lower-level inventory control without click handlers, see [`Inventory`](inventory.md).
+> **Tip:** For lower-level inventory control without click handlers, see `Inventory`.

@@ -20,7 +20,7 @@ Hologram(location, *lines, billboard="CENTER")
 Create and spawn a hologram.
 
 - **Parameters:**
-  - `location` ([`Location`](location.md)) — Where to spawn the hologram.
+  - `location` (`Location`) — Where to spawn the hologram.
   - `*lines` (`str`) — Text lines to display. Supports `§` color codes.
   - `billboard` (`str`) — Billboard mode. Default `"CENTER"`.
 
@@ -134,7 +134,7 @@ holo.teleport(location)
 Move the hologram to a new location. This is synchronous.
 
 - **Parameters:**
-  - `location` ([`Location`](location.md)) — New position.
+  - `location` (`Location`) — New position.
 
 ```python
 holo.teleport(Location(100, 75, 200, "world"))

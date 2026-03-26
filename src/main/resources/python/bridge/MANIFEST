@@ -33,3 +33,5 @@ extensions/leaderboard.py
 extensions/visual_effect.py
 extensions/player_data.py
 extensions/dungeon.py
+extensions/client_mod.py
+extensions/client_mod.pyi

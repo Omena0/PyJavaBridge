@@ -19,7 +19,7 @@ MeshDisplay(location, vertices, faces, face_colors=None, vertex_colors=None,
 Create and spawn a 3D mesh display.
 
 - **Parameters:**
-  - `location` ([`Location`](location.md)) — Base world position (mesh origin).
+  - `location` (`Location`) — Base world position (mesh origin).
   - `vertices` (`list[tuple[float, float, float]]`) — Vertex positions in local space.
   - `faces` (`list[tuple[int, int, int]]`) — Triangle face indices (CCW winding for outward normals).
   - `face_colors` (`list[tuple[int,int,int,int]]`) — Per-face RGBA colors. One per face.

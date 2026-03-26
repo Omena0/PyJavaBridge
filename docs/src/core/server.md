@@ -19,7 +19,7 @@ players = server.players
 
 ### players
 
-- **Type:** `list[`[`Player`](player.md)`]`
+- **Type:** `list[Player]`
 
 All currently online players. This is a snapshot — the list is re-fetched each time you access it.
 
@@ -30,7 +30,7 @@ for p in server.players:
 
 ### worlds
 
-- **Type:** `list[`[`World`](world.md)`]`
+- **Type:** `list[World]`
 
 All loaded worlds.
 
@@ -84,7 +84,7 @@ Number of tasks currently in the main thread queue.
 
 ### boss_bars
 
-- **Type:** `list[`[`BossBar`](bossbar.md)`]`
+- **Type:** `list[BossBar]`
 
 All active boss bars on the server.
 
@@ -159,7 +159,7 @@ Get a world by name.
 
 - **Parameters:**
   - `name` (`str`) — The world name (e.g. `"world"`, `"world_nether"`).
-- **Returns:** `Awaitable[`[`World`](world.md)`]`
+- **Returns:** `Awaitable[World]`
 
 ```python
 nether = await server.world("world_nether")
@@ -175,9 +175,9 @@ Create a new boss bar.
 
 - **Parameters:**
   - `title` (`str`) — Display title.
-  - `color` ([`BarColor`](enums.md)) — Bar color.
-  - `style` ([`BarStyle`](enums.md)) — Bar style.
-- **Returns:** `Awaitable[`[`BossBar`](bossbar.md)`]`
+  - `color` (`BarColor`) — Bar color.
+  - `style` (`BarStyle`) — Bar style.
+- **Returns:** `Awaitable[BossBar]`
 
 ```python
 bar = await server.create_boss_bar("Event Timer", BarColor.RED, BarStyle.SEGMENTED_6)
@@ -193,7 +193,7 @@ Get an advancement by its namespaced key.
 
 - **Parameters:**
   - `key` (`str`) — The advancement key (e.g. `"minecraft:story/mine_diamond"`).
-- **Returns:** `Awaitable[`[`Advancement`](advancement.md)`]`
+- **Returns:** `Awaitable[Advancement]`
 
 ### after
 
@@ -310,7 +310,7 @@ Create a new world.
   - `world_type` (`str`) — World type. Default `"NORMAL"`.
   - `seed` (`int | None`) — World seed. Default `None` (random).
   - `generate_structures` (`bool`) — Whether to generate structures. Default `True`.
-- **Returns:** `Awaitable[`[`World`](world.md)`]`
+- **Returns:** `Awaitable[World]`
 
 ### unload_world
 

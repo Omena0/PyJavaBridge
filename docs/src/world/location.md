@@ -21,7 +21,7 @@ Create a new location.
   - `x` (`float`) — X coordinate. Default 0.
   - `y` (`float`) — Y coordinate. Default 0.
   - `z` (`float`) — Z coordinate. Default 0.
-  - `world` ([`World`](world.md) `| str | None`) — World reference or name. Default `None`.
+  - `world` (`World` `| str | None`) — World reference or name. Default `None`.
   - `yaw` (`float`) — Horizontal rotation in degrees. Default 0.
   - `pitch` (`float`) — Vertical rotation in degrees. Default 0. Negative = looking up.
 
@@ -54,7 +54,7 @@ Z coordinate (North-South).
 
 ### world
 
-- **Type:** [`World`](world.md)
+- **Type:** `World`
 
 The world this location is in.
 
@@ -86,7 +86,7 @@ Create a new location with the given offsets added. **This is synchronous** — 
   - `x` (`float`) — X offset.
   - `y` (`float`) — Y offset.
   - `z` (`float`) — Z offset.
-- **Returns:** [`Location`](#) — A new location (the original is not modified).
+- **Returns:** `Location` — A new location (the original is not modified).
 
 ```python
 above = player.location.add(0, 2, 0)
@@ -96,7 +96,7 @@ above = player.location.add(0, 2, 0)
 
 ## Arithmetic Operators
 
-Location supports `+`, `-`, `*`, and `/` operators with [`Location`](location.md) or [`Vector`](vector.md) operands.
+Location supports `+`, `-`, `*`, and `/` operators with `Location` or `Vector` operands.
 
 ### Addition (`+`)
 
@@ -136,7 +136,7 @@ normalized = location.normalize()
 
 Return a new location with the XYZ components normalized to a unit vector. **Synchronous.**
 
-- **Returns:** [`Location`](#)
+- **Returns:** `Location`
 
 ### midpoint
 
@@ -147,8 +147,8 @@ mid = location.midpoint(other)
 Return the midpoint between this location and another. **Synchronous.**
 
 - **Parameters:**
-  - `other` ([`Location`](#)) — The other location.
-- **Returns:** [`Location`](#)
+  - `other` (`Location`) — The other location.
+- **Returns:** `Location`
 
 ```python
 center = loc_a.midpoint(loc_b)
@@ -162,7 +162,7 @@ copy = location.clone()
 
 Create an independent copy of this location. **Synchronous.**
 
-- **Returns:** [`Location`](#)
+- **Returns:** `Location`
 
 ### distance
 
@@ -173,7 +173,7 @@ d = location.distance(other)
 Calculate the Euclidean distance to another location. **Synchronous.**
 
 - **Parameters:**
-  - `other` ([`Location`](#)) — The other location.
+  - `other` (`Location`) — The other location.
 - **Returns:** `float`
 
 ```python
@@ -191,7 +191,7 @@ d2 = location.distance_squared(other)
 Calculate the squared distance to another location. **Synchronous.** Faster than `distance()` when you only need to compare distances (avoids square root).
 
 - **Parameters:**
-  - `other` ([`Location`](#)) — The other location.
+  - `other` (`Location`) — The other location.
 - **Returns:** `float`
 
 ```python
