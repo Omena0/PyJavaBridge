@@ -1,6 +1,32 @@
 
 # Changelog
 
+## 4A
+
+Major release: first-class client-side integration, an experimental datapack runtime, improved bridge reliability and player-data handling, documentation and configuration enhancements, and packaging updates.
+
+### Highlights
+
+- Client-mod integration: optional, bidirectional server↔client protocol with session management and permission negotiation enabling richer client-side features.
+- Datapack runtime (experimental): in-memory datapack registration for models, advancements, predicates and registry entries without writing resource files.
+- Player-data & reliability: more reliable UUID/name resolution, safer lifecycle/reconnect handling, and improved field caching.
+- Documentation & examples: new clientmod and datapack guides, updated examples, and improved docs site.
+- Configuration & deployment: new options for timeouts, message size limits, and Python runtime path.
+- Packaging & tooling: build and packaging updates to support client features.
+- Stability fixes: targeted crash and edge-case fixes, and cleanup of lifecycle races.
+
+### User-facing changes (summary)
+
+- Client mod support
+  - Adds an optional client-side bridge allowing server scripts and plugins to send commands and structured data to a cooperating client mod and receive responses/events.
+  - Permission negotiation occurs at session start; scripts must handle availability, denials, and timeouts gracefully.
+
+- Datapack runtime (experimental)
+  - API to register datapack content (models, advancements, predicates, registry entries) at runtime; best-effort and intended for dynamic/testing scenarios.
+
+- Configuration
+  - New configuration keys for message size, timeouts, and Python runtime; review settings for production deployment.
+
 ## 3D
 
 Performance overhaul — fire-and-forget calls, msgpack wire protocol, field cache invalidation, and reduced serialization payload.
