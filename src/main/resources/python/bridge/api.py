@@ -24,7 +24,7 @@ from bridge.connection import BridgeConnection
 _connection:BridgeConnection = None  # type: ignore[assignment]
 
 _print = __builtins__["print"] if isinstance(__builtins__, dict) else __builtins__.print  # type: ignore[index]
-def print(*args):
+def print(*args: Any) -> None:
     """Redirect print to stderr so stdout stays reserved for IPC."""
     _print(*args, file=sys.stderr)
 
@@ -33,7 +33,7 @@ def has_packet_api() -> BridgeCall:
     """Check if ProtocolLib packet API is available. Returns Awaitable[bool]."""
     return _connection.call("hasPacketApi", target="server")
 
-def on_packet_send(packet_type: str):
+def on_packet_send(packet_type: str) -> Any:
     """Decorator: listen for outgoing packets of the given type."""
     def decorator(handler: Callable) -> Callable:
         """Register *handler* for outgoing packets of *packet_type*."""
@@ -44,7 +44,7 @@ def on_packet_send(packet_type: str):
 
     return decorator
 
-def on_packet_receive(packet_type: str):
+def on_packet_receive(packet_type: str) -> Any:
     """Decorator: listen for incoming packets of the given type."""
     def decorator(handler: Callable) -> Callable:
         """Register *handler* for incoming packets of *packet_type*."""
@@ -55,16 +55,16 @@ def on_packet_receive(packet_type: str):
 
     return decorator
 
-def send_packet(player: Any, packet_type: str, fields: Dict[str, Any] | None = None):
+def send_packet(player: Any, packet_type: str, fields: Dict[str, Any] | None = None) -> Any:
     """Send a raw packet to a player. Requires ProtocolLib."""
     return _connection.call("sendPacket", target="server", args=[player, packet_type, fields or {}])
 
-def remove_packet_listener(key: str):
+def remove_packet_listener(key: str) -> Any:
     """Remove a packet listener by key (e.g. 'send:ENTITY_VELOCITY')."""
     return _connection.call("removePacketListener", target="server", args=[key])
 
 # --- Inter-script communication ---
-def script_send(target: str, data: Any = None):
+def script_send(target: str, data: Any = None) -> None:
     """Send a message to another script (or '*' for all scripts)."""
     _connection.send({"type": "script_message", "target": target, "data": data})
 
@@ -92,7 +92,7 @@ async def raycast(
     include_entities: bool = True,
     include_blocks: bool = True,
     ignore_passable: bool = True,
-):
+) -> Any:
     """Raycast helper returning RaycastResult or None."""
     from bridge import server
 

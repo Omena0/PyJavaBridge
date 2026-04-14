@@ -26,7 +26,10 @@ try:
 
     def _json_dumps(obj: Any) -> bytes:
         """Serialize *obj* to compact msgpack bytes."""
-        return _msgpack.packb(obj, use_bin_type=True)
+        packed = _msgpack.packb(obj, use_bin_type=True)
+        if packed is None:
+            return b""
+        return cast(bytes, packed)
 
     def _json_loads(data: Any) -> Any:
         """Deserialize msgpack bytes."""
@@ -92,34 +95,34 @@ def _ensure_lazy_imports() -> None:
     _enum_from_fn = _enum_from
     _State_cls = State
 
-def print(*args):
+def print(*args: Any) -> None:
     """Redirect print to stderr so stdout stays reserved for IPC."""
     _print(*args, file=sys.stderr)
 
 class _BatchContext:
     """Context manager for batched bridge calls (frame or atomic mode)."""
 
-    def __init__(self, connection: "BridgeConnection", mode: str):
+    def __init__(self, connection: "BridgeConnection", mode: str) -> None:
         """Store the connection and batch mode."""
         self._connection = connection
         self._mode = mode
 
-    def __enter__(self):
+    def __enter__(self) -> Any:
         """Begin a synchronous batch."""
         self._connection._begin_batch(self._mode)
         return self
 
-    def __exit__(self, exc_type: Any, exc: Any, tb: Any):
+    def __exit__(self, exc_type: Any, exc: Any, tb: Any) -> Any:
         """End the synchronous batch."""
         self._connection._end_batch()
         return False
 
-    async def __aenter__(self):
+    async def __aenter__(self) -> Any:
         """Begin an async batch."""
         self._connection._begin_batch(self._mode)
         return self
 
-    async def __aexit__(self, exc_type: Any, exc: Any, tb: Any):
+    async def __aexit__(self, exc_type: Any, exc: Any, tb: Any) -> Any:
         """End the async batch, flushing on success."""
         self._connection._end_batch()
         if exc_type is None:
@@ -130,7 +133,7 @@ class _BatchContext:
 class BridgeConnection:
     """Stdin/stdout bridge connection and dispatcher."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Set up the event loop, IPC channels, and start the reader thread."""
         try:
             self._loop = asyncio.get_event_loop()
@@ -167,7 +170,7 @@ class BridgeConnection:
             self._stdout.write(header + handshake)
             self._stdout.flush()
 
-    def subscribe(self, event_name: str, once_per_tick: bool, priority: str | EnumValue = "NORMAL", throttle_ms: int = 0, non_blocking: bool = False):
+    def subscribe(self, event_name: str, once_per_tick: bool, priority: str | EnumValue = "NORMAL", throttle_ms: int = 0, non_blocking: bool = False) -> None:
         """Subscribe to a Bukkit event on the Java side.
 
         Adds support for an optional `non_blocking` flag that scripts may
@@ -185,7 +188,7 @@ class BridgeConnection:
             "non_blocking": non_blocking,
         })
 
-    def register_command(self, name: str, permission: Optional[str] = None, completions: Optional[dict] = None, has_tab_complete: bool = False):
+    def register_command(self, name: str, permission: Optional[str] = None, completions: Optional[dict] = None, has_tab_complete: bool = False) -> None:
         """Register a command name with the server."""
         msg: Dict[str, Any] = {"type": "register_command", "name": name}
         if permission is not None:
@@ -199,11 +202,11 @@ class BridgeConnection:
 
         self.send(msg)
 
-    def on(self, event_name: str, handler: Callable[[Any], Awaitable[None]]):
+    def on(self, event_name: str, handler: Callable[[Any], Awaitable[None]]) -> None:
         """Register a handler for the given event name."""
         self._handlers.setdefault(event_name, []).append(handler)
 
-    def off(self, event_name: str, handler: Callable[[Any], Awaitable[None]]):
+    def off(self, event_name: str, handler: Callable[[Any], Awaitable[None]]) -> None:
         """Remove a previously registered event handler."""
         handlers = self._handlers.get(event_name)
         if handlers:
@@ -322,11 +325,11 @@ class BridgeConnection:
         self.send({"type": "wait", "id": request_id, "ticks": int(ticks)})
         return BridgeCall(future)
 
-    def _begin_batch(self, mode: str):
+    def _begin_batch(self, mode: str) -> None:
         """Push a batch mode onto the stack."""
         self._batch_stack.append(mode)
 
-    def _end_batch(self):
+    def _end_batch(self) -> None:
         """Pop the current batch mode from the stack."""
         if self._batch_stack:
             self._batch_stack.pop()
@@ -339,7 +342,7 @@ class BridgeConnection:
         return "atomic" if "atomic" in self._batch_stack else "frame"
 
     @async_task
-    async def flush(self):
+    async def flush(self) -> Any:
         """Flush all queued batch messages to the bridge."""
         if not self._batch_messages:
             return None
@@ -360,15 +363,15 @@ class BridgeConnection:
 
         return None
 
-    def frame(self):
+    def frame(self) -> Any:
         """Return a context manager for a frame-batched call sequence."""
         return _BatchContext(self, "frame")
 
-    def atomic(self):
+    def atomic(self) -> Any:
         """Return a context manager for an atomic-batched call sequence."""
         return _BatchContext(self, "atomic")
 
-    def send(self, message: Dict[str, Any]):
+    def send(self, message: Dict[str, Any]) -> None:
         """Write a length-prefixed JSON message to stdout."""
         data = _json_dumps(message)
         header = struct.pack("!I", len(data))
@@ -376,19 +379,19 @@ class BridgeConnection:
             self._stdout.write(header + data)
             self._stdout.flush()
 
-    def _cancel_release(self, handle: int):
+    def _cancel_release(self, handle: int) -> None:
         """Remove a handle from the pending release queue (re-acquired before flush)."""
         with self._release_lock:
             self._release_queue.discard(handle)
 
-    def _queue_release(self, handle: int):
+    def _queue_release(self, handle: int) -> None:
         """Enqueue a handle for deferred release, flushing when the queue is full."""
         with self._release_lock:
             self._release_queue.add(handle)
             if len(self._release_queue) >= 64:
                 self._flush_releases_locked()
 
-    def _flush_releases_locked(self):
+    def _flush_releases_locked(self) -> None:
         """Flush queued handle releases. Must be called with _release_lock held."""
         if not self._release_queue:
             return
@@ -401,23 +404,23 @@ class BridgeConnection:
         except Exception:
             pass
 
-    def _flush_releases(self):
+    def _flush_releases(self) -> None:
         """Flush queued handle releases with lock."""
         with self._release_lock:
             self._flush_releases_locked()
 
-    def _maybe_flush_releases(self):
+    def _maybe_flush_releases(self) -> None:
         """Flush releases only if the queue is worth flushing."""
         if len(self._release_queue) >= 16:
             self._flush_releases()
 
-    def completed_call(self, result: Any):
+    def completed_call(self, result: Any) -> Any:
         """Return a BridgeCall that is already resolved with *result*."""
         future = self._loop.create_future()
         future.set_result(result)
         return BridgeCall(future)
 
-    def _stop_reader(self):
+    def _stop_reader(self) -> None:
         """Interrupt the reader thread and wait for it to exit."""
         try:
             os.close(self._stdin_fd)
@@ -450,7 +453,7 @@ class BridgeConnection:
         except OSError:
             return None
 
-    def _reader(self):
+    def _reader(self) -> None:
         """Background thread: read framed messages from stdin and dispatch them."""
         try:
             while True:
@@ -500,7 +503,7 @@ class BridgeConnection:
             self._pending_sync.clear()
             self._loop.call_soon_threadsafe(self._handle_reader_error, disconnect_error)
 
-    def _handle_message(self, message: Dict[str, Any]):
+    def _handle_message(self, message: Dict[str, Any]) -> None:
         """Dispatch a decoded message to the appropriate handler on the event loop."""
         _ensure_lazy_imports()
         msg_type = message.get("type")
@@ -570,7 +573,7 @@ class BridgeConnection:
         elif msg_type == "shutdown":
             asyncio.create_task(self._handle_shutdown())
 
-    async def _handle_tab_complete(self, message: Dict[str, Any]):
+    async def _handle_tab_complete(self, message: Dict[str, Any]) -> None:
         """Handle a tab-completion request from the Java side."""
         request_id = message.get("id")
         command_name = message.get("command", "")
@@ -596,11 +599,11 @@ class BridgeConnection:
 
         self.send({"type": "tab_complete_response", "id": request_id, "results": results})
 
-    def register_tab_complete(self, command_name: str, handler: Callable[..., Any]):
+    def register_tab_complete(self, command_name: str, handler: Callable[..., Any]) -> None:
         """Register a dynamic tab completion handler for a command."""
         self._tab_complete_handlers[command_name] = handler
 
-    async def _dispatch_event(self, event_name: str, payload: Any):
+    async def _dispatch_event(self, event_name: str, payload: Any) -> None:
         """Run all handlers for *event_name* and send back event results."""
         handlers = list(self._handlers.get(event_name, []))
         event_id = None
@@ -618,6 +621,7 @@ class BridgeConnection:
         # if handlers synchronously call back into Java before event_done is sent.
         if event_name.startswith("command_"):
             async def _run_detached(handler: Callable[[Any], Any]) -> None:
+                """Run detached."""
                 try:
                     result = handler(payload)
                     if inspect.isawaitable(result):
@@ -707,7 +711,7 @@ class BridgeConnection:
 
                 self.send({"type": "event_done", "id": event_id})
 
-    async def _handle_shutdown(self):
+    async def _handle_shutdown(self) -> None:
         """Handle server shutdown."""
         _ensure_lazy_imports()
         try:
@@ -741,7 +745,7 @@ class BridgeConnection:
             self._stop_reader()
             self._loop.stop()
 
-    def _handle_reader_error(self, exc: Exception):
+    def _handle_reader_error(self, exc: Exception) -> None:
         """Fail all pending futures with the given exception."""
         for future in self._pending.values():
             if not future.done():

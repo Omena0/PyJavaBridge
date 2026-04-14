@@ -103,7 +103,7 @@ from bridge.extensions.schematic import (
 from bridge.types import async_task
 
 _print = __builtins__["print"] if isinstance(__builtins__, dict) else __builtins__.print  # type: ignore[index]
-def _log(msg: str):
+def _log(msg: str) -> None:
     """Handle log."""
     _print(f"[Dungeon] {msg}", file=sys.stderr)
 
@@ -150,7 +150,7 @@ class Exit:
     def __init__(self, x: int, y: int, z: int,
             facing: Tuple[int, int, int],
             width: int, height: int,
-            tag: Optional[str] = None):
+            tag: Optional[str] = None) -> None:
         """Initialise a new Exit."""
         self.x = x
         self.y = y
@@ -224,7 +224,7 @@ class RoomTemplate:
             key_map: Dict[str, str],
             width: int, height: int, depth: int,
             blocks: List[List[List[str]]],
-            spawns: Optional[List[Dict[str, Any]]] = None):
+            spawns: Optional[List[Dict[str, Any]]] = None) -> None:
         """Initialise a new RoomTemplate."""
         self.name = name
         self.path = path
@@ -548,7 +548,7 @@ class PlacedRoom:
     """
 
     def __init__(self, template: RoomTemplate, origin: Tuple[int, int, int],
-            world_name: str):
+            world_name: str) -> None:
         """Initialise a new PlacedRoom."""
         self.template = template
         self.origin = origin
@@ -593,7 +593,7 @@ class PlacedRoom:
         self._clear_handlers.append(handler)
         return handler
 
-    async def _fire_enter(self, player: Any):
+    async def _fire_enter(self, player: Any) -> None:
         """Fire the enter callbacks."""
         for h in self._enter_handlers:
             try:
@@ -603,7 +603,7 @@ class PlacedRoom:
             except Exception:
                 pass
 
-    async def _fire_clear(self):
+    async def _fire_clear(self) -> None:
         """Fire the clear callbacks."""
         self.cleared = True
         for h in self._clear_handlers:
@@ -614,12 +614,12 @@ class PlacedRoom:
             except Exception:
                 pass
 
-    def mark_cleared(self):
+    def mark_cleared(self) -> None:
         """Mark this room as cleared and fire handlers."""
         asyncio.ensure_future(self._fire_clear())
 
     @async_task
-    async def paste(self, world: Any):
+    async def paste(self, world: Any) -> None:
         """Paste the room blocks into the world and save originals.
 
         Sends all operations to Java in a single bulk call via
@@ -672,7 +672,7 @@ class PlacedRoom:
         return bulk
 
     @async_task
-    async def restore(self, world: Any):
+    async def restore(self, world: Any) -> None:
         """Restore original blocks (cleanup) in a single bulk call."""
         if not self.original_blocks:
             return
@@ -687,7 +687,7 @@ class PlacedRoom:
         )
         self.original_blocks.clear()
 
-    def __repr__(self):
+    def __repr__(self) -> Any:
         """Return a string representation."""
         return (f"<PlacedRoom {self.template.name!r} at {self.origin} "
             f"cleared={self.cleared}>")
@@ -695,7 +695,7 @@ class PlacedRoom:
 # -- Loot system ---------------------------------------------------------------
 _loot_generators: Dict[str, Callable[..., Any]] = {}
 
-def loot_pool(name: str):
+def loot_pool(name: str) -> Any:
     """Decorator to register a loot generator for a pool name.
 
     The decorated function receives ``(inventory, room)`` and should
@@ -726,7 +726,7 @@ def _strip_loot_name(block_str: str) -> str:
     return s
 
 @async_task
-async def _fill_loot(room: PlacedRoom, world: Any):
+async def _fill_loot(room: PlacedRoom, world: Any) -> None:
     """Scan placed room for loot containers and fill them."""
     ox, oy, oz = room.origin
     for yi, layer in enumerate(room.template.blocks):
@@ -818,7 +818,7 @@ class _DungeonGenerator:
             room_count: int,
             branch_factor: float,
             type_limits: Dict[str, int],
-            min_candidates: int = 5):
+            min_candidates: int = 5) -> None:
         """Initialise a new _DungeonGenerator."""
         self.templates = templates
         self.room_count = room_count
@@ -884,7 +884,7 @@ class _DungeonGenerator:
         return results
 
     # -- placement / undo helpers ------------------------------------------------
-    def _place(self, room: PlacedRoom):
+    def _place(self, room: PlacedRoom) -> None:
         """Add *room* to the placed set."""
         self.placed.append(room)
         self._aabbs.append(_room_aabb(room.origin, room.template))
@@ -892,7 +892,7 @@ class _DungeonGenerator:
             self._type_counts.get(room.template.type, 0) + 1
         )
 
-    def _unplace(self, room: PlacedRoom):
+    def _unplace(self, room: PlacedRoom) -> None:
         """Remove the most recently placed room (must be *room*)."""
         assert self.placed[-1] is room
         self.placed.pop()
@@ -1003,7 +1003,7 @@ class _DungeonGenerator:
                 recent_names.append(base)
 
             _ep = exit_pressure  # capture for closure
-            def _cand_key(c):
+            def _cand_key(c: Any) -> Any:
                 """Handle cand key."""
                 w = c[0].weight
                 base = c[0].name.split("_none")[0].split("_cw_")[0].split("_mirror_")[0]
@@ -1106,7 +1106,7 @@ class _DungeonGenerator:
         _log(f"generate: done in {time.perf_counter()-t0:.3f}s")
         return self.placed
 
-    def _seal_open_exits(self, world_name: str):
+    def _seal_open_exits(self, world_name: str) -> None:
         """Replace rooms that have unconnected exits with variants that
         fit but have fewer (ideally zero) unconnected exits.
 
@@ -1255,7 +1255,7 @@ class DungeonInstance:
 
     def __init__(self, dungeon: "Dungeon", players: List[Any],
             instance_id: int, rooms: List[PlacedRoom],
-            world_name: str):
+            world_name: str) -> None:
         """Initialise a new DungeonInstance."""
         self.dungeon = dungeon
         self.players: List[Any] = list(players)
@@ -1281,7 +1281,7 @@ class DungeonInstance:
         return self._completed or all(r.cleared for r in self.rooms)
 
     @async_task
-    async def paste_all(self):
+    async def paste_all(self) -> None:
         """Paste all rooms into the world in a single bulk call."""
         _log(f"paste_all: {len(self.rooms)} rooms")
         t0 = time.perf_counter()
@@ -1321,7 +1321,7 @@ class DungeonInstance:
         _log(f"paste_all: done in {time.perf_counter()-t0:.3f}s")
 
     @async_task
-    async def complete(self):
+    async def complete(self) -> None:
         """Mark the dungeon complete and fire completion handlers."""
         self._completed = True
         for h in self.dungeon._complete_handlers:
@@ -1334,7 +1334,7 @@ class DungeonInstance:
                 pass
 
     @async_task
-    async def destroy(self):
+    async def destroy(self) -> None:
         """Restore all original blocks and remove the instance."""
         if self._tracker_task and not self._tracker_task.done():
             self._tracker_task.cancel()
@@ -1363,11 +1363,11 @@ class DungeonInstance:
         if self in self.dungeon._instances:
             self.dungeon._instances.remove(self)
 
-    def start_tracking(self):
+    def start_tracking(self) -> None:
         """Start polling player positions for room enter events."""
         self._tracker_task = asyncio.ensure_future(self._track_loop())
 
-    async def _track_loop(self):
+    async def _track_loop(self) -> None:
         """Poll players and fire room enter events."""
         from bridge import server
         inside: Dict[str, Optional[PlacedRoom]] = {}
@@ -1414,7 +1414,7 @@ class DungeonInstance:
             except Exception:
                 break
 
-    def __repr__(self):
+    def __repr__(self) -> Any:
         """Return a string representation."""
         return (f"<DungeonInstance #{self.instance_id} "
             f"rooms={len(self.rooms)} progress={self.progress:.0%}>")
@@ -1443,7 +1443,7 @@ class Dungeon:
             min_candidates: int = 5,
             description: str = "",
             difficulty: int = 1,
-            start_room: Optional[str] = None):
+            start_room: Optional[str] = None) -> None:
         """Initialise a new Dungeon."""
         self.name = name
         self.rooms_dir = rooms_dir
@@ -1472,7 +1472,7 @@ class Dungeon:
         # Auto-load templates
         self._load_templates()
 
-    def _load_templates(self):
+    def _load_templates(self) -> None:
         """Scan ``rooms_dir`` for ``.droom`` and ``.bschem`` files."""
         if not os.path.isdir(self.rooms_dir):
             return
@@ -1488,7 +1488,7 @@ class Dungeon:
             except Exception as e:
                 print(f"[Dungeon] Failed to load {path}: {e}")
 
-    def reload_templates(self):
+    def reload_templates(self) -> None:
         """Re-scan the rooms directory."""
         self._templates.clear()
         self._load_templates()
@@ -1498,7 +1498,7 @@ class Dungeon:
         """The templates value."""
         return list(self._templates)
 
-    def add_template(self, template: RoomTemplate):
+    def add_template(self, template: RoomTemplate) -> None:
         """Manually add a room template."""
         self._templates.append(template)
 

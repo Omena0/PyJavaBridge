@@ -19,11 +19,11 @@ from bridge.types import EventPriority
 _connection:BridgeConnection = None  # type: ignore[assignment]
 
 _print = __builtins__["print"] if isinstance(__builtins__, dict) else __builtins__.print  # type: ignore[index]
-def print(*args):
+def print(*args: Any) -> None:
     """Redirect print to stderr so stdout stays reserved for IPC."""
     _print(*args, file=sys.stderr)
 
-def event(func: Optional[Callable] = None, *, once_per_tick: bool = False, priority: str | EventPriority = "NORMAL", throttle_ms: int = 0, non_blocking: bool = False):
+def event(func: Optional[Callable] = None, *, once_per_tick: bool = False, priority: str | EventPriority = "NORMAL", throttle_ms: int = 0, non_blocking: bool = False) -> Any:
     """
     :decorator: event()
 
@@ -46,7 +46,7 @@ def event(func: Optional[Callable] = None, *, once_per_tick: bool = False, prior
         # the optional `non_blocking` flag which some scripts may declare.
         _connection.subscribe(event_name, once_per_tick, priority, throttle_ms, non_blocking)
 
-        def _unregister():
+        def _unregister() -> None:
             """Remove this handler from the event bus."""
             _connection.off(event_name, handler)
 
@@ -58,7 +58,7 @@ def event(func: Optional[Callable] = None, *, once_per_tick: bool = False, prior
 
     return decorator(func)
 
-def task(func: Optional[Callable] = None, *, interval: int = 20, delay: int = 0):
+def task(func: Optional[Callable] = None, *, interval: int = 20, delay: int = 0) -> Any:
     """
     Register a repeating async task.
 
@@ -71,7 +71,7 @@ def task(func: Optional[Callable] = None, *, interval: int = 20, delay: int = 0)
         from bridge import server
         started = False
 
-        async def _loop():
+        async def _loop() -> None:
             """Run the task repeatedly at the configured interval."""
             try:
                 if delay > 0:
@@ -98,7 +98,7 @@ def task(func: Optional[Callable] = None, *, interval: int = 20, delay: int = 0)
             except Exception:
                 pass
 
-        def _start_loop(_: Any = None):
+        def _start_loop(_: Any = None) -> None:
             """Start the task loop once."""
             nonlocal started
             if started:
@@ -107,13 +107,13 @@ def task(func: Optional[Callable] = None, *, interval: int = 20, delay: int = 0)
             started = True
             asyncio.ensure_future(_loop())
 
-        async def _on_server_boot(_: Any):
+        async def _on_server_boot(_: Any) -> None:
             """Async wrapper for server_boot registration type expectations."""
             _start_loop()
 
         _connection.on("server_boot", _on_server_boot)
 
-        async def _start_fallback_once():
+        async def _start_fallback_once() -> None:
             """Fallback starter if server_boot is missed during a reload race."""
             await asyncio.sleep(0.25)
             _start_loop()
@@ -126,7 +126,7 @@ def task(func: Optional[Callable] = None, *, interval: int = 20, delay: int = 0)
 
     return decorator(func)
 
-def command(description: Optional[str] = None, *, name: Optional[str] = None, permission: Optional[str] = None, tab_complete: Optional[dict] = None):
+def command(description: Optional[str] = None, *, name: Optional[str] = None, permission: Optional[str] = None, tab_complete: Optional[dict] = None) -> Any:
     """
     Register a command handler.
 
@@ -329,7 +329,7 @@ def preserve(func: Callable[[], Any]) -> Callable[[], Any]:
     except (FileNotFoundError, json.JSONDecodeError):
         value = func()
 
-    def _save():
+    def _save() -> None:
         """Persist the preserved value to disk as JSON."""
         try:
             with open(path, "w", encoding="utf-8") as f:

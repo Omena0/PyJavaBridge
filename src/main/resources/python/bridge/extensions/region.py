@@ -22,7 +22,7 @@ class Region:
 
     def __init__(self, name: str, world: Any,
             x1: float, y1: float, z1: float,
-            x2: float, y2: float, z2: float):
+            x2: float, y2: float, z2: float) -> None:
         """Initialise a new Region."""
         self.name = name
         self._world = str(world.name) if hasattr(world, "name") else str(world)
@@ -66,13 +66,13 @@ class Region:
         self._exit_handlers.append(handler)
         return handler
 
-    def remove(self):
+    def remove(self) -> None:
         """Remove this object."""
         if self in Region._all_regions:
             Region._all_regions.remove(self)
 
     @classmethod
-    def _ensure_tracker(cls):
+    def _ensure_tracker(cls) -> None:
         """Ensure tracker."""
         if cls._tracker_started:
             return
@@ -81,7 +81,7 @@ class Region:
         asyncio.ensure_future(cls._track_loop())
 
     @classmethod
-    async def _track_loop(cls):
+    async def _track_loop(cls) -> None:
         """Asynchronously handle track loop."""
         from bridge import server
         while True:

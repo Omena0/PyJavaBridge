@@ -131,12 +131,18 @@ public class PlayerUuidResolver {
                         String raw = obj.get("uuid").getAsString();
                         if (entryName == null || raw == null) continue;
                         UUID uuid;
-                        if (raw.length() == 32) {
-                            String formatted = raw.substring(0, 8) + "-" + raw.substring(8, 12) + "-"
-                                    + raw.substring(12, 16) + "-" + raw.substring(16, 20) + "-" + raw.substring(20);
-                            uuid = UUID.fromString(formatted);
-                        } else {
-                            uuid = UUID.fromString(raw);
+                        try {
+                            if (raw.length() == 32) {
+                                String formatted = raw.substring(0, 8) + "-" + raw.substring(8, 12) + "-"
+                                        + raw.substring(12, 16) + "-" + raw.substring(16, 20) + "-" + raw.substring(20);
+                                uuid = UUID.fromString(formatted);
+                            } else if (raw.length() == 36) {
+                                uuid = UUID.fromString(raw);
+                            } else {
+                                continue;
+                            }
+                        } catch (IllegalArgumentException ignored) {
+                            continue;
                         }
                         parsed.put(entryName.toLowerCase(), uuid);
                     }

@@ -1,0 +1,1774 @@
+
+# PyJavaBridge Full File-by-File Review
+
+Started: 2026-04-14
+Scope: all tracked files from git ls-files, reviewed sequentially with findings appended per file.
+
+Format:
+
+- FILE: \<path\>
+- RESULT: OK | ISSUE
+- NOTES: line-specific comments and risks
+
+- FILE: src/main/java/com/pyjavabridge/BridgeInstance.java
+- RESULT: ISSUE
+- NOTES:
+  - [HIGH] src/main/java/com/pyjavabridge/BridgeInstance.java:871 inserts a null value into ConcurrentHashMap (subscriptions.put(eventName, null)); ConcurrentHashMap forbids null values, so script-only subscriptions trigger a runtime NullPointerException and fail to register.
+  - [HIGH] src/main/java/com/pyjavabridge/BridgeInstance.java:1035 and src/main/java/com/pyjavabridge/BridgeInstance.java:1077 serialize raw invoke() results in batch mode without handling CompletableFuture results (unlike single-call path at lines 889 and 941). Batch calls can return unresolved future objects instead of completed values.
+  - [MEDIUM] src/main/java/com/pyjavabridge/BridgeInstance.java:1919 constructs BlockData from Material.matchMaterial(matName) without null-check; invalid material names can produce NPE/IAE instead of a controlled INVALID_MATERIAL error.
+  - [MEDIUM] src/main/java/com/pyjavabridge/BridgeInstance.java:2405 "broadcastMessage" logs to plugin logger but does not broadcast to players; behavior does not match method name/API expectation.
+
+- FILE: src/main/java/com/pyjavabridge/BridgeSerializer.java
+- RESULT: ISSUE
+- NOTES:
+  - [HIGH] src/main/java/com/pyjavabridge/BridgeSerializer.java:889 mutates world state during deserialization (block.setType(material)) inside the "Block" value path. Deserialization should be side-effect free; this allows data decoding to change live blocks unexpectedly.
+  - [MEDIUM] src/main/java/com/pyjavabridge/BridgeSerializer.java:1016 returns raw arg for boolean parameters without validating type. Non-boolean values can reach reflective invocation and fail later with less actionable errors.
+  - [MEDIUM] src/main/java/com/pyjavabridge/BridgeSerializer.java:833 creates inventories from unvalidated size values; invalid sizes (not multiple of 9 or out of bounds) can throw IllegalArgumentException from Bukkit.createInventory and break calls.
+
+- FILE: src/main/java/com/pyjavabridge/EventDispatcher.java
+- RESULT: ISSUE
+- NOTES:
+  - [MEDIUM] src/main/java/com/pyjavabridge/EventDispatcher.java:181 and src/main/java/com/pyjavabridge/EventDispatcher.java:266 block while waiting for Python responses (await + Thread.sleep loops). If this path runs on the main server thread, bursts of events can translate to tick stalls/lag under slow script handlers.
+
+- FILE: src/main/java/com/pyjavabridge/PacketBridge.java
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this file during line-by-line review.
+
+- FILE: src/main/java/com/pyjavabridge/PyJavaBridgePlugin.java
+- RESULT: ISSUE
+- NOTES:
+  - [MEDIUM] src/main/java/com/pyjavabridge/PyJavaBridgePlugin.java:171 uses Files.list(scriptsDir) without try-with-resources; the directory stream is not explicitly closed and can leak file descriptors over repeated reload/start cycles.
+  - [LOW] src/main/java/com/pyjavabridge/PyJavaBridgePlugin.java:70 and src/main/java/com/pyjavabridge/PyJavaBridgePlugin.java:71 dereference getCommand("bridge") without null-check; misconfigured plugin.yml would cause onEnable NPE instead of a controlled startup failure.
+
+- FILE: src/main/java/com/pyjavabridge/SchematicCapture.java
+- RESULT: ISSUE
+- NOTES:
+  - [LOW] src/main/java/com/pyjavabridge/SchematicCapture.java:535, src/main/java/com/pyjavabridge/SchematicCapture.java:538, and src/main/java/com/pyjavabridge/SchematicCapture.java:541 choose exit facing only from whether min coordinate is 0; groups not on outer boundaries are still labeled as +axis exits, which can produce incorrect exit metadata.
+
+- FILE: src/main/java/com/pyjavabridge/ScriptCommand.java
+- RESULT: ISSUE
+- NOTES:
+  - [MEDIUM] src/main/java/com/pyjavabridge/ScriptCommand.java:139 and src/main/java/com/pyjavabridge/ScriptCommand.java:142 only update permission/completions when non-null; re-registering a command with null permission or null completions cannot clear previous values, leaving stale command behavior.
+  - [LOW] src/main/java/com/pyjavabridge/ScriptCommand.java:52 lowercases all static completion options at registration time, so returned suggestions lose original casing.
+
+- FILE: src/main/java/com/pyjavabridge/client/ClientModChannelBridge.java
+- RESULT: ISSUE
+- NOTES:
+  - [MEDIUM] src/main/java/com/pyjavabridge/client/ClientModChannelBridge.java:274 stores request bodies for every outbound request, but normal completion path at src/main/java/com/pyjavabridge/client/ClientModChannelBridge.java:376 only removes pending futures (not stored bodies). This can accumulate stale request payloads over time.
+  - [LOW] src/main/java/com/pyjavabridge/client/ClientModChannelBridge.java:158 strips a leading VarInt prefix using a heuristic (`varIntValue == remaining`) that can misclassify some valid unprefixed payloads and corrupt decode input.
+
+- FILE: src/main/java/com/pyjavabridge/client/ClientModFacade.java
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this file during line-by-line review.
+
+- FILE: src/main/java/com/pyjavabridge/client/ClientModFrameCodec.java
+- RESULT: ISSUE
+- NOTES:
+  - [LOW] src/main/java/com/pyjavabridge/client/ClientModFrameCodec.java:54 reads protocolVersion but never validates it before accepting the frame (returned at src/main/java/com/pyjavabridge/client/ClientModFrameCodec.java:72), so incompatible protocol traffic is not rejected early.
+
+- FILE: src/main/java/com/pyjavabridge/client/ClientModProtocol.java
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this file during line-by-line review.
+
+- FILE: src/main/java/com/pyjavabridge/client/ClientModSessionManager.java
+- RESULT: ISSUE
+- NOTES:
+  - [MEDIUM] src/main/java/com/pyjavabridge/client/ClientModSessionManager.java:39 keeps requestBodies per request id, but cleanup requires explicit takeRequestBody (line 63) or disconnect clear (line 123). If callers complete requests without taking bodies, this map grows over session lifetime.
+
+- FILE: src/main/java/com/pyjavabridge/event/CancelMode.java
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this file during line-by-line review.
+
+- FILE: src/main/java/com/pyjavabridge/event/EventSubscription.java
+- RESULT: ISSUE
+- NOTES:
+  - [LOW] src/main/java/com/pyjavabridge/event/EventSubscription.java:22 and src/main/java/com/pyjavabridge/event/EventSubscription.java:54 use unsynchronized lastTick updates in the executor path; async events can race and bypass once-per-tick suppression.
+
+- FILE: src/main/java/com/pyjavabridge/event/PendingEvent.java
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this file during line-by-line review.
+- FILE: src/main/java/com/pyjavabridge/facade/ChatFacade.java
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this file during line-by-line review.
+
+- FILE: src/main/java/com/pyjavabridge/facade/CommandsFacade.java
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this file during line-by-line review.
+
+- FILE: src/main/java/com/pyjavabridge/facade/DatapackFacade.java
+- RESULT: ISSUE
+- NOTES:
+  - [HIGH] src/main/java/com/pyjavabridge/facade/DatapackFacade.java:23 and src/main/java/com/pyjavabridge/facade/DatapackFacade.java:41 register models/registries, but applyAll only processes advancements (line 133) and predicates (line 222). Registered models and registry entries are never applied.
+
+- FILE: src/main/java/com/pyjavabridge/facade/MetricsFacade.java
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this file during line-by-line review.
+
+- FILE: src/main/java/com/pyjavabridge/facade/ParticleFacade.java
+- RESULT: ISSUE
+- NOTES:
+  - [LOW] src/main/java/com/pyjavabridge/facade/ParticleFacade.java:30 caps line-particle count at MAX_PARTICLES, but loop at line 31 uses <= and returns count+1 at line 35, producing one extra spawn beyond the configured cap.
+
+- FILE: src/main/java/com/pyjavabridge/facade/PermissionsFacade.java
+- RESULT: ISSUE
+- NOTES:
+  - [MEDIUM] src/main/java/com/pyjavabridge/facade/PermissionsFacade.java:145 builds a default permission node and removes it, but does not match node value (true/false). Permissions added with explicit false values can remain because removal targets a different node variant.
+
+- FILE: src/main/java/com/pyjavabridge/facade/RaycastFacade.java
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this file during line-by-line review.
+
+- FILE: src/main/java/com/pyjavabridge/facade/RefFacade.java
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this file during line-by-line review.
+
+- FILE: src/main/java/com/pyjavabridge/facade/ReflectFacade.java
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this file during line-by-line review.
+
+- FILE: src/main/java/com/pyjavabridge/facade/RegionFacade.java
+- RESULT: ISSUE
+- NOTES:
+  - [MEDIUM] src/main/java/com/pyjavabridge/facade/RegionFacade.java:212 performs large batch edits without any MAX_VOLUME enforcement (the volume checks used by other mutators are bypassed), so oversized operation lists can cause heavy server stalls.
+  - [LOW] src/main/java/com/pyjavabridge/facade/RegionFacade.java:264 silently falls back to AIR when fill block data parsing fails, which can unintentionally erase blocks instead of surfacing an invalid block-data error.
+
+- FILE: src/main/java/com/pyjavabridge/util/CallableTask.java
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this file during line-by-line review.
+
+- FILE: src/main/java/com/pyjavabridge/util/DebugManager.java
+- RESULT: ISSUE
+- NOTES:
+  - [LOW] src/main/java/com/pyjavabridge/util/DebugManager.java:62 returns the mutable internal debug-player set directly, allowing external callers to mutate internal state without using add/remove methods.
+
+- FILE: src/main/java/com/pyjavabridge/util/EntityGoneException.java
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this file during line-by-line review.
+
+- FILE: src/main/java/com/pyjavabridge/util/EntitySpawner.java
+- RESULT: ISSUE
+- NOTES:
+  - [MEDIUM] src/main/java/com/pyjavabridge/util/EntitySpawner.java:386 resolves string entity types via EntityType.valueOf(text) without normalization, making string type handling case-sensitive and causing avoidable failures for common lowercase inputs.
+
+- FILE: src/main/java/com/pyjavabridge/util/EnumValue.java
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this file during line-by-line review.
+
+- FILE: src/main/java/com/pyjavabridge/util/NonLivingSpawner.java
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this file during line-by-line review.
+
+- FILE: src/main/java/com/pyjavabridge/util/ObjectRegistry.java
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this file during line-by-line review.
+
+- FILE: src/main/java/com/pyjavabridge/util/PlayerUuidResolver.java
+- RESULT: ISSUE
+- NOTES:
+  - [MEDIUM] src/main/java/com/pyjavabridge/util/PlayerUuidResolver.java:95 generates offline-mode UUIDs from the caller-provided name casing. Because offline UUID generation is case-sensitive, mixed-case lookups for the same player name can produce inconsistent UUIDs.
+
+- FILE: src/main/resources/python/bridge/wrappers.py
+- RESULT: ISSUE
+- NOTES:
+  - [HIGH] src/main/resources/python/bridge/wrappers.py:34, src/main/resources/python/bridge/wrappers.py:43, and src/main/resources/python/bridge/wrappers.py:70 mutate _handle_refcounts without synchronization. Concurrent async callbacks can race and corrupt reference counts (double-release or leaked handles).
+  - [HIGH] src/main/resources/python/bridge/wrappers.py:338 and src/main/resources/python/bridge/wrappers.py:342 implement non-atomic loop-start guarding for _at_time_loop_started; concurrent decorators can start duplicate polling loops.
+  - [MEDIUM] src/main/resources/python/bridge/wrappers.py:60 uses assert for runtime validation (`assert count > 0`), which is disabled under Python optimization flags and can hide invalid refcount transitions.
+  - [MEDIUM] src/main/resources/python/bridge/wrappers.py:229 and src/main/resources/python/bridge/wrappers.py:230 use _connection directly in Event.cancel() without null/closed checks, causing shutdown-time AttributeErrors instead of controlled bridge errors.
+  - [LOW] src/main/resources/python/bridge/wrappers.py:2064 falls back to self.fields['ref_id']/'world' for world_name, but world identity is not guaranteed in fields; callbacks for unnamed worlds can be grouped incorrectly.
+
+- FILE: src/main/resources/python/bridge/connection.py
+- RESULT: ISSUE
+- NOTES:
+  - [HIGH] src/main/resources/python/bridge/connection.py:276/282 and src/main/resources/python/bridge/connection.py:479 access _pending_sync from different threads without coordination. Timeout and response paths can race, producing intermittent false timeouts or dropped wakeups.
+  - [HIGH] src/main/resources/python/bridge/connection.py:354 and src/main/resources/python/bridge/connection.py:355 reset batch buffers without synchronization; concurrent call() activity during flush can mis-order or lose buffered messages.
+  - [MEDIUM] src/main/resources/python/bridge/connection.py:330 and src/main/resources/python/bridge/connection.py:335 mutate _batch_stack without locking, so overlapping frame()/atomic() contexts from multiple threads can corrupt effective batch mode.
+  - [MEDIUM] src/main/resources/python/bridge/connection.py:746 stops the event loop directly inside shutdown handling; pending callbacks/futures may be abandoned before orderly completion.
+
+- FILE: src/main/resources/python/bridge/helpers.py
+- RESULT: ISSUE
+- NOTES:
+  - [HIGH] src/main/resources/python/bridge/helpers.py:468 iterates self._expiry while other methods mutate the same dict (e.g., line 438, line 456) with no locking, which can raise `RuntimeError: dictionary changed size during iteration` under concurrent access.
+  - [HIGH] src/main/resources/python/bridge/helpers.py:439 and src/main/resources/python/bridge/helpers.py:461 use a non-atomic `_task_started` check/set; concurrent check() calls can start duplicate cooldown expiry tasks.
+  - [MEDIUM] src/main/resources/python/bridge/helpers.py:211 replaces Config._data wholesale during reload while getters/setters access it concurrently; callers can observe inconsistent state.
+  - [MEDIUM] src/main/resources/python/bridge/helpers.py:783 starts a new BossBarDisplay link task each call without canceling prior tasks, allowing duplicate update loops for the same bar/player.
+  - [LOW] src/main/resources/python/bridge/helpers.py:310 returns the mutable internal config dict directly, allowing external code to mutate internal state without validation.
+
+- FILE: src/main/resources/python/bridge/extensions/dungeon.py
+- RESULT: ISSUE
+- NOTES:
+  - [HIGH] src/main/resources/python/bridge/extensions/dungeon.py:838 deduplicates transformed variants using only block layout signature. Symmetric templates with different transformed exit orientations can be collapsed, reducing valid placement options.
+  - [MEDIUM] src/main/resources/python/bridge/extensions/dungeon.py:336 detects ops format only from the very first physical line. Leading blank lines cause valid `fill`/`set` files to be parsed via legacy path incorrectly.
+  - [MEDIUM] src/main/resources/python/bridge/extensions/dungeon.py:1377 iterates self.players directly in the tracking loop; concurrent mutation of player list can break tracking with runtime iteration errors.
+
+- FILE: src/main/resources/python/bridge/extensions/schematic.py
+- RESULT: ISSUE
+- NOTES:
+  - [HIGH] src/main/resources/python/bridge/extensions/schematic.py:490 and src/main/resources/python/bridge/extensions/schematic.py:497 write `set`/`fill` op coordinates into layer arrays without bounds checks, so malformed files can raise IndexError or corrupt parse behavior.
+  - [MEDIUM] src/main/resources/python/bridge/extensions/schematic.py:540 assumes marker coordinates always contain three comma-separated values; malformed marker lines raise unhandled IndexError/ValueError rather than a clean parse error.
+  - [MEDIUM] src/main/resources/python/bridge/extensions/schematic.py:722 builds a reverse key map where duplicate block definitions overwrite prior keys; round-trip save/load can silently remap block keys.
+  - [LOW] src/main/resources/python/bridge/extensions/schematic.py:634, src/main/resources/python/bridge/extensions/schematic.py:636, and src/main/resources/python/bridge/extensions/schematic.py:638 parse dimensions but never validate positivity, producing confusing downstream errors for zero/negative metadata.
+
+- FILE: docs/build.py
+- RESULT: ISSUE
+- NOTES:
+  - [HIGH] docs/build.py:620 and docs/build.py:621 generate output filenames from slug basename only. Different slugs sharing a basename can overwrite each other’s HTML output silently.
+  - [HIGH] docs/build.py:994 maps source markdown paths by basename (`src_map` key), so basename collisions overwrite entries and break historical source resolution for affected pages.
+  - [MEDIUM] docs/build.py:161 splits slugs only on `/`, which is fragile for Windows-style `\\` paths and can produce inconsistent basename behavior across platforms.
+
+- FILE: src/main/resources/python/bridge/__init__.pyi
+- RESULT: ISSUE
+- NOTES:
+  - [LOW] src/main/resources/python/bridge/__init__.pyi:548, src/main/resources/python/bridge/__init__.pyi:549, src/main/resources/python/bridge/__init__.pyi:550, and src/main/resources/python/bridge/__init__.pyi:551 declare WorldTime constants without `ClassVar[...]`, unlike other enum-like constants in the same stub, reducing type-checker precision.
+  - [LOW] src/main/resources/python/bridge/__init__.pyi:878/880 exposes `exp` as property while src/main/resources/python/bridge/__init__.pyi:982 also exposes `xp` field; dual names for the same concept make the public typing contract ambiguous.
+
+- FILE: src/main/resources/python/bridge/extensions/__init__.pyi
+- RESULT: ISSUE
+- NOTES:
+  - [HIGH] src/main/resources/python/bridge/extensions/__init__.pyi:1 does not import `AsyncIterable`/`Iterable`, but these are used in type annotations at src/main/resources/python/bridge/extensions/__init__.pyi:555; this breaks strict type checking of the stub.
+  - [LOW] src/main/resources/python/bridge/extensions/__init__.pyi:511 declares `LootPool.entry` as `Callable[..., Callable[..., bool]]`, which is too loose for a decorator signature and weakens static typing for callback arguments.
+
+- FILE: src/main/resources/python/bridge/api.py
+- RESULT: ISSUE
+- NOTES:
+  - [MEDIUM] src/main/resources/python/bridge/api.py:41 and src/main/resources/python/bridge/api.py:52 register packet handlers on shared event names (`packet_send` / `packet_receive`) without local packet-type filtering, so multiple listeners can receive cross-type events unless each handler re-filters manually.
+
+- FILE: src/main/resources/python/bridge/decorators.py
+- RESULT: ISSUE
+- NOTES:
+  - [MEDIUM] src/main/resources/python/bridge/decorators.py:324 and src/main/resources/python/bridge/decorators.py:325 derive preserve filenames directly from `func.__qualname__`; nested/local function names can contain path-unfriendly characters, causing portability issues.
+  - [LOW] src/main/resources/python/bridge/decorators.py:309 declares preserve as returning a callable but actually returns the preserved value (see line 356 with type-ignore), weakening typing guarantees.
+
+- FILE: src/main/resources/python/bridge/errors.py
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this file during line-by-line review.
+
+- FILE: src/main/resources/python/bridge/types.py
+- RESULT: ISSUE
+- NOTES:
+  - [LOW] src/main/resources/python/bridge/types.py:108 calls `self._future.result()` inside __repr__; if the future completed with an exception, repr itself raises, which is unsafe for logging/debug output.
+
+- FILE: src/main/resources/python/bridge/utils.py
+- RESULT: ISSUE
+- NOTES:
+  - [LOW] src/main/resources/python/bridge/utils.py:22 evicts the first quarter of cache keys when full, which is insertion-order trimming rather than true LRU; frequently-used old entries can be evicted prematurely.
+
+- FILE: src/main/resources/python/bridge/__init__.py
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this file during line-by-line review.
+
+- FILE: src/main/resources/python/runner.py
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this file during line-by-line review.
+
+- FILE: src/main/resources/python/bridge/extensions/mesh_display.py
+- RESULT: ISSUE
+- NOTES:
+  - [HIGH] src/main/resources/python/bridge/extensions/mesh_display.py:347 defaults `face_uvs` to `faces`, but texture sampling at line 205 treats these as UV indices. Meshes where UV index space differs from vertex index space can crash with IndexError or sample wrong texels.
+
+- FILE: src/main/resources/python/bridge/extensions/client_mod.py
+- RESULT: ISSUE
+- NOTES:
+  - [HIGH] src/main/resources/python/bridge/extensions/client_mod.py:177 returns early when `proc.stdout` is None without terminating the created ffmpeg process, leaking a subprocess.
+  - [MEDIUM] src/main/resources/python/bridge/extensions/client_mod.py:242 and src/main/resources/python/bridge/extensions/client_mod.py:247 swallow producer-thread exceptions during streamed audio generation, which can hide failures and leave the consumer loop timing out without actionable diagnostics.
+  - [MEDIUM] src/main/resources/python/bridge/extensions/client_mod.py:269 suppresses executor completion errors/timeouts, so stalled producer threads are not surfaced to callers.
+
+- FILE: src/main/resources/python/bridge/extensions/loot_table.py
+- RESULT: ISSUE
+- NOTES:
+  - [MEDIUM] src/main/resources/python/bridge/extensions/loot_table.py:52 uses `setdefault("amount", rolled_amount)` for dict-based items, so explicit item amounts silently bypass min_amount/max_amount roll parameters.
+  - [MEDIUM] src/main/resources/python/bridge/extensions/loot_table.py:163 and src/main/resources/python/bridge/extensions/loot_table.py:165 perform inventory insertion without exception handling, allowing partial insertion states if backend calls fail mid-loop.
+  - [LOW] src/main/resources/python/bridge/extensions/loot_table.py:365 mutates shared item field dictionaries in-place during stacking, which can produce side effects if generated items are reused elsewhere.
+
+- FILE: src/main/resources/python/bridge/extensions/image_display.py
+- RESULT: ISSUE
+- NOTES:
+  - [LOW] src/main/resources/python/bridge/extensions/image_display.py:54 exposes `dual_side_mode` but the parameter is never used, so callers cannot influence behavior as the signature implies.
+  - [LOW] src/main/resources/python/bridge/extensions/image_display.py:267 indexes `flat_pixels[row * w + col]` without a local bounds guard in `_update_from_flat`; misuse of this helper raises IndexError rather than a clear validation error.
+
+- FILE: src/main/resources/python/bridge/extensions/npc.py
+- RESULT: ISSUE
+- NOTES:
+  - [MEDIUM] src/main/resources/python/bridge/extensions/npc.py:109-112 uses `_path_task` as a shared boolean sentinel for path coroutines; starting a new follow_path can re-enable the sentinel while an old loop is still running, allowing overlapping movement loops.
+  - [LOW] src/main/resources/python/bridge/extensions/npc.py:201 catches any exception in the range loop and breaks permanently, so transient bridge errors can silently disable all future range enter/exit callbacks.
+
+- FILE: examples/command.py
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this example file during line-by-line review.
+
+- FILE: examples/spawn_protect.py
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this example file during line-by-line review.
+
+- FILE: examples/tempban.py
+- RESULT: ISSUE
+- NOTES:
+  - [LOW] examples/tempban.py:55 calls parse_time without catching ValueError, so malformed duration input aborts command flow with an unhandled exception path.
+
+- FILE: src/main/resources/python/bridge/extensions/__init__.py
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this file during line-by-line review.
+
+- FILE: src/main/resources/python/bridge/extensions/ability.py
+- RESULT: ISSUE
+- NOTES:
+  - [MEDIUM] src/main/resources/python/bridge/extensions/ability.py:40 stores a single shared boss bar instance (`self._bar`) for all players. Concurrent ability use by multiple players can overwrite bar value/text state across users.
+
+- FILE: src/main/resources/python/bridge/extensions/bank.py
+- RESULT: ISSUE
+- NOTES:
+  - [MEDIUM] src/main/resources/python/bridge/extensions/bank.py:35 loads persisted JSON without error handling; corrupted bank files can raise and break extension initialization.
+
+- FILE: src/main/resources/python/bridge/extensions/client_mod.pyi
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this stub file during line-by-line review.
+
+- FILE: src/main/resources/python/bridge/extensions/combat.py
+- RESULT: ISSUE
+- NOTES:
+  - [MEDIUM] src/main/resources/python/bridge/extensions/combat.py:131 starts a new `_update()` task on every combat tag refresh, with no deduplication per player. Repeated hits can create overlapping timer tasks that race on the same bossbar.
+
+- FILE: src/main/resources/python/bridge/extensions/custom_item.py
+- RESULT: ISSUE
+- NOTES:
+  - [LOW] src/main/resources/python/bridge/extensions/custom_item.py:33 mutates the template builder state (`self.amount(amount)`) in `give()`. Reusing the same CustomItem instance can leak amount state into subsequent builds/gives.
+
+- FILE: src/main/resources/python/bridge/extensions/dialog.py
+- RESULT: ISSUE
+- NOTES:
+  - [LOW] src/main/resources/python/bridge/extensions/dialog.py:147 directly mutates the internal `_handlers` map on the connection object for cleanup. This couples to private internals and can break if handler storage changes.
+
+- FILE: src/main/resources/python/bridge/extensions/guild.py
+- RESULT: ISSUE
+- NOTES:
+  - [HIGH] src/main/resources/python/bridge/extensions/guild.py:200 and src/main/resources/python/bridge/extensions/guild.py:206 use unsanitized guild names in filesystem paths. Crafted names with path separators can write/read outside the intended guild storage directory.
+  - [MEDIUM] src/main/resources/python/bridge/extensions/guild.py:211 loads guild JSON without decode error handling; corrupted files can raise and break guild loading.
+
+- FILE: examples/dungeon.py
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this example file during line-by-line review.
+
+- FILE: src/main/resources/python/bridge/extensions/leaderboard.py
+- RESULT: ISSUE
+- NOTES:
+  - [MEDIUM] src/main/resources/python/bridge/extensions/leaderboard.py:40 starts a new update loop every time `start()` is called. Repeated starts can create duplicate refresh tasks running concurrently.
+
+- FILE: src/main/resources/python/bridge/extensions/levels.py
+- RESULT: ISSUE
+- NOTES:
+  - [MEDIUM] src/main/resources/python/bridge/extensions/levels.py:40 loads persisted XP JSON without decode error handling; malformed files can raise and break level system initialization.
+
+- FILE: src/main/resources/python/bridge/extensions/mana.py
+- RESULT: ISSUE
+- NOTES:
+  - [LOW] src/main/resources/python/bridge/extensions/mana.py:103 always calls `_update_bar(player)` in `__setitem__`. When callers use UUID strings (supported by `_puuid`), `_update_bar` can attempt `bar.show(player)` with a non-player object.
+
+- FILE: src/main/resources/python/bridge/extensions/party.py
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this file during line-by-line review.
+
+- FILE: src/main/resources/python/bridge/extensions/placeholder.py
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this file during line-by-line review.
+
+- FILE: src/main/resources/python/bridge/extensions/player_data.py
+- RESULT: ISSUE
+- NOTES:
+  - [MEDIUM] src/main/resources/python/bridge/extensions/player_data.py:68 loads player JSON without decode error handling; malformed files can raise and break data access for that player.
+
+- FILE: src/main/resources/python/bridge/extensions/quest.py
+- RESULT: ISSUE
+- NOTES:
+  - [MEDIUM] src/main/resources/python/bridge/extensions/quest.py:36 uses a single shared bossbar instance (`self._bar`) for all players. Concurrent players on the same quest can overwrite each other's bar state.
+
+- FILE: src/main/resources/python/bridge/extensions/region.py
+- RESULT: ISSUE
+- NOTES:
+  - [MEDIUM] src/main/resources/python/bridge/extensions/region.py:135 breaks the global tracking loop on any uncaught iteration error, which can permanently disable enter/exit detection after a transient failure.
+
+- FILE: src/main/resources/python/bridge/extensions/scheduler.py
+- RESULT: ISSUE
+- NOTES:
+  - [MEDIUM] src/main/resources/python/bridge/extensions/scheduler.py:117, src/main/resources/python/bridge/extensions/scheduler.py:138, and src/main/resources/python/bridge/extensions/scheduler.py:161 overwrite existing task names without canceling the prior task first. Previously launched tasks can continue running as untracked orphans.
+
+- FILE: src/main/resources/python/bridge/extensions/shop.py
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this file during line-by-line review.
+
+- FILE: src/main/resources/python/bridge/extensions/state_machine.py
+- RESULT: ISSUE
+- NOTES:
+  - [MEDIUM] src/main/resources/python/bridge/extensions/state_machine.py:207 starts a new ticking loop each time `start_ticking()` is called without canceling an existing loop first. Multiple loops can run concurrently and duplicate `on_tick` execution.
+
+- FILE: src/main/resources/python/bridge/extensions/tab_list.py
+- RESULT: ISSUE
+- NOTES:
+  - [MEDIUM] src/main/resources/python/bridge/extensions/tab_list.py:79 stores groups/entries, but src/main/resources/python/bridge/extensions/tab_list.py:160 only applies header/footer. Group and fake-entry APIs are never materialized to the client tab list.
+
+- FILE: src/main/resources/python/bridge/extensions/trade.py
+- RESULT: ISSUE
+- NOTES:
+  - [HIGH] src/main/resources/python/bridge/extensions/trade.py:207 and src/main/resources/python/bridge/extensions/trade.py:211 ignore the return value of `bank.withdraw` after a pre-check. If balances change between check and execution, withdraw can fail while the matching deposit still executes, minting currency.
+
+- FILE: src/main/resources/python/bridge/extensions/visual_effect.py
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this file during line-by-line review.
+
+- FILE: .github/instructions/codebase-info.instructions.md
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this instruction file during line-by-line review.
+
+- FILE: .github/workflows/deploy-pages.yml
+- RESULT: ISSUE
+- NOTES:
+  - [LOW] .github/workflows/deploy-pages.yml:41 and .github/workflows/deploy-pages.yml:45 install npm/pip dependencies without version pinning, which reduces build reproducibility and increases supply-chain drift risk.
+
+- FILE: .gitignore
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this file during line-by-line review.
+
+- FILE: .markdownlint.json
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this config file during line-by-line review.
+
+- FILE: .vscode/launch.json
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this workspace config during line-by-line review.
+
+- FILE: .vscode/settings.json
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this workspace config during line-by-line review.
+
+- FILE: .vscode/tasks.json
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this workspace config during line-by-line review.
+
+- FILE: README.md
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this documentation file during line-by-line review.
+
+- FILE: SECURITY.md
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this policy file during line-by-line review.
+
+- FILE: build.gradle
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this build file during line-by-line review.
+
+- FILE: changelog.md
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this documentation file during line-by-line review.
+
+- FILE: gradle.properties
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this build config during line-by-line review.
+
+- FILE: gradle/wrapper/gradle-wrapper.jar
+- RESULT: OK
+- NOTES:
+  - Binary artifact reviewed at metadata level only; no line-based source review possible.
+
+- FILE: gradle/wrapper/gradle-wrapper.properties
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this wrapper config during line-by-line review.
+
+- FILE: gradlew
+- RESULT: OK
+- NOTES:
+  - Standard generated Gradle wrapper script; no project-specific correctness/security defects found.
+
+- FILE: gradlew.bat
+- RESULT: OK
+- NOTES:
+  - Standard generated Gradle wrapper script; no project-specific correctness/security defects found.
+
+- FILE: pjb
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this CLI script during line-by-line review.
+
+- FILE: pyrightconfig.json
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this static-analysis config during line-by-line review.
+
+- FILE: settings.gradle
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this build settings file during line-by-line review.
+
+- FILE: src/main/resources/config.yml
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this runtime config file during line-by-line review.
+
+- FILE: src/main/resources/plugin.yml
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this plugin metadata file during line-by-line review.
+
+- FILE: src/main/resources/python/bridge/MANIFEST
+- RESULT: ISSUE
+- NOTES:
+  - [HIGH] src/main/resources/python/bridge/MANIFEST:4-37 omits several shipped extension files (`extensions/loot_table.py`, `extensions/placeholder.py`, `extensions/scheduler.py`, `extensions/schematic.py`, `extensions/state_machine.py`, `extensions/tab_list.py`). Runtime bridge package copying uses this manifest, so omitted modules are not deployed and imports can fail.
+
+- FILE: examples/crypt_rooms/entrance.droom
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this room template during line-by-line review.
+
+- FILE: examples/crypt_rooms/straight.droom
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this room template during line-by-line review.
+
+- FILE: examples/crypt_rooms/t_crossing.droom
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this room template during line-by-line review.
+
+- FILE: examples/crypt_rooms/turn.droom
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this room template during line-by-line review.
+
+- FILE: examples/crypt_rooms/x_crossing.droom
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this room template during line-by-line review.
+
+- FILE: releases/pyjavabridge-1A.jar
+- RESULT: OK
+- NOTES:
+  - Binary release artifact reviewed at metadata level only; no line-based source review possible.
+
+- FILE: releases/pyjavabridge-1B.jar
+- RESULT: OK
+- NOTES:
+  - Binary release artifact reviewed at metadata level only; no line-based source review possible.
+
+- FILE: releases/pyjavabridge-1C.jar
+- RESULT: OK
+- NOTES:
+  - Binary release artifact reviewed at metadata level only; no line-based source review possible.
+
+- FILE: releases/pyjavabridge-1D.jar
+- RESULT: OK
+- NOTES:
+  - Binary release artifact reviewed at metadata level only; no line-based source review possible.
+
+- FILE: releases/pyjavabridge-2A.jar
+- RESULT: OK
+- NOTES:
+  - Binary release artifact reviewed at metadata level only; no line-based source review possible.
+
+- FILE: releases/pyjavabridge-3A.jar
+- RESULT: OK
+- NOTES:
+  - Binary release artifact reviewed at metadata level only; no line-based source review possible.
+
+- FILE: releases/pyjavabridge-3B.jar
+- RESULT: OK
+- NOTES:
+  - Binary release artifact reviewed at metadata level only; no line-based source review possible.
+
+- FILE: releases/pyjavabridge-3C.jar
+- RESULT: OK
+- NOTES:
+  - Binary release artifact reviewed at metadata level only; no line-based source review possible.
+
+- FILE: releases/pyjavabridge-3D.jar
+- RESULT: OK
+- NOTES:
+  - Binary release artifact reviewed at metadata level only; no line-based source review possible.
+
+- FILE: releases/pyjavabridge-4A.jar
+- RESULT: OK
+- NOTES:
+  - Binary release artifact reviewed at metadata level only; no line-based source review possible.
+
+- FILE: releases/pyjavabridge-dev.jar
+- RESULT: OK
+- NOTES:
+  - Binary release artifact reviewed at metadata level only; no line-based source review possible.
+
+
+- FILE: docs/favicon.svg
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this documentation asset during line-by-line review.
+
+- FILE: docs/script.js
+- RESULT: ISSUE
+- NOTES:
+  - [LOW] docs/script.js:323 references `h.heading`, but search hit objects never set `heading`; section heading context is dropped from rendered search results.
+
+- FILE: docs/site/ability.html
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/actionbardisplay.html
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/advancement.html
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/attribute.html
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/bank.html
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/block.html
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/blockdisplay.html
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/blocksnapshot.html
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/bookbuilder.html
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/bossbar.html
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/bossbardisplay.html
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/bridge.html
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/chat.html
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/chunk.html
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/clientmod.html
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/combat.html
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/config.html
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/cooldown.html
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/customitem.html
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/datapack_runtime.html
+- RESULT: ISSUE
+- NOTES:
+  - [MEDIUM] docs/site/datapack_runtime.html is tracked in Git but missing in the current working tree, so a line-by-line current-file review is not possible for this path.
+
+- FILE: docs/site/debugging.html
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/decorators.html
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/dialog.html
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/dungeon.html
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/effect.html
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/entity.html
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/entitysubtypes.html
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/enums.html
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/enumvalue.html
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/event.html
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/events_internal.html
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/examples.html
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/examples_command.html
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/examples_dungeon.html
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/examples_spawn_protect.html
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/examples_tempban.html
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/exceptions.html
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/execution.html
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/favicon.svg
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/firework.html
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/git_meta.json
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/guild.html
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/hologram.html
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/imagedisplay.html
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/index.html
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/inventory.html
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/item.html
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/itembuilder.html
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/itemdisplay.html
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/leaderboard.html
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/levels.html
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/lifecycle.html
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/location.html
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/loottable.html
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/mana.html
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/menu.html
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/menuitem.html
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/meshdisplay.html
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/npc.html
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/objective.html
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/paginator.html
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/party.html
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/placeholder.html
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/player.html
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/playerdatastore.html
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/potion.html
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/quest.html
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/raycast.html
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/recipe.html
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/reflect.html
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/region.html
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/scheduler.html
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/scoreboard.html
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/script.js
+- RESULT: ISSUE
+- NOTES:
+  - [LOW] docs/site/script.js:323 references `h.heading`, but search hit objects never set `heading`; section heading context is dropped from rendered search results.
+
+- FILE: docs/site/serialization.html
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/server.html
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/shop.html
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/sidebar.html
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/state.html
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/statemachine.html
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/style.00a40132.css
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/style.04088df3.css
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/style.06df8d30.css
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/style.0b4165d1.css
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/style.15b7886a.css
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/style.189eb3e1.css
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/style.18c236c2.css
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/style.1b15999e.css
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/style.1bd78f61.css
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/style.20482202.css
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/style.2798dcab.css
+- RESULT: ISSUE
+- NOTES:
+  - [MEDIUM] docs/site/style.2798dcab.css is tracked in Git but missing in the current working tree, so a line-by-line current-file review is not possible for this path.
+
+- FILE: docs/site/style.38302df7.css
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/style.3e25e0ef.css
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/style.47bf94fd.css
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/style.4a463fcb.css
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/style.53a00f10.css
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/style.5987c65c.css
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/style.60079f00.css
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/style.6637c074.css
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/style.6b4a4199.css
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/style.6ba34d5b.css
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/style.6e0e46a4.css
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/style.6f89496f.css
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/style.76fd6dbe.css
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/style.7a9b3b3c.css
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/style.7ef12437.css
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/style.7f84a938.css
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/style.86ad848f.css
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/style.8cbd1e22.css
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/style.8d9b96ab.css
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/style.8e3124fd.css
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/style.92d50456.css
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/style.991e4696.css
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/style.aa10850f.css
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/style.b2cc65de.css
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/style.b2d93f44.css
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/style.b738934d.css
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/style.b9b05e18.css
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/style.b9be68ab.css
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/style.ba38e974.css
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/style.c37844dc.css
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/style.c9e1cf7b.css
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/style.css
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/style.d0ef7b02.css
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/style.e016ca70.css
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/style.e2d57bce.css
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/style.e3bc9796.css
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/style.e67152ef.css
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/style.e79f35a4.css
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/style.ecb6fb02.css
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/style.f60ce693.css
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/style.f890c458.css
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/style.fe27e07c.css
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/tablist.html
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/team.html
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/textcomponent.html
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/trade.html
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/vector.html
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/visualeffect.html
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/site/world.html
+- RESULT: OK
+- NOTES:
+  - Generated documentation artifact reviewed line-by-line; no correctness or security defects found affecting runtime logic.
+
+- FILE: docs/src/.markdownlint.json
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this documentation source file during line-by-line review.
+
+- FILE: docs/src/core/entity.md
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this documentation source file during line-by-line review.
+
+- FILE: docs/src/core/entitysubtypes.md
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this documentation source file during line-by-line review.
+
+- FILE: docs/src/core/event.md
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this documentation source file during line-by-line review.
+
+- FILE: docs/src/core/player.md
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this documentation source file during line-by-line review.
+
+- FILE: docs/src/core/server.md
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this documentation source file during line-by-line review.
+
+- FILE: docs/src/datapack_runtime.md
+- RESULT: ISSUE
+- NOTES:
+  - [MEDIUM] docs/src/datapack_runtime.md is tracked in Git but missing in the current working tree, so a line-by-line current-file review is not possible for this path.
+
+- FILE: docs/src/display/blockdisplay.md
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this documentation source file during line-by-line review.
+
+- FILE: docs/src/display/hologram.md
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this documentation source file during line-by-line review.
+
+- FILE: docs/src/display/itemdisplay.md
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this documentation source file during line-by-line review.
+
+- FILE: docs/src/effects/advancement.md
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this documentation source file during line-by-line review.
+
+- FILE: docs/src/effects/attribute.md
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this documentation source file during line-by-line review.
+
+- FILE: docs/src/effects/bookbuilder.md
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this documentation source file during line-by-line review.
+
+- FILE: docs/src/effects/effect.md
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this documentation source file during line-by-line review.
+
+- FILE: docs/src/effects/firework.md
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this documentation source file during line-by-line review.
+
+- FILE: docs/src/effects/potion.md
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this documentation source file during line-by-line review.
+
+- FILE: docs/src/effects/textcomponent.md
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this documentation source file during line-by-line review.
+
+- FILE: docs/src/examples/examples_command.md
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this documentation source file during line-by-line review.
+
+- FILE: docs/src/examples/examples_dungeon.md
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this documentation source file during line-by-line review.
+
+- FILE: docs/src/examples/examples_spawn_protect.md
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this documentation source file during line-by-line review.
+
+- FILE: docs/src/examples/examples_tempban.md
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this documentation source file during line-by-line review.
+
+- FILE: docs/src/extensions/ability.md
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this documentation source file during line-by-line review.
+
+- FILE: docs/src/extensions/bank.md
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this documentation source file during line-by-line review.
+
+- FILE: docs/src/extensions/clientmod.md
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this documentation source file during line-by-line review.
+
+- FILE: docs/src/extensions/combat.md
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this documentation source file during line-by-line review.
+
+- FILE: docs/src/extensions/customitem.md
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this documentation source file during line-by-line review.
+
+- FILE: docs/src/extensions/dialog.md
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this documentation source file during line-by-line review.
+
+- FILE: docs/src/extensions/dungeon.md
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this documentation source file during line-by-line review.
+
+- FILE: docs/src/extensions/guild.md
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this documentation source file during line-by-line review.
+
+- FILE: docs/src/extensions/imagedisplay.md
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this documentation source file during line-by-line review.
+
+- FILE: docs/src/extensions/leaderboard.md
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this documentation source file during line-by-line review.
+
+- FILE: docs/src/extensions/levels.md
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this documentation source file during line-by-line review.
+
+- FILE: docs/src/extensions/loottable.md
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this documentation source file during line-by-line review.
+
+- FILE: docs/src/extensions/mana.md
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this documentation source file during line-by-line review.
+
+- FILE: docs/src/extensions/meshdisplay.md
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this documentation source file during line-by-line review.
+
+- FILE: docs/src/extensions/party.md
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this documentation source file during line-by-line review.
+
+- FILE: docs/src/extensions/placeholder.md
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this documentation source file during line-by-line review.
+
+- FILE: docs/src/extensions/playerdatastore.md
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this documentation source file during line-by-line review.
+
+- FILE: docs/src/extensions/quest.md
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this documentation source file during line-by-line review.
+
+- FILE: docs/src/extensions/region.md
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this documentation source file during line-by-line review.
+
+- FILE: docs/src/extensions/scheduler.md
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this documentation source file during line-by-line review.
+
+- FILE: docs/src/extensions/shop.md
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this documentation source file during line-by-line review.
+
+- FILE: docs/src/extensions/statemachine.md
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this documentation source file during line-by-line review.
+
+- FILE: docs/src/extensions/tablist.md
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this documentation source file during line-by-line review.
+
+- FILE: docs/src/extensions/trade.md
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this documentation source file during line-by-line review.
+
+- FILE: docs/src/extensions/visualeffect.md
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this documentation source file during line-by-line review.
+
+- FILE: docs/src/getting_started/decorators.md
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this documentation source file during line-by-line review.
+
+- FILE: docs/src/getting_started/examples.md
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this documentation source file during line-by-line review.
+
+- FILE: docs/src/getting_started/exceptions.md
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this documentation source file during line-by-line review.
+
+- FILE: docs/src/getting_started/index.md
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this documentation source file during line-by-line review.
+
+- FILE: docs/src/helpers/config.md
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this documentation source file during line-by-line review.
+
+- FILE: docs/src/helpers/cooldown.md
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this documentation source file during line-by-line review.
+
+- FILE: docs/src/helpers/enums.md
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this documentation source file during line-by-line review.
+
+- FILE: docs/src/helpers/enumvalue.md
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this documentation source file during line-by-line review.
+
+- FILE: docs/src/helpers/npc.md
+- RESULT: ISSUE
+- NOTES:
+  - [MEDIUM] docs/src/helpers/npc.md is tracked in Git but missing in the current working tree, so a line-by-line current-file review is not possible for this path.
+
+- FILE: docs/src/helpers/paginator.md
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this documentation source file during line-by-line review.
+
+- FILE: docs/src/helpers/state.md
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this documentation source file during line-by-line review.
+
+- FILE: docs/src/internals/bridge.md
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this documentation source file during line-by-line review.
+
+- FILE: docs/src/internals/debugging.md
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this documentation source file during line-by-line review.
+
+- FILE: docs/src/internals/events_internal.md
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this documentation source file during line-by-line review.
+
+- FILE: docs/src/internals/execution.md
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this documentation source file during line-by-line review.
+
+- FILE: docs/src/internals/lifecycle.md
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this documentation source file during line-by-line review.
+
+- FILE: docs/src/internals/serialization.md
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this documentation source file during line-by-line review.
+
+- FILE: docs/src/items/inventory.md
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this documentation source file during line-by-line review.
+
+- FILE: docs/src/items/item.md
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this documentation source file during line-by-line review.
+
+- FILE: docs/src/items/itembuilder.md
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this documentation source file during line-by-line review.
+
+- FILE: docs/src/items/recipe.md
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this documentation source file during line-by-line review.
+
+- FILE: docs/src/ui/actionbardisplay.md
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this documentation source file during line-by-line review.
+
+- FILE: docs/src/ui/bossbar.md
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this documentation source file during line-by-line review.
+
+- FILE: docs/src/ui/bossbardisplay.md
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this documentation source file during line-by-line review.
+
+- FILE: docs/src/ui/menu.md
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this documentation source file during line-by-line review.
+
+- FILE: docs/src/ui/menuitem.md
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this documentation source file during line-by-line review.
+
+- FILE: docs/src/ui/objective.md
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this documentation source file during line-by-line review.
+
+- FILE: docs/src/ui/scoreboard.md
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this documentation source file during line-by-line review.
+
+- FILE: docs/src/ui/sidebar.md
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this documentation source file during line-by-line review.
+
+- FILE: docs/src/ui/team.md
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this documentation source file during line-by-line review.
+
+- FILE: docs/src/utilities/chat.md
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this documentation source file during line-by-line review.
+
+- FILE: docs/src/utilities/raycast.md
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this documentation source file during line-by-line review.
+
+- FILE: docs/src/utilities/reflect.md
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this documentation source file during line-by-line review.
+
+- FILE: docs/src/world/block.md
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this documentation source file during line-by-line review.
+
+- FILE: docs/src/world/blocksnapshot.md
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this documentation source file during line-by-line review.
+
+- FILE: docs/src/world/chunk.md
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this documentation source file during line-by-line review.
+
+- FILE: docs/src/world/location.md
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this documentation source file during line-by-line review.
+
+- FILE: docs/src/world/vector.md
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this documentation source file during line-by-line review.
+
+- FILE: docs/src/world/world.md
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this documentation source file during line-by-line review.
+
+- FILE: docs/style.css
+- RESULT: OK
+- NOTES:
+  - No correctness or security defects found in this documentation asset during line-by-line review.
+

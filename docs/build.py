@@ -100,7 +100,6 @@ SIDEBAR = [
         ("ui/team", "Team"),
     ]),
     ("Helpers", [
-        ("helpers/npc", "NPC"),
         ("helpers/config", "Config"),
         ("helpers/state", "State"),
         ("helpers/cooldown", "Cooldown"),
@@ -116,6 +115,7 @@ SIDEBAR = [
     ("Extensions", [
         ("extensions/imagedisplay", "ImageDisplay"),
         ("extensions/meshdisplay", "MeshDisplay"),
+        ("extensions/npc", "NPC"),
         ("extensions/quest", "Quest"),
         ("extensions/dialog", "Dialog"),
         ("extensions/bank", "Bank"),

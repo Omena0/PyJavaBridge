@@ -37,7 +37,7 @@ class PlayerDataStore:
     _DATA_DIR = _resolve_playerdata_dir()
     __slots__ = ("name", "_data", "_dir")
 
-    def __init__(self, name: str = "default"):
+    def __init__(self, name: str = "default") -> None:
         """Initialise a new PlayerDataStore."""
         self.name = name
         self._data: Dict[str, Dict[str, Any]] = {}
@@ -71,7 +71,7 @@ class PlayerDataStore:
 
         return self._data[key]
 
-    def _save(self, key: str):
+    def _save(self, key: str) -> None:
         """Save data to storage."""
         path = self._path(key)
         with open(path, "w") as f:
@@ -82,7 +82,7 @@ class PlayerDataStore:
         key = self._key(player)
         return _PlayerView(self, key)
 
-    def __setitem__(self, player: Any, value: Dict[str, Any]):
+    def __setitem__(self, player: Any, value: Dict[str, Any]) -> None:
         """Set an item by key or index."""
         key = self._key(player)
         self._data[key] = dict(value)
@@ -93,14 +93,14 @@ class PlayerDataStore:
         key = self._key(player)
         return self._load(key).get(field, default)
 
-    def set(self, player: Any, field: str, value: Any):
+    def set(self, player: Any, field: str, value: Any) -> None:
         """Handle set."""
         key = self._key(player)
         data = self._load(key)
         data[field] = value
         self._save(key)
 
-    def delete(self, player: Any, field: Optional[str] = None):
+    def delete(self, player: Any, field: Optional[str] = None) -> None:
         """Handle delete."""
         key = self._key(player)
         if field is None:
@@ -121,7 +121,7 @@ class _PlayerView:
     """Proxy returned by ``store[player]`` for dict-like field access."""
     __slots__ = ("_store", "_key")
 
-    def __init__(self, store: PlayerDataStore, key: str):
+    def __init__(self, store: PlayerDataStore, key: str) -> None:
         """Initialise a new _PlayerView."""
         self._store = store
         self._key = key
@@ -130,13 +130,13 @@ class _PlayerView:
         """Get an item by key or index."""
         return self._store._load(self._key).get(field)
 
-    def __setitem__(self, field: str, value: Any):
+    def __setitem__(self, field: str, value: Any) -> None:
         """Set an item by key or index."""
         data = self._store._load(self._key)
         data[field] = value
         self._store._save(self._key)
 
-    def __delitem__(self, field: str):
+    def __delitem__(self, field: str) -> None:
         """Delete an item by key or index."""
         data = self._store._load(self._key)
         data.pop(field, None)

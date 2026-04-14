@@ -22,13 +22,13 @@ class CustomItem(ItemBuilder):
 
     _registry: Dict[str, "CustomItem"] = {}
 
-    def __init__(self, item_id: str, material: str = "DIAMOND"):
+    def __init__(self, item_id: str, material: str = "DIAMOND") -> None:
         """Initialise a new CustomItem."""
         super().__init__(material)
         self.item_id = item_id
         CustomItem._registry[item_id] = self
 
-    def give(self, player: Any, amount: int = 1):
+    def give(self, player: Any, amount: int = 1) -> None:
         """Give this custom item to a player."""
         self.amount(amount)
         item = self.build()

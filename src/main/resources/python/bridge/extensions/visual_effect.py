@@ -24,7 +24,7 @@ class VisualEffect:
     """
     __slots__ = ("name", "_steps")
 
-    def __init__(self, name: str = "effect"):
+    def __init__(self, name: str = "effect") -> None:
         """Initialise a new VisualEffect."""
         self.name = name
         self._steps: List[Callable[..., Any]] = []
@@ -34,12 +34,12 @@ class VisualEffect:
         self._steps.append(func)
         return func
 
-    def add_step(self, func: Callable[..., Any]):
+    def add_step(self, func: Callable[..., Any]) -> None:
         """Imperatively add a step."""
         self._steps.append(func)
 
     @async_task
-    async def trigger(self, location: Any):
+    async def trigger(self, location: Any) -> None:
         """Play the full effect sequence at *location*."""
         for step in self._steps:
             result = step(location)

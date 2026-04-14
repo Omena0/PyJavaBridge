@@ -37,7 +37,7 @@ from bridge.connection import BridgeConnection
 _connection:BridgeConnection = None  # type: ignore[assignment]
 
 _print = __builtins__["print"] if isinstance(__builtins__, dict) else __builtins__.print  # type: ignore[index]
-def print(*args):
+def print(*args: Any) -> None:
     """Redirect print to stderr so stdout stays reserved for IPC."""
     _print(*args, file=sys.stderr)
 
@@ -45,30 +45,30 @@ class ConsolePlayer:
     """Fake player wrapper for console command senders."""
     __slots__ = ("_sender", "fields")
 
-    def __init__(self, sender_obj: Any):
+    def __init__(self, sender_obj: Any) -> None:
         """Wrap *sender_obj* with player-like fields."""
         self._sender = sender_obj
         self.fields: Dict[str, Any] = {"name": "Console", "uuid": "console"}
 
     @property
-    def name(self):
+    def name(self) -> Any:
         """Return the console display name."""
         return "Console"
 
     @property
-    def uuid(self):
+    def uuid(self) -> Any:
         """Return the console pseudo-UUID."""
         return "console"
 
-    def is_op(self):
+    def is_op(self) -> Any:
         """Console is always op."""
         return _connection.completed_call(True)
 
-    def has_permission(self, permission: str):
+    def has_permission(self, permission: str) -> Any:
         """Console has all permissions."""
         return _connection.completed_call(True)
 
-    def send_message(self, message: str):
+    def send_message(self, message: str) -> Any:
         """Send a message to the console."""
         from bridge.wrappers import ProxyBase
         try:
@@ -91,11 +91,11 @@ class ConsolePlayer:
         print(f"[PyJavaBridge] {message}")
         return _connection.completed_call(None)
 
-    def play_sound(self, sound: Any, volume: float = 1.0, pitch: float = 1.0):
+    def play_sound(self, sound: Any, volume: float = 1.0, pitch: float = 1.0) -> Any:
         """No-op: console cannot hear sounds."""
         return _connection.completed_call(None)
 
-    def kick(self, reason: str = ""):
+    def kick(self, reason: str = "") -> Any:
         """No-op: console cannot be kicked."""
         return _connection.completed_call(None)
 
@@ -106,7 +106,7 @@ class Sidebar:
     MAX_LINES = len(_ENTRIES)
     __slots__ = ("_board", "_obj", "_teams", "_lines")
 
-    def __init__(self, title: str = ""):
+    def __init__(self, title: str = "") -> None:
         """Create a sidebar scoreboard with the given title."""
         from bridge.wrappers import Scoreboard
 
@@ -116,7 +116,7 @@ class Sidebar:
         self._teams: dict[int, Any] = {}
         self._lines: dict[int, str] = {}
 
-    def _ensure_slot(self, slot: int):
+    def _ensure_slot(self, slot: int) -> None:
         """Lazily create the team and score entry for *slot*."""
         if slot < 0 or slot >= self.MAX_LINES:
             raise IndexError(f"Sidebar supports lines 0-{self.MAX_LINES - 1}")
@@ -129,7 +129,7 @@ class Sidebar:
             score._call_sync("setScore", self.MAX_LINES - slot)
             self._teams[slot] = team
 
-    def __setitem__(self, slot: int, text: str):
+    def __setitem__(self, slot: int, text: str) -> None:
         """Set the text content of a sidebar line."""
         self._ensure_slot(slot)
         self._teams[slot]._call_sync("setPrefix", text)
@@ -139,7 +139,7 @@ class Sidebar:
         """Get the current text of a sidebar line."""
         return self._lines.get(slot, "")
 
-    def __delitem__(self, slot: int):
+    def __delitem__(self, slot: int) -> None:
         """Remove a sidebar line and its backing team."""
         if slot in self._teams:
             entry = self._ENTRIES[slot]
@@ -148,7 +148,7 @@ class Sidebar:
             del self._teams[slot]
             self._lines.pop(slot, None)
 
-    def show(self, player: Any):
+    def show(self, player: Any) -> None:
         """Apply this sidebar to the given player."""
         player._call_sync("setScoreboard", self._board)
 
@@ -158,7 +158,7 @@ class Sidebar:
         return self._obj._call_sync("getDisplayName")
 
     @title.setter
-    def title(self, value: str):
+    def title(self, value: str) -> None:
         """Set the display name of the sidebar objective."""
         self._obj._call_sync("setDisplayName", value)
 
@@ -167,7 +167,7 @@ class Config:
 
     _EXTENSIONS = {"toml": ".toml", "json": ".json", "properties": ".properties"}
 
-    def __init__(self, name: Optional[str] = None, defaults: Optional[Dict[str, Any]] = None, format: str = "toml"):
+    def __init__(self, name: Optional[str] = None, defaults: Optional[Dict[str, Any]] = None, format: str = "toml") -> None:
         """Initialise the config, loading from disk and merging defaults."""
         if format not in self._EXTENSIONS:
             raise ValueError(f"Unsupported config format: {format!r} (expected toml, json, or properties)")
@@ -188,7 +188,7 @@ class Config:
         self._defaults: Dict[str, Any] = dict(defaults) if defaults else {}
         self.reload()
 
-    def reload(self):
+    def reload(self) -> None:
         """Re-read the config file from disk and merge with defaults."""
         data: Dict[str, Any] = {}
         if os.path.exists(self._path):
@@ -210,7 +210,7 @@ class Config:
         _deep_merge(merged, data)
         self._data = merged
 
-    def save(self):
+    def save(self) -> None:
         """Write the current config data to disk."""
         try:
             with open(self._path, "w", encoding="utf-8") as f:
@@ -266,7 +266,7 @@ class Config:
         result: List[Any] = list(cast(List[Any], v)) if isinstance(v, (list, tuple)) else [v]
         return result
 
-    def set(self, path: str, value: Any):
+    def set(self, path: str, value: Any) -> None:
         """Set a value by dot-separated path, creating intermediate dicts."""
         keys = path.split(".")
         data = self._data
@@ -298,7 +298,7 @@ class Config:
         """Dict-style config access."""
         return self.get(key)
 
-    def __setitem__(self, key: str, value: Any):
+    def __setitem__(self, key: str, value: Any) -> None:
         """Dict-style config mutation."""
         self.set(key, value)
 
@@ -322,7 +322,7 @@ class State:
     _instances: list[weakref.ref] = []
     __slots__ = ("_path", "_data")
 
-    def __init__(self, name: Optional[str] = None):
+    def __init__(self, name: Optional[str] = None) -> None:
         """Create or load a persistent state file for the current script."""
         script_path = os.environ.get("PYJAVABRIDGE_SCRIPT", "")
         if name is None:
@@ -337,7 +337,7 @@ class State:
         self.load()
         State._instances.append(weakref.ref(self))
 
-    def load(self):
+    def load(self) -> None:
         """Load the state from its JSON file on disk."""
         if os.path.exists(self._path):
             try:
@@ -348,7 +348,7 @@ class State:
             except Exception:
                 pass
 
-    def save(self):
+    def save(self) -> None:
         """Persist the current state to its JSON file."""
         try:
             with open(self._path, "w", encoding="utf-8") as f:
@@ -360,11 +360,11 @@ class State:
         """Get a state value by key."""
         return self._data[key]
 
-    def __setitem__(self, key: str, value: Any):
+    def __setitem__(self, key: str, value: Any) -> None:
         """Set a state value by key."""
         self._data[key] = value
 
-    def __delitem__(self, key: str):
+    def __delitem__(self, key: str) -> None:
         """Delete a state key."""
         del self._data[key]
 
@@ -376,23 +376,23 @@ class State:
         """Get a state value with a default fallback."""
         return self._data.get(key, default)
 
-    def keys(self):
+    def keys(self) -> Any:
         """Return the state's keys."""
         return self._data.keys()
 
-    def values(self):
+    def values(self) -> Any:
         """Return the state's values."""
         return self._data.values()
 
-    def items(self):
+    def items(self) -> Any:
         """Return the state's key-value pairs."""
         return self._data.items()
 
-    def clear(self):
+    def clear(self) -> None:
         """Clear all state data."""
         self._data.clear()
 
-    def update(self, data: dict):
+    def update(self, data: dict) -> None:
         """Merge *data* into the state."""
         self._data.update(data)
 
@@ -413,7 +413,7 @@ class Cooldown:
     def __init__(
             self, seconds: float = 1.0,
             on_expire: Optional[Callable[..., Any]] = None,
-    ):
+    ) -> None:
         """Create a cooldown tracker with the given duration."""
         self.seconds = seconds
         self.on_expire = on_expire
@@ -451,17 +451,17 @@ class Cooldown:
         left = exp - time.time()
         return max(0.0, left)
 
-    def reset(self, player: Any):
+    def reset(self, player: Any) -> None:
         """Clear the cooldown for *player*."""
         uid = self._get_uuid(player)
         self._expiry.pop(uid, None)
 
-    def _start_expire_task(self):
+    def _start_expire_task(self) -> None:
         """Start the background task that fires on_expire callbacks."""
         self._task_started = True
         from bridge import Player, server
 
-        async def _check_expiry():
+        async def _check_expiry() -> None:
             """Poll for expired cooldowns and invoke callbacks."""
             while _connection is not None:
                 now = time.time()
@@ -491,7 +491,7 @@ class Hologram:
     def __init__(
             self, location: Any, *lines: str,
             billboard: str = "CENTER",
-    ):
+    ) -> None:
         """Spawn a text display entity at *location* with the given lines."""
         from bridge import World
         self._lines: list[str] = list(lines)
@@ -508,12 +508,12 @@ class Hologram:
         self._entity._call("setBillboard", billboard)
         self._update_text()
 
-    def _update_text(self):
+    def _update_text(self) -> None:
         """Send the joined line text to the display entity."""
         text = "\n".join(self._lines) if self._lines else ""
         self._entity._call("text", text)
 
-    def __setitem__(self, index: int, text: str):
+    def __setitem__(self, index: int, text: str) -> None:
         """Set a hologram line by index."""
         if index < 0 or index >= len(self._lines):
             raise IndexError(f"Line index {index} out of range (0-{len(self._lines) - 1})")
@@ -525,7 +525,7 @@ class Hologram:
         """Get a hologram line by index."""
         return self._lines[index]
 
-    def __delitem__(self, index: int):
+    def __delitem__(self, index: int) -> None:
         """Delete a hologram line."""
         del self._lines[index]
         self._update_text()
@@ -534,16 +534,16 @@ class Hologram:
         """Return the number of hologram lines."""
         return len(self._lines)
 
-    def append(self, text: str):
+    def append(self, text: str) -> None:
         """Append a new line to the hologram."""
         self._lines.append(text)
         self._update_text()
 
-    def teleport(self, location: Any):
+    def teleport(self, location: Any) -> None:
         """Move the hologram to a new location."""
         self._entity.teleport(location)
 
-    def remove(self):
+    def remove(self) -> None:
         """Remove the hologram entity from the world."""
         self._entity.remove()
 
@@ -553,7 +553,7 @@ class Hologram:
         return self._entity._call_sync("getBillboard")
 
     @billboard.setter
-    def billboard(self, value: str):
+    def billboard(self, value: str) -> None:
         """Set the billboard mode."""
         self._entity._call("setBillboard", value)
 
@@ -563,7 +563,7 @@ class Hologram:
         return self._entity._call_sync("isSeeThrough")
 
     @see_through.setter
-    def see_through(self, value: bool):
+    def see_through(self, value: bool) -> None:
         """Set whether the text is visible through blocks."""
         self._entity._call("setSeeThrough", value)
 
@@ -573,7 +573,7 @@ class Hologram:
         return self._entity._call_sync("isShadowed")
 
     @shadowed.setter
-    def shadowed(self, value: bool):
+    def shadowed(self, value: bool) -> None:
         """Set whether the text has a shadow."""
         self._entity._call("setShadowed", value)
 
@@ -583,7 +583,7 @@ class Hologram:
         return self._entity._call_sync("getAlignment")
 
     @alignment.setter
-    def alignment(self, value: str):
+    def alignment(self, value: str) -> None:
         """Set the text alignment."""
         self._entity._call("setAlignment", value)
 
@@ -593,7 +593,7 @@ class Hologram:
         return self._entity._call_sync("getLineWidth")
 
     @line_width.setter
-    def line_width(self, value: int):
+    def line_width(self, value: int) -> None:
         """Set the maximum line width."""
         self._entity._call("setLineWidth", value)
 
@@ -603,7 +603,7 @@ class Hologram:
         return self._entity._call_sync("getBackgroundColor")
 
     @background.setter
-    def background(self, value: Optional[int]):
+    def background(self, value: Optional[int]) -> None:
         """Set the background colour, or None for default."""
         if value is None:
             self._entity._call("setDefaultBackground", True)
@@ -615,7 +615,7 @@ class ActionBarDisplay:
     """Persistent action bar text that auto-refreshes."""
     __slots__ = ("_texts", "_players", "_task_started")
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Create an action bar display manager."""
         self._texts: Dict[str, str] = {}
         self._players: Dict[str, Any] = {}
@@ -628,7 +628,7 @@ class ActionBarDisplay:
 
         return str(player.uuid)
 
-    def __setitem__(self, player: Any, text: str):
+    def __setitem__(self, player: Any, text: str) -> None:
         """Set the action bar text for *player* and start the refresh loop."""
         uid = self._get_uuid(player)
         self._texts[uid] = text
@@ -642,18 +642,18 @@ class ActionBarDisplay:
         uid = self._get_uuid(player)
         return self._texts.get(uid, "")
 
-    def __delitem__(self, player: Any):
+    def __delitem__(self, player: Any) -> None:
         """Stop showing action bar text for *player*."""
         uid = self._get_uuid(player)
         self._texts.pop(uid, None)
         self._players.pop(uid, None)
 
-    def _start_refresh(self):
+    def _start_refresh(self) -> None:
         """Start the background action bar refresh loop."""
         self._task_started = True
         from bridge import server
 
-        async def _refresh():
+        async def _refresh() -> None:
             """Periodically re-send action bar text to all tracked players."""
             while _connection is not None:
                 for uid, text in list(self._texts.items()):
@@ -678,7 +678,7 @@ class BossBarDisplay:
     def __init__(
             self, title: str = "", color: str = "PINK",
             style: str = "SOLID",
-    ):
+    ) -> None:
         """Create a boss bar with the given title, colour, and style."""
         from bridge.wrappers import BossBar
         self._bar = BossBar.create(
@@ -691,11 +691,11 @@ class BossBarDisplay:
         self._max: float = 1.0
         self._linked_task_started = False
 
-    def show(self, player: Any):
+    def show(self, player: Any) -> None:
         """Show the boss bar to *player*."""
         self._bar.add_player(player)
 
-    def hide(self, player: Any):
+    def hide(self, player: Any) -> None:
         """Hide the boss bar from *player*."""
         self._bar.remove_player(player)
 
@@ -705,7 +705,7 @@ class BossBarDisplay:
         return self._bar.title
 
     @text.setter
-    def text(self, value: str):
+    def text(self, value: str) -> None:
         """Set the title text of the boss bar."""
         self._bar.set_title(value)
 
@@ -715,7 +715,7 @@ class BossBarDisplay:
         return self._bar.color
 
     @color.setter
-    def color(self, value: str):
+    def color(self, value: str) -> None:
         """Set the boss bar colour by name."""
         self._bar.set_color(BarColor.from_name(value.upper()))
 
@@ -725,7 +725,7 @@ class BossBarDisplay:
         return self._bar.style
 
     @style.setter
-    def style(self, value: str):
+    def style(self, value: str) -> None:
         """Set the boss bar style by name."""
         self._bar.set_style(BarStyle.from_name(value.upper()))
 
@@ -735,7 +735,7 @@ class BossBarDisplay:
         return self._value
 
     @value.setter
-    def value(self, v: float):
+    def value(self, v: float) -> None:
         """Set the current value and update progress."""
         self._value = v
         self._update_progress()
@@ -746,7 +746,7 @@ class BossBarDisplay:
         return self._max
 
     @max.setter
-    def max(self, v: float):
+    def max(self, v: float) -> None:
         """Set the maximum value and update progress."""
         self._max = max(v, 0.001)
         self._update_progress()
@@ -757,7 +757,7 @@ class BossBarDisplay:
         return self._bar.progress
 
     @progress.setter
-    def progress(self, v: float):
+    def progress(self, v: float) -> None:
         """Set the raw progress fraction."""
         self._bar.set_progress(max(0.0, min(1.0, v)))
 
@@ -767,26 +767,26 @@ class BossBarDisplay:
         return self._bar.visible
 
     @visible.setter
-    def visible(self, v: bool):
+    def visible(self, v: bool) -> None:
         """Set the boss bar visibility."""
         self._bar.set_visible(v)
 
-    def _update_progress(self):
+    def _update_progress(self) -> None:
         """Recalculate the bar progress from value/max."""
         self._bar.set_progress(max(0.0, min(1.0, self._value / self._max)))
 
-    def link_cooldown(self, cooldown: Cooldown, player: Any):
+    def link_cooldown(self, cooldown: Cooldown, player: Any) -> None:
         """Deprecated: use link_to instead."""
         print('DeprecationWarning: BossBarDisplay.link_cooldown is deprecated. Please use .link_to instead.')
         self.link_to(cooldown, player)
 
-    def link_to(self, source: Any, player: Any):
+    def link_to(self, source: Any, player: Any) -> None:
         """Link this boss bar to a Cooldown (or any object with .remaining(player) and .seconds)."""
         from bridge import server
         self.show(player)
         self._max = source.seconds
 
-        async def _update():
+        async def _update() -> None:
             """Periodically update the linked boss bar progress."""
             while _connection is not None:
                 remaining = source.remaining(player)
@@ -809,7 +809,7 @@ class BlockDisplay:
     def __init__(
             self, location: Any, block_type: str,
             billboard: str = "FIXED",
-    ):
+    ) -> None:
         """Spawn a block display entity at *location*."""
         from bridge import World
         world: Any = location.world
@@ -825,11 +825,11 @@ class BlockDisplay:
         self._entity._call("setBlock", block_type)
         self._entity._call("setBillboard", billboard)
 
-    def teleport(self, location: Any):
+    def teleport(self, location: Any) -> None:
         """Move the block display to a new location."""
         self._entity.teleport(location)
 
-    def remove(self):
+    def remove(self) -> None:
         """Remove the block display entity from the world."""
         self._entity.remove()
 
@@ -839,7 +839,7 @@ class BlockDisplay:
         return self._entity._call_sync("getBillboard")
 
     @billboard.setter
-    def billboard(self, value: str):
+    def billboard(self, value: str) -> None:
         """Set the billboard mode of the block display."""
         self._entity._call("setBillboard", value)
 
@@ -850,7 +850,7 @@ class ItemDisplay:
     def __init__(
             self, location: Any, item: Any,
             billboard: str = "FIXED",
-    ):
+    ) -> None:
         """Spawn an item display entity at *location*."""
         from bridge import World, Item
         world: Any = location.world
@@ -869,11 +869,11 @@ class ItemDisplay:
         self._entity._call("setItemStack", item)
         self._entity._call("setBillboard", billboard)
 
-    def teleport(self, location: Any):
+    def teleport(self, location: Any) -> None:
         """Move the item display to a new location."""
         self._entity.teleport(location)
 
-    def remove(self):
+    def remove(self) -> None:
         """Remove the item display entity from the world."""
         self._entity.remove()
 
@@ -883,7 +883,7 @@ class ItemDisplay:
         return self._entity._call_sync("getBillboard")
 
     @billboard.setter
-    def billboard(self, value: str):
+    def billboard(self, value: str) -> None:
         """Set the billboard mode of the item display."""
         self._entity._call("setBillboard", value)
 
@@ -891,13 +891,13 @@ class Menu:
     """Interactive chest GUI menu with click handlers."""
     __slots__ = ("_title", "_rows", "_items")
 
-    def __init__(self, title: str = "", rows: int = 3):
+    def __init__(self, title: str = "", rows: int = 3) -> None:
         """Create a new menu with the given title and row count."""
         self._title = title
         self._rows = max(1, min(6, rows))
         self._items: Dict[int, MenuItem] = {}
 
-    def __setitem__(self, slot: int, menu_item: MenuItem):
+    def __setitem__(self, slot: int, menu_item: MenuItem) -> None:
         """Set a menu item at the given slot index."""
         if slot < 0 or slot >= self._rows * 9:
             raise IndexError(f"Slot {slot} out of range (0-{self._rows * 9 - 1})")
@@ -908,11 +908,11 @@ class Menu:
         """Get the menu item at the given slot, or None."""
         return self._items.get(slot)
 
-    def __delitem__(self, slot: int):
+    def __delitem__(self, slot: int) -> None:
         """Remove the menu item at the given slot."""
         self._items.pop(slot, None)
 
-    def fill_border(self, item: Any):
+    def fill_border(self, item: Any) -> None:
         """Fill the border slots of the menu with the given item."""
         from bridge import Item as WItem
         size = self._rows * 9
@@ -921,7 +921,7 @@ class Menu:
             if (row == 0 or row == self._rows - 1 or col == 0 or col == 8) and slot not in self._items:
                 self._items[slot] = MenuItem(item)
 
-    def open(self, player: Any):
+    def open(self, player: Any) -> None:
         """Open this menu for a player."""
         from bridge import Inventory, Player, Event as WEvent
         _register_menu_events()
@@ -950,7 +950,7 @@ class MenuItem:
     item: Any
     on_click: Optional[Callable[..., Any]] = None
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Convert string item names to Item objects."""
         from bridge import Item
         if isinstance(self.item, str):
@@ -963,7 +963,7 @@ class Paginator(Menu):
     def __init__(
         self, title: str = "", rows: int = 3,
         items: Optional[List[MenuItem]] = None,
-    ):
+    ) -> None:
         """Create a paginated menu, optionally auto-filling pages from items."""
         super().__init__(title, rows)
         self._pages: List[Dict[int, MenuItem]] = [{}]
@@ -997,7 +997,7 @@ class Paginator(Menu):
         self._pages.append({})
         return len(self._pages) - 1
 
-    def set_page_item(self, page: int, slot: int, menu_item: MenuItem):
+    def set_page_item(self, page: int, slot: int, menu_item: MenuItem) -> None:
         """Set a menu item at the given slot on a specific page."""
         while page >= len(self._pages):
             self._pages.append({})
@@ -1008,7 +1008,7 @@ class Paginator(Menu):
 
         self._pages[page][slot] = menu_item
 
-    def open(self, player: Any, page: int = 0):
+    def open(self, player: Any, page: int = 0) -> None:
         """Open the paginator for a player at the given page."""
         p_uuid = str(player.uuid)
         page = max(0, min(page, len(self._pages) - 1))
@@ -1016,7 +1016,7 @@ class Paginator(Menu):
         self._build_page(page)
         super().open(player)
 
-    def _build_page(self, page: int):
+    def _build_page(self, page: int) -> None:
         """Populate the menu items dict from the given page index."""
         from bridge import Item as WItem
         self._items.clear()
@@ -1045,7 +1045,7 @@ _menu_pending_open: set = set()  # player UUIDs with a menu open in progress
 _menu_events_registered = False
 _menu_events_lock = threading.Lock()
 
-def _register_menu_events():
+def _register_menu_events() -> None:
     """Register inventory click/close event handlers for menu support."""
     global _menu_events_registered
     with _menu_events_lock:
@@ -1056,7 +1056,7 @@ def _register_menu_events():
 
     from bridge import Player, Event as WEvent
 
-    async def _on_inventory_click(event: Any):
+    async def _on_inventory_click(event: Any) -> None:
         """Handle inventory click events for open menus."""
         player = event.fields.get("player")
 
@@ -1087,7 +1087,7 @@ def _register_menu_events():
                 except Exception as e:
                     print(f"[PyJavaBridge] Menu click handler error: {e}")
 
-    async def _on_inventory_close(event: Any):
+    async def _on_inventory_close(event: Any) -> None:
         """Handle inventory close events to clean up open menus."""
         player = event.fields.get("player")
 

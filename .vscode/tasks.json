@@ -34,20 +34,20 @@
       "command": "./gradlew :client_mod:runClient -PquickPlayMultiplayer=${input:quickPlayServer} -PdebugPort=${input:debugPort}",
       "dependsOn": "Build client_mod",
       "isBackground": true,
-      "problemMatcher": {
-        "owner": "pjb-run",
-        "pattern": [
-          {
+      "problemMatcher": [
+        {
+          "owner": "pjb-run",
+          "pattern": {
             "regexp": "^(.*)$",
             "message": 1
+          },
+          "background": {
+            "activeOnStart": false,
+            "beginsPattern": "^> Task :client_mod:runClient",
+            "endsPattern": "Listening for transport dt_socket|Listening on port|Started Minecraft server"
           }
-        ],
-        "background": {
-          "activeOnStart": false,
-          "beginsPattern": "^> Task :client_mod:runClient",
-          "endsPattern": "Listening for transport dt_socket|Listening on port|Started Minecraft server"
         }
-      },
+      ],
       "presentation": {
         "echo": true,
         "reveal": "always",

@@ -23,7 +23,7 @@ class Quest:
                  "_progress_getter", "_bar")
 
     def __init__(self, name: str, description: str = "",
-            time_limit: Optional[float] = None):
+            time_limit: Optional[float] = None) -> None:
         """Initialise a new Quest."""
         self.name = name
         self.description = description
@@ -67,13 +67,13 @@ class Quest:
         return self._end_times.get(str(player.uuid))
 
     # -- lifecycle --
-    def accept(self, player: Any):
+    def accept(self, player: Any) -> None:
         """Accept the quest."""
         puuid = str(player.uuid)
         if self._status.get(puuid) in (None, "not_started", "failed"):
             self._status[puuid] = "accepted"
 
-    def start(self, player: Any):
+    def start(self, player: Any) -> None:
         """Start the process."""
         puuid = str(player.uuid)
         self._status[puuid] = "active"
@@ -81,7 +81,7 @@ class Quest:
         if self.time_limit is not None:
             asyncio.ensure_future(self._time_limit_task(player))
 
-    def complete(self, player: Any):
+    def complete(self, player: Any) -> None:
         """Mark as complete."""
         puuid = str(player.uuid)
         self._status[puuid] = "completed"
@@ -91,18 +91,18 @@ class Quest:
             if asyncio.iscoroutine(result) or asyncio.isfuture(result):
                 asyncio.ensure_future(result)
 
-    def fail(self, player: Any):
+    def fail(self, player: Any) -> None:
         """Mark as failed."""
         puuid = str(player.uuid)
         self._status[puuid] = "failed"
         self._end_times[puuid] = time.time()
 
-    def end(self, player: Any):
+    def end(self, player: Any) -> None:
         """End the quest regardless of progress (marks completed)."""
         self.complete(player)
 
     # -- bossbar integration --
-    def show_bar(self, player: Any, color: str = "GREEN", style: str = "SEGMENTED_10"):
+    def show_bar(self, player: Any, color: str = "GREEN", style: str = "SEGMENTED_10") -> None:
         """Show the bar."""
         if self._bar is None:
             self._bar = bridge.BossBarDisplay(self.name, color, style)
@@ -110,12 +110,12 @@ class Quest:
         self._bar.show(player)
         asyncio.ensure_future(self._bar_update_task(player))
 
-    def hide_bar(self, player: Any):
+    def hide_bar(self, player: Any) -> None:
         """Hide the bar."""
         if self._bar is not None:
             self._bar.hide(player)
 
-    async def _bar_update_task(self, player: Any):
+    async def _bar_update_task(self, player: Any) -> None:
         """Asynchronously handle bar update task."""
         from bridge import server
         while self.status(player) == "active":
@@ -138,7 +138,7 @@ class Quest:
             except Exception:
                 break
 
-    async def _time_limit_task(self, player: Any):
+    async def _time_limit_task(self, player: Any) -> None:
         """Asynchronously handle time limit task."""
         from bridge import server
         puuid = str(player.uuid)
@@ -164,7 +164,7 @@ class QuestTree:
     """
     __slots__ = ("_tree",)
 
-    def __init__(self, tree: List[List[Quest] | Quest]):
+    def __init__(self, tree: List[List[Quest] | Quest]) -> None:
         """Initialise a new QuestTree."""
         self._tree: List[List[Quest]] = []
         for entry in tree:

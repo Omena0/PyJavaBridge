@@ -22,7 +22,7 @@ class MeshDisplay:
     """
 
     @staticmethod
-    def _axes_from_normal(snx, sny, snz, ref_edge=None):
+    def _axes_from_normal(snx: Any, sny: Any, snz: Any, ref_edge: Any=None) -> Any:
         """Compute entity yaw, pitch, and local right/up/fwd axes from a face normal."""
         horiz = math.sqrt(snx * snx + snz * snz)
         pitch = math.degrees(math.asin(max(-1.0, min(1.0, -sny))))
@@ -49,9 +49,9 @@ class MeshDisplay:
         return yaw, pitch, rx, ry, rz, upx, upy, upz, fwd_x, fwd_y, fwd_z
 
     @staticmethod
-    def _rasterize(vertices, faces, pixel_size, face_colors=None,
-            vertex_colors=None, tex_data=None, tex_w=0, tex_h=0,
-            uvs=None, face_uvs=None, dual_sided=False):
+    def _rasterize(vertices: Any, faces: Any, pixel_size: Any, face_colors: Any=None,
+            vertex_colors: Any=None, tex_data: Any=None, tex_w: Any=0, tex_h: Any=0,
+            uvs: Any=None, face_uvs: Any=None, dual_sided: Any=False) -> Any:
         """Handle rasterize."""
         ps = float(pixel_size)
         scale_unit = ps * 8
@@ -318,7 +318,7 @@ class MeshDisplay:
             uvs: list[tuple[float, float]] | None = None,
             face_uvs: list[tuple[int, int, int]] | None = None,
             pixel_size: float = 1 / 16,
-            dual_sided: bool = False):
+            dual_sided: bool = False) -> None:
         """Initialise a new MeshDisplay."""
         world: Any = location.world
         if isinstance(world, str):

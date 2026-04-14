@@ -44,19 +44,35 @@ Three built-in ranks: `leader`, `officer`, `member`.
 
 ### join(player) → bool
 
+Add `player` to the guild if capacity and rules allow it.
+
 ### leave(player)
+
+Remove `player` from the guild.
 
 ### kick(uuid)
 
+Remove a member by UUID.
+
 ### promote(uuid) / demote(uuid)
+
+Promote or demote a member's guild rank.
 
 ### transfer_leadership(uuid)
 
+Transfer guild leadership to the member with the given UUID.
+
 ### deposit(amount) / withdraw(amount)
+
+Add to or remove funds from the guild bank balance.
 
 ### disband()
 
+Disband the guild and clear persisted state.
+
 ### broadcast(message)
+
+Send `message` to all online guild members.
 
 ---
 

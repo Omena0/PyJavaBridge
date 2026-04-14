@@ -40,13 +40,23 @@ levels[player]  # current level (int)
 
 ### xp(player) → float
 
+Return the raw XP value tracked for `player`.
+
 ### level(player) → int
+
+Return the computed level for `player`.
 
 ### add_xp(player, amount)
 
+Add `amount` XP to `player`.
+
 ### set_xp(player, amount)
 
+Set `player`'s XP to an exact `amount`.
+
 ### set_level(player, level)
+
+Set `player` to a specific `level`, adjusting XP accordingly.
 
 ### xp_to_next(player) → float
 

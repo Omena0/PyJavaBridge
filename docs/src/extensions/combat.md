@@ -32,6 +32,8 @@ Register damage and quit listeners.
 
 ### in_combat(player) → bool
 
+Return whether `player` is currently combat-tagged.
+
 ### remaining(player) → float
 
 Seconds remaining in combat.

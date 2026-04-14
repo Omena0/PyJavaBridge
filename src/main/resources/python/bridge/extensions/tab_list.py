@@ -18,7 +18,7 @@ class TabEntry:
     __slots__ = ("name", "ping", "skin", "game_mode")
 
     def __init__(self, name: str, ping: int = 0, skin: Optional[str] = None,
-            game_mode: str = "SURVIVAL"):
+            game_mode: str = "SURVIVAL") -> None:
         """Initialise a new TabEntry."""
         self.name = name
         self.ping = ping
@@ -35,18 +35,18 @@ class TabGroup:
     """
     __slots__ = ("name", "prefix", "priority", "_entries")
 
-    def __init__(self, name: str, prefix: str = "", priority: int = 0):
+    def __init__(self, name: str, prefix: str = "", priority: int = 0) -> None:
         """Initialise a new TabGroup."""
         self.name = name
         self.prefix = prefix
         self.priority = priority
         self._entries: List[TabEntry] = []
 
-    def add_entry(self, entry: TabEntry):
+    def add_entry(self, entry: TabEntry) -> None:
         """Add a TabEntry to this group."""
         self._entries.append(entry)
 
-    def remove_entry(self, name: str):
+    def remove_entry(self, name: str) -> None:
         """Remove an entry by display name."""
         self._entries = [e for e in self._entries if e.name != name]
 
@@ -72,7 +72,7 @@ class TabList:
             await tab.apply(player)
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialise a new TabList."""
         self._header: str = ""
         self._footer: str = ""
@@ -85,7 +85,7 @@ class TabList:
         return self._header
 
     @header.setter
-    def header(self, value: str):
+    def header(self, value: str) -> None:
         """Set the header."""
         self._header = value
 
@@ -95,7 +95,7 @@ class TabList:
         return self._footer
 
     @footer.setter
-    def footer(self, value: str):
+    def footer(self, value: str) -> None:
         """Set the footer."""
         self._footer = value
 
@@ -110,11 +110,11 @@ class TabList:
         """Return the group."""
         return self._groups.get(name)
 
-    def remove_group(self, name: str):
+    def remove_group(self, name: str) -> None:
         """Remove a group."""
         self._groups.pop(name, None)
 
-    def template(self, name: str):
+    def template(self, name: str) -> Any:
         """Decorator: register a template function that returns a string.
 
         The function receives ``(player, server)`` and should return formatted text.
@@ -132,7 +132,7 @@ class TabList:
 
         return decorator
 
-    def _resolve_templates(self, text: str, player, server) -> str:
+    def _resolve_templates(self, text: str, player: Any, server: Any) -> str:
         """Replace {template_name} placeholders in text."""
         for name, func in self._templates.items():
             placeholder = f"{{{name}}}"
@@ -157,13 +157,13 @@ class TabList:
 
         return text
 
-    async def apply(self, player):
+    async def apply(self, player: Any) -> None:
         """Apply this tab list configuration to a player."""
         header = self._resolve_templates(self._header, player, bridge.server)
         footer = self._resolve_templates(self._footer, player, bridge.server)
         await player.set_tab_list_header_footer(header, footer)
 
-    async def apply_all(self):
+    async def apply_all(self) -> None:
         """Apply tab list to all online players."""
         players = bridge.server.players
         if players:
@@ -173,12 +173,12 @@ class TabList:
                 except Exception:
                     pass
 
-    def auto_update(self, interval_ticks: int = 20):
+    def auto_update(self, interval_ticks: int = 20) -> Any:
         """Start auto-updating the tab list for all players every *interval_ticks* ticks.
 
         Returns an ``asyncio.Task`` that can be cancelled.
         """
-        async def _loop():
+        async def _loop() -> None:
             """Asynchronously handle loop."""
             while True:
                 try:

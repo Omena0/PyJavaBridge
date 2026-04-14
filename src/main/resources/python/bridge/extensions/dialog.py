@@ -26,7 +26,7 @@ class DialogEntry:
         text: str,
         answers: Optional[List[Tuple[str, Union[DialogEntry, Callable[..., Any]]]]] = None,
         delay: Optional[float] = None,
-    ):
+    ) -> None:
         """Initialise a new DialogEntry."""
         self.speaker = speaker
         self.text = text
@@ -48,18 +48,18 @@ class Dialog:
         dialog.start(player)
     """
 
-    def __init__(self, root: DialogEntry):
+    def __init__(self, root: DialogEntry) -> None:
         """Initialise a new Dialog."""
         self._root = root
         self._active: dict[str, bool] = {}  # player uuid -> active
 
-    def start(self, player: Any):
+    def start(self, player: Any) -> None:
         """Start the process."""
         puuid = str(player.uuid)
         self._active[puuid] = True
         asyncio.ensure_future(self._play(player, self._root))
 
-    def stop(self, player: Any):
+    def stop(self, player: Any) -> None:
         """Handle stop."""
         puuid = str(player.uuid)
         self._active.pop(puuid, None)
@@ -68,7 +68,7 @@ class Dialog:
         """Check if active."""
         return self._active.get(str(player.uuid), False)
 
-    async def _play(self, player: Any, entry: DialogEntry):
+    async def _play(self, player: Any, entry: DialogEntry) -> None:
         """Asynchronously handle play."""
         from bridge import server
         puuid = str(player.uuid)
@@ -113,7 +113,7 @@ class Dialog:
         puuid = str(player.uuid)
         future: asyncio.Future[int] = asyncio.get_event_loop().create_future()
 
-        async def _chat_handler(event: Any):
+        async def _chat_handler(event: Any) -> None:
             """Asynchronously handle chat handler."""
             ep = event.fields.get("player")
             if ep is None:

@@ -20,7 +20,7 @@ class CombatSystem:
     """
 
     def __init__(self, combat_timeout: float = 10.0,
-            display_bossbar: bool = False):
+            display_bossbar: bool = False) -> None:
         """Initialise a new CombatSystem."""
         self.combat_timeout = combat_timeout
         self.display_bossbar = display_bossbar
@@ -29,14 +29,14 @@ class CombatSystem:
         self._bars: Dict[str, bridge.BossBarDisplay] = {}
         self._listener_registered = False
 
-    def _register_listeners(self):
+    def _register_listeners(self) -> None:
         """Register listeners."""
         if self._listener_registered:
             return
 
         self._listener_registered = True
 
-        async def _on_damage(event: Any):
+        async def _on_damage(event: Any) -> None:
             """Handle the damage event."""
             attacker = event.fields.get("damager")
             victim = event.fields.get("entity")
@@ -50,7 +50,7 @@ class CombatSystem:
                 if v_uuid:
                     self._tag(v_uuid, victim)
 
-        async def _on_quit(event: Any):
+        async def _on_quit(event: Any) -> None:
             """Handle the quit event."""
             player = event.fields.get("player")
             if player and hasattr(player, "fields"):
@@ -71,11 +71,11 @@ class CombatSystem:
         bridge._connection.on("player_quit", _on_quit)
         bridge._connection.subscribe("player_quit", False)
 
-    def start(self):
+    def start(self) -> None:
         """Register event listeners for combat tracking."""
         self._register_listeners()
 
-    def _tag(self, puuid: str, player: Any):
+    def _tag(self, puuid: str, player: Any) -> None:
         """Handle tag."""
         self._last_attack[puuid] = time.time()
         if self.display_bossbar:
@@ -103,7 +103,7 @@ class CombatSystem:
         self._combat_log_handlers.append(handler)
         return handler
 
-    def _show_bar(self, puuid: str, player: Any):
+    def _show_bar(self, puuid: str, player: Any) -> None:
         """Handle show bar."""
         if puuid not in self._bars:
             bar = bridge.BossBarDisplay("In Combat", color="RED", style="SOLID")
@@ -114,7 +114,7 @@ class CombatSystem:
         bar.max = self.combat_timeout
         bar.value = self.combat_timeout
 
-        async def _update():
+        async def _update() -> None:
             """Asynchronously handle update."""
             from bridge import server
             while self.in_combat_by_uuid(puuid):

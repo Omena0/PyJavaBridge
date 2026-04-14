@@ -21,7 +21,7 @@ class LevelSystem:
     """
 
     def __init__(self, multiplier: float = 100.0, exponent: float = 1.5,
-            persist: bool = True, name: str = "levels"):
+            persist: bool = True, name: str = "levels") -> None:
         """Initialise a new LevelSystem."""
         self.multiplier = multiplier
         self.exponent = exponent
@@ -33,13 +33,13 @@ class LevelSystem:
         if persist:
             self._load()
 
-    def _load(self):
+    def _load(self) -> None:
         """Load data from storage."""
         if os.path.isfile(self._path):
             with open(self._path, "r") as f:
                 self._xp = json.load(f)
 
-    def _save(self):
+    def _save(self) -> None:
         """Save data to storage."""
         if not self._persist:
             return
@@ -79,7 +79,7 @@ class LevelSystem:
         """Handle level."""
         return self.level_from_xp(self.xp(player))
 
-    def add_xp(self, player: Any, amount: float):
+    def add_xp(self, player: Any, amount: float) -> None:
         """Add a xp."""
         puuid = self._puuid(player)
         old_xp = self._xp.get(puuid, 0.0)
@@ -98,12 +98,12 @@ class LevelSystem:
                 except Exception:
                     pass
 
-    def set_xp(self, player: Any, value: float):
+    def set_xp(self, player: Any, value: float) -> None:
         """Set the xp."""
         self._xp[self._puuid(player)] = max(0.0, value)
         self._save()
 
-    def set_level(self, player: Any, level: int):
+    def set_level(self, player: Any, level: int) -> None:
         """Set the level."""
         self._xp[self._puuid(player)] = self.xp_for_level(level)
         self._save()

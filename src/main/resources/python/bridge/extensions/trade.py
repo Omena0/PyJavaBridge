@@ -19,7 +19,7 @@ class TradeWindow:
     """
     __slots__ = ("_bank", "_delay", "_on_trade_handlers", "_sessions")
 
-    def __init__(self, bank: Optional[Bank] = None, delay: float = 3.0):
+    def __init__(self, bank: Optional[Bank] = None, delay: float = 3.0) -> None:
         """Initialise a new TradeWindow."""
         self._bank = bank
         self._delay = delay
@@ -31,21 +31,21 @@ class TradeWindow:
         self._on_trade_handlers.append(handler)
         return handler
 
-    def open(self, p1: Any, p2: Any):
+    def open(self, p1: Any, p2: Any) -> None:
         """Open the UI."""
         session = _TradeSession(self, p1, p2)
         self._sessions[str(p1.uuid)] = session
         self._sessions[str(p2.uuid)] = session
         session.show()
 
-    def close(self, player: Any):
+    def close(self, player: Any) -> None:
         """Close the UI."""
         puuid = str(player.uuid)
         session = self._sessions.get(puuid)
         if session:
             session.cancel()
 
-    def _remove_session(self, session: "_TradeSession"):
+    def _remove_session(self, session: "_TradeSession") -> None:
         """Handle remove session."""
         for puuid in (str(session.p1.uuid), str(session.p2.uuid)):
             self._sessions.pop(puuid, None)
@@ -55,7 +55,7 @@ class _TradeSession:
     __slots__ = ("window", "p1", "p2", "items1", "items2",
                  "balance1", "balance2", "confirmed", "_cancelled", "_executing")
 
-    def __init__(self, window: TradeWindow, p1: Any, p2: Any):
+    def __init__(self, window: TradeWindow, p1: Any, p2: Any) -> None:
         """Initialise a new _TradeSession."""
         self.window = window
         self.p1 = p1
@@ -68,12 +68,12 @@ class _TradeSession:
         self._cancelled = False
         self._executing = False
 
-    def show(self):
+    def show(self) -> None:
         """Open trade GUIs for both players."""
         self._show_for(self.p1, 0)
         self._show_for(self.p2, 1)
 
-    def _show_for(self, player: Any, player_idx: int):
+    def _show_for(self, player: Any, player_idx: int) -> None:
         """Handle show for."""
         from bridge import Inventory, Item as WItem
         from bridge.helpers import Menu, MenuItem, _register_menu_events, _open_menus
@@ -102,9 +102,9 @@ class _TradeSession:
         else:
             status = "§eClick to confirm"
 
-        def _make_confirm(idx: int):
+        def _make_confirm(idx: int) -> Any:
             """Handle make confirm."""
-            async def _confirm(p: Any, e: Any):
+            async def _confirm(p: Any, e: Any) -> None:
                 """Asynchronously handle confirm."""
                 if self._cancelled or self._executing:
                     return
@@ -129,7 +129,7 @@ class _TradeSession:
         menu[40] = MenuItem(confirm_item, on_click=_make_confirm(player_idx))
 
         # Cancel button
-        async def _cancel_click(p: Any, e: Any):
+        async def _cancel_click(p: Any, e: Any) -> None:
             """Asynchronously handle cancel click."""
             self.cancel()
 
@@ -137,9 +137,9 @@ class _TradeSession:
 
         # Add item button (only for own side)
         if not self.confirmed[player_idx]:
-            def _make_add_balance(idx: int, amount: int):
+            def _make_add_balance(idx: int, amount: int) -> Any:
                 """Handle make add balance."""
-                async def _add(p: Any, e: Any):
+                async def _add(p: Any, e: Any) -> None:
                     """Asynchronously handle add."""
                     if self._cancelled or self.confirmed[idx]:
                         return
@@ -164,7 +164,7 @@ class _TradeSession:
 
         menu.open(player)
 
-    async def _execute(self):
+    async def _execute(self) -> None:
         """Asynchronously handle execute."""
         from bridge import server
         self._executing = True
@@ -227,7 +227,7 @@ class _TradeSession:
 
         self.window._remove_session(self)
 
-    def cancel(self):
+    def cancel(self) -> None:
         """Cancel the operation."""
         if self._cancelled:
             return

@@ -76,7 +76,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 from bridge.types import async_task
 
 _print = __builtins__["print"] if isinstance(__builtins__, dict) else __builtins__.print  # type: ignore[index]
-def _log(msg: str):
+def _log(msg: str) -> None:
     """Handle log."""
     _print(f"[Schematic] {msg}", file=sys.stderr)
 
@@ -516,7 +516,7 @@ class Marker:
     __slots__ = ("type", "x", "y", "z", "metadata")
 
     def __init__(self, marker_type: str, x: int, y: int, z: int,
-            metadata: Optional[Dict[str, str]] = None):
+            metadata: Optional[Dict[str, str]] = None) -> None:
         """Initialise a new Marker."""
         self.type = marker_type
         self.x = x
@@ -576,7 +576,7 @@ class Schematic:
             metadata: Dict[str, str],
             key_map: Dict[str, str],
             width: int, height: int, depth: int,
-            blocks: List[List[List[str]]]):
+            blocks: List[List[List[str]]]) -> None:
         """Initialise a new Schematic."""
         self.name = name
         self.path = path
@@ -796,7 +796,7 @@ class PlacedSchematic:
     """
 
     def __init__(self, schematic: Schematic, origin: Tuple[int, int, int],
-            world_name: str):
+            world_name: str) -> None:
         """Initialise a new PlacedSchematic."""
         self.schematic = schematic
         self.origin = origin
@@ -852,7 +852,7 @@ class PlacedSchematic:
         return bulk
 
     @async_task
-    async def paste(self, world: Any):
+    async def paste(self, world: Any) -> None:
         """Paste the schematic blocks into the world and save originals.
 
         Sends all operations to Java in a single bulk call via
@@ -877,7 +877,7 @@ class PlacedSchematic:
         _log(f"paste: {self.schematic.name!r} done in {time.perf_counter()-t0:.3f}s")
 
     @async_task
-    async def restore(self, world: Any):
+    async def restore(self, world: Any) -> None:
         """Restore original blocks (cleanup) in a single bulk call."""
         if not self.original_blocks:
             return
@@ -892,7 +892,7 @@ class PlacedSchematic:
         )
         self.original_blocks.clear()
 
-    def __repr__(self):
+    def __repr__(self) -> Any:
         """Return a string representation."""
         return (f"<PlacedSchematic {self.schematic.name!r} at {self.origin}>")
 

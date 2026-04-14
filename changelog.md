@@ -1,31 +1,44 @@
 
 # Changelog
 
+## 4B
+
+Client-mod API consolidation release — high-level Python interface, cleaner extension exports, and follow-up client/runtime hardening and readability improvements.
+
+### Changes
+
+#### ClientMod extension API
+
+- The extension now exposes a high-level singleton entrypoint:
+  - `from bridge.extensions.client_mod import client_mod`
+  - `cm = client_mod.session(player)`
+- Per-player operations are now invoked on `cm` (for example `cm.command(...)`, `cm.register_script(...)`, `cm.raycast(...)`, `cm.stream_audio_file(...)`).
+- Event decorators and request-data registry are exposed on the singleton (`client_mod.on_client_data`, `client_mod.on_permission_change`, `client_mod.register_request_data`, `client_mod.unregister_request_data`).
+
+#### Cleanup
+
+- Import surface cleanup
+  - `bridge.extensions` now exports the client-mod API as high-level objects (`ClientMod`, `ClientModSession`, `client_mod`) rather than a long list of flat helper functions.
+  - Type stubs and extension documentation were updated to match the class-based API.
+
 ## 4A
 
 Major release: first-class client-side integration, an experimental datapack runtime, improved bridge reliability and player-data handling, documentation and configuration enhancements, and packaging updates.
 
-### Highlights
+### Changes
 
-- Client-mod integration: optional, bidirectional server↔client protocol with session management and permission negotiation enabling richer client-side features.
-- Datapack runtime (experimental): in-memory datapack registration for models, advancements, predicates and registry entries without writing resource files.
-- Player-data & reliability: more reliable UUID/name resolution, safer lifecycle/reconnect handling, and improved field caching.
-- Documentation & examples: new clientmod and datapack guides, updated examples, and improved docs site.
-- Configuration & deployment: new options for timeouts, message size limits, and Python runtime path.
-- Packaging & tooling: build and packaging updates to support client features.
-- Stability fixes: targeted crash and edge-case fixes, and cleanup of lifecycle races.
+#### Client mod support
 
-### User-facing changes (summary)
+- Adds an optional client-side bridge allowing server scripts and plugins to send commands and structured data to a cooperating client mod and receive responses/events.
+- Permission negotiation occurs at session start; scripts must handle availability, denials, and timeouts gracefully.
 
-- Client mod support
-  - Adds an optional client-side bridge allowing server scripts and plugins to send commands and structured data to a cooperating client mod and receive responses/events.
-  - Permission negotiation occurs at session start; scripts must handle availability, denials, and timeouts gracefully.
+#### Datapack runtime (experimental)
 
-- Datapack runtime (experimental)
-  - API to register datapack content (models, advancements, predicates, registry entries) at runtime; best-effort and intended for dynamic/testing scenarios.
+- API to register datapack content (models, advancements, predicates, registry entries) at runtime; best-effort and intended for dynamic/testing scenarios.
 
-- Configuration
-  - New configuration keys for message size, timeouts, and Python runtime; review settings for production deployment.
+#### Configuration
+
+- New configuration keys for message size, timeouts, and Python runtime; review settings for production deployment.
 
 ## 3D
 
@@ -165,7 +178,7 @@ Performance optimization pass — caching, data structures, and hot-path improve
 
 ### Changes
 
-#### Java — Reflection & Caching
+#### Reflection & Caching
 
 - Cache `getMethods()` per class in `BridgeInstance` and `RefFacade` — avoids repeated reflection on every reflective invoke
 - Cache NMS reflection handles (`parseTag`, `getHandle`, `spawnNonLivingNms` helpers) in `EntitySpawner` static fields
@@ -175,7 +188,7 @@ Performance optimization pass — caching, data structures, and hot-path improve
 - Merge dual method+miss cache into single `ConcurrentHashMap<String, Optional<Method>>` in `EventDispatcher` and `BridgeSerializer`
 - Cache `getLogicalTypeName()` per concrete class in `BridgeSerializer` — avoids repeated instanceof chains on every serialize
 
-#### Java — Serialization & I/O
+#### Serialization & I/O
 
 - ThreadLocal `ByteArrayOutputStream` for `send()` — avoids allocation per outgoing message
 - ThreadLocal identity-hash set for cyclic reference detection in `serialize()` — reused across calls
@@ -184,7 +197,7 @@ Performance optimization pass — caching, data structures, and hot-path improve
 - Shallow top-level entry copy instead of `deepCopy()` for per-block event payloads in `EventDispatcher`
 - Reduce per-pixel overhead in `spawnImagePixels` — single `get()` + null check replaces `has()`+`get()` pairs
 
-#### Java — Data Structures & Dispatch
+#### Data Structures & Dispatch
 
 - `BridgeInstance.invoke()`: else-if dispatch chain replaces sequential instanceof checks — first match wins
 - `ObjectRegistry`: `StampedLock` replaces `synchronized` block — lock-free reads via `ConcurrentHashMap`, write lock only for register/release
@@ -195,7 +208,7 @@ Performance optimization pass — caching, data structures, and hot-path improve
 - Expanded thread-safe method sets for `Server`, `OfflinePlayer`, and `Entity` — more calls skip main-thread dispatch
 - Static empty `JsonObject` sentinel for missing `args` in `invoke()`
 
-#### Python — Connection & Dispatch
+#### Connection & Dispatch
 
 - Lazy module-level imports in `connection.py` — `_ensure_lazy_imports()` populates references once, avoids per-call `import`/`from` overhead
 - Single-handler fast path in `_dispatch_event` — when only 1 handler, directly call+await without list/gather overhead
@@ -205,7 +218,7 @@ Performance optimization pass — caching, data structures, and hot-path improve
 - `_read_exact()` optimistic fast path — single `os.read()` often returns full message, skips `bytearray` accumulation
 - `send()` writes header+data in one `write()` call instead of two
 
-#### Python — Proxy & Types
+#### Proxy & Types
 
 - Lazy module-level dispatch table for `_proxy_from()` — suffix/contains lookup tables built once, avoids per-call dict literal and import
 - Handle-first fast path in `ProxyBase.__eq__` — same handle means same Java object, skip field comparison
@@ -213,7 +226,7 @@ Performance optimization pass — caching, data structures, and hot-path improve
 - Bounded `_player_uuid_cache` (max 1000, evict oldest quarter) in both `wrappers.py` and `utils.py`
 - Consolidated `isinstance` checks in `decorators.py` command wrapper — merged two separate branches into one
 
-#### Python — Helpers
+#### Helpers
 
 - `State._instances` uses `weakref.ref` — allows garbage collection of unreferenced State objects
 - Shutdown handler updated to dereference weakrefs

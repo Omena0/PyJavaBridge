@@ -13,7 +13,7 @@ class State:
     """
     __slots__ = ("name", "_on_enter", "_on_exit", "_on_tick", "_transitions")
 
-    def __init__(self, name: str):
+    def __init__(self, name: str) -> None:
         """Initialise a new State."""
         self.name = name
         self._on_enter: List[Callable[..., Any]] = []
@@ -36,11 +36,11 @@ class State:
         self._on_tick.append(func)
         return func
 
-    def transition(self, event: str, target: str):
+    def transition(self, event: str, target: str) -> None:
         """Register that *event* should move to *target* state."""
         self._transitions[event] = target
 
-    async def _fire(self, handlers: List[Callable[..., Any]], *args):
+    async def _fire(self, handlers: List[Callable[..., Any]], *args: Any) -> None:
         """Fire callbacks."""
         for h in handlers:
             try:
@@ -82,7 +82,7 @@ class StateMachine:
     __slots__ = ("name", "_states", "_initial", "_current",
                  "_tick_task", "_tick_interval", "_attached")
 
-    def __init__(self, name: str = "state_machine"):
+    def __init__(self, name: str = "state_machine") -> None:
         """Initialise a new StateMachine."""
         self.name = name
         self._states: Dict[str, State] = {}
@@ -111,35 +111,35 @@ class StateMachine:
         return self._initial
 
     @initial_state.setter
-    def initial_state(self, name: str):
+    def initial_state(self, name: str) -> None:
         """Set the initial state."""
         if name in self._states:
             self._initial = name
 
-    def _key(self, entity) -> str:  # sourcery skip: remove-unnecessary-cast
+    def _key(self, entity: Any) -> str:  # sourcery skip: remove-unnecessary-cast
         """Get a unique key for the entity."""
         if hasattr(entity, "uuid"):
             return str(entity.uuid)
 
         return str(id(entity))
 
-    def current_state(self, entity) -> Optional[str]:
+    def current_state(self, entity: Any) -> Optional[str]:
         """Get the current state name for an entity."""
         return self._current.get(self._key(entity))
 
-    def attach(self, entity):
+    def attach(self, entity: Any) -> None:
         """Attach an entity to this state machine, placing it in the initial state."""
         key = self._key(entity)
         self._current[key] = self._initial
         self._attached.add(key)
 
-    def detach(self, entity):
+    def detach(self, entity: Any) -> None:
         """Remove an entity from this state machine."""
         key = self._key(entity)
         self._current.pop(key, None)
         self._attached.discard(key)
 
-    async def trigger(self, entity, event: str) -> bool:
+    async def trigger(self, entity: Any, event: str) -> bool:
         """Trigger an event for the entity — transitions if the current state handles it.
 
         Returns True if a transition occurred, False otherwise.
@@ -166,7 +166,7 @@ class StateMachine:
         await target_state._fire(target_state._on_enter, entity, cur_name)
         return True
 
-    async def force_state(self, entity, state_name: str):
+    async def force_state(self, entity: Any, state_name: str) -> None:
         """Force an entity into a specific state, firing exit/enter callbacks."""
         key = self._key(entity)
         old_name = self._current.get(key)
@@ -179,7 +179,7 @@ class StateMachine:
         self._current[key] = state_name
         await self._states[state_name]._fire(self._states[state_name]._on_enter, entity, old_name)
 
-    def start_ticking(self, interval_ticks: int = 1, entity_resolver: Optional[Callable[..., Any]] = None):
+    def start_ticking(self, interval_ticks: int = 1, entity_resolver: Optional[Callable[..., Any]] = None) -> Any:
         """Start a tick loop that calls ``on_tick`` handlers for all attached entities.
 
         Args:
@@ -191,7 +191,7 @@ class StateMachine:
 
         self._tick_interval = interval_ticks
 
-        async def _loop():
+        async def _loop() -> None:
             """Asynchronously handle loop."""
             while True:
                 for key in list(self._attached):
@@ -207,7 +207,7 @@ class StateMachine:
         self._tick_task = asyncio.ensure_future(_loop())
         return self._tick_task
 
-    def stop_ticking(self):
+    def stop_ticking(self) -> None:
         """Stop the tick loop."""
         if self._tick_task:
             self._tick_task.cancel()

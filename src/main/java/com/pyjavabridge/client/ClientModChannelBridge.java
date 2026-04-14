@@ -306,16 +306,20 @@ public class ClientModChannelBridge implements PluginMessageListener {
         byte[] payload = ClientModFrameCodec.encodeFrame(packetType, 0, requestId, body);
         // Log outgoing request for debugging
         try {
-            int max = Math.min(16, payload.length);
-            StringBuilder sb = new StringBuilder();
-            for (int i = 0; i < max; i++) {
-                sb.append(String.format("%02X", payload[i] & 0xFF));
-                if (i < max - 1) sb.append(' ');
-            }
-            if (payload.length > max) sb.append("...");
-            plugin.getLogger().info("Sending client_mod packet to " + player.getName() + " type=" + packetType + " req=" + requestId + " len=" + payload.length + " payload_hex=" + sb.toString());
+            plugin.getLogger().info(
+                    "Sending client_mod packet to " + player.getName()
+                            + " type=" + packetType
+                            + " req=" + requestId
+                            + " len=" + payload.length
+                            + " payload_hex=" + hexPreview(payload, 16)
+            );
         } catch (Throwable t) {
-            plugin.getLogger().info("Sending client_mod packet to " + player.getName() + " type=" + packetType + " req=" + requestId + " len=" + payload.length);
+            plugin.getLogger().info(
+                    "Sending client_mod packet to " + player.getName()
+                            + " type=" + packetType
+                            + " req=" + requestId
+                            + " len=" + payload.length
+            );
         }
 
         byte[] wrapped = encodeWithVarIntPrefix(payload);
@@ -347,6 +351,25 @@ public class ClientModChannelBridge implements PluginMessageListener {
 
         if (len > 0) System.arraycopy(payload, 0, out, idx, len);
         return out;
+    }
+
+    private static String hexPreview(byte[] payload, int maxBytes) {
+        if (payload == null || payload.length == 0) {
+            return "";
+        }
+
+        int max = Math.max(0, Math.min(maxBytes, payload.length));
+        StringBuilder sb = new StringBuilder(max * 3 + 3);
+        for (int i = 0; i < max; i++) {
+            sb.append(String.format("%02X", payload[i] & 0xFF));
+            if (i < max - 1) {
+                sb.append(' ');
+            }
+        }
+        if (payload.length > max) {
+            sb.append("...");
+        }
+        return sb.toString();
     }
 
     private void completePending(ClientModSessionManager.SessionState session, int requestId, Map<String, Object> body) {

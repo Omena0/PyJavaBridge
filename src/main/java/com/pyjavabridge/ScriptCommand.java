@@ -182,7 +182,8 @@ class ScriptCommand extends Command {
                 if (command instanceof ScriptCommand scriptCommand) {
                     try {
                         scriptCommand.unregister(simpleMap);
-                    } catch (Exception ignored) {
+                    } catch (Exception e) {
+                        logger.fine("Failed to unregister script command '" + scriptCommand.getName() + "': " + e.getMessage());
                     }
                 }
                 try {

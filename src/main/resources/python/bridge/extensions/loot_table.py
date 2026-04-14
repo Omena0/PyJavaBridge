@@ -21,7 +21,7 @@ class LootEntry:
     __slots__ = ("item", "weight", "min_amount", "max_amount", "condition")
 
     def __init__(self, item: Any, weight: int = 1, min_amount: int = 1,
-            max_amount: int = 1, condition: Optional[Callable[..., bool]] = None):
+            max_amount: int = 1, condition: Optional[Callable[..., bool]] = None) -> None:
         """Initialise a new LootEntry."""
         self.item = item
         self.weight = max(1, weight)
@@ -111,15 +111,13 @@ def _clone_item_with_amount(item: "Item", amount: int) -> Optional["Item"]:
     if amount <= 0:
         return None
 
-    from bridge import Item
-
     fields = dict(getattr(item, "fields", {}) or {})
     fields["amount"] = int(amount)
     material = fields.get("material") or fields.get("type")
     if material is not None:
         fields["material"] = str(material)
 
-    return Item(handle=None, fields=fields)
+    return _item_from_dict(fields)
 
 
 def _spread_into_inventory(inventory: "Inventory", items: List["Item"]) -> List["Item"]:
@@ -191,7 +189,7 @@ class LootPool:
         bonus_rolls: Extra rolls based on luck. Default 0.
     """
 
-    def __init__(self, name: str = "pool", rolls: int = 1, bonus_rolls: int = 0):
+    def __init__(self, name: str = "pool", rolls: int = 1, bonus_rolls: int = 0) -> None:
         """Initialise a new LootPool."""
         self.name = name
         self.rolls = rolls
@@ -218,7 +216,7 @@ class LootPool:
 
     def entry(self, item: Any, weight: int = 1, min_amount: int = 1,
             max_amount: int = 1,
-            condition: Optional[Callable[..., bool]] = None):
+            condition: Optional[Callable[..., bool]] = None) -> Any:
         """Decorator-style entry registration. Returns the condition function."""
         def decorator(func: Callable[..., bool]) -> Callable[..., bool]:
             """Register as a decorator."""
@@ -294,7 +292,7 @@ class LootTable:
             await player.inventory.add_item(item)
     """
 
-    def __init__(self, name: str = "loot_table"):
+    def __init__(self, name: str = "loot_table") -> None:
         """Initialise a new LootTable."""
         self.name = name
         self._pools: Dict[str, LootPool] = {}
@@ -310,7 +308,7 @@ class LootTable:
         """Return the pool."""
         return self._pools.get(name)
 
-    def remove_pool(self, name: str):
+    def remove_pool(self, name: str) -> None:
         """Remove a pool."""
         self._pools.pop(name, None)
 

@@ -21,7 +21,7 @@ class Leaderboard:
 
     def __init__(self, location: Any, title: str = "Leaderboard",
             get_metric: Optional[Callable[..., Any]] = None,
-            update_interval: int = 100, max_entries: int = 10):
+            update_interval: int = 100, max_entries: int = 10) -> None:
         """Initialise a new Leaderboard."""
         self._location = location
         self.title = title
@@ -31,7 +31,7 @@ class Leaderboard:
         self._hologram: Optional[bridge.Hologram] = None
         self._running = False
 
-    def start(self):
+    def start(self) -> None:
         """Create the hologram and start the update loop."""
         if self._hologram is None:
             self._hologram = bridge.Hologram(self._location, self.title)
@@ -39,7 +39,7 @@ class Leaderboard:
         self._running = True
         asyncio.ensure_future(self._update_loop())
 
-    def stop(self):
+    def stop(self) -> None:
         """Return the stop."""
         self._running = False
         if self._hologram is not None:
@@ -51,7 +51,7 @@ class Leaderboard:
         self._get_metric = func
         return func
 
-    async def _update_loop(self):
+    async def _update_loop(self) -> None:
         """Update the loop."""
         from bridge import server
         while self._running:
@@ -61,7 +61,7 @@ class Leaderboard:
             except Exception:
                 break
 
-    async def _refresh(self):
+    async def _refresh(self) -> None:
         """Asynchronously handle refresh."""
         from bridge import server
         if self._hologram is None or self._get_metric is None:

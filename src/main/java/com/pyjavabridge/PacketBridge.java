@@ -188,24 +188,40 @@ public class PacketBridge {
         for (String key : fields.keySet()) {
             try {
                 if (key.startsWith("int_")) {
-                    int idx = Integer.parseInt(key.substring(4));
+                    Integer idx = parseFieldIndex(key, "int_");
+                    if (idx == null) continue;
                     packet.getIntegers().writeSafely(idx, fields.get(key).getAsInt());
                 } else if (key.startsWith("double_")) {
-                    int idx = Integer.parseInt(key.substring(7));
+                    Integer idx = parseFieldIndex(key, "double_");
+                    if (idx == null) continue;
                     packet.getDoubles().writeSafely(idx, fields.get(key).getAsDouble());
                 } else if (key.startsWith("float_")) {
-                    int idx = Integer.parseInt(key.substring(6));
+                    Integer idx = parseFieldIndex(key, "float_");
+                    if (idx == null) continue;
                     packet.getFloat().writeSafely(idx, fields.get(key).getAsFloat());
                 } else if (key.startsWith("string_")) {
-                    int idx = Integer.parseInt(key.substring(7));
+                    Integer idx = parseFieldIndex(key, "string_");
+                    if (idx == null) continue;
                     packet.getStrings().writeSafely(idx, fields.get(key).getAsString());
                 } else if (key.startsWith("bool_")) {
-                    int idx = Integer.parseInt(key.substring(5));
+                    Integer idx = parseFieldIndex(key, "bool_");
+                    if (idx == null) continue;
                     packet.getBooleans().writeSafely(idx, fields.get(key).getAsBoolean());
                 }
             } catch (Exception e) {
                 plugin.getLogger().warning("Failed to apply packet field '" + key + "': " + e.getMessage());
             }
+        }
+    }
+
+    private static Integer parseFieldIndex(String key, String prefix) {
+        if (key == null || prefix == null || !key.startsWith(prefix) || key.length() <= prefix.length()) {
+            return null;
+        }
+        try {
+            return Integer.parseInt(key.substring(prefix.length()));
+        } catch (NumberFormatException ignored) {
+            return null;
         }
     }
 }

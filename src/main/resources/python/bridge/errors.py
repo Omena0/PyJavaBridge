@@ -29,7 +29,7 @@ __all__ = [
 
 class BridgeError(Exception):
     """Bridge-specific runtime error."""
-    def __init__(self, message: str = "", java_stacktrace: Optional[str] = None):
+    def __init__(self, message: str = "", java_stacktrace: Optional[str] = None) -> None:
         """Initialise with an optional Java stacktrace appended to the message."""
         self.java_stacktrace = java_stacktrace
         if java_stacktrace:

@@ -21,7 +21,7 @@ class ManaStore:
     def __init__(self, default_mana: float = 100.0,
             default_max_mana: float = 100.0,
             default_regen_rate: float = 1.0,
-            display_bossbar: bool = False):
+            display_bossbar: bool = False) -> None:
         """Initialise a new ManaStore."""
         self.default_mana = default_mana
         self.default_max_mana = default_max_mana
@@ -34,12 +34,12 @@ class ManaStore:
         self._regen_started = False
         self._setup_hooks(display_bossbar)
 
-    def _setup_hooks(self, display_bossbar: bool):
+    def _setup_hooks(self, display_bossbar: bool) -> None:
         """Register event hooks that run after the connection is ready."""
         store = self
 
         @bridge.event
-        def server_boot(event):
+        def server_boot(event: Any) -> None:
             """Handle server boot."""
             store.start_regen()
             if display_bossbar:
@@ -50,7 +50,7 @@ class ManaStore:
 
         if display_bossbar:
             @bridge.event
-            def player_join(event):
+            def player_join(event: Any) -> None:
                 """Handle player join."""
                 player = event.fields.get("player")
                 if player is not None:
@@ -58,7 +58,7 @@ class ManaStore:
                     store._update_bar(player)
 
             @bridge.event
-            def player_quit(event):
+            def player_quit(event: Any) -> None:
                 """Handle player quit."""
                 player = event.fields.get("player")
                 if player is not None:
@@ -77,7 +77,7 @@ class ManaStore:
 
         return str(player.uuid)
 
-    def _ensure(self, player: Any, puuid: str | None = None):
+    def _ensure(self, player: Any, puuid: str | None = None) -> None:
         """Handle ensure."""
         if puuid is None:
             puuid = self._puuid(player)
@@ -95,7 +95,7 @@ class ManaStore:
         self._ensure(player, puuid)
         return self._mana[puuid]
 
-    def __setitem__(self, player: Any, value: float):
+    def __setitem__(self, player: Any, value: float) -> None:
         """Set an item by key or index."""
         puuid = self._puuid(player)
         self._ensure(player, puuid)
@@ -108,7 +108,7 @@ class ManaStore:
         self._ensure(player, puuid)
         return self._max_mana[puuid]
 
-    def set_max_mana(self, player: Any, value: float):
+    def set_max_mana(self, player: Any, value: float) -> None:
         """Set the max mana."""
         puuid = self._puuid(player)
         self._ensure(player, puuid)
@@ -121,7 +121,7 @@ class ManaStore:
         self._ensure(player, puuid)
         return self._regen_rate[puuid]
 
-    def set_regen_rate(self, player: Any, value: float):
+    def set_regen_rate(self, player: Any, value: float) -> None:
         """Set the regen rate."""
         puuid = self._puuid(player)
         self._ensure(player, puuid)
@@ -138,14 +138,14 @@ class ManaStore:
         self._update_bar(player)
         return True
 
-    def restore(self, player: Any, amount: float):
+    def restore(self, player: Any, amount: float) -> None:
         """Restore a resource."""
         puuid = self._puuid(player)
         self._ensure(player, puuid)
         self._mana[puuid] = min(self._mana[puuid] + amount, self._max_mana[puuid])
         self._update_bar(player)
 
-    def start_regen(self):
+    def start_regen(self) -> None:
         """Start the global mana regen loop."""
         if self._regen_started:
             return
@@ -153,7 +153,7 @@ class ManaStore:
         self._regen_started = True
         asyncio.ensure_future(self._regen_loop())
 
-    async def _regen_loop(self):
+    async def _regen_loop(self) -> None:
         """Asynchronously handle regen loop."""
         from bridge import server
         while True:
@@ -184,7 +184,7 @@ class ManaStore:
             except Exception:
                 break
 
-    def _update_bar(self, player: Any):
+    def _update_bar(self, player: Any) -> None:
         """Update the bar."""
         if not self.display_bossbar:
             return

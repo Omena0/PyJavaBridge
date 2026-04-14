@@ -12,7 +12,7 @@ from bridge.types import async_task
 _connection:BridgeConnection = None  # type: ignore[assignment]
 
 _print = __builtins__["print"] if isinstance(__builtins__, dict) else __builtins__.print  # type: ignore[index]
-def print(*args):
+def print(*args: Any) -> None:
     """Return the print."""
     _print(*args, file=sys.stderr)
 
@@ -22,7 +22,7 @@ _npc_listener_registered = False
 class NPC:
     """Fake NPC helper — spawns a mob with AI disabled, click handlers, dialog, and movement paths."""
 
-    def __init__(self, entity: Any, name: str | None = None):
+    def __init__(self, entity: Any, name: str | None = None) -> None:
         """Initialise a new NPC."""
         from bridge import Location
         self._entity = entity
@@ -72,7 +72,7 @@ class NPC:
         return self._entity.uuid
 
     @property
-    def location(self):
+    def location(self) -> Any:
         """The location value."""
         return self._entity.location
 
@@ -88,21 +88,21 @@ class NPC:
         _ensure_npc_listener()
         return handler
 
-    def dialog(self, messages: List[str], loop: bool = False):
+    def dialog(self, messages: List[str], loop: bool = False) -> None:
         """Set a dialog sequence shown on right-click."""
         self._dialog = list(messages)
         self._dialog_loop = loop
         _ensure_npc_listener()
 
     @async_task
-    async def move_to(self, location: Any, speed: float = 1.0):
+    async def move_to(self, location: Any, speed: float = 1.0) -> Any:
         """Move the NPC to a location using pathfinding."""
         await self._entity.set_aware(True)
         return self._entity.pathfind_to(location, speed)
 
     @async_task
     async def follow_path(self, waypoints: list, loop: bool = False,
-            speed: float = 1.0, delay: float = 0.5):
+            speed: float = 1.0, delay: float = 0.5) -> None:
         """Make the NPC follow a path of waypoints."""
         self._path = list(waypoints)
         self._path_loop = loop
@@ -121,22 +121,22 @@ class NPC:
 
         await self._entity.set_aware(False)
 
-    def stop_path(self):
+    def stop_path(self) -> None:
         """Stop the current path."""
         self._path_task = None
         self._entity.stop_pathfinding()
         self._entity.set_aware(False)
 
-    def link_dialog(self, dialog: Any):
+    def link_dialog(self, dialog: Any) -> None:
         """Link a Dialog object — right-clicking starts the dialog."""
         self._linked_dialog = dialog
         _ensure_npc_listener()
 
-    def link_player(self, player: Any):
+    def link_player(self, player: Any) -> None:
         """Link a Player. Used for range check."""
         self._linked_player = player
 
-    def set_range(self, distance: float):
+    def set_range(self, distance: float) -> None:
         """Set a range check distance. Use on_range_enter/on_range_exit for callbacks."""
         self._range = distance
         if not self._range_task_started:
@@ -153,7 +153,7 @@ class NPC:
         self._range_exit_handlers.append(handler)
         return handler
 
-    async def _range_check_loop(self):
+    async def _range_check_loop(self) -> None:
         """Asynchronously handle range check loop."""
         from bridge import server, Player
         while self._range is not None:
@@ -202,7 +202,7 @@ class NPC:
                 break
 
     @async_task
-    async def remove(self):
+    async def remove(self) -> None:
         """Remove the NPC entity and unregister."""
         uuid = self.uuid
         if uuid:
@@ -210,7 +210,7 @@ class NPC:
 
         await self._entity.remove()
 
-    async def _handle_interact(self, player: Any, is_right_click: bool):
+    async def _handle_interact(self, player: Any, is_right_click: bool) -> None:
         """Internal: process interaction."""
         if is_right_click and self._dialog:
             puuid = player.uuid or ""
@@ -232,7 +232,7 @@ class NPC:
             except Exception as e:
                 print(f"[PyJavaBridge] NPC handler error: {e}")
 
-def _ensure_npc_listener():
+def _ensure_npc_listener() -> None:
     """Ensure npc listener."""
     global _npc_listener_registered
     if _npc_listener_registered:
@@ -242,7 +242,7 @@ def _ensure_npc_listener():
 
     from bridge import Player, Event
 
-    async def _on_npc_interact(event: Event):
+    async def _on_npc_interact(event: Event) -> None:
         """Handle the npc interact event."""
         entity = event.fields.get("entity")
         if entity is None or not hasattr(entity, "fields"):

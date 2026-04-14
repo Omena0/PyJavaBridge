@@ -19,7 +19,7 @@ class Party:
     _player_party: Dict[str, str] = {}  # puuid -> party name
     _listener_registered = False
 
-    def __init__(self, name: str, leader: Any, max_size: int = 4):
+    def __init__(self, name: str, leader: Any, max_size: int = 4) -> None:
         """Initialise a new Party."""
         self.name = name
         self._leader_uuid: str = str(leader.uuid)
@@ -74,7 +74,7 @@ class Party:
         self._fire(self._on_join, player)
         return True
 
-    def leave(self, player: Any):
+    def leave(self, player: Any) -> None:
         """Leave the group."""
         puuid = str(player.uuid)
         if puuid not in self._members:
@@ -89,17 +89,17 @@ class Party:
             else:
                 self.disband()
 
-    def kick(self, player: Any):
+    def kick(self, player: Any) -> None:
         """Kick the player."""
         self.leave(player)
 
-    def promote(self, player: Any):
+    def promote(self, player: Any) -> None:
         """Promote a member."""
         puuid = str(player.uuid)
         if puuid in self._members:
             self._leader_uuid = puuid
 
-    def disband(self):
+    def disband(self) -> None:
         """Disband the group."""
         for handler in self._on_disband:
             try:
@@ -115,7 +115,7 @@ class Party:
         self._members.clear()
         Party._all_parties.pop(self.name, None)
 
-    def broadcast(self, message: str):
+    def broadcast(self, message: str) -> None:
         """Broadcast a message."""
         for member in self._members.values():
             asyncio.ensure_future(member.send_message(f"§d[Party] §f{message}"))
@@ -135,7 +135,7 @@ class Party:
         self._on_disband.append(handler)
         return handler
 
-    def _fire(self, handlers: List[Callable[..., Any]], player: Any):
+    def _fire(self, handlers: List[Callable[..., Any]], player: Any) -> None:
         """Fire callbacks."""
         for handler in handlers:
             try:
@@ -156,14 +156,14 @@ class Party:
         return None
 
     @classmethod
-    def _ensure_listener(cls):
+    def _ensure_listener(cls) -> None:
         """Ensure listener."""
         if cls._listener_registered:
             return
 
         cls._listener_registered = True
 
-        async def _on_damage(event: Any):
+        async def _on_damage(event: Any) -> None:
             """Prevent party members from damaging each other."""
             attacker = event.fields.get("damager")
             victim = event.fields.get("entity")

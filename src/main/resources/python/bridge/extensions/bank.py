@@ -18,7 +18,7 @@ class Bank:
 
     _instances: Dict[str, "Bank"] = {}
 
-    def __init__(self, name: str = "default", currency: str = "coins"):
+    def __init__(self, name: str = "default", currency: str = "coins") -> None:
         """Initialise a new Bank."""
         self.name = name
         self.currency = currency
@@ -28,13 +28,13 @@ class Bank:
         self._load()
         Bank._instances[name] = self
 
-    def _load(self):
+    def _load(self) -> None:
         """Load data from storage."""
         if os.path.isfile(self._path):
             with open(self._path, "r") as f:
                 self._balances = json.load(f)
 
-    def _save(self):
+    def _save(self) -> None:
         """Save data to storage."""
         os.makedirs(os.path.dirname(self._path), exist_ok=True)
         with open(self._path, "w") as f:
@@ -51,7 +51,7 @@ class Bank:
         """Get the balance."""
         return self._balances.get(self._puuid(player), 0)
 
-    def deposit(self, player: Any, amount: int):
+    def deposit(self, player: Any, amount: int) -> None:
         """Deposit a value."""
         if amount <= 0:
             raise ValueError("Deposit amount must be positive")
@@ -92,7 +92,7 @@ class Bank:
         self._fire_transaction(target, "deposit", amount)
         return True
 
-    def set_balance(self, player: Any, amount: int):
+    def set_balance(self, player: Any, amount: int) -> None:
         """Set the balance."""
         self._balances[self._puuid(player)] = max(0, amount)
         self._save()
@@ -102,7 +102,7 @@ class Bank:
         self._transaction_handlers.append(handler)
         return handler
 
-    def _fire_transaction(self, player: Any, action: str, amount: int):
+    def _fire_transaction(self, player: Any, action: str, amount: int) -> None:
         """Fire the transaction callbacks."""
         for handler in self._transaction_handlers:
             try:

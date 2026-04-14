@@ -34,11 +34,11 @@ class PlaceholderRegistry:
     """
     __slots__ = ("_placeholders",)
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialise a new PlaceholderRegistry."""
         self._placeholders: Dict[str, Callable[..., str]] = {}
 
-    def register(self, name: str):
+    def register(self, name: str) -> Any:
         """Decorator: register a placeholder by name.
 
         The decorated function receives ``(player)`` and should return a string.
@@ -51,11 +51,11 @@ class PlaceholderRegistry:
 
         return decorator
 
-    def add(self, name: str, func: Callable[..., str]):
+    def add(self, name: str, func: Callable[..., str]) -> None:
         """Imperatively register a placeholder."""
         self._placeholders[name] = func
 
-    def remove(self, name: str):
+    def remove(self, name: str) -> None:
         """Remove a placeholder."""
         self._placeholders.pop(name, None)
 
@@ -68,7 +68,7 @@ class PlaceholderRegistry:
         """The names value."""
         return list(self._placeholders.keys())
 
-    def resolve(self, text: str, player: Any = None, **kwargs) -> str:
+    def resolve(self, text: str, player: Any = None, **kwargs: Any) -> str:
         """Replace all ``%placeholder%`` tokens in *text* with their resolved values.
 
         Args:
@@ -79,7 +79,7 @@ class PlaceholderRegistry:
         Returns:
             The string with all known placeholders expanded.
         """
-        def _replace(match):
+        def _replace(match: Any) -> Any:
             """Handle replace."""
             name = match.group(1)
             func = self._placeholders.get(name)
@@ -94,6 +94,6 @@ class PlaceholderRegistry:
 
         return _PLACEHOLDER_RE.sub(_replace, text)
 
-    def resolve_many(self, texts: list, player: Any = None, **kwargs) -> list:
+    def resolve_many(self, texts: list, player: Any = None, **kwargs: Any) -> list:
         """Resolve placeholders in a list of strings."""
         return [self.resolve(t, player, **kwargs) for t in texts]

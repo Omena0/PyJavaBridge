@@ -25,7 +25,7 @@ class Ability:
     def __init__(self, name: str, description: str = "",
             cooldown: float = 1.0, use_cost: Optional[float] = None,
             cooldown_msg: str = "§cAbility on cooldown! {remaining:.1f}s",
-            display_bossbar: bool = False):
+            display_bossbar: bool = False) -> None:
         """Initialise a new Ability."""
         self.name = name
         self.description = description
@@ -39,7 +39,7 @@ class Ability:
         self._mana_store: Any = None  # ManaStore reference
         self._bar: Optional[bridge.BossBarDisplay] = None
 
-    def set_mana_store(self, mana_store: Any):
+    def set_mana_store(self, mana_store: Any) -> None:
         """Set the mana store."""
         self._mana_store = mana_store
 
@@ -65,7 +65,7 @@ class Ability:
 
         return max(0.0, self.cooldown - (time.time() - last))
 
-    def use(self, player: Any):
+    def use(self, player: Any) -> Any:
         """Attempt to use the ability. Returns True if used successfully."""
         puuid = str(player.uuid)
         now = time.time()
@@ -100,7 +100,7 @@ class Ability:
 
         return True
 
-    def _show_cooldown_bar(self, player: Any):
+    def _show_cooldown_bar(self, player: Any) -> None:
         """Handle show cooldown bar."""
         if self._bar is None:
             self._bar = bridge.BossBarDisplay(self.name, color="RED", style="SOLID")
@@ -109,7 +109,7 @@ class Ability:
         self._bar.value = self.cooldown
         self._bar.show(player)
 
-        async def _update():
+        async def _update() -> None:
             """Asynchronously handle update."""
             from bridge import server
             while True:

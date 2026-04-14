@@ -25,7 +25,7 @@ class Guild:
     _data_path = os.path.join("plugins", "PyJavaBridge", "guilds")
 
     def __init__(self, name: str, leader: Any, max_size: int = 50,
-            bank: Optional[Bank] = None):
+            bank: Optional[Bank] = None) -> None:
         """Initialise a new Guild."""
         self.name = name
         self._leader_uuid: str = str(leader.uuid)
@@ -79,7 +79,7 @@ class Guild:
         self._fire(self._on_join, player)
         return True
 
-    def leave(self, player: Any):
+    def leave(self, player: Any) -> None:
         """Leave the group."""
         puuid = str(player.uuid)
         if puuid not in self._members:
@@ -98,25 +98,25 @@ class Guild:
             else:
                 self.disband()
 
-    def kick(self, player: Any):
+    def kick(self, player: Any) -> None:
         """Kick the player."""
         self.leave(player)
 
-    def promote(self, player: Any, rank: str = "officer"):
+    def promote(self, player: Any, rank: str = "officer") -> None:
         """Promote a member."""
         puuid = str(player.uuid)
         if puuid in self._members:
             self._members[puuid] = rank
             self._save()
 
-    def demote(self, player: Any):
+    def demote(self, player: Any) -> None:
         """Demote a member."""
         puuid = str(player.uuid)
         if puuid in self._members and puuid != self._leader_uuid:
             self._members[puuid] = "member"
             self._save()
 
-    def transfer_leadership(self, new_leader: Any):
+    def transfer_leadership(self, new_leader: Any) -> None:
         """Handle transfer leadership."""
         new_uuid = str(new_leader.uuid)
         if new_uuid not in self._members:
@@ -127,7 +127,7 @@ class Guild:
         self._members[new_uuid] = "leader"
         self._save()
 
-    def disband(self):
+    def disband(self) -> None:
         """Disband the group."""
         for handler in self._on_disband:
             try:
@@ -147,11 +147,11 @@ class Guild:
         if os.path.isfile(path):
             os.remove(path)
 
-    def broadcast(self, message: str):
+    def broadcast(self, message: str) -> None:
         """Send a message to all online guild members."""
         member_set = self._members
 
-        async def _send():
+        async def _send() -> None:
             """Asynchronously handle send."""
             from bridge import server
             online = server.players
@@ -177,7 +177,7 @@ class Guild:
         self._on_disband.append(handler)
         return handler
 
-    def _fire(self, handlers: List[Callable[..., Any]], player: Any):
+    def _fire(self, handlers: List[Callable[..., Any]], player: Any) -> None:
         """Fire callbacks."""
         for handler in handlers:
             try:
@@ -187,7 +187,7 @@ class Guild:
             except Exception:
                 pass
 
-    def _save(self):
+    def _save(self) -> None:
         """Save data to storage."""
         os.makedirs(Guild._data_path, exist_ok=True)
         data = {

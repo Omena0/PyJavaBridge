@@ -27,7 +27,11 @@ Data is saved to `plugins/PyJavaBridge/banks/<name>.json`.
 
 ### balance(player) → float
 
+Return the current balance for `player`.
+
 ### deposit(player, amount)
+
+Add `amount` to `player`'s balance.
 
 ### withdraw(player, amount) → bool
 
@@ -35,7 +39,11 @@ Returns `False` if insufficient funds.
 
 ### transfer(from_player, to_player, amount) → bool
 
+Move `amount` from `from_player` to `to_player`.
+
 ### set_balance(player, amount)
+
+Set `player`'s balance to an exact `amount`.
 
 ---
 

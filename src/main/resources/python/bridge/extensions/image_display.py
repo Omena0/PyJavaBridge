@@ -51,7 +51,7 @@ class ImageDisplay:
     def __init__(self, location: Location, image: Any,
             pixel_size: float = 1/16,
             dual_sided: bool = False,
-            dual_side_mode: str = "mirror"):
+            dual_side_mode: str = "mirror") -> None:
         """Initialise a new ImageDisplay."""
         width, height, _flat_pixels = ImageDisplay._load_pixels(image)
 
@@ -177,7 +177,7 @@ class ImageDisplay:
             self._entities.append(entity)
             self._placements.append((entity, base_x_shift, base_y_shift, base_z_shift, z_offset, entity_yaw, entity_pitch, sx, sy, sz, xy_zero))
 
-    def teleport(self, location: Location):
+    def teleport(self, location: Location) -> None:
         """Move all pixel entities to a new base location."""
         alive_placements: list[tuple[Any, float, float, float, float, float, float, float, float, float, float]] = []
         for entity, base_x_shift, base_y_shift, base_z_shift, z_offset, yaw, pitch, sx, sy, sz, xy_zero in self._placements:
@@ -203,7 +203,7 @@ class ImageDisplay:
         self._entities = [entry[0] for entry in alive_placements]
         self._location = location
 
-    def remove(self):
+    def remove(self) -> None:
         """Remove all spawned pixel entities."""
         if not self._entities:
             return

@@ -7,6 +7,7 @@ import org.msgpack.core.MessageFormat;
 import org.msgpack.core.buffer.ArrayBufferOutput;
 
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
@@ -163,10 +164,10 @@ public final class ClientModFrameCodec {
         }
 
         if (value.getClass().isArray()) {
-            Object[] values = (Object[]) value;
-            packer.packArrayHeader(values.length);
-            for (Object item : values) {
-                packAny(packer, item);
+            int len = Array.getLength(value);
+            packer.packArrayHeader(len);
+            for (int i = 0; i < len; i++) {
+                packAny(packer, Array.get(value, i));
             }
             return;
         }

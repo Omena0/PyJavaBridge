@@ -10,7 +10,7 @@ import sys
 
 # ── stderr print override ─────────────────────────────────────────────
 _print = __builtins__["print"] if isinstance(__builtins__, dict) else __builtins__.print  # type: ignore[index]
-def print(*args):
+def print(*args: Any) -> None:
     """Redirect print to stderr so stdout stays reserved for IPC."""
     _print(*args, file=sys.stderr)
 
@@ -34,7 +34,7 @@ def fire_event(event_name: str, data: dict | None = None) -> None:
     _connection.fire_event(event_name, data)
 
 # ── Bootstrap ─────────────────────────────────────────────────────────
-def _bootstrap(script_path: str):
+def _bootstrap(script_path: str) -> None:
     """Entry point called by the Java plugin to start a Python script."""
     global _connection, _player_uuid_cache
     if not os.path.isfile(script_path):
@@ -63,7 +63,7 @@ def _bootstrap(script_path: str):
     _dec_mod._connection = _connection
     _api_mod._connection = _connection
     _npc_mod._connection = _connection
-    _client_mod_mod._connection = _connection
+    setattr(_client_mod_mod, "_connection", _connection)
 
     # Prime player cache
     from bridge.utils import _prime_player_cache

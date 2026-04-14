@@ -46,7 +46,7 @@ class EnumValue(metaclass=_EnumMeta):
         """Return the enum name."""
         return self.name
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: Any) -> bool:
         """Check equality by name and type, or by string."""
         if isinstance(other, EnumValue):
             return self.name == other.name and self.type == other.type
@@ -90,7 +90,7 @@ class BridgeCall(Awaitable[Any]):
     automatically scheduled as tasks so they run in the background even
     if the caller never `$1`-s the result.
     """
-    def __init__(self, future_or_coro):
+    def __init__(self, future_or_coro: Any) -> None:
         """Wrap a future or coroutine as a BridgeCall."""
         if asyncio.iscoroutine(future_or_coro):
             future_or_coro = asyncio.ensure_future(future_or_coro)
@@ -98,7 +98,7 @@ class BridgeCall(Awaitable[Any]):
         self._future = future_or_coro
         future_or_coro.add_done_callback(_bridge_call_done)
 
-    def __await__(self):
+    def __await__(self) -> Any:
         """Yield from the underlying future."""
         return self._future.__await__()
 
@@ -128,7 +128,7 @@ class BridgeMethod:
     """Callable wrapper for late-bound method invocations on proxies."""
     __slots__ = ("_proxy", "_name")
 
-    def __init__(self, proxy: Any, name: str):
+    def __init__(self, proxy: Any, name: str) -> None:
         """Bind a method name to a proxy object."""
         self._proxy = proxy
         self._name = name
@@ -141,7 +141,7 @@ class _SyncWait:
     """Thread-safe one-shot value container for synchronous bridge calls."""
     __slots__ = ("event", "result", "error")
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Create a one-shot synchronous waiter."""
         self.event = threading.Event()
         self.result: Any = None
@@ -154,7 +154,7 @@ class Material(EnumValue):
     """Material, such as diamond, netherite, wood, etc"""
     TYPE_NAME = "org.bukkit.Material"
 
-    def __init__(self, name: str, _name: Optional[str] = None):
+    def __init__(self, name: str, _name: Optional[str] = None) -> None:
         """Create a Material from a name, stripping 'minecraft:' prefix."""
         actual = _name if _name is not None else name
         actual = str(actual)
@@ -204,7 +204,7 @@ class Enchantment(EnumValue):
         """Return a list of all enchantment names."""
         import bridge
         future = bridge._connection.call("getAllEnchantments", target="server")  # type: ignore[attr-defined]
-        async def _wrap():
+        async def _wrap() -> Any:
             """Await the future and wrap names as Enchantment instances."""
             names = await future
             return [cls(cls.TYPE_NAME, n) for n in names]
@@ -212,12 +212,12 @@ class Enchantment(EnumValue):
         return BridgeCall(asyncio.ensure_future(_wrap()))
 
     @classmethod
-    def for_item(cls, item) -> "BridgeCall":
+    def for_item(cls, item: Any) -> "BridgeCall":
         """Return enchantments applicable to a material/item."""
         import bridge
         mat_name = item.name if isinstance(item, (Material, EnumValue)) else str(item)
         future = bridge._connection.call("getEnchantmentsForItem", target="server", args=[mat_name])  # type: ignore[attr-defined]
-        async def _wrap():
+        async def _wrap() -> Any:
             """Await the future and wrap names as Enchantment instances."""
             names = await future
             return [cls(cls.TYPE_NAME, n) for n in names]

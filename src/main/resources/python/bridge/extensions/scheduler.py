@@ -21,7 +21,7 @@ class ScheduledTask:
 
     def __init__(self, name: str, handler: Callable[..., Any],
             interval: float = 0, delay: float = 0,
-            repeat: bool = True):
+            repeat: bool = True) -> None:
         """Initialise a new ScheduledTask."""
         self.name = name
         self.handler = handler
@@ -48,14 +48,14 @@ class ScheduledTask:
         """Timestamp of last execution, or None."""
         return self._last_run
 
-    def cancel(self):
+    def cancel(self) -> None:
         """Cancel this task."""
         self._cancelled = True
         if self._task:
             self._task.cancel()
             self._task = None
 
-    async def _execute(self):
+    async def _execute(self) -> None:
         """Execute the handler."""
         try:
             r = self.handler()
@@ -89,7 +89,7 @@ class Scheduler:
     """
     __slots__ = ("_tasks", "_running")
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialise a new Scheduler."""
         self._tasks: Dict[str, ScheduledTask] = {}
         self._running = False
@@ -100,7 +100,7 @@ class Scheduler:
         return dict(self._tasks)
 
     def every(self, seconds: float, name: Optional[str] = None,
-            delay: float = 0):
+            delay: float = 0) -> Any:
         """Decorator: schedule a function to run every *seconds* seconds.
 
         Args:
@@ -122,7 +122,7 @@ class Scheduler:
 
         return decorator
 
-    def after(self, seconds: float, name: Optional[str] = None):
+    def after(self, seconds: float, name: Optional[str] = None) -> Any:
         """Decorator: schedule a function to run once after *seconds* seconds.
 
         Args:
@@ -145,7 +145,7 @@ class Scheduler:
 
     def schedule(self, name: str, handler: Callable[..., Any],
             interval: float = 0, delay: float = 0,
-            repeat: bool = True):
+            repeat: bool = True) -> Any:
         """Imperatively schedule a task.
 
         Args:
@@ -164,22 +164,22 @@ class Scheduler:
 
         return task
 
-    def cancel(self, name: str):
+    def cancel(self, name: str) -> None:
         """Cancel a named task."""
         task = self._tasks.pop(name, None)
         if task:
             task.cancel()
 
-    def cancel_all(self):
+    def cancel_all(self) -> None:
         """Cancel all tasks."""
         for task in self._tasks.values():
             task.cancel()
 
         self._tasks.clear()
 
-    def _launch(self, task: ScheduledTask):
+    def _launch(self, task: ScheduledTask) -> None:
         """Launch a task's async loop."""
-        async def _run():
+        async def _run() -> None:
             """Asynchronously handle run."""
             if task.delay > 0:
                 await asyncio.sleep(task.delay)
@@ -197,14 +197,14 @@ class Scheduler:
 
         task._task = asyncio.ensure_future(_run())
 
-    def start(self):
+    def start(self) -> None:
         """Start all registered tasks."""
         self._running = True
         for task in self._tasks.values():
             if not task.cancelled and task._task is None:
                 self._launch(task)
 
-    def stop(self):
+    def stop(self) -> None:
         """Stop all tasks."""
         self._running = False
         for task in self._tasks.values():

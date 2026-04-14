@@ -16,7 +16,7 @@ class Shop:
     """
 
     def __init__(self, name: str = "Shop", bank: Optional[Bank] = None,
-            rows: int = 6):
+            rows: int = 6) -> None:
         """Initialise a new Shop."""
         self.name = name
         self._bank = bank
@@ -25,11 +25,11 @@ class Shop:
         self._on_purchase_handlers: List[Callable[..., Any]] = []
         self._open_pages: Dict[str, int] = {}  # puuid -> current page
 
-    def add_item(self, item: Any, price: int):
+    def add_item(self, item: Any, price: int) -> None:
         """Add an item for sale. *price* is in bank currency."""
         self._items.append((item, price))
 
-    def remove_item(self, index: int):
+    def remove_item(self, index: int) -> None:
         """Remove a item."""
         if 0 <= index < len(self._items):
             self._items.pop(index)
@@ -44,7 +44,7 @@ class Shop:
         """The items value."""
         return list(self._items)
 
-    def open(self, player: Any, page: int = 0):
+    def open(self, player: Any, page: int = 0) -> None:
         """Open the UI."""
         from bridge import Inventory, Item as WItem
         from bridge.helpers import _register_menu_events, _open_menus, Menu, MenuItem
@@ -67,9 +67,9 @@ class Shop:
             display = self._make_display_item(shop_item, price)
             captured_idx = item_idx
 
-            def _make_click(idx: int):
+            def _make_click(idx: int) -> Any:
                 """Handle make click."""
-                async def _on_click(p: Any, event: Any):
+                async def _on_click(p: Any, event: Any) -> None:
                     """Handle the click event."""
                     await self._try_purchase(p, idx)
 
@@ -94,7 +94,7 @@ class Shop:
 
         menu.open(player)
 
-    def close(self, player: Any):
+    def close(self, player: Any) -> None:
         """Close the UI."""
         from bridge.helpers import _open_menus
         puuid = str(player.uuid)
@@ -114,7 +114,7 @@ class Shop:
             lore=lore,
         )
 
-    async def _try_purchase(self, player: Any, item_idx: int):
+    async def _try_purchase(self, player: Any, item_idx: int) -> None:
         """Asynchronously handle try purchase."""
         if item_idx < 0 or item_idx >= len(self._items):
             return

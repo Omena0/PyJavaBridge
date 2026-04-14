@@ -163,7 +163,7 @@ def _proxy_from(raw: Dict[str, Any]) -> Any:
 
     return proxy_cls(handle=handle, type_name=type_name, fields=fields)
 
-def _command_signature_params(sig: inspect.Signature):
+def _command_signature_params(sig: inspect.Signature) -> Any:
     """Extract positional, keyword-only, varargs, and varkw info from a signature."""
     params = list(sig.parameters.values())
     positional_params: List[inspect.Parameter] = []
@@ -185,7 +185,7 @@ def _command_signature_params(sig: inspect.Signature):
 
     return positional_params, keyword_only_names, has_varargs, has_varkw
 
-def _parse_command_tokens(raw_args: List[str], positional_params: List[inspect.Parameter], keyword_only_names: List[str], has_varargs: bool, has_varkw: bool):
+def _parse_command_tokens(raw_args: List[str], positional_params: List[inspect.Parameter], keyword_only_names: List[str], has_varargs: bool, has_varkw: bool) -> Any:
     """Parse raw command tokens into positional args, varargs, and keyword args."""
     allowed_kw_names = {p.name for p in positional_params} | set(keyword_only_names)
     positional_tokens: List[str] = []
@@ -243,7 +243,7 @@ def _toml_dumps(data: Dict[str, Any]) -> str:
     _toml_write_table(data, [], lines)
     return "\n".join(lines) + "\n"
 
-def _toml_write_table(data: Dict[str, Any], path: List[str], lines: List[str]):
+def _toml_write_table(data: Dict[str, Any], path: List[str], lines: List[str]) -> None:
     """Recursively write TOML table entries into *lines*."""
     # Single-pass: separate scalars from sub-tables to avoid double iteration
     sub_tables: List[tuple[str, Any]] = []
@@ -346,7 +346,7 @@ def _properties_load(path: str) -> Dict[str, Any]:
 
     return data
 
-def _properties_set_nested(data: Dict[str, Any], key: str, value: Any):
+def _properties_set_nested(data: Dict[str, Any], key: str, value: Any) -> None:
     """Set a dot-separated key path in a nested dict."""
     parts = key.split(".")
     node = data
@@ -387,7 +387,7 @@ def _properties_dumps(data: Dict[str, Any]) -> str:
     _properties_flatten(data, [], lines)
     return "\n".join(lines) + "\n"
 
-def _properties_flatten(data: Dict[str, Any], path: List[str], lines: List[str]):
+def _properties_flatten(data: Dict[str, Any], path: List[str], lines: List[str]) -> None:
     """Flatten a nested dict into dot-separated key=value lines."""
     for key, value in data.items():
         full_path = path + [key]
@@ -404,7 +404,7 @@ def _properties_flatten(data: Dict[str, Any], path: List[str], lines: List[str])
         else:
             lines.append(f"{'.'.join(full_path)}={value}")
 
-def _deep_merge(base: Dict[str, Any], override: Dict[str, Any]):
+def _deep_merge(base: Dict[str, Any], override: Dict[str, Any]) -> None:
     """Recursively merge *override* into *base*, mutating *base* in place."""
     for key, value in override.items():
         if key in base and isinstance(base[key], dict) and isinstance(value, dict):
@@ -412,7 +412,7 @@ def _deep_merge(base: Dict[str, Any], override: Dict[str, Any]):
         else:
             base[key] = value
 
-async def _prime_player_cache():
+async def _prime_player_cache() -> None:
     """Pre-populate the UUID cache with all online players."""
     from bridge import Player, server
     try:
