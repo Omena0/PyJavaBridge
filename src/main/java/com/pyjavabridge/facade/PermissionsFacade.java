@@ -143,10 +143,16 @@ public class PermissionsFacade {
                 nodeClass = Class.forName("net.luckperms.api.node.Node");
                 cachedNodeClass = nodeClass;
             }
-            Object builder = nodeClass.getMethod("builder", String.class).invoke(null, permission);
-            Object node = builder.getClass().getMethod("build").invoke(builder);
             Object data = user.getClass().getMethod("data").invoke(user);
-            data.getClass().getMethod("remove", nodeClass).invoke(data, node);
+            Object trueBuilder = nodeClass.getMethod("builder", String.class).invoke(null, permission);
+            trueBuilder.getClass().getMethod("value", boolean.class).invoke(trueBuilder, true);
+            Object trueNode = trueBuilder.getClass().getMethod("build").invoke(trueBuilder);
+            data.getClass().getMethod("remove", nodeClass).invoke(data, trueNode);
+
+            Object falseBuilder = nodeClass.getMethod("builder", String.class).invoke(null, permission);
+            falseBuilder.getClass().getMethod("value", boolean.class).invoke(falseBuilder, false);
+            Object falseNode = falseBuilder.getClass().getMethod("build").invoke(falseBuilder);
+            data.getClass().getMethod("remove", nodeClass).invoke(data, falseNode);
             return saveLuckPermsUser(api, user);
         } catch (Exception e) {
             return false;

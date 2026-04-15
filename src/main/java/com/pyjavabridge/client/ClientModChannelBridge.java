@@ -136,34 +136,16 @@ public class ClientModChannelBridge implements PluginMessageListener {
         }
 
         try {
-            byte[] payload = message;
-
-            if (payload != null && payload.length > 0) {
-                int varIntValue = 0;
-                int varIntLen = 0;
-                int shift = 0;
-                int maxVarIntBytes = Math.min(5, payload.length);
-                for (int i = 0; i < maxVarIntBytes; i++) {
-                    int b = payload[i] & 0xFF;
-                    varIntValue |= (b & 0x7F) << shift;
-                    varIntLen++;
-                    if ((b & 0x80) == 0) {
-                        break;
-                    }
-                    shift += 7;
+            ClientModFrameCodec.Frame frame;
+            try {
+                frame = ClientModFrameCodec.decodeFrame(message);
+            } catch (Exception rawDecodeEx) {
+                byte[] stripped = stripVarIntPrefix(message);
+                if (stripped == null) {
+                    throw rawDecodeEx;
                 }
-
-                if (varIntLen > 0) {
-                    int remaining = payload.length - varIntLen;
-                    if (varIntValue == remaining && varIntValue >= 0 && varIntValue <= ClientModProtocol.MAX_BODY_BYTES) {
-                        byte[] stripped = new byte[remaining];
-                        System.arraycopy(payload, varIntLen, stripped, 0, remaining);
-                        payload = stripped;
-                    }
-                }
+                frame = ClientModFrameCodec.decodeFrame(stripped);
             }
-
-            ClientModFrameCodec.Frame frame = ClientModFrameCodec.decodeFrame(payload);
             handleIncomingFrame(player, frame);
         } catch (Exception ex) {
             String hex;
@@ -186,6 +168,39 @@ public class ClientModChannelBridge implements PluginMessageListener {
 
             plugin.getLogger().warning("Client mod frame decode failed: " + ex.getMessage() + " payload_hex=" + hex);
         }
+    }
+
+    private static byte[] stripVarIntPrefix(byte[] payload) {
+        if (payload == null || payload.length < 2) {
+            return null;
+        }
+
+        int value = 0;
+        int len = 0;
+        int shift = 0;
+        int maxBytes = Math.min(5, payload.length);
+        for (int i = 0; i < maxBytes; i++) {
+            int b = payload[i] & 0xFF;
+            value |= (b & 0x7F) << shift;
+            len++;
+            if ((b & 0x80) == 0) {
+                break;
+            }
+            shift += 7;
+        }
+
+        if (len <= 0 || len >= payload.length) {
+            return null;
+        }
+
+        int remaining = payload.length - len;
+        if (value != remaining || value < 0 || value > ClientModProtocol.MAX_BODY_BYTES) {
+            return null;
+        }
+
+        byte[] stripped = new byte[remaining];
+        System.arraycopy(payload, len, stripped, 0, remaining);
+        return stripped;
     }
 
     private void handleIncomingFrame(Player player, ClientModFrameCodec.Frame frame) {
@@ -277,6 +292,7 @@ public class ClientModChannelBridge implements PluginMessageListener {
             sendPacket(player, packetType, requestId, body);
         } catch (IOException ex) {
             session.pending().remove(requestId);
+            session.takeRequestBody(requestId);
             future.complete(Map.of(
                     "status", "fail",
                     "code", "CLIENT_ENCODE_ERROR",
@@ -291,6 +307,7 @@ public class ClientModChannelBridge implements PluginMessageListener {
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
             CompletableFuture<Map<String, Object>> pending = session.pending().remove(requestId);
             if (pending != null && !pending.isDone()) {
+                session.takeRequestBody(requestId);
                 pending.complete(Map.of(
                         "status", "fail",
                         "code", "CLIENT_TIMEOUT",
@@ -373,6 +390,7 @@ public class ClientModChannelBridge implements PluginMessageListener {
     }
 
     private void completePending(ClientModSessionManager.SessionState session, int requestId, Map<String, Object> body) {
+        session.takeRequestBody(requestId);
         CompletableFuture<Map<String, Object>> future = session.pending().remove(requestId);
         if (future != null) {
             future.complete(body == null ? Map.of("status", "ok") : body);

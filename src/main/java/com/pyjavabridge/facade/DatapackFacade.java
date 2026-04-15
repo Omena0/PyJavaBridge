@@ -3,7 +3,13 @@ package com.pyjavabridge.facade;
 import com.pyjavabridge.PyJavaBridgePlugin;
 import com.google.gson.JsonObject;
 import org.bukkit.Bukkit;
+import org.bukkit.World;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.Map;
 
@@ -56,6 +62,16 @@ public class DatapackFacade {
                     + " advancements=" + advancements.size()
                     + " predicates=" + predicates.size()
                     + " registries=" + registries.size());
+
+            try {
+                boolean wroteAny = writeRuntimeDatapack();
+                if (wroteAny) {
+                    Bukkit.reloadData();
+                    plugin.getLogger().info("Runtime datapack reloaded successfully.");
+                }
+            } catch (Exception ex) {
+                plugin.getLogger().warning("Failed to write/apply runtime datapack files: " + ex.getMessage());
+            }
 
             // Best-effort in-memory injection using reflection into server internals.
             // This attempts to find the server's advancement manager and load
@@ -251,5 +267,113 @@ public class DatapackFacade {
                 plugin.getLogger().severe("In-memory apply failed: " + ex.getMessage());
             }
         });
+    }
+
+    private boolean writeRuntimeDatapack() throws IOException {
+        List<World> worlds = Bukkit.getWorlds();
+        if (worlds.isEmpty()) {
+            return false;
+        }
+
+        Path packRoot = worlds.get(0).getWorldFolder().toPath().resolve("datapacks").resolve("pyjavabridge_runtime");
+        Files.createDirectories(packRoot);
+        writePackMeta(packRoot);
+
+        boolean wroteAny = false;
+        wroteAny |= writeNamespaceEntries(packRoot, advancements, "advancements");
+        wroteAny |= writeNamespaceEntries(packRoot, predicates, "predicates");
+        wroteAny |= writeRegistryEntries(packRoot, registries);
+        wroteAny |= writeModelEntries(packRoot, models);
+        return wroteAny;
+    }
+
+    private void writePackMeta(Path packRoot) throws IOException {
+        int packFormat = resolveServerDataPackFormat();
+        String mcmeta = "{\"pack\":{\"pack_format\":" + packFormat
+                + ",\"description\":\"PyJavaBridge runtime datapack\"}}";
+        Files.writeString(packRoot.resolve("pack.mcmeta"), mcmeta, StandardCharsets.UTF_8);
+    }
+
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    private int resolveServerDataPackFormat() {
+        try {
+            Class<?> sharedConstants = Class.forName("net.minecraft.SharedConstants");
+            Object currentVersion = sharedConstants.getMethod("getCurrentVersion").invoke(null);
+            Class<?> packTypeClass = Class.forName("net.minecraft.server.packs.PackType");
+            Object serverData = Enum.valueOf((Class<? extends Enum>) packTypeClass, "SERVER_DATA");
+            Object packVersion = currentVersion.getClass().getMethod("getPackVersion", packTypeClass)
+                    .invoke(currentVersion, serverData);
+            if (packVersion instanceof Number n) {
+                return n.intValue();
+            }
+        } catch (Exception ignored) {
+        }
+        return 61;
+    }
+
+    private boolean writeNamespaceEntries(Path packRoot, Map<String, JsonObject> entries, String folder) throws IOException {
+        boolean wroteAny = false;
+        for (Map.Entry<String, JsonObject> entry : entries.entrySet()) {
+            String[] parts = splitTwoPartKey(entry.getKey());
+            if (parts == null) {
+                continue;
+            }
+            Path out = packRoot.resolve("data").resolve(parts[0]).resolve(folder)
+                    .resolve(parts[1] + ".json");
+            Files.createDirectories(out.getParent());
+            Files.writeString(out, entry.getValue().toString(), StandardCharsets.UTF_8);
+            wroteAny = true;
+        }
+        return wroteAny;
+    }
+
+    private boolean writeRegistryEntries(Path packRoot, Map<String, JsonObject> entries) throws IOException {
+        boolean wroteAny = false;
+        for (Map.Entry<String, JsonObject> entry : entries.entrySet()) {
+            String[] parts = splitThreePartKey(entry.getKey());
+            if (parts == null) {
+                continue;
+            }
+            Path out = packRoot.resolve("data").resolve(parts[0]).resolve(parts[1])
+                    .resolve(parts[2] + ".json");
+            Files.createDirectories(out.getParent());
+            Files.writeString(out, entry.getValue().toString(), StandardCharsets.UTF_8);
+            wroteAny = true;
+        }
+        return wroteAny;
+    }
+
+    private boolean writeModelEntries(Path packRoot, Map<String, JsonObject> entries) throws IOException {
+        boolean wroteAny = false;
+        for (Map.Entry<String, JsonObject> entry : entries.entrySet()) {
+            String[] parts = splitTwoPartKey(entry.getKey());
+            if (parts == null) {
+                continue;
+            }
+            Path out = packRoot.resolve("assets").resolve(parts[0]).resolve("models")
+                    .resolve(parts[1] + ".json");
+            Files.createDirectories(out.getParent());
+            Files.writeString(out, entry.getValue().toString(), StandardCharsets.UTF_8);
+            wroteAny = true;
+        }
+        return wroteAny;
+    }
+
+    private String[] splitTwoPartKey(String key) {
+        String[] parts = key.split(":", 2);
+        if (parts.length != 2 || parts[0].isBlank() || parts[1].isBlank()) {
+            plugin.getLogger().warning("Invalid datapack key: " + key);
+            return null;
+        }
+        return parts;
+    }
+
+    private String[] splitThreePartKey(String key) {
+        String[] parts = key.split(":", 3);
+        if (parts.length != 3 || parts[0].isBlank() || parts[1].isBlank() || parts[2].isBlank()) {
+            plugin.getLogger().warning("Invalid registry key: " + key);
+            return null;
+        }
+        return parts;
     }
 }

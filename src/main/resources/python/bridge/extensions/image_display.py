@@ -82,6 +82,9 @@ class ImageDisplay:
         x_base_offset = pixel_step * 0.5
         y_base_offset = -1.0 * pixel_step
         dual_depth_shift = 0.01
+        dual_mode = str(dual_side_mode).strip().lower()
+        if dual_mode not in {"mirror", "same"}:
+            dual_mode = "mirror"
 
         def _local_to_world_shift(local_x: float, local_y: float, entity_yaw: float, entity_pitch: float, local_z: float = 0.0) -> tuple[float, float, float]:
             """Handle local to world shift."""
@@ -149,7 +152,7 @@ class ImageDisplay:
                 placement_meta.append((base_x_shift, base_y_shift, base_z_shift + base_xy_z_shift, z_offset, yaw, pitch, scale_x, scale_y, scale_z, 0.0))
 
                 if dual_sided:
-                    back_yaw = yaw + 180.0
+                    back_yaw = yaw + 180.0 if dual_mode == "mirror" else yaw
                     fwd_x_shift, fwd_y_shift, fwd_z_shift = _local_to_world_shift(0.0, 0.0, yaw, pitch, -dual_depth_shift)
 
                     payload.append({
@@ -261,9 +264,17 @@ class ImageDisplay:
     def _update_from_flat(self, flat_pixels: list[tuple[int, int, int, int]]) -> None:
         """Update entities from a flat row-major RGBA pixel list."""
         w = self._width
+        h = self._height
+        expected = w * h
+        if len(flat_pixels) < expected:
+            raise ValueError(f"Expected at least {expected} RGBA pixels, got {len(flat_pixels)}")
+
         entries: list[list[int]] = []
         entity_idx = 0
         for col, row in self._pixel_positions:
+            if entity_idx >= len(self._entities):
+                raise ValueError("ImageDisplay entity state is inconsistent with pixel mapping")
+
             r, g, b, a = flat_pixels[row * w + col]
             argb = (a << 24) | (r << 16) | (g << 8) | b
             e = self._entities[entity_idx]
@@ -272,6 +283,9 @@ class ImageDisplay:
 
             entity_idx += 1
             if self._dual_sided:
+                if entity_idx >= len(self._entities):
+                    raise ValueError("ImageDisplay dual-sided entity state is inconsistent")
+
                 e = self._entities[entity_idx]
                 if e._handle is not None:
                     entries.append([e._handle, argb])

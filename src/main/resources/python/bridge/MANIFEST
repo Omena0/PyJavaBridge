@@ -33,5 +33,11 @@ extensions/leaderboard.py
 extensions/visual_effect.py
 extensions/player_data.py
 extensions/dungeon.py
+extensions/loot_table.py
+extensions/placeholder.py
+extensions/scheduler.py
+extensions/schematic.py
+extensions/state_machine.py
+extensions/tab_list.py
 extensions/client_mod.py
 extensions/client_mod.pyi

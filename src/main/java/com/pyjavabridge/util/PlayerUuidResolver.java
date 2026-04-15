@@ -94,7 +94,7 @@ public class PlayerUuidResolver {
         }
         if (!Bukkit.getOnlineMode()) {
             try {
-                UUID offline = UUID.nameUUIDFromBytes(("OfflinePlayer:" + name).getBytes(StandardCharsets.UTF_8));
+                UUID offline = UUID.nameUUIDFromBytes(("OfflinePlayer:" + key).getBytes(StandardCharsets.UTF_8));
                 if (offline != null) {
                     cacheUuid(key, offline);
                     return offline;

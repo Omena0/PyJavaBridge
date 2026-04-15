@@ -64,8 +64,12 @@ class PlayerDataStore:
 
         path = self._path(key)
         if os.path.isfile(path):
-            with open(path, "r") as f:
-                self._data[key] = json.load(f)
+            try:
+                with open(path, "r") as f:
+                    loaded = json.load(f)
+                    self._data[key] = dict(loaded) if isinstance(loaded, dict) else {}
+            except (OSError, json.JSONDecodeError, TypeError):
+                self._data[key] = {}
         else:
             self._data[key] = {}
 

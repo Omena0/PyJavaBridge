@@ -109,17 +109,21 @@ class NPC:
         if self._path_task:
             self._path_task = None
 
-        self._path_task = True
+        path_token = object()
+        self._path_task = path_token
         await self._entity.set_aware(True)
         idx = 0
-        while self._path_task and idx < len(self._path):
-            self._entity.pathfind_to(self._path[idx], speed)
-            await asyncio.sleep(delay)
-            idx += 1
-            if idx >= len(self._path) and loop:
-                idx = 0
-
-        await self._entity.set_aware(False)
+        try:
+            while self._path_task is path_token and idx < len(self._path):
+                self._entity.pathfind_to(self._path[idx], speed)
+                await asyncio.sleep(delay)
+                idx += 1
+                if idx >= len(self._path) and loop:
+                    idx = 0
+        finally:
+            if self._path_task is path_token:
+                self._path_task = None
+            await self._entity.set_aware(False)
 
     def stop_path(self) -> None:
         """Stop the current path."""
@@ -198,8 +202,12 @@ class NPC:
                                 print(f"[PyJavaBridge] NPC range exit error: {e}")
 
                 await server.after(10)
-            except Exception:
-                break
+            except Exception as exc:
+                print(f"[PyJavaBridge] NPC range loop error: {exc}")
+                try:
+                    await server.after(10)
+                except Exception:
+                    break
 
     @async_task
     async def remove(self) -> None:

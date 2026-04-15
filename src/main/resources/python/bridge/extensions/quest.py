@@ -20,7 +20,7 @@ class Quest:
     """
     __slots__ = ("name", "description", "time_limit", "_status",
                  "_start_times", "_end_times", "_on_complete",
-                 "_progress_getter", "_bar")
+                 "_progress_getter", "_bars", "_bar_tasks")
 
     def __init__(self, name: str, description: str = "",
             time_limit: Optional[float] = None) -> None:
@@ -33,7 +33,8 @@ class Quest:
         self._end_times: Dict[str, float] = {}
         self._on_complete: Optional[Callable[..., Any]] = None
         self._progress_getter: Optional[Callable[..., float]] = None
-        self._bar: Optional[bridge.BossBarDisplay] = None
+        self._bars: Dict[str, bridge.BossBarDisplay] = {}
+        self._bar_tasks: Dict[str, asyncio.Task[Any]] = {}
 
     # -- decorator setters --
     def on_complete(self, func: Callable[..., Any]) -> Callable[..., Any]:
@@ -104,39 +105,60 @@ class Quest:
     # -- bossbar integration --
     def show_bar(self, player: Any, color: str = "GREEN", style: str = "SEGMENTED_10") -> None:
         """Show the bar."""
-        if self._bar is None:
-            self._bar = bridge.BossBarDisplay(self.name, color, style)
+        puuid = str(player.uuid)
+        bar = self._bars.get(puuid)
+        if bar is None:
+            bar = bridge.BossBarDisplay(self.name, color, style)
+            self._bars[puuid] = bar
 
-        self._bar.show(player)
-        asyncio.ensure_future(self._bar_update_task(player))
+        task = self._bar_tasks.get(puuid)
+        if task is not None and not task.done():
+            task.cancel()
+
+        bar.show(player)
+        self._bar_tasks[puuid] = asyncio.ensure_future(self._bar_update_task(player, puuid))
 
     def hide_bar(self, player: Any) -> None:
         """Hide the bar."""
-        if self._bar is not None:
-            self._bar.hide(player)
+        puuid = str(player.uuid)
+        task = self._bar_tasks.pop(puuid, None)
+        if task is not None and not task.done():
+            task.cancel()
 
-    async def _bar_update_task(self, player: Any) -> None:
+        bar = self._bars.get(puuid)
+        if bar is not None:
+            bar.hide(player)
+
+    async def _bar_update_task(self, player: Any, puuid: str) -> None:
         """Asynchronously handle bar update task."""
         from bridge import server
-        while self.status(player) == "active":
-            prog = self.progress(player)
-            if self._bar is not None:
-                self._bar.progress = prog
+        try:
+            while self.status(player) == "active":
+                bar = self._bars.get(puuid)
+                if bar is None:
+                    break
+
+                prog = self.progress(player)
+                bar.progress = prog
                 if self.time_limit is not None:
                     elapsed = time.time() - self._start_times.get(str(player.uuid), time.time())
                     remaining = max(0, self.time_limit - elapsed)
-                    self._bar.text = f"{self.name} — {int(remaining)}s"
+                    bar.text = f"{self.name} — {int(remaining)}s"
                 else:
-                    self._bar.text = f"{self.name} — {int(prog * 100)}%"
+                    bar.text = f"{self.name} — {int(prog * 100)}%"
 
-            if prog >= 1.0:
-                self.complete(player)
-                break
+                if prog >= 1.0:
+                    self.complete(player)
+                    break
 
-            try:
-                await server.after(20)
-            except Exception:
-                break
+                try:
+                    await server.after(20)
+                except Exception:
+                    break
+        finally:
+            current = self._bar_tasks.get(puuid)
+            if current is asyncio.current_task():
+                self._bar_tasks.pop(puuid, None)
 
     async def _time_limit_task(self, player: Any) -> None:
         """Asynchronously handle time limit task."""

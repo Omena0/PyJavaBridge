@@ -158,7 +158,57 @@ SIDEBAR = [
 
 def slug_basename(slug):
     """Extract the filename part from a possibly prefixed slug (e.g. 'core/entity' → 'entity')."""
-    return slug.rsplit("/", 1)[-1]
+    normalized = str(slug).replace("\\", "/").strip("/")
+    if not normalized:
+        return ""
+
+    return normalized.rsplit("/", 1)[-1]
+
+def _normalize_slug(slug):
+    """Normalize slugs to forward-slash format for cross-platform consistency."""
+    return str(slug).replace("\\", "/").strip("/")
+
+def _build_slug_page_keys(slugs):
+    """Build unique output keys for slugs, disambiguating basename collisions."""
+    groups = {}
+    for slug in slugs:
+        norm = _normalize_slug(slug)
+        base = slug_basename(norm).lower()
+        groups.setdefault(base, []).append(norm)
+
+    keys = {}
+    used = set()
+    for base, entries in sorted(groups.items()):
+        entries = sorted(set(entries))
+        has_collision = len(entries) > 1
+        for norm in entries:
+            if not has_collision:
+                base_key = slug_basename(norm)
+            elif base == "index" and norm == "index":
+                base_key = "index"
+            else:
+                base_key = norm.replace("/", "__")
+
+            candidate = base_key
+            suffix = 2
+            while candidate in used:
+                candidate = f"{base_key}-{suffix}"
+                suffix += 1
+
+            used.add(candidate)
+            keys[norm] = candidate
+
+    return keys
+
+def slug_page_key(slug):
+    """Return the stable output key for a slug."""
+    norm = _normalize_slug(slug)
+    return SLUG_PAGE_KEYS.get(norm, slug_basename(norm))
+
+def slug_output_name(slug):
+    """Return output HTML filename for a slug."""
+    key = slug_page_key(slug)
+    return "index.html" if key == "index" else f"{key}.html"
 
 
 # ── Frontmatter parser ──────────────────────────────────────────────────────
@@ -406,9 +456,8 @@ def build_sidebar_html(current_slug):
         )
         is_ext = section_name == "Extensions"
         for slug, label in pages:
-            base = slug_basename(slug)
             active = ' class="active"' if slug == current_slug else ''
-            href = "index.html" if base == "index" else f"{base}.html"
+            href = slug_output_name(slug)
             display = f'{label} <span class="ext-tag">ext</span>' if is_ext else label
             parts.append(f'    <li><a href="{href}"{active}>{display}</a></li>')
 
@@ -617,7 +666,7 @@ def build_page(slug):
     except Exception as e:
         print(f'Failed to minify HTML: {e}')
 
-    out_name = "index.html" if slug_basename(slug) == "index" else f"{slug_basename(slug)}.html"
+    out_name = slug_output_name(slug)
     out_path = os.path.join(OUT_DIR, out_name)
     with open(out_path, "w", encoding="utf-8") as f:
         f.write(out_html)
@@ -727,12 +776,13 @@ _search_index_zstd_b64 = ""
 SEARCH_MAP = {}
 VERSION_OPTIONS = ""
 _git_meta_json = '{}'
+SLUG_PAGE_KEYS = {}
 
 WORKERS = 18
 
 def main():
     """Build the static documentation site from markdown sources."""
-    global _search_index_zstd_b64
+    global _search_index_zstd_b64, SLUG_PAGE_KEYS
     print("📖 Building PyJavaBridge docs...")
     print(f"   Source: {SRC_DIR}")
     print(f"   Output: {OUT_DIR}")
@@ -760,6 +810,8 @@ def main():
                     s = rel[:-3]  # strip .md, keeps subfolder prefix
                     if s not in slugs:
                         slugs.append(s)
+
+    SLUG_PAGE_KEYS = _build_slug_page_keys(slugs)
 
     built = 0
     search_index = []
@@ -832,8 +884,15 @@ def main():
             if table_first_cols:
                 sections.append({"heading": current_heading, "text": ", ".join(table_first_cols)})
 
-            url = "index.html" if slug_basename(slug) == "index" else f"{slug_basename(slug)}.html"
-            search_index.append({"slug": slug_basename(slug), "title": title, "url": url, "sections": sections})
+            page_key = slug_page_key(slug)
+            url = slug_output_name(slug)
+            search_index.append({
+                "slug": page_key,
+                "source_slug": _normalize_slug(slug),
+                "title": title,
+                "url": url,
+                "sections": sections,
+            })
 
     import json
 
@@ -846,8 +905,8 @@ def main():
     SEARCH_MAP = {}
     for item in search_index:
         title = item.get('title') or ''
-        slug = item.get('slug')
-        if not title or not slug:
+        source_slug = item.get('source_slug') or item.get('slug')
+        if not title or not source_slug:
             continue
 
         # Remove explicit [ext] markers and lightweight markdown chars
@@ -859,7 +918,7 @@ def main():
         if cleaned == 'PyJavaBridge' or title == 'PyJavaBridge':
             continue
 
-        dest = f"{slug}.md"
+        dest = f"{source_slug}.md"
         # Map both cleaned and original titles (if different)
         SEARCH_MAP[cleaned] = dest
         if title != cleaned:
@@ -991,7 +1050,7 @@ def main():
         # markdown path so the client can fetch raw markdown at a historical
         # commit when the generated HTML isn't present in that commit.
         try:
-            src_map = {slug_basename(s): f"docs/src/{s}.md" for s in slugs}
+            src_map = {slug_page_key(s): f"docs/src/{_normalize_slug(s)}.md" for s in slugs}
         except Exception:
             src_map = {}
 
@@ -1013,13 +1072,14 @@ def main():
                     tree_files = set()
                 avail = []
                 for s in slugs:
+                    normalized = _normalize_slug(s)
                     # Check both the full slug path (e.g. docs/src/getting_started/index.md)
                     # and the basename path (e.g. docs/src/index.md) because files
                     # were moved between commits and may appear under either location.
-                    path_full = f"docs/src/{s}.md"
-                    path_base = f"docs/src/{slug_basename(s)}.md"
+                    path_full = f"docs/src/{normalized}.md"
+                    path_base = f"docs/src/{slug_basename(normalized)}.md"
                     if path_full in tree_files or path_base in tree_files:
-                        avail.append(slug_basename(s))
+                        avail.append(slug_page_key(s))
                 pages_by_commit[c] = avail
         except Exception:
             pages_by_commit = {}
@@ -1096,10 +1156,10 @@ def main():
                 slug = future_to_slug[fut]
                 try:
                     fut.result()
-                    print(f"  ✓ {slug_basename(slug)}.html")
+                    print(f"  ✓ {slug_output_name(slug)}")
                     built += 1
                 except Exception as e:
-                    print(f"  ✗ {slug_basename(slug)}.html (error: {e})")
+                    print(f"  ✗ {slug_output_name(slug)} (error: {e})")
     else:
         print("No pages found to build.")
 

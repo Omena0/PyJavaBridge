@@ -133,4 +133,7 @@ class Region:
 
                 await server.after(10)
             except Exception:
-                break
+                try:
+                    await asyncio.sleep(0.5)
+                except Exception:
+                    break

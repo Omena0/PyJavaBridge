@@ -172,12 +172,26 @@ class ClientModSession:
 
         cmd = ["ffmpeg", "-i", path, "-f", "s16le", "-acodec", "pcm_s16le",
                "-ac", str(channels), "-ar", str(sample_rate), "-hide_banner", "-loglevel", "error", "-"]
-
-        proc = await _asyncio.create_subprocess_exec(*cmd, stdout=_asyncio.subprocess.PIPE, stderr=_asyncio.subprocess.PIPE)
-        if proc.stdout is None:
-            return {"status": "fail", "message": "Failed to open ffmpeg stdout", "code": "FFMPEG_START_FAILED"}
-
         try:
+            proc = await _asyncio.create_subprocess_exec(
+                *cmd,
+                stdout=_asyncio.subprocess.PIPE,
+                stderr=_asyncio.subprocess.PIPE,
+            )
+            if proc.stdout is None:
+                proc.terminate()
+                try:
+                    await _asyncio.wait_for(proc.wait(), timeout=2.0)
+                except _asyncio.TimeoutError:
+                    proc.kill()
+                    await proc.wait()
+
+                return {
+                    "status": "fail",
+                    "message": "Failed to open ffmpeg stdout",
+                    "code": "FFMPEG_START_FAILED",
+                }
+
             while True:
                 chunk = await proc.stdout.read(chunk_size)
                 if not chunk:
@@ -189,12 +203,12 @@ class ClientModSession:
                         "stream_id": sid,
                         "data_b64": _base64.b64encode(chunk).decode("ascii"),
                     })
+
             await proc.wait()
+            return {"status": "ok", "stream_id": sid}
         finally:
             if stop_when_done:
                 await self.command("audio.stream.stop", {"stream_id": sid})
-
-        return {"status": "ok", "stream_id": sid}
 
     @_async_task
     async def stream_audio_generator(self,
@@ -211,49 +225,12 @@ class ClientModSession:
             return res
         sid = res.get("stream_id") or stream_id or ""
         use_msgpack = _has_msgpack()
-
-        produced = gen() if callable(gen) else gen
-        if hasattr(produced, "__aiter__"):
-            async_iter = _cast(_AsyncIterable[bytes], produced)
-            async for chunk in async_iter:
-                if not chunk:
-                    continue
-                if use_msgpack:
-                    await self.data("audio_stream_chunk", {"stream_id": sid, "data": chunk})
-                else:
-                    await self.data("audio_stream_chunk", {
-                        "stream_id": sid,
-                        "data_b64": _base64.b64encode(chunk).decode("ascii"),
-                    })
-        else:
-            loop = _asyncio.get_event_loop()
-            sentinel = object()
-            q: "_asyncio.Queue[bytes | object]" = _asyncio.Queue(maxsize=16)
-            sync_iter = _cast(_Iterable[bytes], produced)
-
-            def producer() -> None:
-                """Producer."""
-                try:
-                    for chunk in sync_iter:
-                        if not chunk:
-                            continue
-                        fut = _asyncio.run_coroutine_threadsafe(q.put(chunk), loop)
-                        fut.result(timeout=10.0)
-                except Exception:
-                    pass
-                finally:
-                    try:
-                        _asyncio.run_coroutine_threadsafe(q.put(sentinel), loop).result(timeout=2.0)
-                    except Exception:
-                        pass
-
-            fut = loop.run_in_executor(None, producer)
-            try:
-                while True:
-                    chunk = await _asyncio.wait_for(q.get(), timeout=10.0)
-                    if chunk is sentinel:
-                        break
-                    if not isinstance(chunk, (bytes, bytearray)):
+        try:
+            produced = gen() if callable(gen) else gen
+            if hasattr(produced, "__aiter__"):
+                async_iter = _cast(_AsyncIterable[bytes], produced)
+                async for chunk in async_iter:
+                    if not chunk:
                         continue
                     if use_msgpack:
                         await self.data("audio_stream_chunk", {"stream_id": sid, "data": chunk})
@@ -262,18 +239,63 @@ class ClientModSession:
                             "stream_id": sid,
                             "data_b64": _base64.b64encode(chunk).decode("ascii"),
                         })
-            except _asyncio.TimeoutError:
-                pass
-            finally:
+            else:
+                loop = _asyncio.get_event_loop()
+                sentinel = object()
+                q: "_asyncio.Queue[bytes | object]" = _asyncio.Queue(maxsize=16)
+                sync_iter = _cast(_Iterable[bytes], produced)
+                producer_errors: list[BaseException] = []
+
+                def producer() -> None:
+                    """Producer."""
+                    try:
+                        for chunk in sync_iter:
+                            if not chunk:
+                                continue
+                            fut = _asyncio.run_coroutine_threadsafe(q.put(chunk), loop)
+                            fut.result(timeout=10.0)
+                    except Exception as exc:
+                        producer_errors.append(exc)
+                    finally:
+                        try:
+                            _asyncio.run_coroutine_threadsafe(q.put(sentinel), loop).result(timeout=2.0)
+                        except Exception:
+                            pass
+
+                fut = loop.run_in_executor(None, producer)
+                timeout_exc: _asyncio.TimeoutError | None = None
                 try:
-                    await _asyncio.wait_for(fut, timeout=2.0)
-                except (Exception, _asyncio.TimeoutError):
-                    pass
+                    while True:
+                        chunk = await _asyncio.wait_for(q.get(), timeout=10.0)
+                        if chunk is sentinel:
+                            break
+                        if not isinstance(chunk, (bytes, bytearray)):
+                            continue
+                        if use_msgpack:
+                            await self.data("audio_stream_chunk", {"stream_id": sid, "data": chunk})
+                        else:
+                            await self.data("audio_stream_chunk", {
+                                "stream_id": sid,
+                                "data_b64": _base64.b64encode(chunk).decode("ascii"),
+                            })
+                except _asyncio.TimeoutError as exc:
+                    timeout_exc = exc
+                finally:
+                    try:
+                        await _asyncio.wait_for(fut, timeout=2.0)
+                    except _asyncio.TimeoutError as exc:
+                        if timeout_exc is None and not producer_errors:
+                            raise TimeoutError("Audio producer thread did not finish in time") from exc
 
-        if stop_when_done:
-            await self.command("audio.stream.stop", {"stream_id": sid})
+                if producer_errors:
+                    raise RuntimeError("Audio stream producer failed") from producer_errors[0]
+                if timeout_exc is not None:
+                    raise TimeoutError("Timed out waiting for audio stream chunks") from timeout_exc
 
-        return {"status": "ok", "stream_id": sid}
+            return {"status": "ok", "stream_id": sid}
+        finally:
+            if stop_when_done:
+                await self.command("audio.stream.stop", {"stream_id": sid})
 
     @_async_task
     async def mic_set_mute(self, muted: bool = True, timeout_ms: int = 1000) -> dict[str, _Any]:

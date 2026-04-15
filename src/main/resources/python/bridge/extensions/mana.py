@@ -100,7 +100,8 @@ class ManaStore:
         puuid = self._puuid(player)
         self._ensure(player, puuid)
         self._mana[puuid] = max(0.0, min(value, self._max_mana[puuid]))
-        self._update_bar(player)
+        if not isinstance(player, str):
+            self._update_bar(player)
 
     def max_mana(self, player: Any) -> float:
         """Handle max mana."""
@@ -135,7 +136,8 @@ class ManaStore:
             return False
 
         self._mana[puuid] -= amount
-        self._update_bar(player)
+        if not isinstance(player, str):
+            self._update_bar(player)
         return True
 
     def restore(self, player: Any, amount: float) -> None:
@@ -143,7 +145,8 @@ class ManaStore:
         puuid = self._puuid(player)
         self._ensure(player, puuid)
         self._mana[puuid] = min(self._mana[puuid] + amount, self._max_mana[puuid])
-        self._update_bar(player)
+        if not isinstance(player, str):
+            self._update_bar(player)
 
     def start_regen(self) -> None:
         """Start the global mana regen loop."""
@@ -186,7 +189,7 @@ class ManaStore:
 
     def _update_bar(self, player: Any) -> None:
         """Update the bar."""
-        if not self.display_bossbar:
+        if not self.display_bossbar or isinstance(player, str):
             return
 
         puuid = self._puuid(player)

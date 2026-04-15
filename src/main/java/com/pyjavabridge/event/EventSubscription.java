@@ -11,6 +11,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.plugin.EventExecutor;
 
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class EventSubscription implements Listener {
     // Cache resolved event classes to avoid repeated Class.forName() across 13 packages
@@ -19,7 +20,7 @@ public class EventSubscription implements Listener {
     private final PyJavaBridgePlugin pluginRef;
     private final Class<? extends Event> eventClass;
     private final EventPriority priority;
-    private long lastTick = -1;
+    private final AtomicLong lastTick = new AtomicLong(-1);
     private volatile long lastDispatchNano = 0;
     private final EventExecutor executor;
 
@@ -48,10 +49,10 @@ public class EventSubscription implements Listener {
             }
             if (oncePerTickRef) {
                 long tick = pluginRef.getCurrentTick();
-                if (tick == lastTick) {
+                long previous = lastTick.getAndSet(tick);
+                if (tick == previous) {
                     return;
                 }
-                lastTick = tick;
             }
             if (throttleMsRef > 0) {
                 long now = System.nanoTime();

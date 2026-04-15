@@ -67,8 +67,14 @@ public class PyJavaBridgePlugin extends JavaPlugin {
     @Override
     public void onEnable() {
         debugManager.setLogger(getLogger());
-        getCommand("bridge").setExecutor(this);
-        getCommand("bridge").setTabCompleter(this);
+        org.bukkit.command.PluginCommand bridgeCommand = getCommand("bridge");
+        if (bridgeCommand == null) {
+            getLogger().severe("Command 'bridge' not found in plugin.yml; disabling plugin.");
+            getServer().getPluginManager().disablePlugin(this);
+            return;
+        }
+        bridgeCommand.setExecutor(this);
+        bridgeCommand.setTabCompleter(this);
 
         // Load and validate config
         saveDefaultConfig();
@@ -168,12 +174,14 @@ public class PyJavaBridgePlugin extends JavaPlugin {
         try {
             getLogger().info("Scanning scripts in " + scriptsDir);
 
-            Files.list(scriptsDir)
-                    .filter(path -> path.toString().endsWith(".py"))
-                    .filter(path -> !path.getFileName().toString().equals("bridge.py"))
-                    .filter(path -> !path.getFileName().toString().equals("runner.py"))
-                    .filter(path -> !Files.isDirectory(path))
-                    .forEach(path -> startScript(path, scriptsDir, runtimeDir));
+            try (java.util.stream.Stream<Path> scripts = Files.list(scriptsDir)) {
+                scripts
+                        .filter(path -> path.toString().endsWith(".py"))
+                        .filter(path -> !path.getFileName().toString().equals("bridge.py"))
+                        .filter(path -> !path.getFileName().toString().equals("runner.py"))
+                        .filter(path -> !Files.isDirectory(path))
+                        .forEach(path -> startScript(path, scriptsDir, runtimeDir));
+            }
 
         } catch (IOException e) {
             getLogger().severe("Failed to list scripts: " + e.getMessage());

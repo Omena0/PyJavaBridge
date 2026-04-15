@@ -380,10 +380,10 @@ public class EntitySpawner {
             return type;
         }
         if (typeObj instanceof EnumValue enumValue) {
-            return EntityType.valueOf(enumValue.name);
+            return EntityType.valueOf(enumValue.name.toUpperCase());
         }
         if (typeObj instanceof String text) {
-            return EntityType.valueOf(text);
+            return EntityType.valueOf(text.toUpperCase());
         }
         return null;
     }

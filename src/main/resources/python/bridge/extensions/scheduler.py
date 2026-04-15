@@ -114,6 +114,10 @@ class Scheduler:
             task = ScheduledTask(task_name, func, interval=seconds,
                 delay=delay, repeat=True)
 
+            existing = self._tasks.get(task_name)
+            if existing is not None:
+                existing.cancel()
+
             self._tasks[task_name] = task
             if self._running:
                 self._launch(task)
@@ -134,6 +138,10 @@ class Scheduler:
             task_name = name or func.__name__
             task = ScheduledTask(task_name, func, interval=0,
                 delay=seconds, repeat=False)
+
+            existing = self._tasks.get(task_name)
+            if existing is not None:
+                existing.cancel()
 
             self._tasks[task_name] = task
             if self._running:
@@ -157,6 +165,10 @@ class Scheduler:
         """
         task = ScheduledTask(name, handler, interval=interval,
             delay=delay, repeat=repeat)
+
+        existing = self._tasks.get(name)
+        if existing is not None:
+            existing.cancel()
 
         self._tasks[name] = task
         if self._running:

@@ -5,6 +5,7 @@ import asyncio
 import inspect
 import json
 import os
+import re
 import sys
 from functools import wraps
 from typing import Any, Callable, Dict, List, Optional, cast
@@ -295,6 +296,7 @@ def command(description: Optional[str] = None, *, name: Optional[str] = None, pe
 # @preserve — hot-reload state persistence
 # ---------------------------------------------------------------------------
 _PRESERVE_DIR: str | None = None
+_PRESERVE_FILE_KEY_RE = re.compile(r"[^A-Za-z0-9_.-]+")
 
 def _preserve_dir() -> str:
     """Return (and lazily create) the preserve data directory path."""
@@ -306,7 +308,12 @@ def _preserve_dir() -> str:
 
     return _PRESERVE_DIR
 
-def preserve(func: Callable[[], Any]) -> Callable[[], Any]:
+def _preserve_file_key(key: str) -> str:
+    """Return a filesystem-safe key for preserve storage files."""
+    safe = _PRESERVE_FILE_KEY_RE.sub("_", key).strip("._")
+    return safe or "preserved_value"
+
+def preserve(func: Callable[[], Any]) -> Any:
     """Persist a variable across hot reloads.
 
     Decorate a no-arg factory function.  On first load, the factory runs and
@@ -322,7 +329,7 @@ def preserve(func: Callable[[], Any]) -> Callable[[], Any]:
         # player_scores is now a dict that survives /pjb reload
     """
     key = func.__qualname__
-    path = os.path.join(_preserve_dir(), f"{key}.json")
+    path = os.path.join(_preserve_dir(), f"{_preserve_file_key(key)}.json")
     try:
         with open(path, "r", encoding="utf-8") as f:
             value = json.load(f)

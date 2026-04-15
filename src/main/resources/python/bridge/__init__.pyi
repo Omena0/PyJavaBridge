@@ -1,6 +1,6 @@
 """Type stubs for bridge — auto-completion & static analysis."""
 from __future__ import annotations
-from typing import Any, Awaitable, Callable, ClassVar, Dict, Iterator, List, Optional
+from typing import Any, AsyncContextManager, Awaitable, Callable, ClassVar, ContextManager, Dict, Iterator, List, Optional
 
 from bridge.connection import BridgeConnection
 from bridge.wrappers import ProxyBase as ProxyBase
@@ -545,10 +545,10 @@ class Event:
 # ── WorldTime ─────────────────────────────────────────────────────────
 
 class WorldTime:
-    DAWN: WorldTime
-    NOON: WorldTime
-    DUSK: WorldTime
-    MIDNIGHT: WorldTime
+    DAWN: ClassVar[WorldTime]
+    NOON: ClassVar[WorldTime]
+    DUSK: ClassVar[WorldTime]
+    MIDNIGHT: ClassVar[WorldTime]
     ticks: int
     def __init__(self, ticks: int) -> None: ...
     @classmethod
@@ -979,7 +979,8 @@ class Player(Entity):
     def mana(self) -> float: ...
     @mana.setter
     def mana(self, value: float) -> None: ...
-    xp: float
+    @property
+    def xp(self) -> float: ...
     player_level: int
 
 # ── World ─────────────────────────────────────────────────────────────
@@ -1669,6 +1670,12 @@ class Paginator(Menu):
     def set_page_item(self, page: int, slot: int, menu_item: MenuItem) -> None: ...
     def open(self, player: Player, page: int = 0) -> None: ...
 
+class AtomicAbortCount:
+    value: int
+    def __int__(self) -> int: ...
+    def __index__(self) -> int: ...
+    def __bool__(self) -> bool: ...
+
 # ── Server / Chat / Reflect ──────────────────────────────────────────
 
 class Server(ProxyBase):
@@ -1685,8 +1692,8 @@ class Server(ProxyBase):
     scheduler: Any
     def after(self, ticks: int = 1, after: Callable[[], Any] | None = None) -> Awaitable[None]: ...
     def frame(self) -> Any: ...
-    def atomic(self) -> Any: ...
-    def flush(self) -> Awaitable[None]: ...
+    def atomic(self) -> ContextManager[AtomicAbortCount] | AsyncContextManager[AtomicAbortCount]: ...
+    def flush(self) -> Awaitable[int]: ...
     name: str
     version: str
     motd: str

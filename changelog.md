@@ -3,42 +3,81 @@
 
 ## 4B
 
-Client-mod API consolidation release — high-level Python interface, cleaner extension exports, and follow-up client/runtime hardening and readability improvements.
+Client-mod API consolidation release — high-level Python interface, cleaner extension exports, and client/runtime hardening and readability improvements.
 
 ### Changes
 
-#### ClientMod extension API
+#### `ClientMod` Session-First API
 
-- The extension now exposes a high-level singleton entrypoint:
-  - `from bridge.extensions.client_mod import client_mod`
-  - `cm = client_mod.session(player)`
-- Per-player operations are now invoked on `cm` (for example `cm.command(...)`, `cm.register_script(...)`, `cm.raycast(...)`, `cm.stream_audio_file(...)`).
-- Event decorators and request-data registry are exposed on the singleton (`client_mod.on_client_data`, `client_mod.on_permission_change`, `client_mod.register_request_data`, `client_mod.unregister_request_data`).
+- Consolidated extension entrypoints around `client_mod` from `bridge.extensions.client_mod`.
+- Standardized per-player calls through `ClientModSession` (`cm = client_mod.session(player)`) and methods like `cm.command(...)`, `cm.register_script(...)`, `cm.raycast(...)`, `cm.stream_audio_file(...)`, and `cm.stream_audio_generator(...)`.
+- Exposed singleton decorators/registries for event and payload wiring: `client_mod.on_client_data`, `client_mod.on_permission_change`, `client_mod.register_request_data(...)`, `client_mod.unregister_request_data(...)`.
+- Normalized exports in `bridge.extensions` to favor object-based API usage (`ClientMod`, `ClientModSession`, `client_mod`) over flat helper-only usage.
 
-#### Cleanup
+#### `BridgeInstance` and Event Routing Correctness
 
-- Import surface cleanup
-  - `bridge.extensions` now exports the client-mod API as high-level objects (`ClientMod`, `ClientModSession`, `client_mod`) rather than a long list of flat helper functions.
-  - Type stubs and extension documentation were updated to match the class-based API.
+- Added script-only event bookkeeping via `BridgeInstance.scriptOnlySubscriptions` so `BridgeInstance.hasSubscription(...)`, `BridgeInstance.getSubscriptionNames()`, and dispatch matching include script-local handlers.
+- Added `BridgeInstance.resolveInvokeResult(...)` to correctly resolve nested `CompletableFuture` returns with timeout/error propagation into Python responses.
+- Corrected broadcast path in `BridgeInstance` to return `server.broadcastMessage(...)` behavior instead of log-only side effects.
+- Hardened material handling in `BridgeInstance` (`sendBlockChange`) with explicit `Material.matchMaterial(...)` null checks before `Bukkit.createBlockData(...)`.
+
+#### Serializer/Facade Guard Rails
+
+- Added `BridgeSerializer` inventory validation in `deserialize(...)` (`size` must be `9..54` and a multiple of `9`).
+- Removed implicit world mutation from `BridgeSerializer` `Block` deserialization (no hidden `block.setType(...)` side effects).
+- Tightened boolean coercion in `BridgeSerializer.coerceArg(...)` to explicitly parse `"true"` / `"false"` string inputs.
+- Added operation volume/bounds enforcement in `RegionFacade.pasteOperations(...)` and stronger invalid block-data failure behavior in `RegionFacade.parseBlockData(...)`.
+- Enforced protocol-version validation in `ClientModFrameCodec.decodeFrame(...)`.
+
+#### Python Runtime Concurrency and Lifecycle Safety
+
+- Added `BridgeConnection` locking around `_pending_sync` and batching (`_pending_sync_lock`, `_batch_lock`) to avoid races between reader/caller threads.
+- Made `BridgeConnection.flush()` atomically snapshot/clear `_batch_messages` and `_batch_futures` before sending `call_batch`.
+- Added atomic abort reporting: `server.atomic()` now yields an int-like counter (`with server.atomic() as num_failed:` / `async with ...`) and `server.flush()` returns the aborted-call count for the flushed batch.
+- Hardened disconnect/shutdown behavior in `BridgeConnection` so pending sync waits are finalized safely and loop stop is scheduled via `_loop.call_soon(...)`.
+- Added proxy handle refcount synchronization in `wrappers.py` (`_handle_refcounts_lock`) and deterministic LRU-like UUID cache helpers (`_cache_get_player_uuid`, `_cache_set_player_uuid`).
+
+#### Extension Correctness and Recovery Paths
+
+- Prevented duplicate updater loops by task dedupe/cancel logic in `ability.py`, `combat.py`, `quest.py`, `leaderboard.py`, `scheduler.py`, and `state_machine.py`.
+- Added malformed persistence recovery for JSON-backed extensions (`bank.py`, `levels.py`, `player_data.py`, `guild.py`).
+- Fixed transactional currency flow in `trade.py` by checking `bank.withdraw(...)` return values and refunding on partial failure.
+- Tightened parsing/validation across build and content tooling (`dungeon.py`, `schematic.py`, `mesh_display.py`, `image_display.py`, `loot_table.py`, `tab_list.py`).
+- Improved client audio stream cleanup/failure surfacing in `client_mod.py` (`ffmpeg` stdout checks, producer error propagation, guaranteed stop in `finally`).
+
+#### Docs, CI, and Packaging Follow-Through
+
+- Reworked docs keying in `docs/build.py` to avoid basename collisions in output names, source maps, and search URLs.
+- Pinned `.github/workflows/deploy-pages.yml` tool dependencies for reproducible docs deployments.
+- Added missing extension files to `src/main/resources/python/bridge/MANIFEST` (`loot_table.py`, `placeholder.py`, `scheduler.py`, `schematic.py`, `state_machine.py`, `tab_list.py`).
+- Updated stubs to reflect API/type reality in `bridge/__init__.pyi` and `bridge/extensions/__init__.pyi`.
 
 ## 4A
 
-Major release: first-class client-side integration, an experimental datapack runtime, improved bridge reliability and player-data handling, documentation and configuration enhancements, and packaging updates.
+Client integration foundation release — first-class client bridge support, experimental runtime datapack tooling, and broad reliability/configuration improvements.
 
 ### Changes
 
-#### Client mod support
+#### Client Bridge Transport Foundation
 
-- Adds an optional client-side bridge allowing server scripts and plugins to send commands and structured data to a cooperating client mod and receive responses/events.
-- Permission negotiation occurs at session start; scripts must handle availability, denials, and timeouts gracefully.
+- Added optional client-mod transport wiring centered on `ClientModChannelBridge`, `ClientModSessionManager`, and `ClientModProtocol`.
+- Enabled request/response messaging and event ingress from cooperating client mods through bridge call targets.
+- Added session-time permission negotiation so scripts can branch on allowed/denied/unavailable capabilities.
 
-#### Datapack runtime (experimental)
+#### Runtime Datapack Registration (Experimental)
 
-- API to register datapack content (models, advancements, predicates, registry entries) at runtime; best-effort and intended for dynamic/testing scenarios.
+- Added runtime registration APIs in `DatapackFacade` for advancements, predicates, model JSON, and registry-scoped entries.
+- Implemented best-effort application semantics for dynamic/testing workflows rather than strict static-pack replacement.
 
-#### Configuration
+#### Reliability and Lifecycle Work
 
-- New configuration keys for message size, timeouts, and Python runtime; review settings for production deployment.
+- Improved core runtime behavior in `PyJavaBridgePlugin`, `BridgeInstance`, and event dispatch paths for startup/shutdown and timeout handling.
+- Improved failure tolerance around player/session state transitions and partial runtime disconnect scenarios.
+
+#### Configuration and Operational Controls
+
+- Expanded `config.yml` knobs for bridge payload sizing, timeout behavior, and Python runtime settings.
+- Updated docs/deploy defaults so production operators can tune bridge throughput and timeout behavior more predictably.
 
 ## 3D
 
@@ -233,201 +272,166 @@ Performance optimization pass — caching, data structures, and hot-path improve
 
 ## 3A
 
-Major expansion — extensions, tooling, networking overhaul.
-Many internal changes, cleanup and optimization.
+Major expansion release — extension ecosystem growth, networking overhaul, API breadth increase, and substantial internal cleanup.
 
 ### Changes
 
-#### Networking
+#### IPC and Call Resolution
 
-- Switched from TCP sockets to stdin/stdout pipes for faster IPC
-- Java-side method resolution now supports snake_case → camelCase fallback
-- Version compatibility improvements and removed slow regex
+- Switched bridge transport from TCP sockets to `stdin`/`stdout` pipes for lower IPC overhead.
+- Added snake_case -> camelCase fallback in Java invoke resolution so Python calls map cleanly onto Bukkit-style methods.
+- Removed slow regex-heavy compatibility paths from hot invoke routes.
 
-#### New APIs
+#### Core Wrapper API Expansion
 
-- Entity AI: targeting, pathfinding, awareness, line of sight, look_at
-- Entity tags: add_tag, remove_tag, tags, is_tagged (Python-side, UUID-keyed)
-- Entity attributes: yaw, pitch, look_direction, equipment
-- Player: selected_slot, freeze/unfreeze (tick-based position lock), vanish/unvanish
-- Player extension shortcuts: balance, deposit, withdraw, mana, xp, player_level
-- Block/tile entity API: signs, furnaces, containers
-- Recipe API: shaped, shapeless, furnace recipes as a class
-- Firework effects API with builder pattern
-- Resource pack API on Player
-- Enchantment discovery: Enchantment.all() and Enchantment.for_item()
-- Packet API via ProtocolLib: on_packet_send, on_packet_receive, send_packet
-- Inter-script messaging: script_send, on_script_message, get_scripts
-- WorldTime class and @world.at_time() decorator for time-based events
-- World: create_explosion, entities_near, blocks_near
-- Location: + and - operators (with Location and Vector)
-- Vector: +, -, * operators (scalar, component-wise, and reverse)
-- 18 new enum types (DamageCause, Enchantment, ItemFlag, etc)
-- Respawn location override (return Location from player_respawn)
-- entity_target event return value handling: override target by returning Entity
-- @event .unregister() method to remove event handlers at runtime
+- Expanded `Entity` AI and behavior APIs: targeting, pathing, awareness, line-of-sight, and look-direction controls.
+- Added entity tag helpers (`add_tag`, `remove_tag`, `tags`, `is_tagged`) with UUID-keyed Python-side state.
+- Added entity orientation/equipment-style fields (`yaw`, `pitch`, `look_direction`, equipment accessors).
+- Added player-side controls (`selected_slot`, freeze/unfreeze movement lock, `vanish`/`unvanish`).
+- Added convenience extension fields (`balance`, `deposit`, `withdraw`, `mana`, `xp`, `player_level`) on `Player` workflows.
+- Expanded block/tile APIs (signs, furnaces, container-style interactions) and recipe APIs (shaped, shapeless, furnace recipe wrappers).
+- Added firework builder flows and resource-pack controls on `Player`.
+- Added enchantment discovery APIs (`Enchantment.all()`, `Enchantment.for_item(...)`).
 
-#### New extensions
+#### Packet, Script Bus, and Time APIs
 
-- Paginator: multi-page menu with nav buttons
-- Quest / QuestTree: objectives, bossbar timers, branching quest lines
-- Dialog: branching conversations with timeouts and NPC linking
-- Bank: persistent balances with transaction events
-- Shop: paginated GUI with bank integration
-- TradeWindow: confirm/cancel with anti-dupe delay
-- Ability / ManaStore / CombatSystem / LevelSystem
-- Region / Party / Guild / CustomItem
-- Leaderboard / VisualEffect / PlayerDataStore
-- Dungeon: procedural room generation with WFC algorithm
+- Added ProtocolLib packet APIs: `on_packet_send(...)`, `on_packet_receive(...)`, `send_packet(...)`.
+- Added inter-script messaging APIs: `script_send(...)`, `on_script_message(...)`, `get_scripts()`.
+- Added `WorldTime` and `@world.at_time(...)` time-hook decorators.
+- Expanded world utility methods (`create_explosion`, `entities_near`, `blocks_near`).
 
-#### Decorators & commands
+#### Math Types and Event Overrides
 
-- @command: cmd\_ prefix auto-stripping (def cmd_greet → /greet)
-- @command: dynamic tab completions via @my_command.tab_complete
-- @command: static tab_complete parameter with wildcard support
-- Persistent State class with auto-save on shutdown
+- Added operator support for `Location` (`+`, `-`) and `Vector` (`+`, `-`, `*`, reverse multiply patterns).
+- Added broad enum coverage (including `DamageCause`, `Enchantment`, `ItemFlag`, and related gameplay enums).
+- Added `player_respawn` return override support (return `Location` to redirect respawn).
+- Added `entity_target` return override support (return `Entity` to set target).
+- Added runtime unregistration support via `@event ... .unregister()`.
 
-#### Event system
+#### Extension Ecosystem Drop
 
-- Extended event payload: action, hand, from, to, cause, velocity, reason, message, new_slot, previous_slot, amount, slot, etc
-- Event.world and Event.location now auto-derive from entity/player when not directly available
-- snake_case field access auto-resolves to Java getters (getNewSlot, isPreviousSlot, etc)
+- Added helper/feature modules: `Paginator`, `Quest`/`QuestTree`, `Dialog`, `Bank`, `Shop`, `TradeWindow`.
+- Added gameplay systems: `Ability`, `ManaStore`, `CombatSystem`, `LevelSystem`.
+- Added social/data/world systems: `Region`, `Party`, `Guild`, `CustomItem`, `Leaderboard`, `VisualEffect`, `PlayerDataStore`, `Dungeon`.
 
-#### Error handling
+#### Command and Decorator Improvements
 
-- Java stack traces included in Python exceptions
-- 18 typed error subclasses (EntityGoneException, MethodNotFoundException, etc)
+- Enhanced `@command` with automatic `cmd_` prefix stripping (`def cmd_greet` -> `/greet`).
+- Added dynamic completion via `@my_command.tab_complete`.
+- Added static completion lists via `tab_complete=` parameter (including wildcard-style matching).
+- Added persistent `State` helper with shutdown save behavior.
 
-#### Helpers
+#### Event and Error Model Upgrades
 
-- Menu: race condition fix when opening a new menu from a click handler
-- ActionBarDisplay: immediate refresh on creation (no longer waits for server_boot)
-- BossBarDisplay: renamed link_cooldown to linked_to (old name kept as compat alias)
-- ManaStore: auto-cleanup on player disconnect, regen loop crash protection
-- NPC: dialog linking, player linking, range enter/exit callbacks
+- Expanded event payload fields (`action`, `hand`, `from`, `to`, `cause`, `velocity`, `reason`, `message`, `new_slot`, `previous_slot`, `amount`, `slot`, etc).
+- Added `Event.world` / `Event.location` auto-derivation from related player/entity context.
+- Added snake_case event field access fallback to Java getters (`getNewSlot`, `isPreviousSlot`, etc).
+- Propagated Java stack traces into Python exceptions and added typed error classes (for example `EntityGoneException`, `MethodNotFoundException`).
 
-#### Tooling
+#### Helper, Tooling, and Internal Platform Work
 
-- `pjb` CLI tool: `pjb search <query>` and `pjb events [filter]`
-- Doc site full-text search bar with Ctrl+K shortcut
-- Gradle copyBridgePython task: auto-deploys bridge to server on build
-
-#### Internals
-
-- Restructured bridge.py into proper Python module (connection, wrappers, helpers, types, utils, decorators)
-- Documentation for events, execution, lifecycle, and serialization internals
-- Type stubs for all extensions
-- Comprehensive Event stubs with all event-specific fields
-
-#### Misc
-
-- MeshDisplay helper (WIP)
-- Updated wiki/docs site with all new pages
+- Fixed `Menu` race when opening a second menu from click callbacks.
+- Improved display helpers (`ActionBarDisplay` immediate refresh; `BossBarDisplay` rename `link_cooldown` -> `linked_to` with compatibility alias).
+- Hardened helper runtime behavior in `ManaStore` and `NPC` loops/callback linkage.
+- Added CLI tooling with `pjb search <query>` and `pjb events [filter]`.
+- Added docs search UX (`Ctrl+K`) and Gradle `copyBridgePython` auto-deploy task.
+- Split monolithic `bridge.py` into modular runtime units (`connection`, `wrappers`, `helpers`, `types`, `utils`, `decorators`) and expanded internals docs/stubs.
 
 ## 2A
 
-Feature update
+Feature expansion release — batching and IPC performance work, new world/player APIs, and helper/tooling growth.
 
 ### Changes
 
-#### Networking
+#### Throughput and IPC Improvements
 
-- Optimized for single request latency
-- Use batching to speed up multiple requests
-- Now uses orjson for faster parsing
-- Automatic handle management
+- Optimized request flow for lower single-call latency.
+- Added call batching for multi-operation workloads.
+- Added `orjson` fast-path parsing support.
+- Added automatic handle lifecycle management to reduce stale-object leaks.
 
-#### New APIs
+#### New World/Player APIs
 
-- Tab list API on Player
-- Region utils on World: .set_block, .fill, .replace, .fill_sphere, .fill_cylinder, .fill_line
-- Particle shapes on World
-- Entity spawn helpers on World: spawn_at_player, spawn_projectile, spawn_with_nbt.
-- Support for command execution on Server
-- world.entities property
-- RaycastResult.distance and .hit_face
+- Added tab-list APIs on `Player`.
+- Added world region helpers on `World`: `set_block(...)`, `fill(...)`, `replace(...)`, `fill_sphere(...)`, `fill_cylinder(...)`, `fill_line(...)`.
+- Added world particle-shape helpers and entity spawn helpers (`spawn_at_player(...)`, `spawn_projectile(...)`, `spawn_with_nbt(...)`).
+- Added server command execution support from bridge-side runtime calls.
+- Added `world.entities` and expanded raycast results (`RaycastResult.distance`, `RaycastResult.hit_face`).
 
-#### New helpers
+#### New Helper Modules
 
-- Sidebar: Scoreboard helper
-- Config: TOML config helper
-- Cooldown: Automatically manage cooldowns
-- Hologram: Show floating text
-- Menu / MenuItem: Create easy chest GUIs
-- ActionBarDisplay: Manage action bars easily
-- BossBarDisplay: Manage boss bars easily
-- BlockDisplay: Show fake blocks
-- ItemDisplay: Show floating items
-- ImageDisplay: Show images in the world
-- ItemBuilder: Easily create items
-- Shutdown event
+- Added UI/state helpers: `Sidebar`, `Menu`, `MenuItem`, `ActionBarDisplay`, `BossBarDisplay`.
+- Added config/state helpers: `Config` (TOML-first), `Cooldown`, shutdown event hooks.
+- Added display helpers: `Hologram`, `BlockDisplay`, `ItemDisplay`, `ImageDisplay`.
+- Added item workflow helper: `ItemBuilder`.
 
-#### API improvements
+#### API Quality Improvements
 
-- Fixed type errors regarding EnumValue not matching its child classes
-- EntityGoneException now extends BridgeError
-- @task decorator: Run tasks on an interval
-- Added event priority and throttle_ms parameters
-- Added command description parameter
-- Location: .add, .clone, .distance, .distance_squared are now sync
-- Scoreboard, Team, Objective, and BossBar creation methods are now sync
-- Config: Added support for multiple formats, toml (default), json, and properties.
-- Commands can be now executes as console
+- Fixed enum typing mismatches around `EnumValue` and child enum wrappers.
+- Made `EntityGoneException` derive from `BridgeError`.
+- Added `@task` interval scheduling decorator.
+- Added event controls (`priority`, `throttle_ms`) and command metadata (`description`).
+- Made attribute-like methods synchronous for core wrappers (`Location.add/clone/distance/distance_squared`, scoreboard/team/objective/bossbar creation).
+- Added multi-format `Config` persistence (`toml`, `json`, `properties`).
+- Expanded command execution paths to include console execution.
 
-#### Cleanup
+#### Refactor and Documentation Foundation
 
-- Entity class moved before Player
-- Moved most of the code from a single file to multiple
-- Improved typing across python bridge
-
-#### Misc
-
-- Added dev versioning for non-release commits
-- Added wiki site
+- Reordered core wrappers to define `Entity` before `Player` for cleaner inheritance flow.
+- Split large single-file bridge implementation into multiple modules.
+- Improved bridge typing coverage and early wiki/documentation rollout.
+- Added dev-version labeling for non-tag builds.
 
 ## 1D
 
-Damage event
+Damage and ownership update — expanded combat event payloads and entity ownership metadata.
 
-Changes:
+### Changes
 
-- Added damage override to damage events
-- Added damage source and damager attributes to damage events
-- Added shooter attribute to projectile entities
-- Added owner attribute to tamed entities
-- Added is_tamed attribute to entities
+#### Event and Entity Updates
+
+- Added damage override support on damage-event handlers.
+- Added damage context fields (`damage source`, `damager`) on event payloads.
+- Added projectile ownership access via shooter metadata.
+- Added tame/ownership metadata on entities (`owner`, `is_tamed`).
 
 ## 1C
 
-API cleanup
+API cleanup update — synchronous attribute model improvements and quality-of-life fixes.
 
-Changes:
+### Changes
 
-- Added call_sync and field_or_call_sync helpers
-- Turned most attribute-like methods into attributes
-- Made all attributes synchronous
-- Added create classmethods to most classes
-- Added optional args to world.spawn_entity
-- Allowed spawning of non-living entities
-- Fixed player UUID lookups
-- Chat event return value is now the chat message format for that event
-- Bugfixes
+#### API and Behavior Improvements
+
+- Added sync helper paths (`call_sync(...)`, `field_or_call_sync(...)`).
+- Converted method-like fields into direct attributes where appropriate.
+- Made wrapper attributes consistently synchronous.
+- Added `create(...)` classmethod patterns across major wrappers.
+- Expanded `world.spawn_entity(...)` optional argument handling.
+- Allowed non-living entity spawn paths.
+- Fixed player UUID lookup edge cases.
+- Made chat-event return values control outgoing chat format.
+- Included additional bug-fix follow-through across wrapper internals.
 
 ## 1B
 
-API expansion
+API expansion update — broader API coverage and initial documentation rollout.
 
-Changes:
+### Changes
 
-- Implemented most missing APIs
-- Added proper command argument parsing
-- Added docs
-- Bugfixes
+#### API and Docs
+
+- Implemented most missing core APIs from early bridge targets.
+- Added structured command argument parsing behavior.
+- Added initial documentation pages for bridge usage.
+- Included stabilization bug fixes.
 
 ## 1A
 
-Initial release
+Initial release — first bridge implementation with core scripting APIs.
 
-Changes:
+### Changes
 
-- Added most common APIs
+#### Initial Scope
+
+- Added the first set of commonly used bridge APIs across server, player, world, and event workflows.

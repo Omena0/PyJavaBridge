@@ -28,6 +28,19 @@ def print(*args: Any) -> None:
     """Redirect print to stderr so stdout stays reserved for IPC."""
     _print(*args, file=sys.stderr)
 
+def _extract_packet_type(payload: Any) -> str | None:
+    """Extract packet_type from bridge payload/event wrappers."""
+    if isinstance(payload, dict):
+        packet_type = payload.get("packet_type") or payload.get("packetType")
+        return str(packet_type) if packet_type is not None else None
+
+    fields = getattr(payload, "fields", None)
+    if isinstance(fields, dict):
+        packet_type = fields.get("packet_type") or fields.get("packetType")
+        return str(packet_type) if packet_type is not None else None
+
+    return None
+
 # --- Packet API (requires ProtocolLib) ---
 def has_packet_api() -> BridgeCall:
     """Check if ProtocolLib packet API is available. Returns Awaitable[bool]."""
@@ -35,10 +48,20 @@ def has_packet_api() -> BridgeCall:
 
 def on_packet_send(packet_type: str) -> Any:
     """Decorator: listen for outgoing packets of the given type."""
+    expected = packet_type.upper()
+
     def decorator(handler: Callable) -> Callable:
         """Register *handler* for outgoing packets of *packet_type*."""
+        def _filtered(payload: Any) -> Any:
+            """Run handler only for the requested packet type."""
+            actual = _extract_packet_type(payload)
+            if actual is None or actual.upper() != expected:
+                return None
+
+            return handler(payload)
+
         _connection.call("listenPacketSend", target="server", args=[packet_type])
-        _connection.on("packet_send", handler)
+        _connection.on("packet_send", _filtered)
         _connection.subscribe("packet_send", False)
         return handler
 
@@ -46,10 +69,20 @@ def on_packet_send(packet_type: str) -> Any:
 
 def on_packet_receive(packet_type: str) -> Any:
     """Decorator: listen for incoming packets of the given type."""
+    expected = packet_type.upper()
+
     def decorator(handler: Callable) -> Callable:
         """Register *handler* for incoming packets of *packet_type*."""
+        def _filtered(payload: Any) -> Any:
+            """Run handler only for the requested packet type."""
+            actual = _extract_packet_type(payload)
+            if actual is None or actual.upper() != expected:
+                return None
+
+            return handler(payload)
+
         _connection.call("listenPacketReceive", target="server", args=[packet_type])
-        _connection.on("packet_receive", handler)
+        _connection.on("packet_receive", _filtered)
         _connection.subscribe("packet_receive", False)
         return handler
 

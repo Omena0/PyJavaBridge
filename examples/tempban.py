@@ -56,7 +56,13 @@ async def ban(event: Event, user:str, t:Optional[str]=None, r:Optional[str]=None
         return
 
     target = Player(name=user)
-    duration = parse_time(t) if t else None
+    try:
+        duration = parse_time(t) if t else None
+    except ValueError as exc:
+        event.player.send_message(f"Invalid duration: {exc}")
+        event.player.play_sound('block_note_block_bass')
+        return
+
     reason = r or "Ban hammer has spoken!"
 
     reason_text = f"You have been {"permanently " if not duration else ""}banned{f"\nFor {format_timespan(duration)}" if duration else ""}\nReason: {reason}"

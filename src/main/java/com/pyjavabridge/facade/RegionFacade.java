@@ -210,6 +210,28 @@ public class RegionFacade {
      */
     @SuppressWarnings("unchecked")
     public Map<String, String> pasteOperations(World world, List<Object> operations) {
+        long totalVolume = 0L;
+        for (Object opObj : operations) {
+            List<Object> op = (List<Object>) opObj;
+            if (op.isEmpty()) continue;
+            String type = String.valueOf(op.get(0));
+            if ("set".equals(type)) {
+                totalVolume += 1L;
+            } else if ("fill".equals(type) && op.size() >= 8) {
+                int x1 = ((Number) op.get(1)).intValue();
+                int y1 = ((Number) op.get(2)).intValue();
+                int z1 = ((Number) op.get(3)).intValue();
+                int x2 = ((Number) op.get(4)).intValue();
+                int y2 = ((Number) op.get(5)).intValue();
+                int z2 = ((Number) op.get(6)).intValue();
+                long volume = (long) (Math.abs(x2 - x1) + 1)
+                        * (Math.abs(y2 - y1) + 1)
+                        * (Math.abs(z2 - z1) + 1);
+                totalVolume += volume;
+            }
+            checkVolume(totalVolume);
+        }
+
         Map<String, String> originals = new HashMap<>(operations.size() * 2);
 
         for (Object opObj : operations) {
@@ -336,6 +358,8 @@ public class RegionFacade {
             Material mat = Material.matchMaterial(matName);
             if (mat != null) {
                 block.setType(mat, false);
+            } else {
+                throw new IllegalArgumentException("Invalid block data: " + blockStr, e);
             }
         }
 

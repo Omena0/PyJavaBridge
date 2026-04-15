@@ -332,8 +332,14 @@ class RoomTemplate:
         if meta_width is None or meta_height is None or meta_depth is None:
             raise ValueError(f"Missing width/height/depth in metadata of {path}")
 
-        # Detect format: new fill/set ops vs legacy RLE
-        first_line = block_text.split("\n", 1)[0].strip()
+        # Detect format: new fill/set ops vs legacy RLE using first non-empty line
+        first_line = ""
+        for raw_line in block_text.splitlines():
+            stripped = raw_line.strip()
+            if stripped:
+                first_line = stripped
+                break
+
         is_ops_format = first_line.startswith("fill ") or first_line.startswith("set ")
 
         if is_ops_format:
@@ -835,7 +841,14 @@ class _DungeonGenerator:
             for tf in ALL_TRANSFORMS:
                 variant = t.transformed(tf)
                 # Deduplicate identical variants (e.g. a symmetric room)
-                sig = (t.name, tuple(tuple(tuple(row) for row in layer) for layer in variant.blocks))
+                exit_sig = tuple(
+                    sorted((ex.x, ex.y, ex.z, ex.facing, ex.width, ex.height, ex.tag) for ex in variant.exits)
+                )
+                sig = (
+                    t.name,
+                    tuple(tuple(tuple(row) for row in layer) for layer in variant.blocks),
+                    exit_sig,
+                )
                 if sig in seen:
                     continue
 
@@ -1374,7 +1387,7 @@ class DungeonInstance:
 
         while not self._completed:
             try:
-                for player in self.players:
+                for player in list(self.players):
                     puuid = str(player.uuid)
                     try:
                         loc = player.location

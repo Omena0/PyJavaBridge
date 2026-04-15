@@ -30,8 +30,8 @@ class CustomItem(ItemBuilder):
 
     def give(self, player: Any, amount: int = 1) -> None:
         """Give this custom item to a player."""
-        self.amount(amount)
         item = self.build()
+        item.fields["amount"] = int(amount)
         player.give(item)
 
     @classmethod

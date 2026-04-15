@@ -477,26 +477,51 @@ def _parse_ops(
         [["minecraft:air"] * width for _ in range(depth)]
         for _ in range(height)
     ]
-    for line in text.strip().splitlines():
-        line = line.strip()
+    for line_no, raw_line in enumerate(text.strip().splitlines(), start=1):
+        line = raw_line.strip()
         if not line or line.startswith("#"):
             continue
 
         parts = line.split()
         if parts[0] == "set" and len(parts) == 5:
-            x, y, z = int(parts[1]), int(parts[2]), int(parts[3])
+            try:
+                x, y, z = int(parts[1]), int(parts[2]), int(parts[3])
+            except ValueError as exc:
+                raise ValueError(f"Invalid set coordinates at line {line_no}: {line!r}") from exc
+
+            if not (0 <= x < width and 0 <= y < height and 0 <= z < depth):
+                raise ValueError(
+                    f"Set operation out of bounds at line {line_no}: ({x}, {y}, {z}) not in 0..{width-1},0..{height-1},0..{depth-1}"
+                )
+
             key = parts[4]
             block_def = key_map.get(key, "air")
             layers[y][z][x] = f"minecraft:{block_def}"
         elif parts[0] == "fill" and len(parts) == 8:
-            x1, y1, z1 = int(parts[1]), int(parts[2]), int(parts[3])
-            x2, y2, z2 = int(parts[4]), int(parts[5]), int(parts[6])
+            try:
+                x1, y1, z1 = int(parts[1]), int(parts[2]), int(parts[3])
+                x2, y2, z2 = int(parts[4]), int(parts[5]), int(parts[6])
+            except ValueError as exc:
+                raise ValueError(f"Invalid fill coordinates at line {line_no}: {line!r}") from exc
+
+            min_x, max_x = sorted((x1, x2))
+            min_y, max_y = sorted((y1, y2))
+            min_z, max_z = sorted((z1, z2))
+            if not (
+                0 <= min_x <= max_x < width
+                and 0 <= min_y <= max_y < height
+                and 0 <= min_z <= max_z < depth
+            ):
+                raise ValueError(
+                    f"Fill operation out of bounds at line {line_no}: ({x1}, {y1}, {z1}) -> ({x2}, {y2}, {z2})"
+                )
+
             key = parts[7]
             block_def = key_map.get(key, "air")
             full = f"minecraft:{block_def}"
-            for yi in range(y1, y2 + 1):
-                for zi in range(z1, z2 + 1):
-                    for xi in range(x1, x2 + 1):
+            for yi in range(min_y, max_y + 1):
+                for zi in range(min_z, max_z + 1):
+                    for xi in range(min_x, max_x + 1):
                         layers[yi][zi][xi] = full
 
     return layers
@@ -538,7 +563,14 @@ class Marker:
 
         marker_type = parts[0]
         coords = parts[1].split(",")
-        x, y, z = int(coords[0]), int(coords[1]), int(coords[2])
+        if len(coords) != 3:
+            raise ValueError(f"Bad marker coordinates (expected x,y,z): {text!r}")
+
+        try:
+            x, y, z = int(coords[0]), int(coords[1]), int(coords[2])
+        except ValueError as exc:
+            raise ValueError(f"Invalid marker coordinates: {text!r}") from exc
+
         metadata: Dict[str, str] = {}
         for extra in parts[2:]:
             if "=" in extra:
@@ -647,6 +679,11 @@ class Schematic:
         if meta_width is None or meta_height is None or meta_depth is None:
             raise ValueError(f"Missing width/height/depth in metadata of {path}")
 
+        if meta_width <= 0 or meta_height <= 0 or meta_depth <= 0:
+            raise ValueError(
+                f"Invalid non-positive dimensions in {path}: width={meta_width}, height={meta_height}, depth={meta_depth}"
+            )
+
         # Detect format: new fill/set ops vs legacy RLE
         first_line = block_text.split("\n", 1)[0].strip()
         is_ops_format = first_line.startswith("fill ") or first_line.startswith("set ")
@@ -719,7 +756,14 @@ class Schematic:
         # Build reverse map: full block string -> key char
         reverse: Dict[str, str] = {}
         for ch, block_def in self.key_map.items():
-            reverse[f"minecraft:{block_def}"] = ch
+            full_block = f"minecraft:{block_def}"
+            existing = reverse.get(full_block)
+            if existing is not None and existing != ch:
+                raise ValueError(
+                    f"Duplicate block mapping for {full_block!r}: {existing!r} and {ch!r}"
+                )
+
+            reverse[full_block] = ch
 
         # Encode blocks as fill/set operations
         ops = _compute_ops(self.blocks, reverse, self.width, self.height, self.depth)

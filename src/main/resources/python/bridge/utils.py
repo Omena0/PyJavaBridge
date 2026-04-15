@@ -19,13 +19,23 @@ _player_uuid_cache: Dict[str, str] = {}
 _PLAYER_UUID_CACHE_MAX = 1000
 
 def _bound_uuid_cache() -> None:
-    """Evict the oldest quarter of the UUID cache when it exceeds the limit."""
-    if len(_player_uuid_cache) >= _PLAYER_UUID_CACHE_MAX:
-        keys = list(_player_uuid_cache.keys())
-        # Delete in-place via islice to avoid second list allocation
-        count = len(keys) // 4
-        for i in range(count):
-            del _player_uuid_cache[keys[i]]
+    """Evict least-recently-updated UUID cache entries until within bounds."""
+    while len(_player_uuid_cache) >= _PLAYER_UUID_CACHE_MAX:
+        try:
+            oldest_key = next(iter(_player_uuid_cache))
+        except StopIteration:
+            break
+
+        _player_uuid_cache.pop(oldest_key, None)
+
+def _cache_set_player_uuid(name: str, value: str) -> None:
+    """Insert/update a UUID cache entry while preserving access order."""
+    if name in _player_uuid_cache:
+        _player_uuid_cache.pop(name, None)
+    else:
+        _bound_uuid_cache()
+
+    _player_uuid_cache[name] = value
 
 def _extract_xyz(pos: tuple[int] | Any) -> tuple:
     """Extract (x, y, z) from a Location, Vector, tuple, list, or namespace."""
@@ -136,11 +146,10 @@ def _proxy_from(raw: Dict[str, Any]) -> Any:
         name = fields.get("name")
         player_uuid = fields.get("uuid")
         if isinstance(name, str):
-            _bound_uuid_cache()
             if isinstance(player_uuid, uuid.UUID):
-                _player_uuid_cache[name] = str(player_uuid)
+                _cache_set_player_uuid(name, str(player_uuid))
             elif isinstance(player_uuid, str):
-                _player_uuid_cache[name] = player_uuid
+                _cache_set_player_uuid(name, player_uuid)
 
     if type_name and type_name.endswith("Event"):
         proxy_cls = _Event_cls
@@ -423,10 +432,9 @@ async def _prime_player_cache() -> None:
                     name = player.fields.get("name")
                     player_uuid = player.fields.get("uuid")
                     if isinstance(name, str):
-                        _bound_uuid_cache()
                         if isinstance(player_uuid, uuid.UUID):
-                            _player_uuid_cache[name] = str(player_uuid)
+                            _cache_set_player_uuid(name, str(player_uuid))
                         elif isinstance(player_uuid, str):
-                            _player_uuid_cache[name] = player_uuid
+                            _cache_set_player_uuid(name, player_uuid)
     except Exception:
         pass

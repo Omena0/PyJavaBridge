@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import asyncio
+import copy
 import json
 import os
 import sys
@@ -186,6 +187,7 @@ class Config:
         self._path = os.path.join(config_dir, f"config{ext}")
         self._data: Dict[str, Any] = dict(defaults) if defaults else {}
         self._defaults: Dict[str, Any] = dict(defaults) if defaults else {}
+        self._lock = threading.RLock()
         self.reload()
 
     def reload(self) -> None:
@@ -208,31 +210,36 @@ class Config:
 
         merged = dict(self._defaults)
         _deep_merge(merged, data)
-        self._data = merged
+        with self._lock:
+            self._data = merged
 
     def save(self) -> None:
         """Write the current config data to disk."""
+        with self._lock:
+            snapshot = copy.deepcopy(self._data)
+
         try:
             with open(self._path, "w", encoding="utf-8") as f:
                 if self._format == "toml":
-                    f.write(_toml_dumps(self._data))
+                    f.write(_toml_dumps(snapshot))
                 elif self._format == "json":
-                    json.dump(self._data, f, indent=2, ensure_ascii=False)
+                    json.dump(snapshot, f, indent=2, ensure_ascii=False)
                     f.write("\n")
                 elif self._format == "properties":
-                    f.write(_properties_dumps(self._data))
+                    f.write(_properties_dumps(snapshot))
         except OSError as e:
             raise BridgeError(f"Failed to save config to {self._path}: {e}") from e
 
     def get(self, path: str, default: Any = None) -> Any:
         """Get a value by dot-separated path, returning *default* if missing."""
         keys = path.split(".")
-        data = self._data
-        for key in keys:
-            if isinstance(data, dict) and key in data:
-                data = data[key]
-            else:
-                return default
+        with self._lock:
+            data = self._data
+            for key in keys:
+                if isinstance(data, dict) and key in data:
+                    data = data[key]
+                else:
+                    return default
 
         return data
 
@@ -269,28 +276,30 @@ class Config:
     def set(self, path: str, value: Any) -> None:
         """Set a value by dot-separated path, creating intermediate dicts."""
         keys = path.split(".")
-        data = self._data
-        for key in keys[:-1]:
-            if key not in data or not isinstance(data[key], dict):
-                data[key] = {}
+        with self._lock:
+            data = self._data
+            for key in keys[:-1]:
+                if key not in data or not isinstance(data[key], dict):
+                    data[key] = {}
 
-            data = data[key]
+                data = data[key]
 
-        data[keys[-1]] = value
+            data[keys[-1]] = value
 
     def delete(self, path: str) -> bool:
         """Delete a key by dot-separated path. Returns True if deleted."""
         keys = path.split(".")
-        data = self._data
-        for key in keys[:-1]:
-            if not isinstance(data, dict) or key not in data:
-                return False
+        with self._lock:
+            data = self._data
+            for key in keys[:-1]:
+                if not isinstance(data, dict) or key not in data:
+                    return False
 
-            data = data[key]
+                data = data[key]
 
-        if isinstance(data, dict) and keys[-1] in data:
-            del data[keys[-1]]
-            return True
+            if isinstance(data, dict) and keys[-1] in data:
+                del data[keys[-1]]
+                return True
 
         return False
 
@@ -309,7 +318,8 @@ class Config:
     @property
     def data(self) -> Dict[str, Any]:
         """The raw config data dictionary."""
-        return self._data
+        with self._lock:
+            return copy.deepcopy(self._data)
 
     @property
     def path(self) -> str:
@@ -408,7 +418,7 @@ class State:
 
 class Cooldown:
     """Per-player cooldown tracker."""
-    __slots__ = ("seconds", "on_expire", "_expiry", "_task_started")
+    __slots__ = ("seconds", "on_expire", "_expiry", "_task_started", "_lock")
 
     def __init__(
             self, seconds: float = 1.0,
@@ -419,6 +429,7 @@ class Cooldown:
         self.on_expire = on_expire
         self._expiry: Dict[str, float] = {}
         self._task_started = False
+        self._lock = threading.Lock()
 
     def _get_uuid(self, player: Any) -> str:
         """Extract the UUID string from a player object."""
@@ -431,12 +442,18 @@ class Cooldown:
         """Return True if the cooldown has expired (and reset it), False otherwise."""
         uid = self._get_uuid(player)
         now = time.time()
-        exp = self._expiry.get(uid)
-        if exp is not None and now < exp:
-            return False
+        should_start_task = False
+        with self._lock:
+            exp = self._expiry.get(uid)
+            if exp is not None and now < exp:
+                return False
 
-        self._expiry[uid] = now + self.seconds
-        if self.on_expire is not None and not self._task_started:
+            self._expiry[uid] = now + self.seconds
+            if self.on_expire is not None and not self._task_started:
+                self._task_started = True
+                should_start_task = True
+
+        if should_start_task:
             self._start_expire_task()
 
         return True
@@ -444,7 +461,9 @@ class Cooldown:
     def remaining(self, player: Any) -> float:
         """Return the seconds remaining on a player's cooldown."""
         uid = self._get_uuid(player)
-        exp = self._expiry.get(uid)
+        with self._lock:
+            exp = self._expiry.get(uid)
+
         if exp is None:
             return 0.0
 
@@ -454,20 +473,23 @@ class Cooldown:
     def reset(self, player: Any) -> None:
         """Clear the cooldown for *player*."""
         uid = self._get_uuid(player)
-        self._expiry.pop(uid, None)
+        with self._lock:
+            self._expiry.pop(uid, None)
 
     def _start_expire_task(self) -> None:
         """Start the background task that fires on_expire callbacks."""
-        self._task_started = True
         from bridge import Player, server
 
         async def _check_expiry() -> None:
             """Poll for expired cooldowns and invoke callbacks."""
             while _connection is not None:
                 now = time.time()
-                expired = [uid for uid, exp in self._expiry.items() if now >= exp]
+                with self._lock:
+                    expired = [uid for uid, exp in self._expiry.items() if now >= exp]
+                    for uid in expired:
+                        self._expiry.pop(uid, None)
+
                 for uid in expired:
-                    del self._expiry[uid]
                     if self.on_expire is not None:
                         try:
                             p = Player(uuid=uid)
@@ -673,7 +695,7 @@ class ActionBarDisplay:
 
 class BossBarDisplay:
     """Convenient boss bar display with value/max support and cooldown linking."""
-    __slots__ = ("_bar", "_value", "_max", "_linked_task_started")
+    __slots__ = ("_bar", "_value", "_max", "_linked_task")
 
     def __init__(
             self, title: str = "", color: str = "PINK",
@@ -689,7 +711,7 @@ class BossBarDisplay:
 
         self._value: float = 0.0
         self._max: float = 1.0
-        self._linked_task_started = False
+        self._linked_task: Optional[asyncio.Task[Any]] = None
 
     def show(self, player: Any) -> None:
         """Show the boss bar to *player*."""
@@ -783,24 +805,31 @@ class BossBarDisplay:
     def link_to(self, source: Any, player: Any) -> None:
         """Link this boss bar to a Cooldown (or any object with .remaining(player) and .seconds)."""
         from bridge import server
+        if self._linked_task is not None and not self._linked_task.done():
+            self._linked_task.cancel()
+
         self.show(player)
         self._max = source.seconds
 
         async def _update() -> None:
             """Periodically update the linked boss bar progress."""
-            while _connection is not None:
-                remaining = source.remaining(player)
-                self._value = remaining
-                self._update_progress()
-                if remaining <= 0:
-                    break
+            try:
+                while _connection is not None:
+                    remaining = source.remaining(player)
+                    self._value = remaining
+                    self._update_progress()
+                    if remaining <= 0:
+                        break
 
-                try:
-                    await server.after(2)
-                except BridgeError:
-                    break
+                    try:
+                        await server.after(2)
+                    except BridgeError:
+                        break
+            finally:
+                if self._linked_task is asyncio.current_task():
+                    self._linked_task = None
 
-        asyncio.ensure_future(_update())
+        self._linked_task = asyncio.ensure_future(_update())
 
 class BlockDisplay:
     """Block display entity wrapper."""

@@ -203,13 +203,30 @@ class _TradeSession:
 
         # Execute balance swap
         if bank:
+            withdrawn1 = 0
+            withdrawn2 = 0
             if self.balance1 > 0:
-                bank.withdraw(self.p1, self.balance1)
-                bank.deposit(self.p2, self.balance1)
+                if not bank.withdraw(self.p1, self.balance1):
+                    await self.p1.send_message("§cTrade failed: insufficient funds.")
+                    await self.p2.send_message("§cTrade failed: balance changed before completion.")
+                    self.cancel()
+                    return
+                withdrawn1 = self.balance1
 
             if self.balance2 > 0:
-                bank.withdraw(self.p2, self.balance2)
-                bank.deposit(self.p1, self.balance2)
+                if not bank.withdraw(self.p2, self.balance2):
+                    if withdrawn1 > 0:
+                        bank.deposit(self.p1, withdrawn1)
+                    await self.p1.send_message("§cTrade failed: balance changed before completion.")
+                    await self.p2.send_message("§cTrade failed: insufficient funds.")
+                    self.cancel()
+                    return
+                withdrawn2 = self.balance2
+
+            if withdrawn1 > 0:
+                bank.deposit(self.p2, withdrawn1)
+            if withdrawn2 > 0:
+                bank.deposit(self.p1, withdrawn2)
 
         for p in (self.p1, self.p2):
             await p.send_message("§aTrade complete!")

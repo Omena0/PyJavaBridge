@@ -830,6 +830,10 @@ public class BridgeSerializer {
                 int size = fields.has("size") ? fields.get("size").getAsInt() : 9;
                 String title = fields.has("title") ? fields.get("title").getAsString() : "";
 
+                if (size < 9 || size > 54 || size % 9 != 0) {
+                    throw new IllegalArgumentException("Invalid inventory size: " + size);
+                }
+
                 org.bukkit.inventory.Inventory inventory = Bukkit.createInventory(null, size,
                         Component.text(title));
 
@@ -872,24 +876,7 @@ public class BridgeSerializer {
                 int y = fields.has("y") ? fields.get("y").getAsInt() : 0;
                 int z = fields.has("z") ? fields.get("z").getAsInt() : 0;
 
-                Block block = world.getBlockAt(x, y, z);
-
-                if (fields.has("type")) {
-                    Object typeObj = deserialize(fields.get("type"));
-                    Material material = null;
-
-                    if (typeObj instanceof EnumValue enumValue) {
-                        material = Material.matchMaterial(enumValue.name);
-
-                    } else if (typeObj instanceof String text) {
-                        material = Material.matchMaterial(text);
-
-                    }
-                    if (material != null) {
-                        block.setType(material);
-                    }
-                }
-                yield block;
+                yield world.getBlockAt(x, y, z);
             }
 
             case "World" -> {
@@ -1014,7 +1001,14 @@ public class BridgeSerializer {
         }
 
         if (parameterType == boolean.class || parameterType == Boolean.class) {
-            return arg;
+            if (arg instanceof Boolean bool) {
+                return bool;
+            }
+            if (arg instanceof String text) {
+                if ("true".equalsIgnoreCase(text)) return true;
+                if ("false".equalsIgnoreCase(text)) return false;
+            }
+            return CONVERSION_FAIL;
         }
 
         if (parameterType.isEnum() && arg instanceof EnumValue enumValue) {

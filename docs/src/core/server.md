@@ -229,12 +229,23 @@ Async context manager that batches multiple bridge calls into a single network s
 ### atomic
 
 ```python
-async with server.atomic():
+async with server.atomic() as num_failed:
     await player.set_health(20)
     await player.set_food_level(20)
+
+print(int(num_failed))  # 0 when all calls succeeded
 ```
 
-Async context manager that batches calls as an atomic group. All calls succeed or fail together.
+Context manager that batches calls as an atomic group. All calls succeed or fail together.
+The `as` value is an int-like counter of calls aborted due to an atomic failure.
+
+```python
+with server.atomic() as num_failed:
+  player.set_health(20)
+  player.set_food_level(20)
+
+print(int(num_failed))
+```
 
 ### flush
 
@@ -244,7 +255,7 @@ await server.flush()
 
 Send all pending batched requests immediately. Use this inside a `frame()` or `atomic()` block if you need partial results before the block ends.
 
-- **Returns:** `Awaitable[None]`
+- **Returns:** `Awaitable[int]` — number of calls aborted in the flushed batch (usually `0`, non-zero on atomic abort).
 
 ---
 

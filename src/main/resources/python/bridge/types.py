@@ -105,6 +105,13 @@ class BridgeCall(Awaitable[Any]):
     def __repr__(self) -> str:
         """Show the call status and result."""
         if self._future.done():
+            if self._future.cancelled():
+                return "BridgeCall(cancelled)"
+
+            exc = self._future.exception()
+            if exc is not None:
+                return f"BridgeCall(error={exc!r})"
+
             return f"BridgeCall(result={self._future.result()!r})"
 
         return "BridgeCall(pending)"

@@ -45,13 +45,12 @@ class ScriptCommand extends Command {
     void setCompletions(Map<Integer, List<String>> completions) {
         this.completions.clear();
         if (completions != null) {
-            // Pre-lowercase all completion options at registration time
             for (Map.Entry<Integer, List<String>> entry : completions.entrySet()) {
-                List<String> lowered = new ArrayList<>(entry.getValue().size());
+                List<String> copied = new ArrayList<>(entry.getValue().size());
                 for (String s : entry.getValue()) {
-                    lowered.add(s.toLowerCase());
+                    copied.add(s);
                 }
-                this.completions.put(entry.getKey(), lowered);
+                this.completions.put(entry.getKey(), copied);
             }
         }
     }
@@ -82,12 +81,8 @@ class ScriptCommand extends Command {
         }
 
         ScriptCommand cmd = new ScriptCommand(commandName, instance);
-        if (permission != null) {
-            cmd.setScriptPermission(permission);
-        }
-        if (completions != null) {
-            cmd.setCompletions(completions);
-        }
+        cmd.setScriptPermission(permission);
+        cmd.setCompletions(completions);
         cmd.setDynamicTabComplete(hasDynamicTabComplete);
         map.register("pyjavabridge", cmd);
     }
@@ -136,12 +131,8 @@ class ScriptCommand extends Command {
     private static void applyRegistration(ScriptCommand scriptCommand, BridgeInstance instance,
             String permission, Map<Integer, List<String>> completions, boolean hasDynamicTabComplete) {
         scriptCommand.setInstance(instance);
-        if (permission != null) {
-            scriptCommand.setScriptPermission(permission);
-        }
-        if (completions != null) {
-            scriptCommand.setCompletions(completions);
-        }
+        scriptCommand.setScriptPermission(permission);
+        scriptCommand.setCompletions(completions);
         scriptCommand.setDynamicTabComplete(hasDynamicTabComplete);
     }
 
@@ -259,7 +250,7 @@ class ScriptCommand extends Command {
 
         List<String> results = new ArrayList<>(options.size());
         for (String option : options) {
-            if (option.startsWith(partial)) {
+            if (option.toLowerCase().startsWith(partial)) {
                 results.add(option);
             }
         }

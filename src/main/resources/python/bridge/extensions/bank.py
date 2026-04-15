@@ -31,8 +31,12 @@ class Bank:
     def _load(self) -> None:
         """Load data from storage."""
         if os.path.isfile(self._path):
-            with open(self._path, "r") as f:
-                self._balances = json.load(f)
+            try:
+                with open(self._path, "r") as f:
+                    loaded = json.load(f)
+                    self._balances = dict(loaded) if isinstance(loaded, dict) else {}
+            except (OSError, json.JSONDecodeError, TypeError):
+                self._balances = {}
 
     def _save(self) -> None:
         """Save data to storage."""

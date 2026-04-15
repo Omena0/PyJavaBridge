@@ -52,6 +52,9 @@ public final class ClientModFrameCodec {
         }
 
         int protocolVersion = buffer.get() & 0xFF;
+        if (protocolVersion != ClientModProtocol.PROTOCOL_VERSION) {
+            throw new IOException("Unsupported protocol version: " + protocolVersion);
+        }
         int packetType = buffer.get() & 0xFF;
         int flags = buffer.getShort() & 0xFFFF;
         int requestId = buffer.getInt();

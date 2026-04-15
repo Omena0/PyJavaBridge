@@ -10,6 +10,7 @@ import com.pyjavabridge.util.EntitySpawner;
 import com.pyjavabridge.util.ObjectRegistry;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -103,6 +104,7 @@ public class BridgeInstance {
     private final Gson gson = new Gson();
     private final ObjectRegistry registry = new ObjectRegistry();
     private final Map<String, EventSubscription> subscriptions = new ConcurrentHashMap<>();
+    private final Set<String> scriptOnlySubscriptions = ConcurrentHashMap.newKeySet();
     // Per-subscription non-blocking flags (true -> fire-and-forget)
     private final Map<String, Boolean> subscriptionNonBlocking = new ConcurrentHashMap<>();
     private final Map<UUID, PermissionAttachment> permissionAttachments = new ConcurrentHashMap<>();
@@ -190,21 +192,23 @@ public class BridgeInstance {
     }
 
     public boolean hasSubscription(String eventName) {
-        return subscriptions.containsKey(eventName);
+        return subscriptions.containsKey(eventName) || scriptOnlySubscriptions.contains(eventName);
     }
 
     /**
      * Diagnostic helper: return a snapshot of registered subscription keys.
      */
     public java.util.Set<String> getSubscriptionNames() {
-        return new java.util.HashSet<>(subscriptions.keySet());
+        java.util.Set<String> names = new java.util.HashSet<>(subscriptions.keySet());
+        names.addAll(scriptOnlySubscriptions);
+        return names;
     }
 
     /**
      * Returns an unmodifiable view of subscription keys for diagnostics.
      */
     public java.util.Set<String> getSubscriptionKeys() {
-        return java.util.Collections.unmodifiableSet(subscriptions.keySet());
+        return java.util.Collections.unmodifiableSet(getSubscriptionNames());
     }
 
     /** Starts the Python process and bridge communication thread. */
@@ -258,6 +262,7 @@ public class BridgeInstance {
                         }
                     }
                     subscriptions.clear();
+                    scriptOnlySubscriptions.clear();
                     return null;
                 }).get(2, TimeUnit.SECONDS);
             } catch (Exception e) {
@@ -268,6 +273,7 @@ public class BridgeInstance {
                     }
                 }
                 subscriptions.clear();
+                scriptOnlySubscriptions.clear();
             }
         }
 
@@ -608,12 +614,13 @@ public class BridgeInstance {
             }
             return;
         }
-        var entries = entriesEl.getAsJsonArray();
+        JsonArray entries = entriesEl.getAsJsonArray();
         boolean hasId = message.has("id");
         int id = hasId ? message.get("id").getAsInt() : 0;
         plugin.runOnMainThread(this, () -> {
             int updated = 0;
-            for (JsonElement el : entries) {
+            for (int idx = 0; idx < entries.size(); idx++) {
+                JsonElement el = entries.get(idx);
                 if (!el.isJsonArray()) continue;
                 var pair = el.getAsJsonArray();
                 if (pair.size() < 2) continue;
@@ -644,9 +651,10 @@ public class BridgeInstance {
         if (entriesEl == null || !entriesEl.isJsonArray()) {
             return;
         }
-        var entries = entriesEl.getAsJsonArray();
+        JsonArray entries = entriesEl.getAsJsonArray();
         plugin.runOnMainThread(this, () -> {
-            for (JsonElement el : entries) {
+            for (int idx = 0; idx < entries.size(); idx++) {
+                JsonElement el = entries.get(idx);
                 if (!el.isJsonArray()) continue;
                 var arr = el.getAsJsonArray();
                 if (arr.size() < 7) continue;
@@ -868,7 +876,7 @@ public class BridgeInstance {
                     // script handlers (which registered locally) will still receive our
                     // programmatic dispatches (via instance.hasSubscription).
                     plugin.getLogger().info("[" + name + "] Registered script-only subscription for " + eventName);
-                    subscriptions.put(eventName, null);
+                    scriptOnlySubscriptions.add(eventName);
                     subscriptionNonBlocking.put(eventName, nonBlocking);
                 }
             }
@@ -1026,7 +1034,7 @@ public class BridgeInstance {
                 }
 
                 try {
-                    Object result = invoke(callMessage);
+                    Object result = resolveInvokeResult(invoke(callMessage));
 
                     if (!noResponse) {
                         JsonObject response = new JsonObject();
@@ -1068,7 +1076,7 @@ public class BridgeInstance {
             boolean noResponse = callMessage.has("no_response") && callMessage.get("no_response").getAsBoolean();
 
             try {
-                Object result = invoke(callMessage);
+                Object result = resolveInvokeResult(invoke(callMessage));
 
                 if (!noResponse) {
                     JsonObject response = new JsonObject();
@@ -1089,6 +1097,23 @@ public class BridgeInstance {
         }
         if (!batchResponses.isEmpty()) {
             sendAll(batchResponses, startNano);
+        }
+    }
+
+    private Object resolveInvokeResult(Object result) throws Exception {
+        if (!(result instanceof java.util.concurrent.CompletableFuture<?> nestedFuture)) {
+            return result;
+        }
+
+        long timeoutMs = Math.max(100L, plugin.getEventTimeoutMs());
+        try {
+            return nestedFuture.get(timeoutMs, TimeUnit.MILLISECONDS);
+        } catch (java.util.concurrent.ExecutionException ex) {
+            Throwable cause = ex.getCause();
+            if (cause instanceof Exception inner) {
+                throw inner;
+            }
+            throw new RuntimeException(cause == null ? ex : cause);
         }
     }
 
@@ -1916,7 +1941,11 @@ public class BridgeInstance {
                             blockData = bd;
                         } else {
                             String matName = matArg instanceof EnumValue ev ? ev.name : String.valueOf(matArg);
-                            blockData = Bukkit.createBlockData(Material.matchMaterial(matName));
+                            Material material = Material.matchMaterial(matName);
+                            if (material == null) {
+                                throw new IllegalArgumentException("Invalid material: " + matName);
+                            }
+                            blockData = Bukkit.createBlockData(material);
                         }
                         player.sendBlockChange(loc, blockData);
                     }
@@ -2403,7 +2432,7 @@ public class BridgeInstance {
             return server.dispatchCommand(Bukkit.getConsoleSender(), commandLine);
         }
         if ("broadcastMessage".equals(method) && !args.isEmpty()) {
-            plugin.getLogger().info("[broadcast] " + args.get(0));
+            return server.broadcastMessage(String.valueOf(args.get(0)));
         }
         // Recipe methods
         if ("addShapedRecipe".equals(method) && args.size() >= 4) {
@@ -2949,6 +2978,11 @@ public class BridgeInstance {
         Boolean nonBlockingOverride = null;
         java.util.List<String> matching = new java.util.ArrayList<>();
         for (String key : subscriptions.keySet()) {
+            if (key.equalsIgnoreCase(eventName) || key.startsWith(eventName + "#")) {
+                matching.add(key);
+            }
+        }
+        for (String key : scriptOnlySubscriptions) {
             if (key.equalsIgnoreCase(eventName) || key.startsWith(eventName + "#")) {
                 matching.add(key);
             }

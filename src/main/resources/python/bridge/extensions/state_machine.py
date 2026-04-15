@@ -189,6 +189,9 @@ class StateMachine:
         """
         import bridge
 
+        if self._tick_task is not None and not self._tick_task.done():
+            self._tick_task.cancel()
+
         self._tick_interval = interval_ticks
 
         async def _loop() -> None:

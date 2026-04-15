@@ -157,11 +157,58 @@ class TabList:
 
         return text
 
+    def _resolve_player_tab_name(self, player: Any) -> Optional[str]:
+        """Resolve a configured tab-list name for *player* from group entries."""
+        try:
+            player_name = str(player.name)
+        except Exception:
+            return None
+
+        for group in sorted(self._groups.values(), key=lambda g: g.priority):
+            for entry in group.entries:
+                if entry.name.lower() == player_name.lower():
+                    return f"{group.prefix}{entry.name}"
+
+        return None
+
+    def _render_group_lines(self, player: Any, server: Any) -> List[str]:
+        """Render configured group/fake entries as footer lines."""
+        if not self._groups:
+            return []
+
+        online_names: set[str] = set()
+        try:
+            for online in server.players or []:
+                online_names.add(str(online.name).lower())
+        except Exception:
+            online_names = set()
+
+        lines: List[str] = []
+        for group in sorted(self._groups.values(), key=lambda g: g.priority):
+            for entry in group.entries:
+                label = self._resolve_templates(f"{group.prefix}{entry.name}", player, server)
+                if entry.name.lower() in online_names:
+                    lines.append(label)
+                else:
+                    lines.append(f"§7{label}")
+
+        return lines[:20]
+
     async def apply(self, player: Any) -> None:
         """Apply this tab list configuration to a player."""
-        header = self._resolve_templates(self._header, player, bridge.server)
-        footer = self._resolve_templates(self._footer, player, bridge.server)
+        server = bridge.server
+        header = self._resolve_templates(self._header, player, server)
+        footer = self._resolve_templates(self._footer, player, server)
+        group_lines = self._render_group_lines(player, server)
+        if group_lines:
+            footer = f"{footer}\n" if footer else ""
+            footer += "\n".join(group_lines)
+
         await player.set_tab_list_header_footer(header, footer)
+
+        tab_name = self._resolve_player_tab_name(player)
+        if tab_name is not None:
+            await player.set_tab_list_name(tab_name)
 
     async def apply_all(self) -> None:
         """Apply tab list to all online players."""

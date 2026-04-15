@@ -49,7 +49,7 @@ class LootEntry:
 
         if isinstance(self.item, dict):
             result = dict(self.item)
-            result.setdefault("amount", rolled_amount)
+            result["amount"] = rolled_amount
             amount = int(result.get("amount", 1))
             if amount <= 0:
                 return None
@@ -159,21 +159,23 @@ def _spread_into_inventory(inventory: "Inventory", items: List["Item"]) -> List[
         except StopIteration:
             return inserted
 
-        if inventory._handle is None:
-            inventory.set_item(slot, item)
-        else:
-            inventory._call_sync("setItem", slot, item)
+        try:
+            if inventory._handle is None:
+                inventory.set_item(slot, item)
+            else:
+                inventory._call_sync("setItem", slot, item)
+        except Exception:
+            break
+
         inserted.append(item)
 
     # If inventory is full, try vanilla add behavior (stacking/appending where possible).
     for item in item_iter:
-        if inventory._handle is None:
-            inventory.add_item(item)
-            inserted.append(item)
-            continue
-
         try:
-            inventory._call_sync("addItem", item)
+            if inventory._handle is None:
+                inventory.add_item(item)
+            else:
+                inventory._call_sync("addItem", item)
             inserted.append(item)
         except Exception:
             break
@@ -362,7 +364,9 @@ class LootTable:
             if key in stacked:
                 existing_amt = int(stacked[key].fields.get("amount", 1))
                 add_amt = int(item.fields.get("amount", 1))
-                stacked[key].fields["amount"] = existing_amt + add_amt
+                merged = _clone_item_with_amount(stacked[key], existing_amt + add_amt)
+                if merged is not None:
+                    stacked[key] = merged
             else:
                 stacked[key] = item
 

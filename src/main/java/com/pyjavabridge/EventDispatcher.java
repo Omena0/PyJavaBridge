@@ -174,7 +174,12 @@ public class EventDispatcher {
         PendingEvent pending = pendingEvents.get(eventId);
         if (pending != null) {
             try {
-                long deadline = System.currentTimeMillis() + timeoutMs;
+                long effectiveTimeoutMs = timeoutMs;
+                if (Bukkit.isPrimaryThread()) {
+                    // Avoid extended tick stalls when scripts are slow.
+                    effectiveTimeoutMs = Math.min(timeoutMs, 20L);
+                }
+                long deadline = System.currentTimeMillis() + effectiveTimeoutMs;
                 try {
                     while (System.currentTimeMillis() < deadline && pending.latch.getCount() > 0) {
                         plugin.drainMainThreadQueue();
@@ -249,7 +254,11 @@ public class EventDispatcher {
             payloads.add(payload);
         }
         sendBatch(eventName, payloads);
-        long deadline = System.currentTimeMillis() + plugin.getExplosionTimeoutMs();
+        long effectiveTimeoutMs = plugin.getExplosionTimeoutMs();
+        if (Bukkit.isPrimaryThread()) {
+            effectiveTimeoutMs = Math.min(effectiveTimeoutMs, 20L);
+        }
+        long deadline = System.currentTimeMillis() + effectiveTimeoutMs;
         try {
             while (System.currentTimeMillis() < deadline) {
                 boolean allDone = true;

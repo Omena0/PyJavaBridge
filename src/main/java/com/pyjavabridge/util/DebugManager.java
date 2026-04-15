@@ -60,7 +60,7 @@ public class DebugManager {
     }
 
     public Set<UUID> getDebugPlayerUuids() {
-        return debugPlayers;
+        return java.util.Collections.unmodifiableSet(new java.util.HashSet<>(debugPlayers));
     }
 
     public boolean isDebugEnabled() {

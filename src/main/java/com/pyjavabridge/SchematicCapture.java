@@ -532,13 +532,31 @@ public final class SchematicCapture {
         }
         String facing; int ew, eh;
         if (minX == maxX) {
-            facing = (minX == 0) ? "-x" : "+x";
+            if (minX == 0) {
+                facing = "-x";
+            } else if (maxX == w - 1) {
+                facing = "+x";
+            } else {
+                return null;
+            }
             ew = maxZ - minZ + 1; eh = maxY - minY + 1;
         } else if (minZ == maxZ) {
-            facing = (minZ == 0) ? "-z" : "+z";
+            if (minZ == 0) {
+                facing = "-z";
+            } else if (maxZ == d - 1) {
+                facing = "+z";
+            } else {
+                return null;
+            }
             ew = maxX - minX + 1; eh = maxY - minY + 1;
         } else if (minY == maxY) {
-            facing = (minY == 0) ? "-y" : "+y";
+            if (minY == 0) {
+                facing = "-y";
+            } else if (maxY == h - 1) {
+                facing = "+y";
+            } else {
+                return null;
+            }
             ew = maxX - minX + 1; eh = maxZ - minZ + 1;
         } else {
             return null;

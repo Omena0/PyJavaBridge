@@ -37,7 +37,8 @@ class Ability:
         self._on_use_handler: Optional[Callable[..., Any]] = None
         self._can_use_handler: Optional[Callable[..., bool]] = None
         self._mana_store: Any = None  # ManaStore reference
-        self._bar: Optional[bridge.BossBarDisplay] = None
+        self._bars: Dict[str, bridge.BossBarDisplay] = {}
+        self._bar_tasks: Dict[str, asyncio.Task[Any]] = {}
 
     def set_mana_store(self, mana_store: Any) -> None:
         """Set the mana store."""
@@ -102,26 +103,38 @@ class Ability:
 
     def _show_cooldown_bar(self, player: Any) -> None:
         """Handle show cooldown bar."""
-        if self._bar is None:
-            self._bar = bridge.BossBarDisplay(self.name, color="RED", style="SOLID")
+        puuid = str(player.uuid)
+        bar = self._bars.get(puuid)
+        if bar is None:
+            bar = bridge.BossBarDisplay(self.name, color="RED", style="SOLID")
+            self._bars[puuid] = bar
 
-        self._bar.max = self.cooldown
-        self._bar.value = self.cooldown
-        self._bar.show(player)
+        task = self._bar_tasks.get(puuid)
+        if task is not None and not task.done():
+            task.cancel()
+
+        bar.max = self.cooldown
+        bar.value = self.cooldown
+        bar.show(player)
 
         async def _update() -> None:
             """Asynchronously handle update."""
             from bridge import server
-            while True:
-                remaining = self.remaining_cooldown(player)
-                if remaining <= 0:
-                    self._bar.hide(player)  # type: ignore[union-attr]
-                    break
+            try:
+                while True:
+                    remaining = self.remaining_cooldown(player)
+                    if remaining <= 0:
+                        bar.hide(player)
+                        break
 
-                self._bar.value = remaining  # type: ignore[union-attr]
-                try:
-                    await server.after(2)
-                except Exception:
-                    break
+                    bar.value = remaining
+                    try:
+                        await server.after(2)
+                    except Exception:
+                        break
+            finally:
+                current = self._bar_tasks.get(puuid)
+                if current is asyncio.current_task():
+                    self._bar_tasks.pop(puuid, None)
 
-        asyncio.ensure_future(_update())
+        self._bar_tasks[puuid] = asyncio.ensure_future(_update())

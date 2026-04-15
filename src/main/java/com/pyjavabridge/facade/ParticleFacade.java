@@ -28,11 +28,11 @@ public class ParticleFacade {
         double dx = x2 - x1, dy = y2 - y1, dz = z2 - z1;
         double length = Math.sqrt(dx * dx + dy * dy + dz * dz);
         int count = Math.min(MAX_PARTICLES, Math.max(2, (int)(length * density)));
-        for (int i = 0; i <= count; i++) {
-            double t = (double) i / count;
+        for (int i = 0; i < count; i++) {
+            double t = count == 1 ? 0.0 : (double) i / (double) (count - 1);
             world.spawnParticle(particle, x1 + dx * t, y1 + dy * t, z1 + dz * t, 1, offsetX, offsetY, offsetZ, extra);
         }
-        return count + 1;
+        return count;
     }
 
     public int sphere(World world, Object particleObj,

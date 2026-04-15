@@ -38,11 +38,11 @@ jobs:
 
       - name: Install Node tools
         run: |
-          npm install --no-audit --no-fund --no-save html-minifier-next critical
+          npm install --no-audit --no-fund --no-save html-minifier-next@6.1.2 critical@7.2.1
 
       - name: Build docs
         run: |
-          pip install markdown zstandard
+          pip install markdown==3.10.2 zstandard==0.25.0
           python docs/build.py
 
       - name: Setup Pages

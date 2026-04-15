@@ -5,6 +5,7 @@ import asyncio
 import atexit
 import inspect
 import math
+import threading
 import sys
 import uuid
 from types import SimpleNamespace
@@ -32,6 +33,28 @@ atexit.register(_mark_shutting_down)
 # Handle reference counting: track how many Python proxy objects share each Java handle.
 # Only release a handle when the last proxy referencing it is garbage collected.
 _handle_refcounts: Dict[int, int] = {}
+_handle_refcounts_lock = threading.Lock()
+
+def _cache_get_player_uuid(name: str) -> Optional[str]:
+    """Fetch-and-touch a cached player UUID entry."""
+    value = _player_uuid_cache.pop(name, None)
+    if value is not None:
+        _player_uuid_cache[name] = value
+
+    return value
+
+def _cache_set_player_uuid(name: str, value: str) -> None:
+    """Insert/update player UUID cache with bounded eviction."""
+    if name in _player_uuid_cache:
+        _player_uuid_cache.pop(name, None)
+    elif len(_player_uuid_cache) >= _PLAYER_UUID_CACHE_MAX:
+        try:
+            oldest_key = next(iter(_player_uuid_cache))
+            _player_uuid_cache.pop(oldest_key, None)
+        except StopIteration:
+            pass
+
+    _player_uuid_cache[name] = value
 
 def _handle_acquire(handle: Optional[int]) -> None:
     """Increment the reference count for a Java handle."""
@@ -39,9 +62,13 @@ def _handle_acquire(handle: Optional[int]) -> None:
         return
 
     if handle is not None:
-        old = _handle_refcounts.get(handle, 0)
-        _handle_refcounts[handle] = old + 1
-        if old == 0 and _connection is not None:
+        should_cancel_release = False
+        with _handle_refcounts_lock:
+            old = _handle_refcounts.get(handle, 0)
+            _handle_refcounts[handle] = old + 1
+            should_cancel_release = old == 0
+
+        if should_cancel_release and _connection is not None:
             try:
                 _connection._cancel_release(handle)
             except Exception:
@@ -55,19 +82,23 @@ def _handle_release(handle: Optional[int]) -> None:
     if handle is None:
         return
 
-    count = _handle_refcounts.get(handle, 0)
+    should_queue_release = False
+    with _handle_refcounts_lock:
+        count = _handle_refcounts.get(handle, 0)
+        if count <= 0:
+            raise RuntimeError("Cannot release zero handles.")
 
-    assert count > 0, "Cannot release zero handles."
+        if count == 1:
+            _handle_refcounts.pop(handle, None)
+            should_queue_release = True
+        else:
+            _handle_refcounts[handle] = count - 1
 
-    if count == 1:
-        _handle_refcounts.pop(handle, None)
-        if _connection is not None:
-            try:
-                _connection._queue_release(handle)
-            except Exception:
-                pass
-    else:
-        _handle_refcounts[handle] = count - 1
+    if should_queue_release and _connection is not None:
+        try:
+            _connection._queue_release(handle)
+        except Exception:
+            pass
 
 _print = __builtins__["print"] if isinstance(__builtins__, dict) else __builtins__.print  # type: ignore[index]
 def print(*args: Any) -> None:
@@ -226,6 +257,9 @@ class Event(ProxyBase):
     """Base event proxy."""
     def cancel(self) -> Any:
         """Cancel the event."""
+        if _connection is None or not getattr(_connection, "_thread", None) or not _connection._thread.is_alive():
+            raise ConnectionError("Bridge not connected")
+
         event_id = self.fields.get("__event_id__")
         if event_id is not None:
             _connection.send({"type": "event_cancel", "id": event_id})
@@ -332,19 +366,26 @@ WorldTime.MIDNIGHT = WorldTime(18000)
 
 _at_time_handlers: Dict[str, List[tuple]] = {}
 _at_time_loop_started = False
+_at_time_loop_lock = threading.Lock()
 
 def _start_at_time_loop() -> None:
     """Scheduler that runs callbacks when the world reaches a given time."""
     global _at_time_loop_started
-    if _at_time_loop_started:
-        return
+    with _at_time_loop_lock:
+        if _at_time_loop_started or _connection is None:
+            return
 
-    _at_time_loop_started = True
+        _at_time_loop_started = True
 
     async def _poll() -> None:
         """Poll the server time in a background loop."""
         prev_times: Dict[str, int] = {}
-        while _connection is not None and _connection._thread.is_alive():
+        while True:
+            conn = _connection
+            thread = getattr(conn, "_thread", None) if conn is not None else None
+            if conn is None or thread is None or not thread.is_alive():
+                break
+
             try:
                 for world_name, entries in list(_at_time_handlers.items()):
                     if not entries:
@@ -371,7 +412,7 @@ def _start_at_time_loop() -> None:
             except Exception:
                 pass
 
-            await _connection.wait(20)
+            await conn.wait(20)
 
     _connection.on("server_boot", lambda _: asyncio.ensure_future(_poll()))
 
@@ -443,12 +484,12 @@ class Server(ProxyBase):
         return _connection.frame()
 
     def atomic(self) -> Any:
-        """Enter atomic mode for sequential calls."""
+        """Enter atomic mode and yield an int-like aborted-call counter."""
         return _connection.atomic()
 
     @async_task
     async def flush(self) -> Any:
-        """Flush all pending batched calls."""
+        """Flush all pending batched calls and return aborted-call count."""
         return await _connection.flush()
 
     @property
@@ -1351,7 +1392,7 @@ class Player(Entity):
 
         if handle is None and name is not None:
             if fields is None:
-                cached = _player_uuid_cache.get(str(name))
+                cached = _cache_get_player_uuid(str(name))
                 if cached is not None:
                     fields = {"uuid": cached, "name": str(name)}
 
@@ -1628,7 +1669,7 @@ class Player(Entity):
                 pass
 
         if ref_type == "player_name" and ref_id:
-            cached = _player_uuid_cache.get(str(ref_id))
+            cached = _cache_get_player_uuid(str(ref_id))
             if cached is not None:
                 return cached
 
@@ -1646,13 +1687,7 @@ class Player(Entity):
                 result_text = str(result)
                 self.fields["uuid"] = result_text
                 if ref_type == "player_name" and ref_id:
-                    if len(_player_uuid_cache) >= _PLAYER_UUID_CACHE_MAX:
-                        # Evict oldest quarter
-                        keys = list(_player_uuid_cache.keys())
-                        for k in keys[:len(keys) // 4]:
-                            del _player_uuid_cache[k]
-
-                    _player_uuid_cache[str(ref_id)] = result_text
+                    _cache_set_player_uuid(str(ref_id), result_text)
 
                 return result_text
 
@@ -2061,7 +2096,12 @@ class World(ProxyBase):
         else:
             target_ticks = int(time) % 24000
 
-        world_name = self.fields.get("name") or self.fields.get("ref_id", "world")
+        world_name_raw = self.fields.get("name")
+        if isinstance(world_name_raw, str) and world_name_raw:
+            world_name = world_name_raw
+        else:
+            ref_id = getattr(self, "_ref_id", None)
+            world_name = ref_id if isinstance(ref_id, str) and ref_id else "world"
 
         def decorator(handler: Callable[..., Any]) -> Callable[..., Any]:
             """Register the decorated function as the time callback."""

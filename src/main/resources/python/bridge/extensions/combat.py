@@ -27,6 +27,7 @@ class CombatSystem:
         self._last_attack: Dict[str, float] = {}  # puuid -> timestamp
         self._combat_log_handlers: List[Callable[..., Any]] = []
         self._bars: Dict[str, bridge.BossBarDisplay] = {}
+        self._bar_tasks: Dict[str, asyncio.Task[Any]] = {}
         self._listener_registered = False
 
     def _register_listeners(self) -> None:
@@ -111,21 +112,29 @@ class CombatSystem:
             self._bars[puuid] = bar
 
         bar = self._bars[puuid]
+        task = self._bar_tasks.get(puuid)
+        if task is not None and not task.done():
+            task.cancel()
+
         bar.max = self.combat_timeout
         bar.value = self.combat_timeout
 
         async def _update() -> None:
             """Asynchronously handle update."""
             from bridge import server
-            while self.in_combat_by_uuid(puuid):
-                remaining = self.remaining(player)
-                bar.value = remaining
-                bar.text = f"§cIn Combat — {remaining:.1f}s"
-                try:
-                    await server.after(4)
-                except Exception:
-                    break
+            try:
+                while self.in_combat_by_uuid(puuid):
+                    remaining = self.remaining(player)
+                    bar.value = remaining
+                    bar.text = f"§cIn Combat — {remaining:.1f}s"
+                    try:
+                        await server.after(4)
+                    except Exception:
+                        break
+            finally:
+                bar.hide(player)
+                current = self._bar_tasks.get(puuid)
+                if current is asyncio.current_task():
+                    self._bar_tasks.pop(puuid, None)
 
-            bar.hide(player)
-
-        asyncio.ensure_future(_update())
+        self._bar_tasks[puuid] = asyncio.ensure_future(_update())

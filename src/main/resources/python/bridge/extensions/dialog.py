@@ -143,7 +143,5 @@ class Dialog:
         except asyncio.TimeoutError:
             return None
         finally:
-            # Remove the handler
-            handlers = bridge._connection._handlers.get("player_chat", [])
-            if _chat_handler in handlers:
-                handlers.remove(_chat_handler)
+            if bridge._connection is not None:
+                bridge._connection.off("player_chat", _chat_handler)

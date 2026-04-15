@@ -343,8 +343,13 @@ class MeshDisplay:
         if texture is not None:
             tex_w, tex_h, tex_data = ImageDisplay._load_pixels(texture)
 
-        if face_uvs is None:
-            face_uvs = faces
+        if face_uvs is None and uvs is not None:
+            if len(uvs) == len(vertices):
+                face_uvs = faces
+            else:
+                raise ValueError(
+                    "face_uvs is required when UV index space differs from vertex indices"
+                )
 
         payload, self._entity_bary = MeshDisplay._rasterize(
             vertices, faces, pixel_size, face_colors, vertex_colors,

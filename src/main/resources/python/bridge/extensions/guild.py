@@ -4,11 +4,18 @@ from __future__ import annotations
 import asyncio
 import json
 import os
+import re
 from typing import Any, Callable, Dict, List, Optional
 
-import bridge
 from bridge.extensions.bank import Bank
-from bridge.extensions.party import Party
+
+def _safe_guild_storage_name(name: str) -> str:
+    """Return a filesystem-safe guild storage name."""
+    cleaned = re.sub(r"[\\/]+", "_", str(name)).replace("..", "_").strip()
+    if not cleaned:
+        raise ValueError("Guild name must contain at least one valid character")
+
+    return cleaned
 
 class Guild:
     """Persistent player guild with bank, chat, and member management.
@@ -28,11 +35,12 @@ class Guild:
             bank: Optional[Bank] = None) -> None:
         """Initialise a new Guild."""
         self.name = name
+        self._storage_name = _safe_guild_storage_name(name)
         self._leader_uuid: str = str(leader.uuid)
         self.max_size = max_size
         self._members: Dict[str, str] = {self._leader_uuid: "leader"}  # puuid -> rank
         self._member_names: Dict[str, str] = {self._leader_uuid: str(leader.name)}
-        self.bank = bank or Bank(name=f"guild_{name}")
+        self.bank = bank or Bank(name=f"guild_{self._storage_name}")
         self._on_join: List[Callable[..., Any]] = []
         self._on_leave: List[Callable[..., Any]] = []
         self._on_disband: List[Callable[..., Any]] = []
@@ -143,7 +151,7 @@ class Guild:
         self._members.clear()
         Guild._all_guilds.pop(self.name, None)
         # Remove save file
-        path = os.path.join(Guild._data_path, f"{self.name}.json")
+        path = os.path.join(Guild._data_path, f"{self._storage_name}.json")
         if os.path.isfile(path):
             os.remove(path)
 
@@ -197,33 +205,41 @@ class Guild:
             "members": self._members,
             "member_names": self._member_names,
         }
-        with open(os.path.join(Guild._data_path, f"{self.name}.json"), "w") as f:
+        with open(os.path.join(Guild._data_path, f"{self._storage_name}.json"), "w") as f:
             json.dump(data, f)
 
     @classmethod
     def load(cls, name: str) -> Optional["Guild"]:
         """Load from storage."""
-        path = os.path.join(cls._data_path, f"{name}.json")
+        safe_name = _safe_guild_storage_name(name)
+        path = os.path.join(cls._data_path, f"{safe_name}.json")
         if not os.path.isfile(path):
             return None
 
-        with open(path, "r") as f:
-            data = json.load(f)
+        try:
+            with open(path, "r") as f:
+                data = json.load(f)
+        except (OSError, json.JSONDecodeError, TypeError, ValueError):
+            return None
+
+        if not isinstance(data, dict):
+            return None
 
         # Create a shell guild without a real player object
         guild = object.__new__(cls)
-        guild.name = data["name"]
-        guild._leader_uuid = data["leader"]
+        guild.name = str(data.get("name", name))
+        guild._storage_name = safe_name
+        guild._leader_uuid = str(data.get("leader", ""))
         guild.max_size = data.get("max_size", 50)
         guild._members = data.get("members", {})
         guild._member_names = data.get("member_names", {})
-        guild.bank = Bank(name=f"guild_{name}")
+        guild.bank = Bank(name=f"guild_{safe_name}")
         guild._on_join = []
         guild._on_leave = []
         guild._on_disband = []
-        cls._all_guilds[name] = guild
+        cls._all_guilds[guild.name] = guild
         for puuid in guild._members:
-            cls._player_guild[puuid] = name
+            cls._player_guild[puuid] = guild.name
 
         return guild
 

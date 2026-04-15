@@ -36,8 +36,12 @@ class LevelSystem:
     def _load(self) -> None:
         """Load data from storage."""
         if os.path.isfile(self._path):
-            with open(self._path, "r") as f:
-                self._xp = json.load(f)
+            try:
+                with open(self._path, "r") as f:
+                    loaded = json.load(f)
+                    self._xp = dict(loaded) if isinstance(loaded, dict) else {}
+            except (OSError, json.JSONDecodeError, TypeError):
+                self._xp = {}
 
     def _save(self) -> None:
         """Save data to storage."""

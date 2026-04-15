@@ -14,7 +14,7 @@ from typing import Any, Awaitable, Callable, Dict, List, Optional, cast
 from bridge.types import async_task
 
 from bridge.errors import (
-    ConnectionError, _make_bridge_error,
+    AtomicAbortError, ConnectionError, _make_bridge_error,
 )
 from bridge.types import BridgeCall, EnumValue, _SyncWait
 
@@ -106,29 +106,80 @@ class _BatchContext:
         """Store the connection and batch mode."""
         self._connection = connection
         self._mode = mode
+        self._aborted = _AtomicAbortCount() if mode == "atomic" else None
 
     def __enter__(self) -> Any:
         """Begin a synchronous batch."""
         self._connection._begin_batch(self._mode)
-        return self
+        return self._aborted if self._aborted is not None else self
 
     def __exit__(self, exc_type: Any, exc: Any, tb: Any) -> Any:
         """End the synchronous batch."""
         self._connection._end_batch()
+        if exc_type is None and self._aborted is not None:
+            self._connection._flush_atomic_sync(self._aborted)
+
         return False
 
     async def __aenter__(self) -> Any:
         """Begin an async batch."""
         self._connection._begin_batch(self._mode)
-        return self
+        return self._aborted if self._aborted is not None else self
 
     async def __aexit__(self, exc_type: Any, exc: Any, tb: Any) -> Any:
         """End the async batch, flushing on success."""
         self._connection._end_batch()
         if exc_type is None:
-            await self._connection.flush()
+            if self._aborted is None:
+                await self._connection.flush()
+            else:
+                try:
+                    aborted = await self._connection.flush()
+                    self._aborted.set(int(aborted))
+                except Exception:
+                    self._aborted.set(self._connection._last_batch_aborted_calls)
+                    raise
 
         return False
+
+
+class _AtomicAbortCount:
+    """Mutable int-like holder for atomic abort totals."""
+
+    __slots__ = ("value",)
+
+    def __init__(self) -> None:
+        """Initialize with zero aborted calls."""
+        self.value = 0
+
+    def set(self, value: int) -> None:
+        """Update the aborted-call count."""
+        self.value = max(0, int(value))
+
+    def __int__(self) -> int:
+        """Return the numeric value."""
+        return self.value
+
+    def __index__(self) -> int:
+        """Support integer index coercion."""
+        return self.value
+
+    def __bool__(self) -> bool:
+        """Return True when any calls were aborted."""
+        return self.value != 0
+
+    def __eq__(self, other: Any) -> bool:
+        """Compare against ints and int-like values."""
+        try:
+            return self.value == int(other)
+        except Exception:
+            return False
+
+    def __repr__(self) -> str:
+        """Display as a plain integer for readability."""
+        return str(self.value)
+
+    __str__ = __repr__
 
 class BridgeConnection:
     """Stdin/stdout bridge connection and dispatcher."""
@@ -143,6 +194,7 @@ class BridgeConnection:
 
         self._pending: Dict[int, "asyncio.Future[Any]"] = {}
         self._pending_sync: Dict[int, _SyncWait] = {}
+        self._pending_sync_lock = threading.Lock()
         self._handlers: Dict[str, List[Callable[[Any], Awaitable[None]]]] = {}
         self._tab_complete_handlers: Dict[str, Callable[..., Any]] = {}
 
@@ -154,6 +206,8 @@ class BridgeConnection:
         self._batch_stack: List[str] = []
         self._batch_messages: List[Dict[str, Any]] = []
         self._batch_futures: List["asyncio.Future[Any]"] = []
+        self._batch_lock = threading.Lock()
+        self._last_batch_aborted_calls = 0
 
         self._release_queue: set[int] = set()
         self._release_lock = threading.Lock()
@@ -249,9 +303,13 @@ class BridgeConnection:
         future = self._loop.create_future()
         self._pending[request_id] = future
         message = self._build_call_message(request_id, method, args, handle, target, kwargs)
-        if self._batch_stack:
-            self._batch_messages.append(message)
-            self._batch_futures.append(future)
+        with self._batch_lock:
+            in_batch = bool(self._batch_stack)
+            if in_batch:
+                self._batch_messages.append(message)
+                self._batch_futures.append(future)
+
+        if in_batch:
             return BridgeCall(future)
 
         self.send(message)
@@ -263,8 +321,12 @@ class BridgeConnection:
         request_id = self._next_id()
         message = self._build_call_message(request_id, method, args, handle, target, kwargs)
         message["no_response"] = True
-        if self._batch_stack:
-            self._batch_messages.append(message)
+        with self._batch_lock:
+            in_batch = bool(self._batch_stack)
+            if in_batch:
+                self._batch_messages.append(message)
+
+        if in_batch:
             return
 
         self.send(message)
@@ -273,13 +335,17 @@ class BridgeConnection:
         """Send a synchronous call that blocks the current thread until a response."""
         request_id = self._next_id()
         wait = _SyncWait()
-        self._pending_sync[request_id] = wait
+        with self._pending_sync_lock:
+            self._pending_sync[request_id] = wait
+
         message = self._build_call_message(request_id, method, args, handle, target, kwargs)
         self.send(message)
         # Never block forever on sync calls; connection loss/reload can otherwise hang shutdown.
         signaled = wait.event.wait(timeout=_SYNC_CALL_TIMEOUT_SECONDS)
         if not signaled:
-            self._pending_sync.pop(request_id, None)
+            with self._pending_sync_lock:
+                self._pending_sync.pop(request_id, None)
+
             raise ConnectionError(
                 f"Synchronous bridge call timed out after {_SYNC_CALL_TIMEOUT_SECONDS:.1f}s: {method}"
             )
@@ -292,13 +358,17 @@ class BridgeConnection:
         """Send a raw typed message and wait synchronously for response."""
         request_id = self._next_id()
         wait = _SyncWait()
-        self._pending_sync[request_id] = wait
+        with self._pending_sync_lock:
+            self._pending_sync[request_id] = wait
+
         msg: Dict[str, Any] = {"type": msg_type, "id": request_id}
         msg.update(fields)
         self.send(msg)
         signaled = wait.event.wait(timeout=_SYNC_CALL_TIMEOUT_SECONDS)
         if not signaled:
-            self._pending_sync.pop(request_id, None)
+            with self._pending_sync_lock:
+                self._pending_sync.pop(request_id, None)
+
             raise ConnectionError(
                 f"Synchronous bridge message timed out after {_SYNC_CALL_TIMEOUT_SECONDS:.1f}s: {msg_type}"
             )
@@ -327,41 +397,81 @@ class BridgeConnection:
 
     def _begin_batch(self, mode: str) -> None:
         """Push a batch mode onto the stack."""
-        self._batch_stack.append(mode)
+        with self._batch_lock:
+            self._batch_stack.append(mode)
 
     def _end_batch(self) -> None:
         """Pop the current batch mode from the stack."""
-        if self._batch_stack:
-            self._batch_stack.pop()
+        with self._batch_lock:
+            if self._batch_stack:
+                self._batch_stack.pop()
 
     def _current_batch_mode(self) -> Optional[str]:
         """Return 'atomic' or 'frame' depending on the active batch stack."""
-        if not self._batch_stack:
-            return None
+        with self._batch_lock:
+            if not self._batch_stack:
+                return None
 
-        return "atomic" if "atomic" in self._batch_stack else "frame"
+            return "atomic" if "atomic" in self._batch_stack else "frame"
 
     @async_task
     async def flush(self) -> Any:
         """Flush all queued batch messages to the bridge."""
-        if not self._batch_messages:
-            return None
+        with self._batch_lock:
+            if not self._batch_messages:
+                self._last_batch_aborted_calls = 0
+                return 0
 
-        mode = self._current_batch_mode()
-        messages = self._batch_messages
-        futures = self._batch_futures
+            mode = "atomic" if "atomic" in self._batch_stack else "frame"
+            messages = self._batch_messages
+            futures = self._batch_futures
+            self._batch_messages = []
+            self._batch_futures = []
 
-        self._batch_messages = []
-        self._batch_futures = []
         self.send({"type": "call_batch", "atomic": mode == "atomic", "messages": messages})
 
         results = await asyncio.gather(*futures, return_exceptions=True)
+        aborted_calls = 0
+        first_error: Optional[Exception] = None
 
         for result in results:
-            if isinstance(result, Exception):
-                raise result
+            if isinstance(result, AtomicAbortError):
+                aborted_calls += 1
+                continue
 
-        return None
+            if isinstance(result, Exception) and first_error is None:
+                first_error = result
+
+        self._last_batch_aborted_calls = aborted_calls
+        if first_error is not None:
+            raise first_error
+
+        return aborted_calls
+
+    def _flush_atomic_sync(self, counter: _AtomicAbortCount) -> None:
+        """Flush an atomic batch from sync context and populate *counter*."""
+        if self._loop.is_running():
+            flush_call = self.flush()
+            flush_future = getattr(flush_call, "_future", None)
+            if flush_future is None:
+                flush_future = asyncio.ensure_future(flush_call)
+
+            def _done(done_task: "asyncio.Future[Any]") -> None:
+                """Capture async flush completion and update the counter."""
+                try:
+                    counter.set(int(done_task.result()))
+                except Exception as exc:
+                    counter.set(self._last_batch_aborted_calls)
+                    print(f"[PyJavaBridge] atomic() flush failed: {exc}")
+
+            flush_future.add_done_callback(_done)
+            return
+
+        try:
+            counter.set(int(self._loop.run_until_complete(self.flush())))
+        except Exception:
+            counter.set(self._last_batch_aborted_calls)
+            raise
 
     def frame(self) -> Any:
         """Return a context manager for a frame-batched call sequence."""
@@ -476,7 +586,8 @@ class BridgeConnection:
                         msg_id = message.get("id")
 
                         if msg_id is not None:
-                            wait = self._pending_sync.pop(msg_id, None)
+                            with self._pending_sync_lock:
+                                wait = self._pending_sync.pop(msg_id, None)
 
                             if wait is not None:
                                 if msg_type == "return":
@@ -496,11 +607,13 @@ class BridgeConnection:
         finally:
             disconnect_error = ConnectionError("Connection lost")
 
-            for wait in list(self._pending_sync.values()):
+            with self._pending_sync_lock:
+                pending_waits = list(self._pending_sync.values())
+                self._pending_sync.clear()
+
+            for wait in pending_waits:
                 wait.error = disconnect_error
                 wait.event.set()
-
-            self._pending_sync.clear()
             self._loop.call_soon_threadsafe(self._handle_reader_error, disconnect_error)
 
     def _handle_message(self, message: Dict[str, Any]) -> None:
@@ -743,7 +856,8 @@ class BridgeConnection:
                 pass
 
             self._stop_reader()
-            self._loop.stop()
+            if self._loop.is_running():
+                self._loop.call_soon(self._loop.stop)
 
     def _handle_reader_error(self, exc: Exception) -> None:
         """Fail all pending futures with the given exception."""

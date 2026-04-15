@@ -30,18 +30,26 @@ class Leaderboard:
         self.max_entries = max_entries
         self._hologram: Optional[bridge.Hologram] = None
         self._running = False
+        self._task: Optional[asyncio.Task[Any]] = None
 
     def start(self) -> None:
         """Create the hologram and start the update loop."""
+        if self._task is not None and not self._task.done():
+            return
+
         if self._hologram is None:
             self._hologram = bridge.Hologram(self._location, self.title)
 
         self._running = True
-        asyncio.ensure_future(self._update_loop())
+        self._task = asyncio.ensure_future(self._update_loop())
 
     def stop(self) -> None:
         """Return the stop."""
         self._running = False
+        if self._task is not None and not self._task.done():
+            self._task.cancel()
+        self._task = None
+
         if self._hologram is not None:
             self._hologram.remove()
             self._hologram = None
@@ -54,12 +62,16 @@ class Leaderboard:
     async def _update_loop(self) -> None:
         """Update the loop."""
         from bridge import server
-        while self._running:
-            try:
-                await self._refresh()
-                await server.after(self.update_interval)
-            except Exception:
-                break
+        try:
+            while self._running:
+                try:
+                    await self._refresh()
+                    await server.after(self.update_interval)
+                except Exception:
+                    break
+        finally:
+            if self._task is asyncio.current_task():
+                self._task = None
 
     async def _refresh(self) -> None:
         """Asynchronously handle refresh."""
