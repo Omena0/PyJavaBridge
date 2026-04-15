@@ -3,13 +3,14 @@ package com.pyjavabridge.event;
 import com.pyjavabridge.PyJavaBridgePlugin;
 import com.pyjavabridge.BridgeInstance;
 
-import org.bukkit.Bukkit;
 import org.bukkit.event.Event;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.EventExecutor;
+import org.bukkit.plugin.RegisteredListener;
 
+import java.lang.reflect.Method;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -18,7 +19,7 @@ public class EventSubscription implements Listener {
     private static final ConcurrentHashMap<String, Class<? extends Event>> eventClassCache = new ConcurrentHashMap<>();
 
     private final PyJavaBridgePlugin pluginRef;
-    private final Class<? extends Event> eventClass;
+    private final Class<?> eventClass;
     private final EventPriority priority;
     private final AtomicLong lastTick = new AtomicLong(-1);
     private volatile long lastDispatchNano = 0;
@@ -67,7 +68,9 @@ public class EventSubscription implements Listener {
 
     public void register() {
         // Do not ignore cancelled events: some events (e.g. interact air) are pre-cancelled by Bukkit.
-        Bukkit.getPluginManager().registerEvent(eventClass, this, this.priority, executor, pluginRef, false);
+        HandlerList handlerList = resolveHandlerList(this.eventClass);
+        RegisteredListener listener = new RegisteredListener(this, this.executor, this.priority, this.pluginRef, false);
+        handlerList.register(listener);
     }
 
     public void unregister() {
@@ -114,6 +117,24 @@ public class EventSubscription implements Listener {
             }
         }
         throw new ClassNotFoundException("Event not found for " + eventName);
+    }
+
+    private static HandlerList resolveHandlerList(Class<?> type) {
+        if (!Event.class.isAssignableFrom(type)) {
+            throw new IllegalStateException("Type is not a Bukkit event: " + type.getName());
+        }
+
+        try {
+            Method method = type.getMethod("getHandlerList");
+            Object value = method.invoke(null);
+            if (value instanceof HandlerList) {
+                return (HandlerList) value;
+            }
+        } catch (ReflectiveOperationException ex) {
+            throw new IllegalStateException("Unable to resolve handler list for event type: " + type.getName(), ex);
+        }
+
+        throw new IllegalStateException("Event type does not expose static getHandlerList(): " + type.getName());
     }
 
     static String toPascalCase(String value) {
