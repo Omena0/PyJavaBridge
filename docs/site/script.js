@@ -1,7 +1,21 @@
 document.addEventListener('DOMContentLoaded', () => {
   const STORAGE_KEY = 'pjb-sidebar-state';
+  const sitePrefixRaw = (document.documentElement.getAttribute('data-site-prefix') || '').trim();
+  const SITE_PREFIX = sitePrefixRaw
+    ? ('/' + sitePrefixRaw.replace(/^\/+|\/+$/g, '') + '/')
+    : '';
 
   // ── Helpers ──────────────────────────────────────────────────
+  function toSiteHref(path) {
+    if (typeof path !== 'string') return '';
+    if (/^(?:[a-z]+:)?\/\//i.test(path) || path.startsWith('mailto:') || path.startsWith('tel:') || path.startsWith('javascript:')) {
+      return path;
+    }
+    const clean = String(path || '').replace(/^\/+/, '');
+    if (!SITE_PREFIX) return clean;
+    return SITE_PREFIX + clean;
+  }
+
   function loadState() {
     try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; } catch { return {}; }
   }
@@ -214,31 +228,70 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ── Decompress zstd search index (async, non-blocking) ──────
   let searchIndex = [];
+  const SEARCH_INDEX_FILE = 'search_index.zst';
 
-  function loadSearchIndex() {
-    const el = document.getElementById('zstd-data');
-    if (!el || !el.textContent.trim()) return;
-    function tryLoad() {
-      if (typeof fzstd === 'undefined') return false;
-      try {
-        const b64 = el.textContent.trim();
-        const compressed = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
-        const decompressed = fzstd.decompress(compressed);
-        const json = new TextDecoder().decode(decompressed);
-        searchIndex = JSON.parse(json);
-        // signal that the search index is ready
-        if (searchIndex && searchIndex.length) {
-          document.dispatchEvent(new CustomEvent('searchIndexLoaded'));
-          return true;
+  function emitSearchReady() {
+    if (searchIndex && searchIndex.length) {
+      document.dispatchEvent(new CustomEvent('searchIndexLoaded'));
+      return true;
+    }
+    return false;
+  }
+
+  async function waitForFzstd(maxWaitMs = 10000) {
+    if (typeof fzstd !== 'undefined') return true;
+    const started = Date.now();
+    return new Promise(resolve => {
+      const iv = setInterval(() => {
+        if (typeof fzstd !== 'undefined') {
+          clearInterval(iv);
+          resolve(true);
+          return;
         }
-      } catch (e) {
-        console.error('Failed to decompress search index:', e);
-      }
+        if (Date.now() - started >= maxWaitMs) {
+          clearInterval(iv);
+          resolve(false);
+        }
+      }, 50);
+    });
+  }
+
+  function loadInlineSearchFallback() {
+    const el = document.getElementById('zstd-data');
+    if (!el || !el.textContent.trim()) return false;
+    try {
+      const b64 = el.textContent.trim();
+      const compressed = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+      const decompressed = fzstd.decompress(compressed);
+      const json = new TextDecoder().decode(decompressed);
+      searchIndex = JSON.parse(json);
+      return emitSearchReady();
+    } catch (e) {
+      console.error('Failed to load inline search index:', e);
       return false;
     }
-    if (!tryLoad()) {
-      // fzstd not yet loaded — poll until available
-      const iv = setInterval(() => { if (tryLoad()) clearInterval(iv); }, 50);
+  }
+
+  async function loadSearchIndex() {
+    const hasFzstd = await waitForFzstd();
+    if (!hasFzstd) {
+      console.error('Search disabled: fzstd failed to load');
+      return;
+    }
+
+    if (loadInlineSearchFallback()) return;
+
+    try {
+      const searchUrl = location.protocol === 'file:' ? SEARCH_INDEX_FILE : toSiteHref(SEARCH_INDEX_FILE);
+      const r = await fetch(searchUrl, { cache: 'force-cache' });
+      if (!r || !r.ok) throw new Error(`HTTP ${r ? r.status : 'error'}`);
+      const compressed = new Uint8Array(await r.arrayBuffer());
+      const decompressed = fzstd.decompress(compressed);
+      const json = new TextDecoder().decode(decompressed);
+      searchIndex = JSON.parse(json);
+      emitSearchReady();
+    } catch (e) {
+      console.error('Failed to fetch/decompress search index:', e);
     }
   }
   loadSearchIndex();
@@ -455,36 +508,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ── Versioning: ?ver= parameter support (resolve to commit, fetch historical HTML) ──
   async function loadGitMeta() {
-    // If opened via file://, skip network fetch to avoid CORS errors and
-    // read the inline <script id="git-meta"> injected at build-time.
+    // In file:// mode, browsers commonly block local fetch/XHR.
+    // Versioning is disabled in that mode.
     if (location.protocol === 'file:') {
-      try {
-        const el = document.getElementById('git-meta');
-        if (el && el.textContent && el.textContent.trim()) return JSON.parse(el.textContent.trim());
-      } catch (e) {
-        console.error('Failed to parse inline git_meta:', e);
-      }
       return null;
     }
 
-    // Try network fetch first (works when served over HTTP)
+    // Load git metadata from a shared JSON asset.
     try {
-      const r = await fetch('git_meta.json', { cache: 'no-store' });
+      const r = await fetch(toSiteHref('git_meta.json'), { cache: 'no-store' });
       if (r && r.ok) return await r.json();
     } catch (e) {
-      // ignore network errors and fall back to inline data
+      // ignore network errors
     }
-
-    // Fallback: read inline <script id="git-meta"> injected at build-time
-    try {
-      const el = document.getElementById('git-meta');
-      if (el && el.textContent && el.textContent.trim()) {
-        return JSON.parse(el.textContent.trim());
-      }
-    } catch (e) {
-      console.error('Failed to parse inline git_meta:', e);
-    }
-
     return null;
   }
 
@@ -581,7 +617,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const banner = document.createElement('div');
         banner.className = 'callout callout-info';
         const short = commit.slice(0, 8);
-        banner.innerHTML = `<strong>Viewing version ${short}</strong> — <a href="${page}">View live</a>`;
+        banner.innerHTML = `<strong>Viewing version ${short}</strong> — <a href="${toSiteHref(page)}">View live</a>`;
         // Replace content
         const content = document.querySelector('.content');
         if (!content) return;
@@ -626,7 +662,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const banner = document.createElement('div');
             banner.className = 'callout callout-info';
             const short = commit.slice(0, 8);
-            banner.innerHTML = `<strong>Viewing version ${short}</strong> — <a href="${page}">View live</a>`;
+            banner.innerHTML = `<strong>Viewing version ${short}</strong> — <a href="${toSiteHref(page)}">View live</a>`;
             content.innerHTML = '';
             content.appendChild(banner);
             // Insert rendered markdown (may be raw markdown if marked missing)
@@ -751,8 +787,8 @@ document.addEventListener('DOMContentLoaded', () => {
   function addVerToHref(href) {
     try {
       if (!href) return href;
-      // Skip external or special links
-      if (href.startsWith('http:') || href.startsWith('https:') || href.startsWith('mailto:') || href.startsWith('tel:') || href.startsWith('javascript:')) return href;
+      // Skip special links; same-origin absolute HTTP(S) links are still internal.
+      if (href.startsWith('mailto:') || href.startsWith('tel:') || href.startsWith('javascript:')) return href;
       if (href.startsWith('#')) return href;
       const params = new URLSearchParams(location.search);
       const ver = params.get('ver');
@@ -760,7 +796,8 @@ document.addEventListener('DOMContentLoaded', () => {
       const u = new URL(href, location.href);
       if (u.origin !== location.origin) return href;
       u.searchParams.set('ver', ver);
-      return u.pathname + u.search + u.hash;
+      const isAbsolute = /^https?:\/\//i.test(href);
+      return isAbsolute ? u.href : (u.pathname + u.search + u.hash);
     } catch (e) {
       return href;
     }
@@ -775,13 +812,14 @@ document.addEventListener('DOMContentLoaded', () => {
       document.querySelectorAll('a[href]').forEach(a => {
         const href = a.getAttribute('href');
         if (!href) return;
-        if (href.startsWith('http:') || href.startsWith('https:') || href.startsWith('mailto:') || href.startsWith('tel:') || href.startsWith('javascript:')) return;
+        if (href.startsWith('mailto:') || href.startsWith('tel:') || href.startsWith('javascript:')) return;
         if (href.startsWith('#')) return;
         try {
           const u = new URL(href, location.href);
           if (u.origin !== location.origin) return;
           u.searchParams.set('ver', ver);
-          a.setAttribute('href', u.pathname + u.search + u.hash);
+          const isAbsolute = /^https?:\/\//i.test(href);
+          a.setAttribute('href', isAbsolute ? u.href : (u.pathname + u.search + u.hash));
         } catch (e) { /* ignore */ }
       });
     } catch (e) { /* ignore */ }

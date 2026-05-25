@@ -17,7 +17,7 @@ Though you do not need to await any methods unless you want to wait for the call
 
 ## Documentation
 
-See [The Docs](https://omena0.github.io/PyJavaBridge/index.html)
+See [The Docs](https://omena0.github.io/PyJavaBridge/)
 
 For quick searches use the pjb cli script.
 

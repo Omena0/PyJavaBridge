@@ -4,19 +4,21 @@ Build script for PyJavaBridge documentation.
 Converts Markdown source files in docs/src/ into a static HTML site in docs/.
 
 Requirements: pip install markdown zstandard
-Usage: python docs/build.py
+Usage: python docs/build.py [--production]
 """
 
+import argparse
 import concurrent.futures
 from pathlib import Path
 import subprocess
 import tempfile
-import base64
 import shutil
 import html
 import os
+import posixpath
 import re
 import threading
+from urllib.parse import urljoin, urlsplit
 
 try: # Import markdown
     import markdown
@@ -35,6 +37,8 @@ except ImportError:
 DOCS_DIR = os.path.dirname(os.path.abspath(__file__))
 SRC_DIR = os.path.join(DOCS_DIR, "src")
 OUT_DIR = os.path.join(DOCS_DIR, "site")
+SEARCH_INDEX_FILENAME = "search_index.zst"
+GIT_META_FILENAME = "git_meta.json"
 
 # Minify built HTML using `html-minifier-next` (via `npx`).
 # Set `MINIFY_HTML = False` to disable. If `npx` or the package is
@@ -257,6 +261,10 @@ HIGHLIGHT_RE = re.compile(HIGHLIGHT_PATTERN, flags=re.DOTALL)
 
 # Precompiled pre/code block matcher
 PRE_CODE_RE = re.compile(r'<pre><code class="language-(\w*)">(.*?)</code></pre>', flags=re.DOTALL)
+URL_ATTR_RE = re.compile(
+    r'(?P<attr>\b(?:href|src))\s*=\s*(?P<quote>["\']?)(?P<url>[^"\'\s>]+)(?P=quote)',
+    flags=re.IGNORECASE,
+)
 
 
 def highlight_python(code):
@@ -306,9 +314,108 @@ def convert_markdown(text):
     md.reset()
     return html_out, toc_tokens
 
-def rewrite_md_links(html_text):
-    """Rewrite .md links to .html links."""
-    return re.sub(r'href="([^"#]+)\.md(#[^"]*)?"', lambda m: f'href="{m.group(1)}.html{m.group(2) or ""}"', html_text)
+def _resolve_md_target_to_output(md_target, current_slug):
+    """Resolve a markdown href target to an output HTML filename."""
+    raw = str(md_target or "").strip()
+    if not raw:
+        return raw
+
+    raw = raw.replace("\\", "/")
+    candidates = []
+    if raw.startswith("/"):
+        candidates.append(posixpath.normpath(raw.lstrip("/")))
+    else:
+        # First try path-as-written (many docs links are already source-root style).
+        candidates.append(posixpath.normpath(raw))
+        # Then try resolving relative to the current source slug directory.
+        base_dir = ""
+        if current_slug:
+            normalized_current = _normalize_slug(current_slug)
+            base_dir = normalized_current.rsplit("/", 1)[0] if "/" in normalized_current else ""
+        candidates.append(posixpath.normpath(posixpath.join(base_dir, raw)))
+
+    # Map through known slugs first (handles flattened output names).
+    for candidate in candidates:
+        normalized = _normalize_slug(candidate)
+        if normalized in SLUG_PAGE_KEYS:
+            return slug_output_name(normalized)
+
+    # Fallback for unknown markdown files: preserve path shape and just switch extension.
+    return f"{raw}.html"
+
+def rewrite_md_links(html_text, current_slug):
+    """Rewrite .md href targets to their output HTML targets."""
+    def _repl(m):
+        target = m.group(1)
+        anchor = m.group(2) or ""
+        resolved = _resolve_md_target_to_output(target, current_slug)
+        return f'href="{resolved}{anchor}"'
+
+    return re.sub(r'href="([^"#]+)\.md(#[^"]*)?"', _repl, html_text)
+
+SITE_PATH_PREFIX = "/PyJavaBridge/"
+PRODUCTION = False
+
+def _normalized_site_prefix():
+    prefix = SITE_PATH_PREFIX.strip()
+    if not prefix:
+        return "/"
+    if not prefix.startswith("/"):
+        prefix = "/" + prefix
+    if not prefix.endswith("/"):
+        prefix += "/"
+    return prefix
+
+def _output_site_prefix():
+    """Prefix to emit into generated links/scripts."""
+    return _normalized_site_prefix() if PRODUCTION else ""
+
+def _output_href(path):
+    """Build an internal href for output mode (dev relative vs production prefixed)."""
+    clean = str(path or "").lstrip("/")
+    prefix = _output_site_prefix()
+    if not prefix:
+        return clean
+    return prefix + clean
+
+def _should_absolutize_url(raw_url):
+    """Whether a URL should be rewritten to an absolute site URL."""
+    if not raw_url:
+        return False
+    value = raw_url.strip()
+    if not value or value.startswith("#") or value.startswith("//"):
+        return False
+    if re.match(r'^[a-zA-Z][a-zA-Z0-9+.-]*:', value):
+        return False
+    return True
+
+def absolutize_links(html_text, page_url):
+    """Rewrite internal href/src links in an HTML document to site-absolute paths."""
+    if not html_text or not page_url:
+        return html_text
+
+    prefix = _normalized_site_prefix().rstrip("/") or "/"
+
+    def _repl(m):
+        attr = m.group("attr")
+        quote = m.group("quote")
+        raw_url = m.group("url")
+        if not _should_absolutize_url(raw_url):
+            return m.group(0)
+        resolved = urljoin(page_url, raw_url)
+        parts = urlsplit(resolved)
+        absolute = parts.path or "/"
+        if prefix != "/" and absolute.startswith("/") and absolute != prefix and not absolute.startswith(prefix + "/"):
+            absolute = prefix + absolute
+        if parts.query:
+            absolute += f"?{parts.query}"
+        if parts.fragment:
+            absolute += f"#{parts.fragment}"
+        if quote:
+            return f"{attr}={quote}{absolute}{quote}"
+        return f"{attr}={absolute}"
+
+    return URL_ATTR_RE.sub(_repl, html_text)
 
 def process_blockquotes(html_text):
     """Convert blockquotes starting with bold markers into styled callouts."""
@@ -496,7 +603,7 @@ def build_toc_sidebar(toc_tokens, current_slug):
 
 TEMPLATE = """\
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-site-prefix="{site_prefix}">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -581,8 +688,6 @@ TEMPLATE = """\
 
   </button>
 
-    <script id="git-meta" type="application/json">{git_meta_json}</script>
-    <script id="zstd-data" type="text/plain">{search_index_zstd_b64}</script>
     <script src="https://cdn.jsdelivr.net/npm/fzstd@0.1.1/umd/index.js" async></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="script.js"></script>
@@ -622,7 +727,7 @@ def build_page(slug):
     body_html, toc_tokens = convert_markdown(body_md)
 
     # Post-processing
-    body_html = rewrite_md_links(body_html)
+    body_html = rewrite_md_links(body_html, slug)
     body_html = highlight_code_blocks(body_html)
     body_html = process_blockquotes(body_html)
     body_html = format_ext_tags(body_html)
@@ -646,12 +751,11 @@ def build_page(slug):
         page_title=page_title,
         og_title=og_title,
         og_description=og_description,
+        site_prefix=_safe(_output_site_prefix()),
         subtitle_html=_safe(subtitle_html),
         body=_safe(body_html),
         sidebar=_safe(sidebar),
-        search_index_zstd_b64=_safe(_search_index_zstd_b64),
         version_options=_safe(VERSION_OPTIONS),
-        git_meta_json=_git_meta_json,
     )
 
     # Optimize the html
@@ -667,6 +771,11 @@ def build_page(slug):
         print(f'Failed to minify HTML: {e}')
 
     out_name = slug_output_name(slug)
+    if PRODUCTION:
+        resolver_base = urljoin("https://docs.local", _normalized_site_prefix())
+        page_url = urljoin(resolver_base, out_name)
+        out_html = absolutize_links(out_html, page_url)
+
     out_path = os.path.join(OUT_DIR, out_name)
     with open(out_path, "w", encoding="utf-8") as f:
         f.write(out_html)
@@ -772,20 +881,33 @@ def get_all_slugs():
 
     return slugs
 
-_search_index_zstd_b64 = ""
 SEARCH_MAP = {}
 VERSION_OPTIONS = ""
-_git_meta_json = '{}'
 SLUG_PAGE_KEYS = {}
 
 WORKERS = 18
 
-def main():
+def parse_args(argv=None):
+    parser = argparse.ArgumentParser(description="Build the PyJavaBridge docs site.")
+    parser.add_argument(
+        "--production",
+        action="store_true",
+        help="Rewrite internal links to site-root absolute paths for deployed docs.",
+    )
+    return parser.parse_args(argv)
+
+def main(argv=None):
     """Build the static documentation site from markdown sources."""
-    global _search_index_zstd_b64, SLUG_PAGE_KEYS
+    global SLUG_PAGE_KEYS, PRODUCTION
+    args = parse_args(argv)
+    PRODUCTION = bool(args.production)
+
     print("📖 Building PyJavaBridge docs...")
     print(f"   Source: {SRC_DIR}")
     print(f"   Output: {OUT_DIR}")
+    print(f"   Mode: {'production' if PRODUCTION else 'development'}")
+    if PRODUCTION:
+        print(f"   Site prefix: {_normalized_site_prefix()}")
     print()
 
     # Copy static assets into output directory. Try DOCS_DIR first, fall back
@@ -816,7 +938,7 @@ def main():
     built = 0
     search_index = []
 
-    # Build search index first (needed for inlining into pages)
+    # Build search index first so we can emit a shared compressed asset.
     for slug in slugs:
         src = os.path.join(SRC_DIR, f"{slug}.md")
 
@@ -885,7 +1007,7 @@ def main():
                 sections.append({"heading": current_heading, "text": ", ".join(table_first_cols)})
 
             page_key = slug_page_key(slug)
-            url = slug_output_name(slug)
+            url = _output_href(slug_output_name(slug))
             search_index.append({
                 "slug": page_key,
                 "source_slug": _normalize_slug(slug),
@@ -985,10 +1107,7 @@ def main():
         item['backlinks'] = slug_to_backlinks.get(item['slug'], [])
         item['related'] = related_map.get(item['slug'], [])
 
-    # Emit git metadata (repo, commits, tags) for client-side versioning support
-    # Default inline git meta (fallback when git access fails)
-    global _git_meta_json
-    _git_meta_json = '{}'
+    # Emit git metadata (repo, commits, tags) for client-side versioning support.
     try:
         repo_root = os.path.dirname(DOCS_DIR)
         # remote URL
@@ -1086,13 +1205,10 @@ def main():
 
         git_meta = {'repo': repo_name, 'commits': commits, 'tags': tags, 'versions': versions, 'src_map': src_map, 'pages_by_commit': pages_by_commit}
         try:
-            with open(os.path.join(OUT_DIR, 'git_meta.json'), 'w', encoding='utf-8') as gf:
+            with open(os.path.join(OUT_DIR, GIT_META_FILENAME), 'w', encoding='utf-8') as gf:
                 json.dump(git_meta, gf, separators=(',', ':'))
         except Exception:
             pass
-
-        # Inline JSON for file:// usage (client falls back to this if fetch fails)
-        _git_meta_json = json.dumps(git_meta, separators=(',', ':'))
 
         # Pre-render version selector options so the <select> isn't empty before JS runs.
         try:
@@ -1133,15 +1249,19 @@ def main():
     cctx = zstandard.ZstdCompressor(level=22)
 
     compressed = cctx.compress(search_json.encode('utf-8'))
-    _search_index_zstd_b64 = base64.b64encode(compressed).decode('ascii')
+    search_index_path = os.path.join(OUT_DIR, SEARCH_INDEX_FILENAME)
+    with open(search_index_path, "wb") as sf:
+        sf.write(compressed)
 
     raw_size = len(search_json.encode('utf-8'))
     compressed_size = len(compressed)
-    b64_size = len(_search_index_zstd_b64)
 
-    print(f"   Search index: {raw_size:,} bytes → {compressed_size:,} zstd → {b64_size:,} base64 ({100*b64_size/raw_size:.1f}%)")
+    print(
+        f"   Search index: {raw_size:,} bytes → {compressed_size:,} zstd "
+        f"({100*compressed_size/raw_size:.1f}%) → {SEARCH_INDEX_FILENAME}"
+    )
 
-    # Build pages (with search index inlined) — parallelized
+    # Build pages — parallelized
     slugs_to_build = []
     for slug in slugs:
         src = os.path.join(SRC_DIR, f"{slug}.md")
@@ -1167,4 +1287,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

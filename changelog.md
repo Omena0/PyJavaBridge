@@ -51,6 +51,8 @@ Client-mod API consolidation release — high-level Python interface, cleaner ex
 - Pinned `.github/workflows/deploy-pages.yml` tool dependencies for reproducible docs deployments.
 - Added missing extension files to `src/main/resources/python/bridge/MANIFEST` (`loot_table.py`, `placeholder.py`, `scheduler.py`, `schematic.py`, `state_machine.py`, `tab_list.py`).
 - Updated stubs to reflect API/type reality in `bridge/__init__.pyi` and `bridge/extensions/__init__.pyi`.
+- Moved search index and git metadata from page files into seperate files. For faster loads and better SEO.
+- Added `--production` flag, which converts all links to absolute links (`/PyJavaBridge/world.html` instead of `/world.html`) for better SEO.
 
 ## 4A
 

@@ -43,7 +43,7 @@ jobs:
       - name: Build docs
         run: |
           pip install markdown==3.10.2 zstandard==0.25.0
-          python docs/build.py
+          python docs/build.py --production
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
