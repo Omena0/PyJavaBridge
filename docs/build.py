@@ -8,6 +8,7 @@ Usage: python docs/build.py [--production]
 """
 
 import argparse
+import base64
 import concurrent.futures
 from pathlib import Path
 import subprocess
@@ -609,6 +610,7 @@ TEMPLATE = """\
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{page_title} — PyJavaBridge</title>
   <meta property="og:title" content="{og_title} — PyJavaBridge">
+  <meta name="description" content="{og_description}">
   <meta property="og:description" content="{og_description}">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="PyJavaBridge Docs">
@@ -688,9 +690,8 @@ TEMPLATE = """\
 
   </button>
 
-    <script src="https://cdn.jsdelivr.net/npm/fzstd@0.1.1/umd/index.js" async></script>
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="script.js"></script>
+    {search_index_inline}
+    <script src="script.js" defer></script>
 
 </body>
 </html>
@@ -752,6 +753,7 @@ def build_page(slug):
         og_title=og_title,
         og_description=og_description,
         site_prefix=_safe(_output_site_prefix()),
+        search_index_inline=_safe(SEARCH_INDEX_INLINE),
         subtitle_html=_safe(subtitle_html),
         body=_safe(body_html),
         sidebar=_safe(sidebar),
@@ -883,6 +885,7 @@ def get_all_slugs():
 
 SEARCH_MAP = {}
 VERSION_OPTIONS = ""
+SEARCH_INDEX_INLINE = ""
 SLUG_PAGE_KEYS = {}
 
 WORKERS = 18
@@ -898,7 +901,7 @@ def parse_args(argv=None):
 
 def main(argv=None):
     """Build the static documentation site from markdown sources."""
-    global SLUG_PAGE_KEYS, PRODUCTION
+    global SLUG_PAGE_KEYS, PRODUCTION, SEARCH_INDEX_INLINE
     args = parse_args(argv)
     PRODUCTION = bool(args.production)
 
@@ -1252,6 +1255,15 @@ def main(argv=None):
     search_index_path = os.path.join(OUT_DIR, SEARCH_INDEX_FILENAME)
     with open(search_index_path, "wb") as sf:
         sf.write(compressed)
+
+    if PRODUCTION:
+        SEARCH_INDEX_INLINE = ""
+    else:
+        SEARCH_INDEX_INLINE = (
+            '<script id="zstd-data" type="text/plain">'
+            f'{base64.b64encode(compressed).decode("ascii")}'
+            '</script>'
+        )
 
     raw_size = len(search_json.encode('utf-8'))
     compressed_size = len(compressed)

@@ -229,6 +229,11 @@ document.addEventListener('DOMContentLoaded', () => {
   // ── Decompress zstd search index (async, non-blocking) ──────
   let searchIndex = [];
   const SEARCH_INDEX_FILE = 'search_index.zst';
+  const SEARCH_PRELOAD_DELAY_MS = 2000;
+  const FZSTD_CDN_URL = 'https://cdn.jsdelivr.net/npm/fzstd@0.1.1/umd/index.min.js';
+  let searchIndexPromise = null;
+  let searchPreloadTimer = null;
+  let fzstdPromise = null;
 
   function emitSearchReady() {
     if (searchIndex && searchIndex.length) {
@@ -238,22 +243,40 @@ document.addEventListener('DOMContentLoaded', () => {
     return false;
   }
 
-  async function waitForFzstd(maxWaitMs = 10000) {
+  async function ensureFzstd(maxWaitMs = 10000) {
     if (typeof fzstd !== 'undefined') return true;
-    const started = Date.now();
-    return new Promise(resolve => {
-      const iv = setInterval(() => {
-        if (typeof fzstd !== 'undefined') {
-          clearInterval(iv);
-          resolve(true);
+    if (!fzstdPromise) {
+      fzstdPromise = new Promise(resolve => {
+        const existing = document.querySelector('script[data-pjb-fzstd]');
+        if (existing) {
+          const started = Date.now();
+          const iv = setInterval(() => {
+            if (typeof fzstd !== 'undefined') {
+              clearInterval(iv);
+              resolve(true);
+              return;
+            }
+            if (Date.now() - started >= maxWaitMs) {
+              clearInterval(iv);
+              resolve(false);
+            }
+          }, 50);
           return;
         }
-        if (Date.now() - started >= maxWaitMs) {
-          clearInterval(iv);
-          resolve(false);
-        }
-      }, 50);
-    });
+
+        const script = document.createElement('script');
+        script.src = FZSTD_CDN_URL;
+        script.async = true;
+        script.defer = true;
+        script.setAttribute('data-pjb-fzstd', '1');
+        script.onload = () => resolve(typeof fzstd !== 'undefined');
+        script.onerror = () => resolve(false);
+        document.head.appendChild(script);
+
+        setTimeout(() => resolve(typeof fzstd !== 'undefined'), maxWaitMs);
+      });
+    }
+    return fzstdPromise;
   }
 
   function loadInlineSearchFallback() {
@@ -273,28 +296,56 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   async function loadSearchIndex() {
-    const hasFzstd = await waitForFzstd();
-    if (!hasFzstd) {
-      console.error('Search disabled: fzstd failed to load');
-      return;
-    }
+    if (searchIndex && searchIndex.length) return true;
+    if (searchIndexPromise) return searchIndexPromise;
 
-    if (loadInlineSearchFallback()) return;
+    searchIndexPromise = (async () => {
+      const hasFzstd = await ensureFzstd();
+      if (!hasFzstd) {
+        console.error('Search disabled: fzstd failed to load');
+        return false;
+      }
 
-    try {
-      const searchUrl = location.protocol === 'file:' ? SEARCH_INDEX_FILE : toSiteHref(SEARCH_INDEX_FILE);
-      const r = await fetch(searchUrl, { cache: 'force-cache' });
-      if (!r || !r.ok) throw new Error(`HTTP ${r ? r.status : 'error'}`);
-      const compressed = new Uint8Array(await r.arrayBuffer());
-      const decompressed = fzstd.decompress(compressed);
-      const json = new TextDecoder().decode(decompressed);
-      searchIndex = JSON.parse(json);
-      emitSearchReady();
-    } catch (e) {
-      console.error('Failed to fetch/decompress search index:', e);
-    }
+      if (loadInlineSearchFallback()) return true;
+
+      if (location.protocol === 'file:') {
+        return false;
+      }
+
+      try {
+        const r = await fetch(toSiteHref(SEARCH_INDEX_FILE), { cache: 'force-cache' });
+        if (!r || !r.ok) throw new Error(`HTTP ${r ? r.status : 'error'}`);
+        const compressed = new Uint8Array(await r.arrayBuffer());
+        const decompressed = fzstd.decompress(compressed);
+        const json = new TextDecoder().decode(decompressed);
+        searchIndex = JSON.parse(json);
+        return emitSearchReady();
+      } catch (e) {
+        console.error('Failed to fetch/decompress search index:', e);
+        return false;
+      }
+    })();
+
+    return searchIndexPromise;
   }
-  loadSearchIndex();
+
+  function triggerSearchIndexLoad() {
+    if (searchPreloadTimer) {
+      clearTimeout(searchPreloadTimer);
+      searchPreloadTimer = null;
+    }
+    void loadSearchIndex();
+  }
+
+  function scheduleSearchIndexLoad() {
+    if (searchPreloadTimer || searchIndexPromise || (searchIndex && searchIndex.length)) return;
+    searchPreloadTimer = setTimeout(() => {
+      searchPreloadTimer = null;
+      void loadSearchIndex();
+    }, SEARCH_PRELOAD_DELAY_MS);
+  }
+
+  scheduleSearchIndexLoad();
 
   
 
@@ -382,6 +433,9 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   if (headerSearch) {
+    const onSearchInteract = () => triggerSearchIndexLoad();
+    headerSearch.addEventListener('pointerdown', onSearchInteract, { once: true });
+    headerSearch.addEventListener('focus', onSearchInteract, { once: true });
     headerSearch.addEventListener('input', () => doSearch(headerSearch.value));
     headerSearch.addEventListener('keydown', e => {
       if (e.key === 'Escape') {
@@ -504,6 +558,11 @@ document.addEventListener('DOMContentLoaded', () => {
   document.addEventListener('searchIndexLoaded', () => {
     try { renderBacklinksAndRelated(); } catch (e) { /* ignore */ }
     try { persistVerOnLinks(); } catch (e) { /* ignore */ }
+    try {
+      if (headerSearch && headerSearch.value.trim()) {
+        doSearch(headerSearch.value);
+      }
+    } catch (e) { /* ignore */ }
   });
 
   // ── Versioning: ?ver= parameter support (resolve to commit, fetch historical HTML) ──
