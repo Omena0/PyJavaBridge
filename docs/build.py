@@ -10,6 +10,7 @@ Usage: python docs/build.py [--production]
 import argparse
 import base64
 import concurrent.futures
+from datetime import datetime, timezone
 from pathlib import Path
 import subprocess
 import tempfile
@@ -887,6 +888,7 @@ SEARCH_MAP = {}
 VERSION_OPTIONS = ""
 SEARCH_INDEX_INLINE = ""
 SLUG_PAGE_KEYS = {}
+DEFAULT_SITEMAP_SITE_URL = "https://omena0.github.io/PyJavaBridge/"
 
 WORKERS = 18
 
@@ -897,7 +899,62 @@ def parse_args(argv=None):
         action="store_true",
         help="Rewrite internal links to site-root absolute paths for deployed docs.",
     )
+    parser.add_argument(
+        "--site-url",
+        default=DEFAULT_SITEMAP_SITE_URL,
+        help="Base URL used for sitemap.xml entries (must be absolute URL).",
+    )
     return parser.parse_args(argv)
+
+
+def _normalize_site_url(site_url):
+    value = str(site_url or "").strip()
+    if not value:
+        return DEFAULT_SITEMAP_SITE_URL
+    if not value.endswith("/"):
+        value += "/"
+    return value
+
+
+def write_sitemap(slugs_to_build, site_url):
+    """Write sitemap.xml for all generated docs pages."""
+    if not slugs_to_build:
+        return
+
+    base_url = _normalize_site_url(site_url)
+    entries = []
+    seen = set()
+
+    for slug in sorted(slugs_to_build):
+        out_name = slug_output_name(slug)
+        if out_name in seen:
+            continue
+        seen.add(out_name)
+
+        src_path = os.path.join(SRC_DIR, f"{slug}.md")
+        try:
+            mtime = os.path.getmtime(src_path)
+            lastmod = datetime.fromtimestamp(mtime, tz=timezone.utc).date().isoformat()
+        except Exception:
+            lastmod = datetime.now(tz=timezone.utc).date().isoformat()
+
+        loc = urljoin(base_url, out_name)
+        entries.append((loc, lastmod))
+
+    lines = [
+        '<?xml version="1.0" encoding="UTF-8"?>',
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+    ]
+    for loc, lastmod in entries:
+        lines.append("  <url>")
+        lines.append(f"    <loc>{html.escape(loc, quote=True)}</loc>")
+        lines.append(f"    <lastmod>{lastmod}</lastmod>")
+        lines.append("  </url>")
+    lines.append("</urlset>")
+
+    sitemap_path = os.path.join(OUT_DIR, "sitemap.xml")
+    with open(sitemap_path, "w", encoding="utf-8") as f:
+        f.write("\n".join(lines) + "\n")
 
 def main(argv=None):
     """Build the static documentation site from markdown sources."""
@@ -1294,6 +1351,9 @@ def main(argv=None):
                     print(f"  ✗ {slug_output_name(slug)} (error: {e})")
     else:
         print("No pages found to build.")
+
+    write_sitemap(slugs_to_build, args.site_url)
+    print("   Sitemap: sitemap.xml")
 
     print(f"\n✅ Built {built} pages")
 
