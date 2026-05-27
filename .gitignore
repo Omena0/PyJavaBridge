@@ -13,3 +13,5 @@ client_mod
 
 # Cache
 __pycache__/
+
+*node_modules*

@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://omena0.github.io/PyJavaBridge/sitemap.txt

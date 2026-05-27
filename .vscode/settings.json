@@ -4,7 +4,7 @@
     },
     "java.compile.nullAnalysis.mode": "automatic",
     "java.import.gradle.nestedProjects": true,
-    "python-envs.defaultEnvManager": "ms-python.python:venv",
+    "python-envs.defaultEnvManager": "ms-python.python:system",
     "java.configuration.updateBuildConfiguration": "automatic",
     "python.defaultInterpreterPath": "/home/omena0/Github/PyJavaBridge/.venv/bin/python"
 }

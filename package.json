@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "critical": "^8.0.0",
+    "html-minifier-next": "^6.2.7"
+  }
+}

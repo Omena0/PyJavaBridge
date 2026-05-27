@@ -765,12 +765,14 @@ def build_page(slug):
     try:
         out_html = optimize_html(out_html)
     except Exception as e:
+        raise e
         print(f'Failed to optimize HTML: {e}')
 
     # Minify the html
     try:
         out_html = minify_html(out_html)
     except Exception as e:
+        raise e
         print(f'Failed to minify HTML: {e}')
 
     out_name = slug_output_name(slug)
@@ -794,7 +796,7 @@ def optimize_html(html_input, base_path=None):
         return html_input
 
     # Write input HTML to temp file
-    with tempfile.NamedTemporaryFile("w+", suffix=".html", delete=False) as f_in:
+    with tempfile.NamedTemporaryFile("w+", suffix=".html", delete=False, encoding="utf-8") as f_in:
         f_in.write(html_input)
         in_path = Path(f_in.name)
 
@@ -816,13 +818,13 @@ def optimize_html(html_input, base_path=None):
         "--height", "1080",
     ]
 
-    result = subprocess.run(
-        cmd,
-        capture_output=True,
-        text=True
-    )
-
     try:
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True
+        )
+
         if result.returncode != 0:
             raise RuntimeError(f"Critical failed:\n{result.stderr}")
 
@@ -834,6 +836,9 @@ def optimize_html(html_input, base_path=None):
 
         return optimized_html
 
+    except Exception:
+        return html_input
+
     finally:
         try:
             in_path.unlink()
@@ -844,7 +849,7 @@ def minify_html(html_input):
     if not MINIFY:
         return html_input
 
-    with tempfile.NamedTemporaryFile("w+", suffix=".html", delete=False) as temp_in:
+    with tempfile.NamedTemporaryFile("w+", suffix=".html", delete=False, encoding="utf-8") as temp_in:
         temp_in.write(html_input)
         temp_in_path = Path(temp_in.name)
 
@@ -865,16 +870,24 @@ def minify_html(html_input):
         str(temp_in_path)
     ]
 
-    subprocess.run(cmd, check=True)
+    try:
+        subprocess.run(cmd, check=True)
 
-    # Read back minified HTML
-    minified_html = temp_out_path.read_text(encoding="utf-8")
-
-    # Clean up temp files
-    temp_in_path.unlink()
-    temp_out_path.unlink()
-
-    return minified_html
+        # Read back minified HTML
+        minified_html = temp_out_path.read_text(encoding="utf-8", errors="ignore")
+        return minified_html
+    except Exception:
+        return html_input
+    finally:
+        # Clean up temp files
+        try:
+            temp_in_path.unlink()
+        except Exception:
+            pass
+        try:
+            temp_out_path.unlink()
+        except Exception:
+            pass
 
 def get_all_slugs():
     """Get all markdown file slugs from the sidebar definition."""
@@ -917,7 +930,7 @@ def _normalize_site_url(site_url):
 
 
 def write_sitemap(slugs_to_build, site_url):
-    """Write sitemap.xml for all generated docs pages."""
+    """Write sitemap.txt and robots.txt for all generated docs pages."""
     if not slugs_to_build:
         return
 
@@ -941,20 +954,28 @@ def write_sitemap(slugs_to_build, site_url):
         loc = urljoin(base_url, out_name)
         entries.append((loc, lastmod))
 
-    lines = [
-        '<?xml version="1.0" encoding="UTF-8"?>',
-        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
-    ]
-    for loc, lastmod in entries:
-        lines.append("  <url>")
-        lines.append(f"    <loc>{html.escape(loc, quote=True)}</loc>")
-        lines.append(f"    <lastmod>{lastmod}</lastmod>")
-        lines.append("  </url>")
-    lines.append("</urlset>")
+    sitemap_lines = [loc for loc, _ in entries]
+    sitemap_txt_path = os.path.join(OUT_DIR, "sitemap.txt")
+    with open(sitemap_txt_path, "w", encoding="utf-8") as f:
+        f.write("\n".join(sitemap_lines) + "\n")
 
-    sitemap_path = os.path.join(OUT_DIR, "sitemap.xml")
-    with open(sitemap_path, "w", encoding="utf-8") as f:
-        f.write("\n".join(lines) + "\n")
+    # Keep output clean when migrating from xml sitemap.
+    old_sitemap_xml = os.path.join(OUT_DIR, "sitemap.xml")
+    try:
+        if os.path.exists(old_sitemap_xml):
+            os.remove(old_sitemap_xml)
+    except Exception:
+        pass
+
+    robots_lines = [
+        "User-agent: *",
+        "Allow: /",
+        "",
+        f"Sitemap: {urljoin(base_url, 'sitemap.txt')}",
+    ]
+    robots_path = os.path.join(OUT_DIR, "robots.txt")
+    with open(robots_path, "w", encoding="utf-8") as f:
+        f.write("\n".join(robots_lines) + "\n")
 
 def main(argv=None):
     """Build the static documentation site from markdown sources."""
@@ -1349,11 +1370,13 @@ def main(argv=None):
                     built += 1
                 except Exception as e:
                     print(f"  ✗ {slug_output_name(slug)} (error: {e})")
+                    raise e
     else:
         print("No pages found to build.")
 
     write_sitemap(slugs_to_build, args.site_url)
-    print("   Sitemap: sitemap.xml")
+    print("   Sitemap: sitemap.txt")
+    print("   Robots: robots.txt")
 
     print(f"\n✅ Built {built} pages")
 
