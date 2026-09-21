@@ -746,7 +746,7 @@ class BridgeConnection:
                 asyncio.create_task(_run_detached(handler))
 
             if event_id is not None:
-                self.send({"type": "event_done", "id": event_id})
+                self.send({"type": "event_done", "event": event_name, "id": event_id})
             return
 
         results: List[Any] = []
@@ -822,7 +822,7 @@ class BridgeConnection:
                     if override_target is not None:
                         self.send({"type": "event_result", "id": event_id, "result": self._serialize(override_target), "result_type": "target"})
 
-                self.send({"type": "event_done", "id": event_id})
+                self.send({"type": "event_done", "event": event_name, "id": event_id})
 
     async def _handle_shutdown(self) -> None:
         """Handle server shutdown."""

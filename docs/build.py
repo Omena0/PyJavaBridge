@@ -901,7 +901,7 @@ SEARCH_MAP = {}
 VERSION_OPTIONS = ""
 SEARCH_INDEX_INLINE = ""
 SLUG_PAGE_KEYS = {}
-DEFAULT_SITEMAP_SITE_URL = "https://omena0.github.io/PyJavaBridge/"
+DEFAULT_SITEMAP_SITE_URL = "https://omena0.dev/PyJavaBridge/"
 
 WORKERS = 18
 

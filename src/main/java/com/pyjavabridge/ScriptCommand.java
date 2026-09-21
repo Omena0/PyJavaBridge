@@ -221,7 +221,7 @@ class ScriptCommand extends Command {
         payload.add("args", current.getGson().toJsonTree(args));
         payload.addProperty("command", getName());
 
-        current.sendEvent("command_" + getName(), payload);
+        current.sendEventNonBlocking("command_" + getName(), payload);
         return true;
     }
 

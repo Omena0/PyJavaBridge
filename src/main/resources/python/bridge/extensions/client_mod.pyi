@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any, AsyncIterable, Callable, Dict, Iterable, List, Optional
 from bridge.types import BridgeCall
 
+_connection = None
 
 class ClientModSession:
     player: Any

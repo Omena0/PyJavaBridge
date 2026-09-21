@@ -32,10 +32,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     // Measure natural height so CSS max-height animation works
     const ul = h.nextElementSibling;
-    if (ul && ul.classList.contains('sidebar-links')) {
-      if (!h.classList.contains('collapsed')) {
-        ul.style.maxHeight = ul.scrollHeight + 'px';
-      }
+    if (ul && ul.classList.contains('sidebar-links') && !h.classList.contains('collapsed')) {
+          ul.style.maxHeight = ul.scrollHeight + 'px';
     }
   });
 
@@ -51,20 +49,35 @@ document.addEventListener('DOMContentLoaded', () => {
   // ── Sidebar search filter ───────────────────────────────────
   const input = document.getElementById('sidebar-search');
   if (input) {
+    let searching = false;
     input.addEventListener('input', () => {
       const q = input.value.toLowerCase().trim();
-      document.querySelectorAll('.sidebar-links a').forEach(a => {
-        a.style.display = (!q || a.textContent.toLowerCase().includes(q)) ? '' : 'none';
-      });
-      document.querySelectorAll('.sidebar-section').forEach(sec => {
-        const links = sec.querySelectorAll('.sidebar-links a');
-        const anyVisible = Array.from(links).some(a => a.style.display !== 'none');
-        sec.style.display = anyVisible || !q ? '' : 'none';
-        if (q) {
+      if (q) {
+        searching = true;
+        document.querySelectorAll('.sidebar-links a').forEach(a => {
+          a.style.display = a.textContent.toLowerCase().includes(q) ? '' : 'none';
+        });
+        document.querySelectorAll('.sidebar-section').forEach(sec => {
+          const links = sec.querySelectorAll('.sidebar-links a');
+          const anyVisible = Array.from(links).some(a => a.style.display !== 'none');
+          sec.style.display = anyVisible ? '' : 'none';
           const heading = sec.querySelector('.sidebar-heading');
           if (heading) expandSection(heading);
-        }
-      });
+        });
+      } else if (searching) {
+        document.querySelectorAll('.sidebar-links a').forEach(a => {
+          a.style.display = '';
+        });
+        document.querySelectorAll('.sidebar-section').forEach(sec => {
+          sec.style.display = '';
+        });
+        const currentState = loadState();
+        document.querySelectorAll('.sidebar-heading[data-section]').forEach(heading => {
+          if (currentState[heading.dataset.section] === false) expandSection(heading);
+          else collapseSection(heading);
+        });
+        searching = false;
+      }
     });
     input.addEventListener('keydown', e => {
       if (e.key === 'Enter') {
@@ -184,7 +197,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const observer = new IntersectionObserver(entries => {
       entries.forEach(entry => {
         if (entry.isIntersecting) {
-          const id = entry.target.id;
+          const {id} = entry.target;
           allLinks.forEach(l => {
             l.classList.toggle('active', l.getAttribute('href') === '#' + id);
           });
@@ -628,10 +641,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const base = page.replace(/\.html$/, '');
         const li = a.closest('li') || a.parentElement;
         if (!allowed.has(base)) {
-          if (li) li.style.display = 'none'; else a.style.display = 'none';
-        } else {
-          if (li) li.style.display = ''; else a.style.display = '';
-        }
+                  if (li) li.style.display = 'none'; else a.style.display = 'none';
+                }
+        else if (li) li.style.display = '';
+        else a.style.display = '';
       });
 
       // Hide entire sections with no visible links

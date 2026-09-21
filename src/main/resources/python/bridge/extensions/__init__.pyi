@@ -582,8 +582,9 @@ class ClientMod:
     def unregister_request_data(self, key: str) -> BridgeCall: ...
     def on_client_data(self, handler: Callable[[Any], Any]) -> Callable[[Any], Any]: ...
     def on_permission_change(self, handler: Callable[[Any], Any]) -> Callable[[Any], Any]: ...
+    _connection = None
 
-client_mod: ClientMod
+client: ClientMod
 
 
 

@@ -2967,6 +2967,16 @@ public class BridgeInstance {
     }
 
     public void sendEvent(String eventName, JsonObject payload) {
+        if (eventDispatcher == null) {
+            return;
+        }
+        eventDispatcher.sendEvent(eventName, payload);
+    }
+
+    public void sendEventNonBlocking(String eventName, JsonObject payload) {
+        if (eventDispatcher == null) {
+            return;
+        }
         eventDispatcher.sendEvent(eventName, payload);
     }
 

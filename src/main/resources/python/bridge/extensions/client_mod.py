@@ -62,7 +62,7 @@ class ClientModSession:
         result = await _connection.call(
             target="client_mod",
             method="sendCommand",
-            args=[self.player, capability, args or {}, handle, int(timeout_ms)],
+            args=[self.player, capability, args or {}, handle, timeout_ms],
         )
         return result if isinstance(result, dict) else {"status": "ok", "result": result}
 
@@ -73,7 +73,7 @@ class ClientModSession:
         result = await _connection.call(
             target="client_mod",
             method="sendData",
-            args=[self.player, channel, payload or {}, int(timeout_ms)],
+            args=[self.player, channel, payload or {}, timeout_ms],
         )
         return result if isinstance(result, dict) else {"status": "ok", "result": result}
 
@@ -84,7 +84,14 @@ class ClientModSession:
         result = await _connection.call(
             target="client_mod",
             method="registerScript",
-            args=[self.player, name, source, bool(auto_start), metadata or {}, int(timeout_ms)],
+            args=[
+                self.player,
+                name,
+                source,
+                auto_start,
+                metadata or {},
+                timeout_ms,
+            ],
         )
         return result if isinstance(result, dict) else {"status": "ok", "result": result}
 
@@ -95,7 +102,13 @@ class ClientModSession:
         result = await _connection.call(
             target="client_mod",
             method="setPermissions",
-            args=[self.player, capabilities, reason or "", bool(remember_prompt), int(timeout_ms)],
+            args=[
+                self.player,
+                capabilities,
+                reason or "",
+                remember_prompt,
+                timeout_ms,
+            ],
         )
         return result if isinstance(result, dict) else {"status": "ok", "result": result}
 
@@ -111,20 +124,20 @@ class ClientModSession:
     async def raycast(self, max_distance: float = 64.0, include_fluids: bool = False,
             timeout_ms: int = 1000) -> dict[str, _Any]:
         """Raycast."""
-        args = {"max_distance": float(max_distance), "include_fluids": bool(include_fluids)}
-        return await self.command("raycast.cast", args, timeout_ms=int(timeout_ms))
+        args = {"max_distance": max_distance, "include_fluids": include_fluids}
+        return await self.command("raycast.cast", args, timeout_ms=timeout_ms)
 
     @_async_task
     async def entities_list(self, query: dict[str, _Any] | None = None,
             timeout_ms: int = 1000) -> dict[str, _Any]:
         """Entities list."""
-        return await self.command("entities.list", query or {}, timeout_ms=int(timeout_ms))
+        return await self.command("entities.list", query or {}, timeout_ms=timeout_ms)
 
     @_async_task
     async def entities_query(self, query: dict[str, _Any] | None = None,
             timeout_ms: int = 1000) -> dict[str, _Any]:
         """Entities query."""
-        return await self.command("entities.query", query or {}, timeout_ms=int(timeout_ms))
+        return await self.command("entities.query", query or {}, timeout_ms=timeout_ms)
 
     @_async_task
     async def particles_spawn(self, particle: str = "minecraft:smoke", x: float | None = None,
@@ -133,11 +146,11 @@ class ClientModSession:
         """Particles spawn."""
         args: dict[str, _Any] = {
             "particle": particle,
-            "vx": float(vx),
-            "vy": float(vy),
-            "vz": float(vz),
-            "count": int(count),
-            "spread": float(spread),
+            "vx": vx,
+            "vy": vy,
+            "vz": vz,
+            "count": count,
+            "spread": spread,
         }
         if x is not None:
             args["x"] = float(x)
@@ -145,19 +158,19 @@ class ClientModSession:
             args["y"] = float(y)
         if z is not None:
             args["z"] = float(z)
-        return await self.command("particles.spawn", args, timeout_ms=int(timeout_ms))
+        return await self.command("particles.spawn", args, timeout_ms=timeout_ms)
 
     @_async_task
     async def metrics_get(self, timeout_ms: int = 1000) -> dict[str, _Any]:
         """Metrics get."""
-        return await self.command("metrics.get", {}, timeout_ms=int(timeout_ms))
+        return await self.command("metrics.get", {}, timeout_ms=timeout_ms)
 
     @_async_task
     async def stream_audio_file(self, path: str, stream_id: str | None = None,
             sample_rate: int = 48000, channels: int = 2, chunk_size: int = 4096,
             stop_when_done: bool = True) -> dict[str, _Any]:
         """Stream audio file."""
-        args: dict[str, _Any] = {"sample_rate": int(sample_rate), "channels": int(channels)}
+        args: dict[str, _Any] = {"sample_rate": sample_rate, "channels": channels}
         if stream_id is not None:
             args["stream_id"] = stream_id
 
@@ -216,7 +229,7 @@ class ClientModSession:
             stream_id: str | None = None, sample_rate: int = 48000, channels: int = 2,
             chunk_size: int = 4096, stop_when_done: bool = True) -> dict[str, _Any]:
         """Stream audio generator."""
-        args: dict[str, _Any] = {"sample_rate": int(sample_rate), "channels": int(channels)}
+        args: dict[str, _Any] = {"sample_rate": sample_rate, "channels": channels}
         if stream_id is not None:
             args["stream_id"] = stream_id
 
@@ -300,12 +313,14 @@ class ClientModSession:
     @_async_task
     async def mic_set_mute(self, muted: bool = True, timeout_ms: int = 1000) -> dict[str, _Any]:
         """Mic set mute."""
-        return await self.command("microphone.set_mute", {"muted": bool(muted)}, timeout_ms=int(timeout_ms))
+        return await self.command(
+            "microphone.set_mute", {"muted": muted}, timeout_ms=timeout_ms
+        )
 
     @_async_task
     async def mic_get_state(self, timeout_ms: int = 1000) -> dict[str, _Any]:
         """Mic get state."""
-        return await self.command("microphone.get_state", {}, timeout_ms=int(timeout_ms))
+        return await self.command("microphone.get_state", {}, timeout_ms=timeout_ms)
 
     @_async_task
     async def mic_level_subscribe(self, stream_id: str, interval_ms: int = 250,
@@ -313,14 +328,18 @@ class ClientModSession:
         """Mic level subscribe."""
         return await self.command(
             "microphone.level.subscribe",
-            {"stream_id": stream_id, "interval_ms": int(interval_ms)},
-            timeout_ms=int(timeout_ms),
+            {"stream_id": stream_id, "interval_ms": interval_ms},
+            timeout_ms=timeout_ms,
         )
 
     @_async_task
     async def mic_level_unsubscribe(self, stream_id: str, timeout_ms: int = 1000) -> dict[str, _Any]:
         """Mic level unsubscribe."""
-        return await self.command("microphone.level.unsubscribe", {"stream_id": stream_id}, timeout_ms=int(timeout_ms))
+        return await self.command(
+            "microphone.level.unsubscribe",
+            {"stream_id": stream_id},
+            timeout_ms=timeout_ms,
+        )
 
     @_async_task
     async def mic_vad_set(self, enabled: bool, threshold: float = 0.02,
@@ -328,8 +347,12 @@ class ClientModSession:
         """Mic vad set."""
         return await self.command(
             "microphone.vad.set",
-            {"enabled": bool(enabled), "threshold": float(threshold), "min_speech_ms": int(min_speech_ms)},
-            timeout_ms=int(timeout_ms),
+            {
+                "enabled": enabled,
+                "threshold": threshold,
+                "min_speech_ms": min_speech_ms,
+            },
+            timeout_ms=timeout_ms,
         )
 
     @_async_task
@@ -338,31 +361,41 @@ class ClientModSession:
         """Audio stream set volume."""
         return await self.command(
             "audio.stream.set_volume",
-            {"stream_id": stream_id, "volume": float(volume)},
-            timeout_ms=int(timeout_ms),
+            {"stream_id": stream_id, "volume": volume},
+            timeout_ms=timeout_ms,
         )
 
     @_async_task
     async def audio_stream_pause(self, stream_id: str, timeout_ms: int = 1000) -> dict[str, _Any]:
         """Audio stream pause."""
-        return await self.command("audio.stream.pause", {"stream_id": stream_id}, timeout_ms=int(timeout_ms))
+        return await self.command(
+            "audio.stream.pause", {"stream_id": stream_id}, timeout_ms=timeout_ms
+        )
 
     @_async_task
     async def audio_stream_resume(self, stream_id: str, timeout_ms: int = 1000) -> dict[str, _Any]:
         """Audio stream resume."""
-        return await self.command("audio.stream.resume", {"stream_id": stream_id}, timeout_ms=int(timeout_ms))
+        return await self.command(
+            "audio.stream.resume", {"stream_id": stream_id}, timeout_ms=timeout_ms
+        )
 
     @_async_task
     async def voice_subscribe(self, stream_id: str, source_player: str | None = None,
             mix: bool = False, timeout_ms: int = 1000) -> dict[str, _Any]:
         """Voice subscribe."""
-        args = {"stream_id": stream_id, "source_player": source_player or "", "mix": bool(mix)}
-        return await self.command("voice.subscribe", args, timeout_ms=int(timeout_ms))
+        args = {
+            "stream_id": stream_id,
+            "source_player": source_player or "",
+            "mix": mix,
+        }
+        return await self.command("voice.subscribe", args, timeout_ms=timeout_ms)
 
     @_async_task
     async def voice_unsubscribe(self, stream_id: str, timeout_ms: int = 1000) -> dict[str, _Any]:
         """Voice unsubscribe."""
-        return await self.command("voice.unsubscribe", {"stream_id": stream_id}, timeout_ms=int(timeout_ms))
+        return await self.command(
+            "voice.unsubscribe", {"stream_id": stream_id}, timeout_ms=timeout_ms
+        )
 
     @_async_task
     async def ui_prompt_confirm(self, title: str | None = None, message: str | None = None,
@@ -371,20 +404,24 @@ class ClientModSession:
         args = {
             "title": title or "",
             "message": message or "",
-            "remember_option": bool(remember_option),
-            "timeout_ms": int(timeout_ms),
+            "remember_option": remember_option,
+            "timeout_ms": timeout_ms,
         }
-        return await self.command("ui.prompt.confirm", args, timeout_ms=int(timeout_ms))
+        return await self.command("ui.prompt.confirm", args, timeout_ms=timeout_ms)
 
     @_async_task
     async def client_pref_set(self, key: str, value: _Any, timeout_ms: int = 1000) -> dict[str, _Any]:
         """Client pref set."""
-        return await self.command("client.pref.set", {"key": key, "value": value}, timeout_ms=int(timeout_ms))
+        return await self.command(
+            "client.pref.set", {"key": key, "value": value}, timeout_ms=timeout_ms
+        )
 
     @_async_task
     async def client_pref_get(self, key: str, timeout_ms: int = 1000) -> dict[str, _Any]:
         """Client pref get."""
-        return await self.command("client.pref.get", {"key": key}, timeout_ms=int(timeout_ms))
+        return await self.command(
+            "client.pref.get", {"key": key}, timeout_ms=timeout_ms
+        )
 
 class ClientMod:
     """High-level client_mod entrypoint.
@@ -463,4 +500,4 @@ class ClientMod:
         _connection.on("client_mod_permission", handler)
         return handler
 
-client_mod = ClientMod()
+client = ClientMod()
