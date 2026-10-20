@@ -1,540 +1,113 @@
-<!DOCTYPE html>
-<html lang="en" data-site-prefix="/PyJavaBridge/">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Decorators — PyJavaBridge</title>
-  <meta property="og:title" content="Decorators — PyJavaBridge">
-  <meta name="description" content="Register event handlers, commands, and repeating tasks">
-  <meta property="og:description" content="Register event handlers, commands, and repeating tasks">
-  <meta property="og:type" content="website">
-  <meta property="og:site_name" content="PyJavaBridge Docs">
-  <meta name="theme-color" content="#6366f1">
-  <meta name="color-scheme" content="dark">
-  <link rel="icon" href="favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="style.css">
-  <link rel="stylesheet" href="fonts.css" media="print" onload="this.media='all'">
-</head>
-<body>
-  <!-- Header -->
-  <header class="site-header">
-    <button class="menu-toggle" aria-label="Toggle menu">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24" aria-hidden="true">
-        <path d="M3 12h18M3 6h18M3 18h18"/>
-      </svg>
-    </button>
-    <div class="header-brand-row">
-      <a rel="prefetch" href="getting_started/index.html" class="header-brand">
-          <span class="logo">P</span>
-          PyJavaBridge
-      </a>
-      <div class="version-selector-wrap">  <select id="version-selector" class="version-selector" aria-label="Select version">    {config.get("_version_options", "")}  </select></div>
-    </div>
-    <div class="header-search">
-      <svg class="header-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24" aria-hidden="true">  <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg><input type="text" id="header-search" placeholder="Search docs… (Ctrl+K)" autocomplete="off"><div id="search-results" class="search-results"></div>
-    </div>
-    <nav class="header-nav">
-      <a rel="prefetch" href="getting_started/index.html">Docs</a>
-    </nav>
-  </header>
-
-  <!-- Sidebar -->
-  <aside class="sidebar">
-<div class="search-box">
-  <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20" aria-hidden="true">
-    <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
-  </svg>
-  <input type="text" id="sidebar-search" placeholder="Search docs…">
-</div>
-<div class="sidebar-section">
-  <div class="sidebar-heading" data-section="getting-started">Getting Started</div>
-  <ul class="sidebar-links">
-    <li><a rel="prefetch" href="getting_started/index.html">Home</a></li>
-    <li><a rel="prefetch" href="getting_started/getting_started/decorators.html" class="active">Decorators</a></li>
-    <li><a rel="prefetch" href="getting_started/exceptions.html">Exceptions</a></li>
-    <li><a rel="prefetch" href="getting_started/examples.html">Examples</a></li>
-  </ul>
-</div>
-<div class="sidebar-section">
-  <div class="sidebar-heading collapsed" data-section="core">Core</div>
-  <ul class="sidebar-links">
-    <li><a rel="prefetch" href="core/server.html">Server</a></li>
-    <li><a rel="prefetch" href="core/event.html">Event</a></li>
-    <li><a rel="prefetch" href="core/entity.html">Entity</a></li>
-    <li><a rel="prefetch" href="core/entitysubtypes.html">Entity Subtypes</a></li>
-    <li><a rel="prefetch" href="core/player.html">Player</a></li>
-  </ul>
-</div>
-<div class="sidebar-section">
-  <div class="sidebar-heading collapsed" data-section="world-space">World & Space</div>
-  <ul class="sidebar-links">
-    <li><a rel="prefetch" href="world/world.html">World</a></li>
-    <li><a rel="prefetch" href="world/location.html">Location</a></li>
-    <li><a rel="prefetch" href="world/block.html">Block</a></li>
-    <li><a rel="prefetch" href="world/blocksnapshot.html">BlockSnapshot</a></li>
-    <li><a rel="prefetch" href="world/chunk.html">Chunk</a></li>
-    <li><a rel="prefetch" href="world/vector.html">Vector</a></li>
-  </ul>
-</div>
-<div class="sidebar-section">
-  <div class="sidebar-heading collapsed" data-section="items-inventory">Items & Inventory</div>
-  <ul class="sidebar-links">
-    <li><a rel="prefetch" href="items/item.html">Item</a></li>
-    <li><a rel="prefetch" href="items/itembuilder.html">ItemBuilder</a></li>
-    <li><a rel="prefetch" href="items/inventory.html">Inventory</a></li>
-    <li><a rel="prefetch" href="items/recipe.html">Recipe</a></li>
-  </ul>
-</div>
-<div class="sidebar-section">
-  <div class="sidebar-heading collapsed" data-section="effects-attributes">Effects & Attributes</div>
-  <ul class="sidebar-links">
-    <li><a rel="prefetch" href="effects/effect.html">Effect</a></li>
-    <li><a rel="prefetch" href="effects/potion.html">Potion</a></li>
-    <li><a rel="prefetch" href="effects/attribute.html">Attribute</a></li>
-    <li><a rel="prefetch" href="effects/advancement.html">Advancement</a></li>
-    <li><a rel="prefetch" href="effects/firework.html">Firework</a></li>
-    <li><a rel="prefetch" href="effects/textcomponent.html">TextComponent</a></li>
-    <li><a rel="prefetch" href="effects/bookbuilder.html">BookBuilder</a></li>
-  </ul>
-</div>
-<div class="sidebar-section">
-  <div class="sidebar-heading collapsed" data-section="scoreboards-ui">Scoreboards & UI</div>
-  <ul class="sidebar-links">
-    <li><a rel="prefetch" href="ui/menu.html">Menu</a></li>
-    <li><a rel="prefetch" href="ui/menuitem.html">MenuItem</a></li>
-    <li><a rel="prefetch" href="ui/sidebar.html">Sidebar</a></li>
-    <li><a rel="prefetch" href="ui/actionbardisplay.html">ActionBarDisplay</a></li>
-    <li><a rel="prefetch" href="ui/bossbardisplay.html">BossBarDisplay</a></li>
-    <li><a rel="prefetch" href="ui/bossbar.html">BossBar</a></li>
-    <li><a rel="prefetch" href="ui/scoreboard.html">Scoreboard</a></li>
-    <li><a rel="prefetch" href="ui/objective.html">Objective</a></li>
-    <li><a rel="prefetch" href="ui/team.html">Team</a></li>
-  </ul>
-</div>
-<div class="sidebar-section">
-  <div class="sidebar-heading collapsed" data-section="helpers">Helpers</div>
-  <ul class="sidebar-links">
-    <li><a rel="prefetch" href="helpers/config.html">Config</a></li>
-    <li><a rel="prefetch" href="helpers/state.html">State</a></li>
-    <li><a rel="prefetch" href="helpers/cooldown.html">Cooldown</a></li>
-    <li><a rel="prefetch" href="helpers/paginator.html">Paginator</a></li>
-    <li><a rel="prefetch" href="helpers/enums.html">Enums</a></li>
-    <li><a rel="prefetch" href="helpers/enumvalue.html">EnumValue</a></li>
-  </ul>
-</div>
-<div class="sidebar-section">
-  <div class="sidebar-heading collapsed" data-section="display-entities">Display Entities</div>
-  <ul class="sidebar-links">
-    <li><a rel="prefetch" href="display/hologram.html">Hologram</a></li>
-    <li><a rel="prefetch" href="display/blockdisplay.html">BlockDisplay</a></li>
-    <li><a rel="prefetch" href="display/itemdisplay.html">ItemDisplay</a></li>
-  </ul>
-</div>
-<div class="sidebar-section">
-  <div class="sidebar-heading collapsed" data-section="extensions">Extensions</div>
-  <ul class="sidebar-links">
-    <li><a rel="prefetch" href="extensions/imagedisplay.html">ImageDisplay</a></li>
-    <li><a rel="prefetch" href="extensions/meshdisplay.html">MeshDisplay</a></li>
-    <li><a rel="prefetch" href="extensions/npc.html">NPC</a></li>
-    <li><a rel="prefetch" href="extensions/quest.html">Quest</a></li>
-    <li><a rel="prefetch" href="extensions/dialog.html">Dialog</a></li>
-    <li><a rel="prefetch" href="extensions/bank.html">Bank</a></li>
-    <li><a rel="prefetch" href="extensions/shop.html">Shop</a></li>
-    <li><a rel="prefetch" href="extensions/trade.html">TradeWindow</a></li>
-    <li><a rel="prefetch" href="extensions/ability.html">Ability</a></li>
-    <li><a rel="prefetch" href="extensions/mana.html">ManaStore</a></li>
-    <li><a rel="prefetch" href="extensions/combat.html">CombatSystem</a></li>
-    <li><a rel="prefetch" href="extensions/levels.html">LevelSystem</a></li>
-    <li><a rel="prefetch" href="extensions/region.html">Region</a></li>
-    <li><a rel="prefetch" href="extensions/party.html">Party</a></li>
-    <li><a rel="prefetch" href="extensions/guild.html">Guild</a></li>
-    <li><a rel="prefetch" href="extensions/customitem.html">CustomItem</a></li>
-    <li><a rel="prefetch" href="extensions/leaderboard.html">Leaderboard</a></li>
-    <li><a rel="prefetch" href="extensions/visualeffect.html">VisualEffect</a></li>
-    <li><a rel="prefetch" href="extensions/playerdatastore.html">PlayerDataStore</a></li>
-    <li><a rel="prefetch" href="extensions/dungeon.html">Dungeon</a></li>
-    <li><a rel="prefetch" href="extensions/tablist.html">TabList</a></li>
-    <li><a rel="prefetch" href="extensions/statemachine.html">StateMachine</a></li>
-    <li><a rel="prefetch" href="extensions/scheduler.html">Scheduler</a></li>
-    <li><a rel="prefetch" href="extensions/placeholder.html">Placeholder</a></li>
-    <li><a rel="prefetch" href="extensions/loottable.html">LootTable</a></li>
-    <li><a rel="prefetch" href="extensions/clientmod.html">ClientMod</a></li>
-  </ul>
-</div>
-<div class="sidebar-section">
-  <div class="sidebar-heading collapsed" data-section="utilities">Utilities</div>
-  <ul class="sidebar-links">
-    <li><a rel="prefetch" href="utilities/raycast.html">Raycast</a></li>
-    <li><a rel="prefetch" href="utilities/chat.html">Chat</a></li>
-    <li><a rel="prefetch" href="utilities/reflect.html">Reflect</a></li>
-  </ul>
-</div>
-<div class="sidebar-section">
-  <div class="sidebar-heading collapsed" data-section="internals">Internals</div>
-  <ul class="sidebar-links">
-    <li><a rel="prefetch" href="internals/bridge.html">Bridge</a></li>
-    <li><a rel="prefetch" href="internals/events_internal.html">Events</a></li>
-    <li><a rel="prefetch" href="internals/execution.html">Execution</a></li>
-    <li><a rel="prefetch" href="internals/serialization.html">Serialization</a></li>
-    <li><a rel="prefetch" href="internals/lifecycle.html">Lifecycle</a></li>
-    <li><a rel="prefetch" href="internals/debugging.html">Debugging</a></li>
-  </ul>
-</div>
-  </aside>
-  <div class="sidebar-overlay"></div>
-
-  <!-- Main -->
-  <main class="main">
-    <div class="content">
-      <p class="subtitle">Register event handlers, commands, and repeating tasks</p>
-      <h1>Decorators</h1>
-<p>PyJavaBridge uses Python decorators to register event handlers, commands, and repeating tasks. Your decorated functions are discovered automatically when the script loads.</p>
-<hr />
-<h2>@event</h2>
-<pre><code class="language-python"><span class="hl-function">@</span><span class="hl-function">event</span>
-<span class="hl-keyword">async</span> <span class="hl-keyword">def</span> <span class="hl-function">player_join</span>(<span class="hl-variable">e</span>):
-    <span class="hl-keyword">await</span> <span class="hl-variable">e</span>.<span class="hl-property">player</span>.<span class="hl-property">send_message</span>(<span class="hl-string">&quot;Welcome!&quot;</span>)
-</code></pre>
-<p>Register a function as an event handler. The function name determines the event type — it is converted from <code>snake_case</code> to <code>PascalCase</code> and <code><a rel="prefetch" href="core/event.html" class="filename-reference">Event</a></code> is appended. For example, <code>player_join</code> becomes <code>PlayerJoinEvent</code>.</p>
-<h3>Signature</h3>
-<pre><code class="language-py"><span class="hl-function">@</span><span class="hl-function">event</span><span class="hl-function">(</span><span class="hl-operator">*</span><span class="hl-function">, </span><span class="hl-variable">once_per_tick</span><span class="hl-operator">=</span><span class="hl-constant-builtin">False</span><span class="hl-function">, </span><span class="hl-variable">priority</span><span class="hl-operator">=</span><span class="hl-string">&quot;NORMAL&quot;</span><span class="hl-function">, </span><span class="hl-variable">throttle_ms</span><span class="hl-operator">=</span><span class="hl-number">0</span><span class="hl-function">)</span>
-</code></pre>
-<h3>Parameters</h3>
-<h4>once_per_tick</h4>
-<ul>
-<li><strong>Type:</strong> <code>bool</code></li>
-<li><strong>Default:</strong> <code>False</code></li>
-</ul>
-<p>When <code>True</code>, the handler is called at most once per server tick, even if the event fires multiple times. Useful for high-frequency events like <code>player_move</code>.</p>
-<pre><code class="language-python"><span class="hl-function">@</span><span class="hl-function">event</span><span class="hl-function">(</span><span class="hl-variable">once_per_tick</span><span class="hl-operator">=</span><span class="hl-constant-builtin">True</span><span class="hl-function">)</span>
-<span class="hl-keyword">async</span> <span class="hl-keyword">def</span> <span class="hl-function">player_move</span>(<span class="hl-variable">e</span>):
-    <span class="hl-comment"># Called at most once per tick per event, not every micro-movement</span>
-    <span class="hl-keyword">pass</span>
-</code></pre>
-<h4>priority</h4>
-<ul>
-<li><strong>Type:</strong> <code>str</code></li>
-<li><strong>Default:</strong> <code>&quot;NORMAL&quot;</code></li>
-</ul>
-<p>The Bukkit event priority. Determines the order in which handlers run. Options (lowest runs first):</p>
-<table>
-<thead>
-<tr>
-<th>Priority</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>LOWEST</code></td>
-<td>Runs first. Use for early cancellation.</td>
-</tr>
-<tr>
-<td><code>LOW</code></td>
-<td>Runs before normal handlers.</td>
-</tr>
-<tr>
-<td><code>NORMAL</code></td>
-<td>Default priority.</td>
-</tr>
-<tr>
-<td><code>HIGH</code></td>
-<td>Runs after normal handlers.</td>
-</tr>
-<tr>
-<td><code>HIGHEST</code></td>
-<td>Runs last before monitor.</td>
-</tr>
-<tr>
-<td><code>MONITOR</code></td>
-<td>Read-only observation. Do not modify the event.</td>
-</tr>
-</tbody>
-</table>
-<pre><code class="language-python"><span class="hl-function">@</span><span class="hl-function">event</span><span class="hl-function">(</span><span class="hl-variable">priority</span><span class="hl-operator">=</span><span class="hl-string">&quot;HIGH&quot;</span><span class="hl-function">)</span>
-<span class="hl-keyword">async</span> <span class="hl-keyword">def</span> <span class="hl-function">block_break</span>(<span class="hl-variable">e</span>):
-    <span class="hl-comment"># This runs after NORMAL-priority handlers</span>
-    <span class="hl-keyword">pass</span>
-</code></pre>
-<h4>throttle_ms</h4>
-<ul>
-<li><strong>Type:</strong> <code>int</code></li>
-<li><strong>Default:</strong> <code>0</code></li>
-</ul>
-<p>Minimum milliseconds between handler invocations. If the event fires more frequently, extra invocations are silently dropped.</p>
-<pre><code class="language-python"><span class="hl-function">@</span><span class="hl-function">event</span><span class="hl-function">(</span><span class="hl-variable">throttle_ms</span><span class="hl-operator">=</span><span class="hl-number">500</span><span class="hl-function">)</span>
-<span class="hl-keyword">async</span> <span class="hl-keyword">def</span> <span class="hl-function">player_interact</span>(<span class="hl-variable">e</span>):
-    <span class="hl-comment"># At most once every 500ms, prevents spam-clicking abuse</span>
-    <span class="hl-keyword">pass</span>
-</code></pre>
-<h3>Bare decorator</h3>
-<p>You can use <code>@<a rel="prefetch" href="core/event.html" class="filename-reference">event</a></code> without parentheses for the default settings:</p>
-<pre><code class="language-python"><span class="hl-function">@</span><span class="hl-function">event</span>
-<span class="hl-keyword">async</span> <span class="hl-keyword">def</span> <span class="hl-function">player_quit</span>(<span class="hl-variable">e</span>):
-    <span class="hl-keyword">await</span> <span class="hl-variable">server</span>.<span class="hl-property">broadcast</span>(<span class="hl-string">f&quot;</span><span class="hl-punctuation-special">{</span><span class="hl-variable">e</span><span class="hl-string">.</span><span class="hl-property">player</span><span class="hl-string">.</span><span class="hl-property">name</span><span class="hl-punctuation-special">}</span><span class="hl-string"> left!&quot;</span>)
-</code></pre>
-<hr />
-<h2>@command</h2>
-<pre><code class="language-python"><span class="hl-function">@</span><span class="hl-function">command</span><span class="hl-function">(</span><span class="hl-string">&quot;Greet a player&quot;</span><span class="hl-function">, </span><span class="hl-variable">permission</span><span class="hl-operator">=</span><span class="hl-string">&quot;myplugin.greet&quot;</span><span class="hl-function">)</span>
-<span class="hl-keyword">async</span> <span class="hl-keyword">def</span> <span class="hl-function">greet</span>(<span class="hl-variable">e</span>):
-    <span class="hl-keyword">await</span> <span class="hl-variable">e</span>.<span class="hl-property">player</span>.<span class="hl-property">send_message</span>(<span class="hl-string">&quot;Hello!&quot;</span>)
-</code></pre>
-<p>Register a function as a script command. The command is automatically available as <code>/functionname</code> (or as specified via the <code>name</code> parameter). Command arguments are parsed from the function's additional parameters after <code><a rel="prefetch" href="core/event.html" class="filename-reference">event</a></code>.</p>
-<h3>Signature</h3>
-<pre><code class="language-py"><span class="hl-function">@</span><span class="hl-function">command</span><span class="hl-function">(</span><span class="hl-variable">description</span><span class="hl-operator">=</span><span class="hl-constant-builtin">None</span><span class="hl-function">, </span><span class="hl-operator">*</span><span class="hl-function">, </span><span class="hl-variable">name</span><span class="hl-operator">=</span><span class="hl-constant-builtin">None</span><span class="hl-function">, </span><span class="hl-variable">permission</span><span class="hl-operator">=</span><span class="hl-constant-builtin">None</span><span class="hl-function">, </span><span class="hl-variable">tab_complete</span><span class="hl-operator">=</span><span class="hl-constant-builtin">None</span><span class="hl-function">)</span>
-</code></pre>
-<h3>Parameters</h3>
-<h4>description</h4>
-<ul>
-<li><strong>Type:</strong> <code>str | None</code></li>
-<li><strong>Default:</strong> <code>None</code></li>
-</ul>
-<p>A human-readable description of the command. This is the first positional argument.</p>
-<pre><code class="language-python"><span class="hl-function">@</span><span class="hl-function">command</span><span class="hl-function">(</span><span class="hl-string">&quot;Teleport to spawn&quot;</span><span class="hl-function">)</span>
-<span class="hl-keyword">async</span> <span class="hl-keyword">def</span> <span class="hl-function">spawn</span>(<span class="hl-variable">e</span>):
-    ...
-</code></pre>
-<h4>name</h4>
-<ul>
-<li><strong>Type:</strong> <code>str | None</code></li>
-<li><strong>Default:</strong> <code>None</code> (uses function name)</li>
-</ul>
-<p>Override the command name. By default the function name is used. If the function name starts with <code>cmd_</code>, the prefix is automatically stripped.</p>
-<pre><code class="language-python"><span class="hl-function">@</span><span class="hl-function">command</span><span class="hl-function">(</span><span class="hl-string">&quot;Teleport home&quot;</span><span class="hl-function">, </span><span class="hl-variable">name</span><span class="hl-operator">=</span><span class="hl-string">&quot;home&quot;</span><span class="hl-function">)</span>
-<span class="hl-keyword">async</span> <span class="hl-keyword">def</span> <span class="hl-function">teleport_home</span>(<span class="hl-variable">e</span>):
-    <span class="hl-comment"># Registered as /home, not /teleport_home</span>
-    ...
-</code></pre>
-<pre><code class="language-python"><span class="hl-function">@</span><span class="hl-function">command</span><span class="hl-function">(</span><span class="hl-string">&quot;Greet a player&quot;</span><span class="hl-function">)</span>
-<span class="hl-keyword">async</span> <span class="hl-keyword">def</span> <span class="hl-function">cmd_greet</span>(<span class="hl-variable">e</span>):
-    <span class="hl-comment"># Registered as /greet, not /cmd_greet</span>
-    <span class="hl-keyword">await</span> <span class="hl-variable">e</span>.<span class="hl-property">player</span>.<span class="hl-property">send_message</span>(<span class="hl-string">&quot;Hello!&quot;</span>)
-</code></pre>
-<h4>permission</h4>
-<ul>
-<li><strong>Type:</strong> <code>str | None</code></li>
-<li><strong>Default:</strong> <code>None</code></li>
-</ul>
-<p>Permission node required to use the command. Players without this permission cannot execute it.</p>
-<pre><code class="language-python"><span class="hl-function">@</span><span class="hl-function">command</span><span class="hl-function">(</span><span class="hl-string">&quot;Ban a player&quot;</span><span class="hl-function">, </span><span class="hl-variable">permission</span><span class="hl-operator">=</span><span class="hl-string">&quot;admin.ban&quot;</span><span class="hl-function">)</span>
-<span class="hl-keyword">async</span> <span class="hl-keyword">def</span> <span class="hl-function">ban</span>(<span class="hl-variable">e</span>, <span class="hl-variable">target</span>: <span class="hl-type">str</span>):
-    ...
-</code></pre>
-<h4>tab_complete</h4>
-<ul>
-<li><strong>Type:</strong> <code>dict&#91;int, list&#91;str&#93;&#93; | None</code></li>
-<li><strong>Default:</strong> <code>None</code></li>
-</ul>
-<p>Static tab completion suggestions per argument position (0-indexed). Use <code>-1</code> as a wildcard for all positions without their own entry. For dynamic completions, see the <code>@my_command.tab_complete</code> decorator below.</p>
-<pre><code class="language-python"><span class="hl-function">@</span><span class="hl-function">command</span><span class="hl-function">(</span><span class="hl-string">&quot;Set game mode&quot;</span><span class="hl-function">, </span><span class="hl-variable">tab_complete</span><span class="hl-operator">=</span><span class="hl-function">{
-    </span><span class="hl-number">0</span><span class="hl-function">: [</span><span class="hl-string">&quot;survival&quot;</span><span class="hl-function">, </span><span class="hl-string">&quot;creative&quot;</span><span class="hl-function">, </span><span class="hl-string">&quot;adventure&quot;</span><span class="hl-function">, </span><span class="hl-string">&quot;spectator&quot;</span><span class="hl-function">]
+<!DOCTYPE html><html lang=en data-site-prefix=/PyJavaBridge/><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Decorators — PyJavaBridge</title><meta property=og:title content="Decorators — PyJavaBridge"><meta name=description content="Register event handlers, commands, and repeating tasks"><meta property=og:description content="Register event handlers, commands, and repeating tasks"><meta property=og:type content=website><meta property=og:site_name content="PyJavaBridge Docs"><meta name=theme-color content=#6366f1><meta name=color-scheme content=dark><link rel=icon href=/PyJavaBridge/favicon.svg type=image/svg+xml><link rel=stylesheet href=/PyJavaBridge/style.css><link rel=stylesheet href=/PyJavaBridge/fonts.css media=print onload='this.media="all"'></head><body><header class=site-header><button class=menu-toggle aria-label="Toggle menu"><svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" viewBox="0 0 24 24"><path d="M3 12h18M3 6h18M3 18h18"/></svg></button><div class=header-brand-row><a rel=prefetch href=/PyJavaBridge/getting_started/index.html class=header-brand><span class=logo>P</span> PyJavaBridge</a><div class=version-selector-wrap><select id=version-selector class=version-selector aria-label="Select version">{config.get("_version_options", "")}</select></div></div><div class=header-search><svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" class="header-search-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg><input type=text id=header-search placeholder="Search docs… (Ctrl+K)"autocomplete=off><div id=search-results class=search-results></div></div><nav class=header-nav><a rel=prefetch href=/PyJavaBridge/getting_started/index.html>Docs</a></nav></header><aside class=sidebar><div class=search-box><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" class="search-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg> <input type=text id=sidebar-search placeholder="Search docs…"></div><div class=sidebar-section><div class=sidebar-heading data-section=getting-started>Getting Started</div><ul class=sidebar-links><li><a rel=prefetch href=/PyJavaBridge/getting_started/index.html>Home</a></li><li><a rel=prefetch href=/PyJavaBridge/getting_started/getting_started/decorators.html class=active>Decorators</a></li><li><a rel=prefetch href=/PyJavaBridge/getting_started/exceptions.html>Exceptions</a></li><li><a rel=prefetch href=/PyJavaBridge/getting_started/examples.html>Examples</a></li></ul></div><div class=sidebar-section><div class="sidebar-heading collapsed"data-section=core>Core</div><ul class=sidebar-links><li><a rel=prefetch href=/PyJavaBridge/core/server.html>Server</a></li><li><a rel=prefetch href=/PyJavaBridge/core/event.html>Event</a></li><li><a rel=prefetch href=/PyJavaBridge/core/entity.html>Entity</a></li><li><a rel=prefetch href=/PyJavaBridge/core/entitysubtypes.html>Entity Subtypes</a></li><li><a rel=prefetch href=/PyJavaBridge/core/player.html>Player</a></li></ul></div><div class=sidebar-section><div class="sidebar-heading collapsed"data-section=world-space>World & Space</div><ul class=sidebar-links><li><a rel=prefetch href=/PyJavaBridge/world/world.html>World</a></li><li><a rel=prefetch href=/PyJavaBridge/world/location.html>Location</a></li><li><a rel=prefetch href=/PyJavaBridge/world/block.html>Block</a></li><li><a rel=prefetch href=/PyJavaBridge/world/blocksnapshot.html>BlockSnapshot</a></li><li><a rel=prefetch href=/PyJavaBridge/world/chunk.html>Chunk</a></li><li><a rel=prefetch href=/PyJavaBridge/world/vector.html>Vector</a></li></ul></div><div class=sidebar-section><div class="sidebar-heading collapsed"data-section=items-inventory>Items & Inventory</div><ul class=sidebar-links><li><a rel=prefetch href=/PyJavaBridge/items/item.html>Item</a></li><li><a rel=prefetch href=/PyJavaBridge/items/itembuilder.html>ItemBuilder</a></li><li><a rel=prefetch href=/PyJavaBridge/items/inventory.html>Inventory</a></li><li><a rel=prefetch href=/PyJavaBridge/items/recipe.html>Recipe</a></li></ul></div><div class=sidebar-section><div class="sidebar-heading collapsed"data-section=effects-attributes>Effects & Attributes</div><ul class=sidebar-links><li><a rel=prefetch href=/PyJavaBridge/effects/effect.html>Effect</a></li><li><a rel=prefetch href=/PyJavaBridge/effects/potion.html>Potion</a></li><li><a rel=prefetch href=/PyJavaBridge/effects/attribute.html>Attribute</a></li><li><a rel=prefetch href=/PyJavaBridge/effects/advancement.html>Advancement</a></li><li><a rel=prefetch href=/PyJavaBridge/effects/firework.html>Firework</a></li><li><a rel=prefetch href=/PyJavaBridge/effects/textcomponent.html>TextComponent</a></li><li><a rel=prefetch href=/PyJavaBridge/effects/bookbuilder.html>BookBuilder</a></li></ul></div><div class=sidebar-section><div class="sidebar-heading collapsed"data-section=scoreboards-ui>Scoreboards & UI</div><ul class=sidebar-links><li><a rel=prefetch href=/PyJavaBridge/ui/menu.html>Menu</a></li><li><a rel=prefetch href=/PyJavaBridge/ui/menuitem.html>MenuItem</a></li><li><a rel=prefetch href=/PyJavaBridge/ui/sidebar.html>Sidebar</a></li><li><a rel=prefetch href=/PyJavaBridge/ui/actionbardisplay.html>ActionBarDisplay</a></li><li><a rel=prefetch href=/PyJavaBridge/ui/bossbardisplay.html>BossBarDisplay</a></li><li><a rel=prefetch href=/PyJavaBridge/ui/bossbar.html>BossBar</a></li><li><a rel=prefetch href=/PyJavaBridge/ui/scoreboard.html>Scoreboard</a></li><li><a rel=prefetch href=/PyJavaBridge/ui/objective.html>Objective</a></li><li><a rel=prefetch href=/PyJavaBridge/ui/team.html>Team</a></li></ul></div><div class=sidebar-section><div class="sidebar-heading collapsed"data-section=helpers>Helpers</div><ul class=sidebar-links><li><a rel=prefetch href=/PyJavaBridge/helpers/config.html>Config</a></li><li><a rel=prefetch href=/PyJavaBridge/helpers/state.html>State</a></li><li><a rel=prefetch href=/PyJavaBridge/helpers/cooldown.html>Cooldown</a></li><li><a rel=prefetch href=/PyJavaBridge/helpers/paginator.html>Paginator</a></li><li><a rel=prefetch href=/PyJavaBridge/helpers/enums.html>Enums</a></li><li><a rel=prefetch href=/PyJavaBridge/helpers/enumvalue.html>EnumValue</a></li></ul></div><div class=sidebar-section><div class="sidebar-heading collapsed"data-section=display-entities>Display Entities</div><ul class=sidebar-links><li><a rel=prefetch href=/PyJavaBridge/display/hologram.html>Hologram</a></li><li><a rel=prefetch href=/PyJavaBridge/display/blockdisplay.html>BlockDisplay</a></li><li><a rel=prefetch href=/PyJavaBridge/display/itemdisplay.html>ItemDisplay</a></li></ul></div><div class=sidebar-section><div class="sidebar-heading collapsed"data-section=extensions>Extensions</div><ul class=sidebar-links><li><a rel=prefetch href=/PyJavaBridge/extensions/imagedisplay.html>ImageDisplay</a></li><li><a rel=prefetch href=/PyJavaBridge/extensions/meshdisplay.html>MeshDisplay</a></li><li><a rel=prefetch href=/PyJavaBridge/extensions/npc.html>NPC</a></li><li><a rel=prefetch href=/PyJavaBridge/extensions/quest.html>Quest</a></li><li><a rel=prefetch href=/PyJavaBridge/extensions/dialog.html>Dialog</a></li><li><a rel=prefetch href=/PyJavaBridge/extensions/bank.html>Bank</a></li><li><a rel=prefetch href=/PyJavaBridge/extensions/shop.html>Shop</a></li><li><a rel=prefetch href=/PyJavaBridge/extensions/trade.html>TradeWindow</a></li><li><a rel=prefetch href=/PyJavaBridge/extensions/ability.html>Ability</a></li><li><a rel=prefetch href=/PyJavaBridge/extensions/mana.html>ManaStore</a></li><li><a rel=prefetch href=/PyJavaBridge/extensions/combat.html>CombatSystem</a></li><li><a rel=prefetch href=/PyJavaBridge/extensions/levels.html>LevelSystem</a></li><li><a rel=prefetch href=/PyJavaBridge/extensions/region.html>Region</a></li><li><a rel=prefetch href=/PyJavaBridge/extensions/party.html>Party</a></li><li><a rel=prefetch href=/PyJavaBridge/extensions/guild.html>Guild</a></li><li><a rel=prefetch href=/PyJavaBridge/extensions/customitem.html>CustomItem</a></li><li><a rel=prefetch href=/PyJavaBridge/extensions/leaderboard.html>Leaderboard</a></li><li><a rel=prefetch href=/PyJavaBridge/extensions/visualeffect.html>VisualEffect</a></li><li><a rel=prefetch href=/PyJavaBridge/extensions/playerdatastore.html>PlayerDataStore</a></li><li><a rel=prefetch href=/PyJavaBridge/extensions/dungeon.html>Dungeon</a></li><li><a rel=prefetch href=/PyJavaBridge/extensions/tablist.html>TabList</a></li><li><a rel=prefetch href=/PyJavaBridge/extensions/statemachine.html>StateMachine</a></li><li><a rel=prefetch href=/PyJavaBridge/extensions/scheduler.html>Scheduler</a></li><li><a rel=prefetch href=/PyJavaBridge/extensions/placeholder.html>Placeholder</a></li><li><a rel=prefetch href=/PyJavaBridge/extensions/loottable.html>LootTable</a></li><li><a rel=prefetch href=/PyJavaBridge/extensions/clientmod.html>ClientMod</a></li></ul></div><div class=sidebar-section><div class="sidebar-heading collapsed"data-section=utilities>Utilities</div><ul class=sidebar-links><li><a rel=prefetch href=/PyJavaBridge/utilities/raycast.html>Raycast</a></li><li><a rel=prefetch href=/PyJavaBridge/utilities/chat.html>Chat</a></li><li><a rel=prefetch href=/PyJavaBridge/utilities/reflect.html>Reflect</a></li></ul></div><div class=sidebar-section><div class="sidebar-heading collapsed"data-section=internals>Internals</div><ul class=sidebar-links><li><a rel=prefetch href=/PyJavaBridge/internals/bridge.html>Bridge</a></li><li><a rel=prefetch href=/PyJavaBridge/internals/events_internal.html>Events</a></li><li><a rel=prefetch href=/PyJavaBridge/internals/execution.html>Execution</a></li><li><a rel=prefetch href=/PyJavaBridge/internals/serialization.html>Serialization</a></li><li><a rel=prefetch href=/PyJavaBridge/internals/lifecycle.html>Lifecycle</a></li><li><a rel=prefetch href=/PyJavaBridge/internals/debugging.html>Debugging</a></li></ul></div></aside><div class=sidebar-overlay></div><main class=main><div class=content><p class=subtitle>Register event handlers, commands, and repeating tasks</p><h1>Decorators</h1><p>PyJavaBridge uses Python decorators to register event handlers, commands, and repeating tasks. Your decorated functions are discovered automatically when the script loads.</p><hr><h2>@event</h2><pre><code class=language-python><span class=hl-function>@</span><span class=hl-function>event</span>
+<span class=hl-keyword>async</span> <span class=hl-keyword>def</span> <span class=hl-function>player_join</span>(<span class=hl-variable>e</span>):
+    <span class=hl-keyword>await</span> <span class=hl-variable>e</span>.<span class=hl-property>player</span>.<span class=hl-property>send_message</span>(<span class=hl-string>&quot;Welcome!&quot;</span>)</code></pre><p>Register a function as an event handler. The function name determines the event type — it is converted from <code>snake_case</code> to <code>PascalCase</code> and <code><a rel=prefetch href=/PyJavaBridge/core/event.html class=filename-reference>Event</a></code> is appended. For example, <code>player_join</code> becomes <code>PlayerJoinEvent</code>.</p><h3>Signature</h3><pre><code class=language-py><span class=hl-function>@</span><span class=hl-function>event</span><span class=hl-function>(</span><span class=hl-operator>*</span><span class=hl-function>, </span><span class=hl-variable>once_per_tick</span><span class=hl-operator>=</span><span class=hl-constant-builtin>False</span><span class=hl-function>, </span><span class=hl-variable>priority</span><span class=hl-operator>=</span><span class=hl-string>&quot;NORMAL&quot;</span><span class=hl-function>, </span><span class=hl-variable>throttle_ms</span><span class=hl-operator>=</span><span class=hl-number>0</span><span class=hl-function>)</span>
+</code></pre><h3>Parameters</h3><h4>once_per_tick</h4><ul><li><strong>Type:</strong> <code>bool</code></li><li><strong>Default:</strong> <code>False</code></li></ul><p>When <code>True</code>, the handler is called at most once per server tick, even if the event fires multiple times. Useful for high-frequency events like <code>player_move</code>.</p><pre><code class=language-python><span class=hl-function>@</span><span class=hl-function>event</span><span class=hl-function>(</span><span class=hl-variable>once_per_tick</span><span class=hl-operator>=</span><span class=hl-constant-builtin>True</span><span class=hl-function>)</span>
+<span class=hl-keyword>async</span> <span class=hl-keyword>def</span> <span class=hl-function>player_move</span>(<span class=hl-variable>e</span>):
+    <span class=hl-comment># Called at most once per tick per event, not every micro-movement</span>
+    <span class=hl-keyword>pass</span>
+</code></pre><h4>priority</h4><ul><li><strong>Type:</strong> <code>str</code></li><li><strong>Default:</strong> <code>&quot;NORMAL&quot;</code></li></ul><p>The Bukkit event priority. Determines the order in which handlers run. Options (lowest runs first):</p><table><thead><tr><th>Priority</th><th>Description</th></tr></thead><tbody><tr><td><code>LOWEST</code></td><td>Runs first. Use for early cancellation.</td></tr><tr><td><code>LOW</code></td><td>Runs before normal handlers.</td></tr><tr><td><code>NORMAL</code></td><td>Default priority.</td></tr><tr><td><code>HIGH</code></td><td>Runs after normal handlers.</td></tr><tr><td><code>HIGHEST</code></td><td>Runs last before monitor.</td></tr><tr><td><code>MONITOR</code></td><td>Read-only observation. Do not modify the event.</td></tr></tbody></table><pre><code class=language-python><span class=hl-function>@</span><span class=hl-function>event</span><span class=hl-function>(</span><span class=hl-variable>priority</span><span class=hl-operator>=</span><span class=hl-string>&quot;HIGH&quot;</span><span class=hl-function>)</span>
+<span class=hl-keyword>async</span> <span class=hl-keyword>def</span> <span class=hl-function>block_break</span>(<span class=hl-variable>e</span>):
+    <span class=hl-comment># This runs after NORMAL-priority handlers</span>
+    <span class=hl-keyword>pass</span>
+</code></pre><h4>throttle_ms</h4><ul><li><strong>Type:</strong> <code>int</code></li><li><strong>Default:</strong> <code>0</code></li></ul><p>Minimum milliseconds between handler invocations. If the event fires more frequently, extra invocations are silently dropped.</p><pre><code class=language-python><span class=hl-function>@</span><span class=hl-function>event</span><span class=hl-function>(</span><span class=hl-variable>throttle_ms</span><span class=hl-operator>=</span><span class=hl-number>500</span><span class=hl-function>)</span>
+<span class=hl-keyword>async</span> <span class=hl-keyword>def</span> <span class=hl-function>player_interact</span>(<span class=hl-variable>e</span>):
+    <span class=hl-comment># At most once every 500ms, prevents spam-clicking abuse</span>
+    <span class=hl-keyword>pass</span>
+</code></pre><h3>Bare decorator</h3><p>You can use <code>@<a rel=prefetch href=/PyJavaBridge/core/event.html class=filename-reference>event</a></code> without parentheses for the default settings:</p><pre><code class=language-python><span class=hl-function>@</span><span class=hl-function>event</span>
+<span class=hl-keyword>async</span> <span class=hl-keyword>def</span> <span class=hl-function>player_quit</span>(<span class=hl-variable>e</span>):
+    <span class=hl-keyword>await</span> <span class=hl-variable>server</span>.<span class=hl-property>broadcast</span>(<span class=hl-string>f&quot;</span><span class=hl-punctuation-special>{</span><span class=hl-variable>e</span><span class=hl-string>.</span><span class=hl-property>player</span><span class=hl-string>.</span><span class=hl-property>name</span><span class=hl-punctuation-special>}</span><span class=hl-string> left!&quot;</span>)</code></pre><hr><h2>@command</h2><pre><code class=language-python><span class=hl-function>@</span><span class=hl-function>command</span><span class=hl-function>(</span><span class=hl-string>&quot;Greet a player&quot;</span><span class=hl-function>, </span><span class=hl-variable>permission</span><span class=hl-operator>=</span><span class=hl-string>&quot;myplugin.greet&quot;</span><span class=hl-function>)</span>
+<span class=hl-keyword>async</span> <span class=hl-keyword>def</span> <span class=hl-function>greet</span>(<span class=hl-variable>e</span>):
+    <span class=hl-keyword>await</span> <span class=hl-variable>e</span>.<span class=hl-property>player</span>.<span class=hl-property>send_message</span>(<span class=hl-string>&quot;Hello!&quot;</span>)</code></pre><p>Register a function as a script command. The command is automatically available as <code>/functionname</code> (or as specified via the <code>name</code> parameter). Command arguments are parsed from the function's additional parameters after <code><a rel=prefetch href=/PyJavaBridge/core/event.html class=filename-reference>event</a></code>.</p><h3>Signature</h3><pre><code class=language-py><span class=hl-function>@</span><span class=hl-function>command</span><span class=hl-function>(</span><span class=hl-variable>description</span><span class=hl-operator>=</span><span class=hl-constant-builtin>None</span><span class=hl-function>, </span><span class=hl-operator>*</span><span class=hl-function>, </span><span class=hl-variable>name</span><span class=hl-operator>=</span><span class=hl-constant-builtin>None</span><span class=hl-function>, </span><span class=hl-variable>permission</span><span class=hl-operator>=</span><span class=hl-constant-builtin>None</span><span class=hl-function>, </span><span class=hl-variable>tab_complete</span><span class=hl-operator>=</span><span class=hl-constant-builtin>None</span><span class=hl-function>)</span>
+</code></pre><h3>Parameters</h3><h4>description</h4><ul><li><strong>Type:</strong> <code>str | None</code></li><li><strong>Default:</strong> <code>None</code></li></ul><p>A human-readable description of the command. This is the first positional argument.</p><pre><code class=language-python><span class=hl-function>@</span><span class=hl-function>command</span><span class=hl-function>(</span><span class=hl-string>&quot;Teleport to spawn&quot;</span><span class=hl-function>)</span>
+<span class=hl-keyword>async</span> <span class=hl-keyword>def</span> <span class=hl-function>spawn</span>(<span class=hl-variable>e</span>):
+    ...</code></pre><h4>name</h4><ul><li><strong>Type:</strong> <code>str | None</code></li><li><strong>Default:</strong> <code>None</code> (uses function name)</li></ul><p>Override the command name. By default the function name is used. If the function name starts with <code>cmd_</code>, the prefix is automatically stripped.</p><pre><code class=language-python><span class=hl-function>@</span><span class=hl-function>command</span><span class=hl-function>(</span><span class=hl-string>&quot;Teleport home&quot;</span><span class=hl-function>, </span><span class=hl-variable>name</span><span class=hl-operator>=</span><span class=hl-string>&quot;home&quot;</span><span class=hl-function>)</span>
+<span class=hl-keyword>async</span> <span class=hl-keyword>def</span> <span class=hl-function>teleport_home</span>(<span class=hl-variable>e</span>):
+    <span class=hl-comment># Registered as /home, not /teleport_home</span>
+    ...</code></pre><pre><code class=language-python><span class=hl-function>@</span><span class=hl-function>command</span><span class=hl-function>(</span><span class=hl-string>&quot;Greet a player&quot;</span><span class=hl-function>)</span>
+<span class=hl-keyword>async</span> <span class=hl-keyword>def</span> <span class=hl-function>cmd_greet</span>(<span class=hl-variable>e</span>):
+    <span class=hl-comment># Registered as /greet, not /cmd_greet</span>
+    <span class=hl-keyword>await</span> <span class=hl-variable>e</span>.<span class=hl-property>player</span>.<span class=hl-property>send_message</span>(<span class=hl-string>&quot;Hello!&quot;</span>)</code></pre><h4>permission</h4><ul><li><strong>Type:</strong> <code>str | None</code></li><li><strong>Default:</strong> <code>None</code></li></ul><p>Permission node required to use the command. Players without this permission cannot execute it.</p><pre><code class=language-python><span class=hl-function>@</span><span class=hl-function>command</span><span class=hl-function>(</span><span class=hl-string>&quot;Ban a player&quot;</span><span class=hl-function>, </span><span class=hl-variable>permission</span><span class=hl-operator>=</span><span class=hl-string>&quot;admin.ban&quot;</span><span class=hl-function>)</span>
+<span class=hl-keyword>async</span> <span class=hl-keyword>def</span> <span class=hl-function>ban</span>(<span class=hl-variable>e</span>, <span class=hl-variable>target</span>: <span class=hl-type>str</span>):
+    ...</code></pre><h4>tab_complete</h4><ul><li><strong>Type:</strong> <code>dict&#91;int, list&#91;str&#93;&#93; | None</code></li><li><strong>Default:</strong> <code>None</code></li></ul><p>Static tab completion suggestions per argument position (0-indexed). Use <code>-1</code> as a wildcard for all positions without their own entry. For dynamic completions, see the <code>@my_command.tab_complete</code> decorator below.</p><pre><code class=language-python><span class=hl-function>@</span><span class=hl-function>command</span><span class=hl-function>(</span><span class=hl-string>&quot;Set game mode&quot;</span><span class=hl-function>, </span><span class=hl-variable>tab_complete</span><span class=hl-operator>=</span><span class=hl-function>{</span><span class=hl-number>0</span><span class=hl-function>: [</span><span class=hl-string>&quot;survival&quot;</span><span class=hl-function>, </span><span class=hl-string>&quot;creative&quot;</span><span class=hl-function>, </span><span class=hl-string>&quot;adventure&quot;</span><span class=hl-function>, </span><span class=hl-string>&quot;spectator&quot;</span><span class=hl-function>]
 })</span>
-<span class="hl-keyword">async</span> <span class="hl-keyword">def</span> <span class="hl-function">gamemode</span>(<span class="hl-variable">e</span>, <span class="hl-variable">mode</span>: <span class="hl-type">str</span>):
-    ...
-</code></pre>
-<pre><code class="language-python"><span class="hl-function">@</span><span class="hl-function">command</span><span class="hl-function">(</span><span class="hl-string">&quot;Teleport to a place&quot;</span><span class="hl-function">, </span><span class="hl-variable">tab_complete</span><span class="hl-operator">=</span><span class="hl-function">{
-    </span><span class="hl-number">0</span><span class="hl-function">: [</span><span class="hl-string">&quot;spawn&quot;</span><span class="hl-function">, </span><span class="hl-string">&quot;home&quot;</span><span class="hl-function">, </span><span class="hl-string">&quot;shop&quot;</span><span class="hl-function">, </span><span class="hl-string">&quot;arena&quot;</span><span class="hl-function">],
+<span class=hl-keyword>async</span> <span class=hl-keyword>def</span> <span class=hl-function>gamemode</span>(<span class=hl-variable>e</span>, <span class=hl-variable>mode</span>: <span class=hl-type>str</span>):
+    ...</code></pre><pre><code class=language-python><span class=hl-function>@</span><span class=hl-function>command</span><span class=hl-function>(</span><span class=hl-string>&quot;Teleport to a place&quot;</span><span class=hl-function>, </span><span class=hl-variable>tab_complete</span><span class=hl-operator>=</span><span class=hl-function>{</span><span class=hl-number>0</span><span class=hl-function>: [</span><span class=hl-string>&quot;spawn&quot;</span><span class=hl-function>, </span><span class=hl-string>&quot;home&quot;</span><span class=hl-function>, </span><span class=hl-string>&quot;shop&quot;</span><span class=hl-function>, </span><span class=hl-string>&quot;arena&quot;</span><span class=hl-function>],
 })</span>
-<span class="hl-keyword">async</span> <span class="hl-keyword">def</span> <span class="hl-function">tp</span>(<span class="hl-variable">e</span>, <span class="hl-variable">place</span>: <span class="hl-type">str</span>):
-    ...
-</code></pre>
-<p>Wildcard example — suggest the same options for any argument position:</p>
-<pre><code class="language-python"><span class="hl-function">@</span><span class="hl-function">command</span><span class="hl-function">(</span><span class="hl-string">&quot;Tag players&quot;</span><span class="hl-function">, </span><span class="hl-variable">tab_complete</span><span class="hl-operator">=</span><span class="hl-function">{
-    </span><span class="hl-operator">-</span><span class="hl-number">1</span><span class="hl-function">: [</span><span class="hl-string">&quot;vip&quot;</span><span class="hl-function">, </span><span class="hl-string">&quot;admin&quot;</span><span class="hl-function">, </span><span class="hl-string">&quot;builder&quot;</span><span class="hl-function">, </span><span class="hl-string">&quot;mod&quot;</span><span class="hl-function">]
+<span class=hl-keyword>async</span> <span class=hl-keyword>def</span> <span class=hl-function>tp</span>(<span class=hl-variable>e</span>, <span class=hl-variable>place</span>: <span class=hl-type>str</span>):
+    ...</code></pre><p>Wildcard example — suggest the same options for any argument position:</p><pre><code class=language-python><span class=hl-function>@</span><span class=hl-function>command</span><span class=hl-function>(</span><span class=hl-string>&quot;Tag players&quot;</span><span class=hl-function>, </span><span class=hl-variable>tab_complete</span><span class=hl-operator>=</span><span class=hl-function>{</span><span class=hl-operator>-</span><span class=hl-number>1</span><span class=hl-function>: [</span><span class=hl-string>&quot;vip&quot;</span><span class=hl-function>, </span><span class=hl-string>&quot;admin&quot;</span><span class=hl-function>, </span><span class=hl-string>&quot;builder&quot;</span><span class=hl-function>, </span><span class=hl-string>&quot;mod&quot;</span><span class=hl-function>]
 })</span>
-<span class="hl-keyword">async</span> <span class="hl-keyword">def</span> <span class="hl-function">tag</span>(<span class="hl-variable">e</span>, <span class="hl-operator">*</span><span class="hl-variable">tags</span>):
-    ...
-</code></pre>
-<h3>Dynamic tab completion</h3>
-<p>For dynamic completions that depend on server state (online players, entities, etc.), use the <code>@my_command.tab_complete</code> decorator:</p>
-<pre><code class="language-python"><span class="hl-function">@</span><span class="hl-function">command</span><span class="hl-function">(</span><span class="hl-string">&quot;Teleport to a player&quot;</span><span class="hl-function">)</span>
-<span class="hl-keyword">async</span> <span class="hl-keyword">def</span> <span class="hl-function">tp</span>(<span class="hl-variable">e</span>, <span class="hl-variable">target</span>: <span class="hl-type">str</span>):
+<span class=hl-keyword>async</span> <span class=hl-keyword>def</span> <span class=hl-function>tag</span>(<span class=hl-variable>e</span>, <span class=hl-operator>*</span><span class=hl-variable>tags</span>):
+    ...</code></pre><h3>Dynamic tab completion</h3><p>For dynamic completions that depend on server state (online players, entities, etc.), use the <code>@my_command.tab_complete</code> decorator:</p><pre><code class=language-python><span class=hl-function>@</span><span class=hl-function>command</span><span class=hl-function>(</span><span class=hl-string>&quot;Teleport to a player&quot;</span><span class=hl-function>)</span>
+<span class=hl-keyword>async</span> <span class=hl-keyword>def</span> <span class=hl-function>tp</span>(<span class=hl-variable>e</span>, <span class=hl-variable>target</span>: <span class=hl-type>str</span>):
     ...
 
-<span class="hl-function">@</span><span class="hl-variable">tp</span><span class="hl-function">.</span><span class="hl-property">tab_complete</span>
-<span class="hl-keyword">async</span> <span class="hl-keyword">def</span> <span class="hl-function">tp_complete</span>(<span class="hl-variable">sender</span>, <span class="hl-variable">args</span>):
-    <span class="hl-comment"># args is the list of current arguments being typed</span>
-    <span class="hl-variable">players</span> <span class="hl-operator">=</span> <span class="hl-keyword">await</span> <span class="hl-variable">server</span>.<span class="hl-property">get_online_players</span>()
-    <span class="hl-variable">names</span> <span class="hl-operator">=</span> [<span class="hl-variable">p</span>.<span class="hl-property">name</span> <span class="hl-keyword">for</span> <span class="hl-variable">p</span> <span class="hl-operator">in</span> <span class="hl-variable">players</span>]
-    <span class="hl-comment"># Filter by what the user has typed so far</span>
-    <span class="hl-variable">partial</span> <span class="hl-operator">=</span> <span class="hl-variable">args</span>[<span class="hl-operator">-</span><span class="hl-number">1</span>].<span class="hl-property">lower</span>() <span class="hl-keyword">if</span> <span class="hl-variable">args</span> <span class="hl-keyword">else</span> <span class="hl-string">&quot;&quot;</span>
-    <span class="hl-keyword">return</span> [<span class="hl-variable">n</span> <span class="hl-keyword">for</span> <span class="hl-variable">n</span> <span class="hl-operator">in</span> <span class="hl-variable">names</span> <span class="hl-keyword">if</span> <span class="hl-variable">n</span>.<span class="hl-property">lower</span>().<span class="hl-property">startswith</span>(<span class="hl-variable">partial</span>)]
-</code></pre>
-<p>The tab completion handler receives:</p>
-<ul>
-<li><strong>sender</strong> — the player or command sender requesting completions</li>
-<li><strong>args</strong> — list of current argument strings (the last one is being typed)</li>
-</ul>
-<p>It should return a list of suggestion strings. The handler can be <code>async</code> or synchronous.</p>
-<pre><code class="language-python"><span class="hl-function">@</span><span class="hl-function">command</span><span class="hl-function">(</span><span class="hl-string">&quot;Give item to player&quot;</span><span class="hl-function">)</span>
-<span class="hl-keyword">async</span> <span class="hl-keyword">def</span> <span class="hl-function">give</span>(<span class="hl-variable">e</span>, <span class="hl-variable">player</span>: <span class="hl-type">str</span>, <span class="hl-variable">item</span>: <span class="hl-type">str</span>, <span class="hl-variable">amount</span>: <span class="hl-type">str</span> <span class="hl-operator">=</span> <span class="hl-string">&quot;1&quot;</span>):
+<span class=hl-function>@</span><span class=hl-variable>tp</span><span class=hl-function>.</span><span class=hl-property>tab_complete</span>
+<span class=hl-keyword>async</span> <span class=hl-keyword>def</span> <span class=hl-function>tp_complete</span>(<span class=hl-variable>sender</span>, <span class=hl-variable>args</span>):
+    <span class=hl-comment># args is the list of current arguments being typed</span>
+    <span class=hl-variable>players</span> <span class=hl-operator>=</span> <span class=hl-keyword>await</span> <span class=hl-variable>server</span>.<span class=hl-property>get_online_players</span>()
+    <span class=hl-variable>names</span> <span class=hl-operator>=</span> [<span class=hl-variable>p</span>.<span class=hl-property>name</span> <span class=hl-keyword>for</span> <span class=hl-variable>p</span> <span class=hl-operator>in</span> <span class=hl-variable>players</span>]
+    <span class=hl-comment># Filter by what the user has typed so far</span>
+    <span class=hl-variable>partial</span> <span class=hl-operator>=</span> <span class=hl-variable>args</span>[<span class=hl-operator>-</span><span class=hl-number>1</span>].<span class=hl-property>lower</span>() <span class=hl-keyword>if</span> <span class=hl-variable>args</span> <span class=hl-keyword>else</span> <span class=hl-string>&quot;&quot;</span>
+    <span class=hl-keyword>return</span> [<span class=hl-variable>n</span> <span class=hl-keyword>for</span> <span class=hl-variable>n</span> <span class=hl-operator>in</span> <span class=hl-variable>names</span> <span class=hl-keyword>if</span> <span class=hl-variable>n</span>.<span class=hl-property>lower</span>().<span class=hl-property>startswith</span>(<span class=hl-variable>partial</span>)]</code></pre><p>The tab completion handler receives:</p><ul><li><strong>sender</strong> — the player or command sender requesting completions</li><li><strong>args</strong> — list of current argument strings (the last one is being typed)</li></ul><p>It should return a list of suggestion strings. The handler can be <code>async</code> or synchronous.</p><pre><code class=language-python><span class=hl-function>@</span><span class=hl-function>command</span><span class=hl-function>(</span><span class=hl-string>&quot;Give item to player&quot;</span><span class=hl-function>)</span>
+<span class=hl-keyword>async</span> <span class=hl-keyword>def</span> <span class=hl-function>give</span>(<span class=hl-variable>e</span>, <span class=hl-variable>player</span>: <span class=hl-type>str</span>, <span class=hl-variable>item</span>: <span class=hl-type>str</span>, <span class=hl-variable>amount</span>: <span class=hl-type>str</span> <span class=hl-operator>=</span> <span class=hl-string>&quot;1&quot;</span>):
     ...
 
-<span class="hl-function">@</span><span class="hl-variable">give</span><span class="hl-function">.</span><span class="hl-property">tab_complete</span>
-<span class="hl-keyword">async</span> <span class="hl-keyword">def</span> <span class="hl-function">give_complete</span>(<span class="hl-variable">sender</span>, <span class="hl-variable">args</span>):
-    <span class="hl-keyword">if</span> <span class="hl-function-builtin">len</span>(<span class="hl-variable">args</span>) <span class="hl-operator">&lt;=</span> <span class="hl-number">1</span>:
-        <span class="hl-comment"># First arg: player names</span>
-        <span class="hl-variable">players</span> <span class="hl-operator">=</span> <span class="hl-keyword">await</span> <span class="hl-variable">server</span>.<span class="hl-property">get_online_players</span>()
-        <span class="hl-variable">partial</span> <span class="hl-operator">=</span> <span class="hl-variable">args</span>[<span class="hl-number">0</span>].<span class="hl-property">lower</span>() <span class="hl-keyword">if</span> <span class="hl-variable">args</span> <span class="hl-keyword">else</span> <span class="hl-string">&quot;&quot;</span>
-        <span class="hl-keyword">return</span> [<span class="hl-variable">p</span>.<span class="hl-property">name</span> <span class="hl-keyword">for</span> <span class="hl-variable">p</span> <span class="hl-operator">in</span> <span class="hl-variable">players</span> <span class="hl-keyword">if</span> <span class="hl-variable">p</span>.<span class="hl-property">name</span>.<span class="hl-property">lower</span>().<span class="hl-property">startswith</span>(<span class="hl-variable">partial</span>)]
-    <span class="hl-keyword">elif</span> <span class="hl-function-builtin">len</span>(<span class="hl-variable">args</span>) <span class="hl-operator">==</span> <span class="hl-number">2</span>:
-        <span class="hl-comment"># Second arg: item types</span>
-        <span class="hl-variable">items</span> <span class="hl-operator">=</span> [<span class="hl-string">&quot;diamond&quot;</span>, <span class="hl-string">&quot;iron_ingot&quot;</span>, <span class="hl-string">&quot;gold_ingot&quot;</span>, <span class="hl-string">&quot;emerald&quot;</span>]
-        <span class="hl-variable">partial</span> <span class="hl-operator">=</span> <span class="hl-variable">args</span>[<span class="hl-number">1</span>].<span class="hl-property">lower</span>()
-        <span class="hl-keyword">return</span> [<span class="hl-variable">i</span> <span class="hl-keyword">for</span> <span class="hl-variable">i</span> <span class="hl-operator">in</span> <span class="hl-variable">items</span> <span class="hl-keyword">if</span> <span class="hl-variable">i</span>.<span class="hl-property">startswith</span>(<span class="hl-variable">partial</span>)]
-    <span class="hl-keyword">elif</span> <span class="hl-function-builtin">len</span>(<span class="hl-variable">args</span>) <span class="hl-operator">==</span> <span class="hl-number">3</span>:
-        <span class="hl-comment"># Third arg: amounts</span>
-        <span class="hl-keyword">return</span> [<span class="hl-string">&quot;1&quot;</span>, <span class="hl-string">&quot;16&quot;</span>, <span class="hl-string">&quot;32&quot;</span>, <span class="hl-string">&quot;64&quot;</span>]
-    <span class="hl-keyword">return</span> []
-</code></pre>
-<h3>Command arguments</h3>
-<p>Extra function parameters after the event become command arguments. They are parsed positionally from the player's input:</p>
-<pre><code class="language-python"><span class="hl-function">@</span><span class="hl-function">command</span><span class="hl-function">(</span><span class="hl-string">&quot;Give items&quot;</span><span class="hl-function">)</span>
-<span class="hl-keyword">async</span> <span class="hl-keyword">def</span> <span class="hl-function">give</span>(<span class="hl-variable">e</span>, <span class="hl-variable">material</span>: <span class="hl-type">str</span>, <span class="hl-variable">amount</span>: <span class="hl-type">str</span> <span class="hl-operator">=</span> <span class="hl-string">&quot;1&quot;</span>):
-    <span class="hl-comment"># /give diamond 64</span>
-    <span class="hl-comment"># material = &quot;diamond&quot;, amount = &quot;64&quot;</span>
-    <span class="hl-keyword">await</span> <span class="hl-constructor">Item</span>.<span class="hl-property">give</span>(<span class="hl-variable">e</span>.<span class="hl-property">player</span>, <span class="hl-variable">material</span>, <span class="hl-function-builtin">int</span>(<span class="hl-variable">amount</span>))
-</code></pre>
-<p>All arguments are passed as strings. You handle type conversion yourself.</p>
-<hr />
-<h2>@task</h2>
-<pre><code class="language-python"><span class="hl-function">@</span><span class="hl-function">task</span><span class="hl-function">(</span><span class="hl-variable">interval</span><span class="hl-operator">=</span><span class="hl-number">20</span><span class="hl-function">, </span><span class="hl-variable">delay</span><span class="hl-operator">=</span><span class="hl-number">0</span><span class="hl-function">)</span>
-<span class="hl-keyword">async</span> <span class="hl-keyword">def</span> <span class="hl-function">tick_loop</span>():
-    ...
-</code></pre>
-<p>Register a repeating async task. The function is called repeatedly at the specified interval after an optional initial delay.</p>
-<h3>Signature</h3>
-<pre><code class="language-py"><span class="hl-function">@</span><span class="hl-function">task</span><span class="hl-function">(</span><span class="hl-operator">*</span><span class="hl-function">, </span><span class="hl-variable">interval</span><span class="hl-operator">=</span><span class="hl-number">20</span><span class="hl-function">, </span><span class="hl-variable">delay</span><span class="hl-operator">=</span><span class="hl-number">0</span><span class="hl-function">)</span>
-</code></pre>
-<h3>Parameters</h3>
-<h4>interval</h4>
-<ul>
-<li><strong>Type:</strong> <code>int</code></li>
-<li><strong>Default:</strong> <code>20</code></li>
-</ul>
-<p>Ticks between invocations. Minecraft runs at 20 ticks per second, so <code>interval=20</code> means once per second, <code>interval=1</code> means every tick.</p>
-<h4>delay</h4>
-<ul>
-<li><strong>Type:</strong> <code>int</code></li>
-<li><strong>Default:</strong> <code>0</code></li>
-</ul>
-<p>Initial delay in ticks before the first invocation. Use this to wait for the server to fully start.</p>
-<pre><code class="language-python"><span class="hl-function">@</span><span class="hl-function">task</span><span class="hl-function">(</span><span class="hl-variable">interval</span><span class="hl-operator">=</span><span class="hl-number">20</span><span class="hl-operator">*</span><span class="hl-number">60</span><span class="hl-function">, </span><span class="hl-variable">delay</span><span class="hl-operator">=</span><span class="hl-number">20</span><span class="hl-operator">*</span><span class="hl-number">5</span><span class="hl-function">)</span>
-<span class="hl-keyword">async</span> <span class="hl-keyword">def</span> <span class="hl-function">auto_save</span>():
-    <span class="hl-comment"># Runs every 60 seconds, starting 5 seconds after script load</span>
-    <span class="hl-keyword">await</span> <span class="hl-variable">server</span>.<span class="hl-property">execute</span>(<span class="hl-string">&quot;save-all&quot;</span>)
-</code></pre>
-<h3>Notes</h3>
-<ul>
-<li>Task functions take <strong>no arguments</strong> (unlike event/command handlers).</li>
-<li>The task is cancelled automatically when the script is unloaded.</li>
-<li>If the function is still running when the next invocation is due, the next invocation is skipped.</li>
-</ul>
-<hr />
-<h2>@async_task</h2>
-<pre><code class="language-python"><span class="hl-keyword">from</span> <span class="hl-variable">bridge</span> <span class="hl-keyword">import</span> <span class="hl-variable">async_task</span>
+<span class=hl-function>@</span><span class=hl-variable>give</span><span class=hl-function>.</span><span class=hl-property>tab_complete</span>
+<span class=hl-keyword>async</span> <span class=hl-keyword>def</span> <span class=hl-function>give_complete</span>(<span class=hl-variable>sender</span>, <span class=hl-variable>args</span>):
+    <span class=hl-keyword>if</span> <span class=hl-function-builtin>len</span>(<span class=hl-variable>args</span>) <span class=hl-operator>&lt;=</span> <span class=hl-number>1</span>:
+        <span class=hl-comment># First arg: player names</span>
+        <span class=hl-variable>players</span> <span class=hl-operator>=</span> <span class=hl-keyword>await</span> <span class=hl-variable>server</span>.<span class=hl-property>get_online_players</span>()
+        <span class=hl-variable>partial</span> <span class=hl-operator>=</span> <span class=hl-variable>args</span>[<span class=hl-number>0</span>].<span class=hl-property>lower</span>() <span class=hl-keyword>if</span> <span class=hl-variable>args</span> <span class=hl-keyword>else</span> <span class=hl-string>&quot;&quot;</span>
+        <span class=hl-keyword>return</span> [<span class=hl-variable>p</span>.<span class=hl-property>name</span> <span class=hl-keyword>for</span> <span class=hl-variable>p</span> <span class=hl-operator>in</span> <span class=hl-variable>players</span> <span class=hl-keyword>if</span> <span class=hl-variable>p</span>.<span class=hl-property>name</span>.<span class=hl-property>lower</span>().<span class=hl-property>startswith</span>(<span class=hl-variable>partial</span>)]
+    <span class=hl-keyword>elif</span> <span class=hl-function-builtin>len</span>(<span class=hl-variable>args</span>) <span class=hl-operator>==</span> <span class=hl-number>2</span>:
+        <span class=hl-comment># Second arg: item types</span>
+        <span class=hl-variable>items</span> <span class=hl-operator>=</span> [<span class=hl-string>&quot;diamond&quot;</span>, <span class=hl-string>&quot;iron_ingot&quot;</span>, <span class=hl-string>&quot;gold_ingot&quot;</span>, <span class=hl-string>&quot;emerald&quot;</span>]
+        <span class=hl-variable>partial</span> <span class=hl-operator>=</span> <span class=hl-variable>args</span>[<span class=hl-number>1</span>].<span class=hl-property>lower</span>()
+        <span class=hl-keyword>return</span> [<span class=hl-variable>i</span> <span class=hl-keyword>for</span> <span class=hl-variable>i</span> <span class=hl-operator>in</span> <span class=hl-variable>items</span> <span class=hl-keyword>if</span> <span class=hl-variable>i</span>.<span class=hl-property>startswith</span>(<span class=hl-variable>partial</span>)]
+    <span class=hl-keyword>elif</span> <span class=hl-function-builtin>len</span>(<span class=hl-variable>args</span>) <span class=hl-operator>==</span> <span class=hl-number>3</span>:
+        <span class=hl-comment># Third arg: amounts</span>
+        <span class=hl-keyword>return</span> [<span class=hl-string>&quot;1&quot;</span>, <span class=hl-string>&quot;16&quot;</span>, <span class=hl-string>&quot;32&quot;</span>, <span class=hl-string>&quot;64&quot;</span>]
+    <span class=hl-keyword>return</span> []</code></pre><h3>Command arguments</h3><p>Extra function parameters after the event become command arguments. They are parsed positionally from the player's input:</p><pre><code class=language-python><span class=hl-function>@</span><span class=hl-function>command</span><span class=hl-function>(</span><span class=hl-string>&quot;Give items&quot;</span><span class=hl-function>)</span>
+<span class=hl-keyword>async</span> <span class=hl-keyword>def</span> <span class=hl-function>give</span>(<span class=hl-variable>e</span>, <span class=hl-variable>material</span>: <span class=hl-type>str</span>, <span class=hl-variable>amount</span>: <span class=hl-type>str</span> <span class=hl-operator>=</span> <span class=hl-string>&quot;1&quot;</span>):
+    <span class=hl-comment># /give diamond 64</span>
+    <span class=hl-comment># material = &quot;diamond&quot;, amount = &quot;64&quot;</span>
+    <span class=hl-keyword>await</span> <span class=hl-constructor>Item</span>.<span class=hl-property>give</span>(<span class=hl-variable>e</span>.<span class=hl-property>player</span>, <span class=hl-variable>material</span>, <span class=hl-function-builtin>int</span>(<span class=hl-variable>amount</span>))</code></pre><p>All arguments are passed as strings. You handle type conversion yourself.</p><hr><h2>@task</h2><pre><code class=language-python><span class=hl-function>@</span><span class=hl-function>task</span><span class=hl-function>(</span><span class=hl-variable>interval</span><span class=hl-operator>=</span><span class=hl-number>20</span><span class=hl-function>, </span><span class=hl-variable>delay</span><span class=hl-operator>=</span><span class=hl-number>0</span><span class=hl-function>)</span>
+<span class=hl-keyword>async</span> <span class=hl-keyword>def</span> <span class=hl-function>tick_loop</span>():
+    ...</code></pre><p>Register a repeating async task. The function is called repeatedly at the specified interval after an optional initial delay.</p><h3>Signature</h3><pre><code class=language-py><span class=hl-function>@</span><span class=hl-function>task</span><span class=hl-function>(</span><span class=hl-operator>*</span><span class=hl-function>, </span><span class=hl-variable>interval</span><span class=hl-operator>=</span><span class=hl-number>20</span><span class=hl-function>, </span><span class=hl-variable>delay</span><span class=hl-operator>=</span><span class=hl-number>0</span><span class=hl-function>)</span>
+</code></pre><h3>Parameters</h3><h4>interval</h4><ul><li><strong>Type:</strong> <code>int</code></li><li><strong>Default:</strong> <code>20</code></li></ul><p>Ticks between invocations. Minecraft runs at 20 ticks per second, so <code>interval=20</code> means once per second, <code>interval=1</code> means every tick.</p><h4>delay</h4><ul><li><strong>Type:</strong> <code>int</code></li><li><strong>Default:</strong> <code>0</code></li></ul><p>Initial delay in ticks before the first invocation. Use this to wait for the server to fully start.</p><pre><code class=language-python><span class=hl-function>@</span><span class=hl-function>task</span><span class=hl-function>(</span><span class=hl-variable>interval</span><span class=hl-operator>=</span><span class=hl-number>20</span><span class=hl-operator>*</span><span class=hl-number>60</span><span class=hl-function>, </span><span class=hl-variable>delay</span><span class=hl-operator>=</span><span class=hl-number>20</span><span class=hl-operator>*</span><span class=hl-number>5</span><span class=hl-function>)</span>
+<span class=hl-keyword>async</span> <span class=hl-keyword>def</span> <span class=hl-function>auto_save</span>():
+    <span class=hl-comment># Runs every 60 seconds, starting 5 seconds after script load</span>
+    <span class=hl-keyword>await</span> <span class=hl-variable>server</span>.<span class=hl-property>execute</span>(<span class=hl-string>&quot;save-all&quot;</span>)</code></pre><h3>Notes</h3><ul><li>Task functions take <strong>no arguments</strong> (unlike event/command handlers).</li><li>The task is cancelled automatically when the script is unloaded.</li><li>If the function is still running when the next invocation is due, the next invocation is skipped.</li></ul><hr><h2>@async_task</h2><pre><code class=language-python><span class=hl-keyword>from</span> <span class=hl-variable>bridge</span> <span class=hl-keyword>import</span> <span class=hl-variable>async_task</span>
 
-<span class="hl-function">@</span><span class="hl-function">async_task</span>
-<span class="hl-keyword">async</span> <span class="hl-keyword">def</span> <span class="hl-function">do_work</span>():
-    <span class="hl-keyword">await</span> <span class="hl-function">something</span>()
-</code></pre>
-<p>Make an <code>async def</code> fire-and-forget safe. The decorated function returns a <code>BridgeCall</code> when called — the coroutine is immediately scheduled as a background task.</p>
-<p>Callers can <code>await</code> the result to wait for completion, or ignore it to let it run in the background. This matches the behaviour of built-in bridge API calls.</p>
-<h3>Signature</h3>
-<pre><code class="language-py"><span class="hl-function">@</span><span class="hl-function">async_task</span>
-</code></pre>
-<h3>Usage</h3>
-<pre><code class="language-python"><span class="hl-function">@</span><span class="hl-function">async_task</span>
-<span class="hl-keyword">async</span> <span class="hl-keyword">def</span> <span class="hl-function">build_arena</span>():
-    <span class="hl-keyword">await</span> <span class="hl-variable">world</span>.<span class="hl-property">fill</span>(<span class="hl-variable">x1</span>, <span class="hl-variable">y1</span>, <span class="hl-variable">z1</span>, <span class="hl-variable">x2</span>, <span class="hl-variable">y2</span>, <span class="hl-variable">z2</span>, <span class="hl-string">&quot;stone&quot;</span>)
+<span class=hl-function>@</span><span class=hl-function>async_task</span>
+<span class=hl-keyword>async</span> <span class=hl-keyword>def</span> <span class=hl-function>do_work</span>():
+    <span class=hl-keyword>await</span> <span class=hl-function>something</span>()</code></pre><p>Make an <code>async def</code> fire-and-forget safe. The decorated function returns a <code>BridgeCall</code> when called — the coroutine is immediately scheduled as a background task.</p><p>Callers can <code>await</code> the result to wait for completion, or ignore it to let it run in the background. This matches the behaviour of built-in bridge API calls.</p><h3>Signature</h3><pre><code class=language-py><span class=hl-function>@</span><span class=hl-function>async_task</span>
+</code></pre><h3>Usage</h3><pre><code class=language-python><span class=hl-function>@</span><span class=hl-function>async_task</span>
+<span class=hl-keyword>async</span> <span class=hl-keyword>def</span> <span class=hl-function>build_arena</span>():
+    <span class=hl-keyword>await</span> <span class=hl-variable>world</span>.<span class=hl-property>fill</span>(<span class=hl-variable>x1</span>, <span class=hl-variable>y1</span>, <span class=hl-variable>z1</span>, <span class=hl-variable>x2</span>, <span class=hl-variable>y2</span>, <span class=hl-variable>z2</span>, <span class=hl-string>&quot;stone&quot;</span>)
 
-<span class="hl-comment"># Fire-and-forget:</span>
-<span class="hl-function">build_arena</span>()
+<span class=hl-comment># Fire-and-forget:</span>
+<span class=hl-function>build_arena</span>()
 
-<span class="hl-comment"># Or await:</span>
-<span class="hl-keyword">await</span> <span class="hl-function">build_arena</span>()
-</code></pre>
-<h3>Notes</h3>
-<ul>
-<li>Works on both module-level functions and methods.</li>
-<li>The return value is a <code>BridgeCall</code>, which is an <code>Awaitable</code>.</li>
-<li>Unawaited errors are silently logged (same as unawaited bridge API calls).</li>
-</ul>
-<hr />
-<h2>@preserve</h2>
-<pre><code class="language-python"><span class="hl-function">@</span><span class="hl-function">preserve</span>
-<span class="hl-keyword">def</span> <span class="hl-function">player_scores</span>():
-    <span class="hl-keyword">return</span> {}
-</code></pre>
-<p>Persist a variable across hot reloads. Decorate a no-arg factory function. On first load, the factory runs and its return value is cached to disk as JSON. On subsequent reloads, the cached value is returned instead.</p>
-<h3>Signature</h3>
-<pre><code class="language-py"><span class="hl-function">@</span><span class="hl-function">preserve</span>
-</code></pre>
-<h3>Usage</h3>
-<pre><code class="language-python"><span class="hl-function">@</span><span class="hl-function">preserve</span>
-<span class="hl-keyword">def</span> <span class="hl-function">kill_counts</span>():
-    <span class="hl-keyword">return</span> {}
+<span class=hl-comment># Or await:</span>
+<span class=hl-keyword>await</span> <span class=hl-function>build_arena</span>()</code></pre><h3>Notes</h3><ul><li>Works on both module-level functions and methods.</li><li>The return value is a <code>BridgeCall</code>, which is an <code>Awaitable</code>.</li><li>Unawaited errors are silently logged (same as unawaited bridge API calls).</li></ul><hr><h2>@preserve</h2><pre><code class=language-python><span class=hl-function>@</span><span class=hl-function>preserve</span>
+<span class=hl-keyword>def</span> <span class=hl-function>player_scores</span>():
+    <span class=hl-keyword>return</span> {}</code></pre><p>Persist a variable across hot reloads. Decorate a no-arg factory function. On first load, the factory runs and its return value is cached to disk as JSON. On subsequent reloads, the cached value is returned instead.</p><h3>Signature</h3><pre><code class=language-py><span class=hl-function>@</span><span class=hl-function>preserve</span>
+</code></pre><h3>Usage</h3><pre><code class=language-python><span class=hl-function>@</span><span class=hl-function>preserve</span>
+<span class=hl-keyword>def</span> <span class=hl-function>kill_counts</span>():
+    <span class=hl-keyword>return</span> {}
 
-<span class="hl-function">@</span><span class="hl-function">event</span>
-<span class="hl-keyword">async</span> <span class="hl-keyword">def</span> <span class="hl-function">entity_death</span>(<span class="hl-variable">e</span>):
-    <span class="hl-keyword">if</span> <span class="hl-variable">e</span>.<span class="hl-property">entity</span>.<span class="hl-property">type</span>.<span class="hl-property">name</span> <span class="hl-operator">==</span> <span class="hl-string">&quot;ZOMBIE&quot;</span>:
-        <span class="hl-variable">killer</span> <span class="hl-operator">=</span> <span class="hl-variable">e</span>.<span class="hl-property">entity</span>.<span class="hl-property">source</span>
-        <span class="hl-keyword">if</span> <span class="hl-variable">killer</span>:
-            <span class="hl-variable">kill_counts</span>[<span class="hl-variable">killer</span>.<span class="hl-property">name</span>] <span class="hl-operator">=</span> <span class="hl-variable">kill_counts</span>.<span class="hl-property">get</span>(<span class="hl-variable">killer</span>.<span class="hl-property">name</span>, <span class="hl-number">0</span>) <span class="hl-operator">+</span> <span class="hl-number">1</span>
-</code></pre>
-<h3>Notes</h3>
-<ul>
-<li>Only works with JSON-serializable return values.</li>
-<li>Data is stored in <code>plugins/PyJavaBridge/preserve/&lt;function_qualname&gt;.json</code>.</li>
-<li>The value is loaded once at script start and saved on changes.</li>
-</ul>
-<hr />
-<h2>fire_event</h2>
-<pre><code class="language-python"><span class="hl-function">fire_event</span>(<span class="hl-variable">event_name</span>, <span class="hl-variable">data</span><span class="hl-operator">=</span><span class="hl-constant-builtin">None</span>)
-</code></pre>
-<p>Fire a custom event that all scripts (including the calling script) can listen to. This enables cross-script communication.</p>
-<h3>Signature</h3>
-<pre><code class="language-py"><span class="hl-function">fire_event</span>(<span class="hl-variable">event_name</span>: <span class="hl-variable">str</span>, <span class="hl-variable">data</span>: <span class="hl-variable">dict</span> <span class="hl-operator">|</span> <span class="hl-constant-builtin">None</span> <span class="hl-operator">=</span> <span class="hl-constant-builtin">None</span>) <span class="hl-operator">-</span><span class="hl-operator">&gt;</span> <span class="hl-constant-builtin">None</span>
-</code></pre>
-<h3>Parameters</h3>
-<h4>event_name</h4>
-<ul>
-<li><strong>Type:</strong> <code>str</code></li>
-</ul>
-<p>The custom event name. Listeners subscribe using the <code>@<a rel="prefetch" href="core/event.html" class="filename-reference">event</a></code> decorator with a matching function name (snake_case).</p>
-<h4>data</h4>
-<ul>
-<li><strong>Type:</strong> <code>dict | None</code></li>
-<li><strong>Default:</strong> <code>None</code></li>
-</ul>
-<p>Optional data payload passed to listeners via the event object.</p>
-<h3>Usage</h3>
-<pre><code class="language-python"><span class="hl-comment"># Script A: fire a custom event</span>
-<span class="hl-function">fire_event</span>(<span class="hl-string">&quot;quest_complete&quot;</span>, {<span class="hl-string">&quot;player&quot;</span>: <span class="hl-variable">player</span>.<span class="hl-property">name</span>, <span class="hl-string">&quot;quest&quot;</span>: <span class="hl-string">&quot;dragon_slayer&quot;</span>})
+<span class=hl-function>@</span><span class=hl-function>event</span>
+<span class=hl-keyword>async</span> <span class=hl-keyword>def</span> <span class=hl-function>entity_death</span>(<span class=hl-variable>e</span>):
+    <span class=hl-keyword>if</span> <span class=hl-variable>e</span>.<span class=hl-property>entity</span>.<span class=hl-property>type</span>.<span class=hl-property>name</span> <span class=hl-operator>==</span> <span class=hl-string>&quot;ZOMBIE&quot;</span>:
+        <span class=hl-variable>killer</span> <span class=hl-operator>=</span> <span class=hl-variable>e</span>.<span class=hl-property>entity</span>.<span class=hl-property>source</span>
+        <span class=hl-keyword>if</span> <span class=hl-variable>killer</span>:
+            <span class=hl-variable>kill_counts</span>[<span class=hl-variable>killer</span>.<span class=hl-property>name</span>] <span class=hl-operator>=</span> <span class=hl-variable>kill_counts</span>.<span class=hl-property>get</span>(<span class=hl-variable>killer</span>.<span class=hl-property>name</span>, <span class=hl-number>0</span>) <span class=hl-operator>+</span> <span class=hl-number>1</span>
+</code></pre><h3>Notes</h3><ul><li>Only works with JSON-serializable return values.</li><li>Data is stored in <code>plugins/PyJavaBridge/preserve/&lt;function_qualname&gt;.json</code>.</li><li>The value is loaded once at script start and saved on changes.</li></ul><hr><h2>fire_event</h2><pre><code class=language-python><span class=hl-function>fire_event</span>(<span class=hl-variable>event_name</span>, <span class=hl-variable>data</span><span class=hl-operator>=</span><span class=hl-constant-builtin>None</span>)</code></pre><p>Fire a custom event that all scripts (including the calling script) can listen to. This enables cross-script communication.</p><h3>Signature</h3><pre><code class=language-py><span class=hl-function>fire_event</span>(<span class=hl-variable>event_name</span>: <span class=hl-variable>str</span>, <span class=hl-variable>data</span>: <span class=hl-variable>dict</span> <span class=hl-operator>|</span> <span class=hl-constant-builtin>None</span> <span class=hl-operator>=</span> <span class=hl-constant-builtin>None</span>) <span class=hl-operator>-</span><span class=hl-operator>&gt;</span> <span class=hl-constant-builtin>None</span>
+</code></pre><h3>Parameters</h3><h4>event_name</h4><ul><li><strong>Type:</strong> <code>str</code></li></ul><p>The custom event name. Listeners subscribe using the <code>@<a rel=prefetch href=/PyJavaBridge/core/event.html class=filename-reference>event</a></code> decorator with a matching function name (snake_case).</p><h4>data</h4><ul><li><strong>Type:</strong> <code>dict | None</code></li><li><strong>Default:</strong> <code>None</code></li></ul><p>Optional data payload passed to listeners via the event object.</p><h3>Usage</h3><pre><code class=language-python><span class=hl-comment># Script A: fire a custom event</span>
+<span class=hl-function>fire_event</span>(<span class=hl-string>&quot;quest_complete&quot;</span>, {<span class=hl-string>&quot;player&quot;</span>: <span class=hl-variable>player</span>.<span class=hl-property>name</span>, <span class=hl-string>&quot;quest&quot;</span>: <span class=hl-string>&quot;dragon_slayer&quot;</span>})
 
-<span class="hl-comment"># Script B: listen for it</span>
-<span class="hl-function">@</span><span class="hl-function">event</span>
-<span class="hl-keyword">async</span> <span class="hl-keyword">def</span> <span class="hl-function">quest_complete</span>(<span class="hl-variable">e</span>):
-    <span class="hl-keyword">await</span> <span class="hl-variable">server</span>.<span class="hl-property">broadcast</span>(<span class="hl-string">f&quot;</span><span class="hl-punctuation-special">{</span><span class="hl-variable">e</span><span class="hl-string">.</span><span class="hl-property">player</span><span class="hl-punctuation-special">}</span><span class="hl-string"> completed </span><span class="hl-punctuation-special">{</span><span class="hl-variable">e</span><span class="hl-string">.</span><span class="hl-property">quest</span><span class="hl-punctuation-special">}</span><span class="hl-string">!&quot;</span>)
-</code></pre>
-    </div>
-    <footer class="site-footer">
-      &copy; 2026 Omena0 &middot; PyJavaBridge Documentation
-    </footer>
-  </main>
-
-  <!-- Back to top -->
-  <button class="back-to-top" aria-label="Back to top">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
-        <path d="M18 15l-6-6-6 6"/>
-      </svg>
-    </button>
-
-    
-    <script id="code-refs-data" type="application/json">[]</script>
-    <script id="search-config" type="application/json">{"pages": true, "titles": true, "headings": true, "content": true, "symbols": true, "files": true}</script>
-    <script id="features-config" type="application/json">{"backlinks": true, "related": true, "auto_link": true, "versioning": true, "search": true, "code_references": true, "link_preview": true, "code_highlighting": true, "blockquotes": true, "ext_tags": true, "inline_copy": true}</script>
-    <script id="custom-tags-config" type="application/json">{"ext": {"label": "Extensions", "display": "ext", "class": "ext-tag"}}</script>
-    <script src="/PyJavaBridge/script.js" defer></script>
-</body>
-</html>
+<span class=hl-comment># Script B: listen for it</span>
+<span class=hl-function>@</span><span class=hl-function>event</span>
+<span class=hl-keyword>async</span> <span class=hl-keyword>def</span> <span class=hl-function>quest_complete</span>(<span class=hl-variable>e</span>):
+    <span class=hl-keyword>await</span> <span class=hl-variable>server</span>.<span class=hl-property>broadcast</span>(<span class=hl-string>f&quot;</span><span class=hl-punctuation-special>{</span><span class=hl-variable>e</span><span class=hl-string>.</span><span class=hl-property>player</span><span class=hl-punctuation-special>}</span><span class=hl-string> completed </span><span class=hl-punctuation-special>{</span><span class=hl-variable>e</span><span class=hl-string>.</span><span class=hl-property>quest</span><span class=hl-punctuation-special>}</span><span class=hl-string>!&quot;</span>)</code></pre></div><footer class=site-footer>&copy; 2026 Omena0 &middot; PyJavaBridge Documentation</footer></main><button class=back-to-top aria-label="Back to top"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true" viewBox="0 0 24 24"><path d="m18 15-6-6-6 6"/></svg></button><script id=code-refs-data type=application/json>[]</script><script id=search-config type=application/json>{"pages": true, "titles": true, "headings": true, "content": true, "symbols": true, "files": true}</script><script id=features-config type=application/json>{"backlinks": true, "related": true, "auto_link": true, "versioning": true, "search": true, "code_references": true, "link_preview": true, "code_highlighting": true, "blockquotes": true, "ext_tags": true, "inline_copy": true}</script><script id=custom-tags-config type=application/json>{"ext": {"label": "Extensions", "display": "ext", "class": "ext-tag"}}</script><script src=/PyJavaBridge/script.js defer></script></body></html>

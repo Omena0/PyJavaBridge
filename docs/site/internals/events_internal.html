@@ -1,265 +1,22 @@
-<!DOCTYPE html>
-<html lang="en" data-site-prefix="/PyJavaBridge/">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Events — PyJavaBridge</title>
-  <meta property="og:title" content="Events — PyJavaBridge">
-  <meta name="description" content="Event subscriptions, dispatch, cancellation, overrides, and commands">
-  <meta property="og:description" content="Event subscriptions, dispatch, cancellation, overrides, and commands">
-  <meta property="og:type" content="website">
-  <meta property="og:site_name" content="PyJavaBridge Docs">
-  <meta name="theme-color" content="#6366f1">
-  <meta name="color-scheme" content="dark">
-  <link rel="icon" href="favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="style.css">
-  <link rel="stylesheet" href="fonts.css" media="print" onload="this.media='all'">
-</head>
-<body>
-  <!-- Header -->
-  <header class="site-header">
-    <button class="menu-toggle" aria-label="Toggle menu">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24" aria-hidden="true">
-        <path d="M3 12h18M3 6h18M3 18h18"/>
-      </svg>
-    </button>
-    <div class="header-brand-row">
-      <a rel="prefetch" href="internals/index.html" class="header-brand">
-          <span class="logo">P</span>
-          PyJavaBridge
-      </a>
-      <div class="version-selector-wrap">  <select id="version-selector" class="version-selector" aria-label="Select version">    {config.get("_version_options", "")}  </select></div>
-    </div>
-    <div class="header-search">
-      <svg class="header-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24" aria-hidden="true">  <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg><input type="text" id="header-search" placeholder="Search docs… (Ctrl+K)" autocomplete="off"><div id="search-results" class="search-results"></div>
-    </div>
-    <nav class="header-nav">
-      <a rel="prefetch" href="internals/index.html">Docs</a>
-    </nav>
-  </header>
-
-  <!-- Sidebar -->
-  <aside class="sidebar">
-<div class="search-box">
-  <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20" aria-hidden="true">
-    <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
-  </svg>
-  <input type="text" id="sidebar-search" placeholder="Search docs…">
-</div>
-<div class="sidebar-section">
-  <div class="sidebar-heading collapsed" data-section="getting-started">Getting Started</div>
-  <ul class="sidebar-links">
-    <li><a rel="prefetch" href="getting_started/index.html">Home</a></li>
-    <li><a rel="prefetch" href="getting_started/decorators.html">Decorators</a></li>
-    <li><a rel="prefetch" href="getting_started/exceptions.html">Exceptions</a></li>
-    <li><a rel="prefetch" href="getting_started/examples.html">Examples</a></li>
-  </ul>
-</div>
-<div class="sidebar-section">
-  <div class="sidebar-heading collapsed" data-section="core">Core</div>
-  <ul class="sidebar-links">
-    <li><a rel="prefetch" href="core/server.html">Server</a></li>
-    <li><a rel="prefetch" href="core/event.html">Event</a></li>
-    <li><a rel="prefetch" href="core/entity.html">Entity</a></li>
-    <li><a rel="prefetch" href="core/entitysubtypes.html">Entity Subtypes</a></li>
-    <li><a rel="prefetch" href="core/player.html">Player</a></li>
-  </ul>
-</div>
-<div class="sidebar-section">
-  <div class="sidebar-heading collapsed" data-section="world-space">World & Space</div>
-  <ul class="sidebar-links">
-    <li><a rel="prefetch" href="world/world.html">World</a></li>
-    <li><a rel="prefetch" href="world/location.html">Location</a></li>
-    <li><a rel="prefetch" href="world/block.html">Block</a></li>
-    <li><a rel="prefetch" href="world/blocksnapshot.html">BlockSnapshot</a></li>
-    <li><a rel="prefetch" href="world/chunk.html">Chunk</a></li>
-    <li><a rel="prefetch" href="world/vector.html">Vector</a></li>
-  </ul>
-</div>
-<div class="sidebar-section">
-  <div class="sidebar-heading collapsed" data-section="items-inventory">Items & Inventory</div>
-  <ul class="sidebar-links">
-    <li><a rel="prefetch" href="items/item.html">Item</a></li>
-    <li><a rel="prefetch" href="items/itembuilder.html">ItemBuilder</a></li>
-    <li><a rel="prefetch" href="items/inventory.html">Inventory</a></li>
-    <li><a rel="prefetch" href="items/recipe.html">Recipe</a></li>
-  </ul>
-</div>
-<div class="sidebar-section">
-  <div class="sidebar-heading collapsed" data-section="effects-attributes">Effects & Attributes</div>
-  <ul class="sidebar-links">
-    <li><a rel="prefetch" href="effects/effect.html">Effect</a></li>
-    <li><a rel="prefetch" href="effects/potion.html">Potion</a></li>
-    <li><a rel="prefetch" href="effects/attribute.html">Attribute</a></li>
-    <li><a rel="prefetch" href="effects/advancement.html">Advancement</a></li>
-    <li><a rel="prefetch" href="effects/firework.html">Firework</a></li>
-    <li><a rel="prefetch" href="effects/textcomponent.html">TextComponent</a></li>
-    <li><a rel="prefetch" href="effects/bookbuilder.html">BookBuilder</a></li>
-  </ul>
-</div>
-<div class="sidebar-section">
-  <div class="sidebar-heading collapsed" data-section="scoreboards-ui">Scoreboards & UI</div>
-  <ul class="sidebar-links">
-    <li><a rel="prefetch" href="ui/menu.html">Menu</a></li>
-    <li><a rel="prefetch" href="ui/menuitem.html">MenuItem</a></li>
-    <li><a rel="prefetch" href="ui/sidebar.html">Sidebar</a></li>
-    <li><a rel="prefetch" href="ui/actionbardisplay.html">ActionBarDisplay</a></li>
-    <li><a rel="prefetch" href="ui/bossbardisplay.html">BossBarDisplay</a></li>
-    <li><a rel="prefetch" href="ui/bossbar.html">BossBar</a></li>
-    <li><a rel="prefetch" href="ui/scoreboard.html">Scoreboard</a></li>
-    <li><a rel="prefetch" href="ui/objective.html">Objective</a></li>
-    <li><a rel="prefetch" href="ui/team.html">Team</a></li>
-  </ul>
-</div>
-<div class="sidebar-section">
-  <div class="sidebar-heading collapsed" data-section="helpers">Helpers</div>
-  <ul class="sidebar-links">
-    <li><a rel="prefetch" href="helpers/config.html">Config</a></li>
-    <li><a rel="prefetch" href="helpers/state.html">State</a></li>
-    <li><a rel="prefetch" href="helpers/cooldown.html">Cooldown</a></li>
-    <li><a rel="prefetch" href="helpers/paginator.html">Paginator</a></li>
-    <li><a rel="prefetch" href="helpers/enums.html">Enums</a></li>
-    <li><a rel="prefetch" href="helpers/enumvalue.html">EnumValue</a></li>
-  </ul>
-</div>
-<div class="sidebar-section">
-  <div class="sidebar-heading collapsed" data-section="display-entities">Display Entities</div>
-  <ul class="sidebar-links">
-    <li><a rel="prefetch" href="display/hologram.html">Hologram</a></li>
-    <li><a rel="prefetch" href="display/blockdisplay.html">BlockDisplay</a></li>
-    <li><a rel="prefetch" href="display/itemdisplay.html">ItemDisplay</a></li>
-  </ul>
-</div>
-<div class="sidebar-section">
-  <div class="sidebar-heading collapsed" data-section="extensions">Extensions</div>
-  <ul class="sidebar-links">
-    <li><a rel="prefetch" href="extensions/imagedisplay.html">ImageDisplay</a></li>
-    <li><a rel="prefetch" href="extensions/meshdisplay.html">MeshDisplay</a></li>
-    <li><a rel="prefetch" href="extensions/npc.html">NPC</a></li>
-    <li><a rel="prefetch" href="extensions/quest.html">Quest</a></li>
-    <li><a rel="prefetch" href="extensions/dialog.html">Dialog</a></li>
-    <li><a rel="prefetch" href="extensions/bank.html">Bank</a></li>
-    <li><a rel="prefetch" href="extensions/shop.html">Shop</a></li>
-    <li><a rel="prefetch" href="extensions/trade.html">TradeWindow</a></li>
-    <li><a rel="prefetch" href="extensions/ability.html">Ability</a></li>
-    <li><a rel="prefetch" href="extensions/mana.html">ManaStore</a></li>
-    <li><a rel="prefetch" href="extensions/combat.html">CombatSystem</a></li>
-    <li><a rel="prefetch" href="extensions/levels.html">LevelSystem</a></li>
-    <li><a rel="prefetch" href="extensions/region.html">Region</a></li>
-    <li><a rel="prefetch" href="extensions/party.html">Party</a></li>
-    <li><a rel="prefetch" href="extensions/guild.html">Guild</a></li>
-    <li><a rel="prefetch" href="extensions/customitem.html">CustomItem</a></li>
-    <li><a rel="prefetch" href="extensions/leaderboard.html">Leaderboard</a></li>
-    <li><a rel="prefetch" href="extensions/visualeffect.html">VisualEffect</a></li>
-    <li><a rel="prefetch" href="extensions/playerdatastore.html">PlayerDataStore</a></li>
-    <li><a rel="prefetch" href="extensions/dungeon.html">Dungeon</a></li>
-    <li><a rel="prefetch" href="extensions/tablist.html">TabList</a></li>
-    <li><a rel="prefetch" href="extensions/statemachine.html">StateMachine</a></li>
-    <li><a rel="prefetch" href="extensions/scheduler.html">Scheduler</a></li>
-    <li><a rel="prefetch" href="extensions/placeholder.html">Placeholder</a></li>
-    <li><a rel="prefetch" href="extensions/loottable.html">LootTable</a></li>
-    <li><a rel="prefetch" href="extensions/clientmod.html">ClientMod</a></li>
-  </ul>
-</div>
-<div class="sidebar-section">
-  <div class="sidebar-heading collapsed" data-section="utilities">Utilities</div>
-  <ul class="sidebar-links">
-    <li><a rel="prefetch" href="utilities/raycast.html">Raycast</a></li>
-    <li><a rel="prefetch" href="utilities/chat.html">Chat</a></li>
-    <li><a rel="prefetch" href="utilities/reflect.html">Reflect</a></li>
-  </ul>
-</div>
-<div class="sidebar-section">
-  <div class="sidebar-heading" data-section="internals">Internals</div>
-  <ul class="sidebar-links">
-    <li><a rel="prefetch" href="internals/bridge.html">Bridge</a></li>
-    <li><a rel="prefetch" href="internals/internals/events_internal.html" class="active">Events</a></li>
-    <li><a rel="prefetch" href="internals/execution.html">Execution</a></li>
-    <li><a rel="prefetch" href="internals/serialization.html">Serialization</a></li>
-    <li><a rel="prefetch" href="internals/lifecycle.html">Lifecycle</a></li>
-    <li><a rel="prefetch" href="internals/debugging.html">Debugging</a></li>
-  </ul>
-</div>
-  </aside>
-  <div class="sidebar-overlay"></div>
-
-  <!-- Main -->
-  <main class="main">
-    <div class="content">
-      <p class="subtitle">Event subscriptions, dispatch, cancellation, overrides, and commands</p>
-      <h1>Events</h1>
-<p>How Bukkit events are captured, sent to Python, and how Python can cancel them or override their values. Also covers command registration, which follows a similar player-triggered dispatch model.</p>
-<hr />
-<h2>Subscription</h2>
-<p>When you use <code>@<a rel="prefetch" href="core/event.html" class="filename-reference">event</a></code> in Python, the bridge registers a Bukkit event listener on the Java side:</p>
-<pre><code class="language-python"><span class="hl-function">@</span><span class="hl-function">event</span>
-<span class="hl-keyword">async</span> <span class="hl-keyword">def</span> <span class="hl-function">player_join</span>(<span class="hl-variable">event</span>):
-    <span class="hl-keyword">await</span> <span class="hl-variable">event</span>.<span class="hl-property">player</span>.<span class="hl-property">send_message</span>(<span class="hl-string">&quot;Welcome!&quot;</span>)
-</code></pre>
-<p><strong>Wire message (Python → Java):</strong></p>
-<pre><code class="language-json"><span class="hl-punctuation-bracket">{</span>
-  <span class="hl-property">&quot;type&quot;</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-string">&quot;subscribe&quot;</span><span class="hl-punctuation-delimiter">,</span>
-  <span class="hl-property">&quot;event&quot;</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-string">&quot;player_join&quot;</span><span class="hl-punctuation-delimiter">,</span>
-  <span class="hl-property">&quot;priority&quot;</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-string">&quot;NORMAL&quot;</span><span class="hl-punctuation-delimiter">,</span>
-  <span class="hl-property">&quot;once_per_tick&quot;</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-boolean">false</span><span class="hl-punctuation-delimiter">,</span>
-  <span class="hl-property">&quot;throttle_ms&quot;</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-number">0</span>
-<span class="hl-punctuation-bracket">}</span>
-</code></pre>
-<h3>Priority</h3>
-<p>Maps to Bukkit's <code>EventPriority</code> — controls the order handlers run relative to other plugins:</p>
-<table>
-<thead>
-<tr>
-<th>Priority</th>
-<th>When to use</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>LOWEST</code></td>
-<td>Read event data before anyone modifies it</td>
-</tr>
-<tr>
-<td><code>LOW</code></td>
-<td>Early processing</td>
-</tr>
-<tr>
-<td><code>NORMAL</code></td>
-<td>Default. Most handlers should use this</td>
-</tr>
-<tr>
-<td><code>HIGH</code></td>
-<td>Override other plugins' decisions</td>
-</tr>
-<tr>
-<td><code>HIGHEST</code></td>
-<td>Final say before MONITOR</td>
-</tr>
-<tr>
-<td><code>MONITOR</code></td>
-<td>Read-only observation. Do not modify the event</td>
-</tr>
-</tbody>
-</table>
-<pre><code class="language-python"><span class="hl-function">@</span><span class="hl-function">event</span><span class="hl-function">(</span><span class="hl-variable">priority</span><span class="hl-operator">=</span><span class="hl-string">&quot;HIGH&quot;</span><span class="hl-function">)</span>
-<span class="hl-keyword">async</span> <span class="hl-keyword">def</span> <span class="hl-function">player_chat</span>(<span class="hl-variable">event</span>):
-    <span class="hl-keyword">return</span> <span class="hl-string">f&quot;[VIP] </span><span class="hl-punctuation-special">{</span><span class="hl-variable">event</span><span class="hl-string">.</span><span class="hl-property">message</span><span class="hl-punctuation-special">}</span><span class="hl-string">&quot;</span>  <span class="hl-comment"># Override after other plugins</span>
-</code></pre>
-<h3>Throttling</h3>
-<p>Two mechanisms prevent event spam:</p>
-<p><strong><code>once_per_tick</code></strong> — Only dispatch the first occurrence per server tick. Useful for events that fire many times per tick (e.g. <code>entity_move</code>):</p>
-<pre><code class="language-python"><span class="hl-function">@</span><span class="hl-function">event</span><span class="hl-function">(</span><span class="hl-variable">once_per_tick</span><span class="hl-operator">=</span><span class="hl-constant-builtin">True</span><span class="hl-function">)</span>
-<span class="hl-keyword">async</span> <span class="hl-keyword">def</span> <span class="hl-function">entity_move</span>(<span class="hl-variable">event</span>):
-    <span class="hl-keyword">pass</span>  <span class="hl-comment"># Called at most once per tick per subscription</span>
-</code></pre>
-<p><strong><code>throttle_ms</code></strong> — Minimum milliseconds between dispatches. Nanosecond-precision cooldown:</p>
-<pre><code class="language-python"><span class="hl-function">@</span><span class="hl-function">event</span><span class="hl-function">(</span><span class="hl-variable">throttle_ms</span><span class="hl-operator">=</span><span class="hl-number">100</span><span class="hl-function">)</span>
-<span class="hl-keyword">async</span> <span class="hl-keyword">def</span> <span class="hl-function">player_move</span>(<span class="hl-variable">event</span>):
-    <span class="hl-keyword">pass</span>  <span class="hl-comment"># At most 10 dispatches per second</span>
-</code></pre>
-<hr />
-<h2>Dispatch Flow</h2>
-<pre><code class="language-flow">1. Bukkit event fires (e.g. PlayerJoinEvent)
+<!DOCTYPE html><html lang=en data-site-prefix=/PyJavaBridge/><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Events — PyJavaBridge</title><meta property=og:title content="Events — PyJavaBridge"><meta name=description content="Event subscriptions, dispatch, cancellation, overrides, and commands"><meta property=og:description content="Event subscriptions, dispatch, cancellation, overrides, and commands"><meta property=og:type content=website><meta property=og:site_name content="PyJavaBridge Docs"><meta name=theme-color content=#6366f1><meta name=color-scheme content=dark><link rel=icon href=/PyJavaBridge/favicon.svg type=image/svg+xml><link rel=stylesheet href=/PyJavaBridge/style.css><link rel=stylesheet href=/PyJavaBridge/fonts.css media=print onload='this.media="all"'></head><body><header class=site-header><button class=menu-toggle aria-label="Toggle menu"><svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" viewBox="0 0 24 24"><path d="M3 12h18M3 6h18M3 18h18"/></svg></button><div class=header-brand-row><a rel=prefetch href=/PyJavaBridge/internals/index.html class=header-brand><span class=logo>P</span> PyJavaBridge</a><div class=version-selector-wrap><select id=version-selector class=version-selector aria-label="Select version">{config.get("_version_options", "")}</select></div></div><div class=header-search><svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" class="header-search-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg><input type=text id=header-search placeholder="Search docs… (Ctrl+K)"autocomplete=off><div id=search-results class=search-results></div></div><nav class=header-nav><a rel=prefetch href=/PyJavaBridge/internals/index.html>Docs</a></nav></header><aside class=sidebar><div class=search-box><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" class="search-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg> <input type=text id=sidebar-search placeholder="Search docs…"></div><div class=sidebar-section><div class="sidebar-heading collapsed"data-section=getting-started>Getting Started</div><ul class=sidebar-links><li><a rel=prefetch href=/PyJavaBridge/getting_started/index.html>Home</a></li><li><a rel=prefetch href=/PyJavaBridge/getting_started/decorators.html>Decorators</a></li><li><a rel=prefetch href=/PyJavaBridge/getting_started/exceptions.html>Exceptions</a></li><li><a rel=prefetch href=/PyJavaBridge/getting_started/examples.html>Examples</a></li></ul></div><div class=sidebar-section><div class="sidebar-heading collapsed"data-section=core>Core</div><ul class=sidebar-links><li><a rel=prefetch href=/PyJavaBridge/core/server.html>Server</a></li><li><a rel=prefetch href=/PyJavaBridge/core/event.html>Event</a></li><li><a rel=prefetch href=/PyJavaBridge/core/entity.html>Entity</a></li><li><a rel=prefetch href=/PyJavaBridge/core/entitysubtypes.html>Entity Subtypes</a></li><li><a rel=prefetch href=/PyJavaBridge/core/player.html>Player</a></li></ul></div><div class=sidebar-section><div class="sidebar-heading collapsed"data-section=world-space>World & Space</div><ul class=sidebar-links><li><a rel=prefetch href=/PyJavaBridge/world/world.html>World</a></li><li><a rel=prefetch href=/PyJavaBridge/world/location.html>Location</a></li><li><a rel=prefetch href=/PyJavaBridge/world/block.html>Block</a></li><li><a rel=prefetch href=/PyJavaBridge/world/blocksnapshot.html>BlockSnapshot</a></li><li><a rel=prefetch href=/PyJavaBridge/world/chunk.html>Chunk</a></li><li><a rel=prefetch href=/PyJavaBridge/world/vector.html>Vector</a></li></ul></div><div class=sidebar-section><div class="sidebar-heading collapsed"data-section=items-inventory>Items & Inventory</div><ul class=sidebar-links><li><a rel=prefetch href=/PyJavaBridge/items/item.html>Item</a></li><li><a rel=prefetch href=/PyJavaBridge/items/itembuilder.html>ItemBuilder</a></li><li><a rel=prefetch href=/PyJavaBridge/items/inventory.html>Inventory</a></li><li><a rel=prefetch href=/PyJavaBridge/items/recipe.html>Recipe</a></li></ul></div><div class=sidebar-section><div class="sidebar-heading collapsed"data-section=effects-attributes>Effects & Attributes</div><ul class=sidebar-links><li><a rel=prefetch href=/PyJavaBridge/effects/effect.html>Effect</a></li><li><a rel=prefetch href=/PyJavaBridge/effects/potion.html>Potion</a></li><li><a rel=prefetch href=/PyJavaBridge/effects/attribute.html>Attribute</a></li><li><a rel=prefetch href=/PyJavaBridge/effects/advancement.html>Advancement</a></li><li><a rel=prefetch href=/PyJavaBridge/effects/firework.html>Firework</a></li><li><a rel=prefetch href=/PyJavaBridge/effects/textcomponent.html>TextComponent</a></li><li><a rel=prefetch href=/PyJavaBridge/effects/bookbuilder.html>BookBuilder</a></li></ul></div><div class=sidebar-section><div class="sidebar-heading collapsed"data-section=scoreboards-ui>Scoreboards & UI</div><ul class=sidebar-links><li><a rel=prefetch href=/PyJavaBridge/ui/menu.html>Menu</a></li><li><a rel=prefetch href=/PyJavaBridge/ui/menuitem.html>MenuItem</a></li><li><a rel=prefetch href=/PyJavaBridge/ui/sidebar.html>Sidebar</a></li><li><a rel=prefetch href=/PyJavaBridge/ui/actionbardisplay.html>ActionBarDisplay</a></li><li><a rel=prefetch href=/PyJavaBridge/ui/bossbardisplay.html>BossBarDisplay</a></li><li><a rel=prefetch href=/PyJavaBridge/ui/bossbar.html>BossBar</a></li><li><a rel=prefetch href=/PyJavaBridge/ui/scoreboard.html>Scoreboard</a></li><li><a rel=prefetch href=/PyJavaBridge/ui/objective.html>Objective</a></li><li><a rel=prefetch href=/PyJavaBridge/ui/team.html>Team</a></li></ul></div><div class=sidebar-section><div class="sidebar-heading collapsed"data-section=helpers>Helpers</div><ul class=sidebar-links><li><a rel=prefetch href=/PyJavaBridge/helpers/config.html>Config</a></li><li><a rel=prefetch href=/PyJavaBridge/helpers/state.html>State</a></li><li><a rel=prefetch href=/PyJavaBridge/helpers/cooldown.html>Cooldown</a></li><li><a rel=prefetch href=/PyJavaBridge/helpers/paginator.html>Paginator</a></li><li><a rel=prefetch href=/PyJavaBridge/helpers/enums.html>Enums</a></li><li><a rel=prefetch href=/PyJavaBridge/helpers/enumvalue.html>EnumValue</a></li></ul></div><div class=sidebar-section><div class="sidebar-heading collapsed"data-section=display-entities>Display Entities</div><ul class=sidebar-links><li><a rel=prefetch href=/PyJavaBridge/display/hologram.html>Hologram</a></li><li><a rel=prefetch href=/PyJavaBridge/display/blockdisplay.html>BlockDisplay</a></li><li><a rel=prefetch href=/PyJavaBridge/display/itemdisplay.html>ItemDisplay</a></li></ul></div><div class=sidebar-section><div class="sidebar-heading collapsed"data-section=extensions>Extensions</div><ul class=sidebar-links><li><a rel=prefetch href=/PyJavaBridge/extensions/imagedisplay.html>ImageDisplay</a></li><li><a rel=prefetch href=/PyJavaBridge/extensions/meshdisplay.html>MeshDisplay</a></li><li><a rel=prefetch href=/PyJavaBridge/extensions/npc.html>NPC</a></li><li><a rel=prefetch href=/PyJavaBridge/extensions/quest.html>Quest</a></li><li><a rel=prefetch href=/PyJavaBridge/extensions/dialog.html>Dialog</a></li><li><a rel=prefetch href=/PyJavaBridge/extensions/bank.html>Bank</a></li><li><a rel=prefetch href=/PyJavaBridge/extensions/shop.html>Shop</a></li><li><a rel=prefetch href=/PyJavaBridge/extensions/trade.html>TradeWindow</a></li><li><a rel=prefetch href=/PyJavaBridge/extensions/ability.html>Ability</a></li><li><a rel=prefetch href=/PyJavaBridge/extensions/mana.html>ManaStore</a></li><li><a rel=prefetch href=/PyJavaBridge/extensions/combat.html>CombatSystem</a></li><li><a rel=prefetch href=/PyJavaBridge/extensions/levels.html>LevelSystem</a></li><li><a rel=prefetch href=/PyJavaBridge/extensions/region.html>Region</a></li><li><a rel=prefetch href=/PyJavaBridge/extensions/party.html>Party</a></li><li><a rel=prefetch href=/PyJavaBridge/extensions/guild.html>Guild</a></li><li><a rel=prefetch href=/PyJavaBridge/extensions/customitem.html>CustomItem</a></li><li><a rel=prefetch href=/PyJavaBridge/extensions/leaderboard.html>Leaderboard</a></li><li><a rel=prefetch href=/PyJavaBridge/extensions/visualeffect.html>VisualEffect</a></li><li><a rel=prefetch href=/PyJavaBridge/extensions/playerdatastore.html>PlayerDataStore</a></li><li><a rel=prefetch href=/PyJavaBridge/extensions/dungeon.html>Dungeon</a></li><li><a rel=prefetch href=/PyJavaBridge/extensions/tablist.html>TabList</a></li><li><a rel=prefetch href=/PyJavaBridge/extensions/statemachine.html>StateMachine</a></li><li><a rel=prefetch href=/PyJavaBridge/extensions/scheduler.html>Scheduler</a></li><li><a rel=prefetch href=/PyJavaBridge/extensions/placeholder.html>Placeholder</a></li><li><a rel=prefetch href=/PyJavaBridge/extensions/loottable.html>LootTable</a></li><li><a rel=prefetch href=/PyJavaBridge/extensions/clientmod.html>ClientMod</a></li></ul></div><div class=sidebar-section><div class="sidebar-heading collapsed"data-section=utilities>Utilities</div><ul class=sidebar-links><li><a rel=prefetch href=/PyJavaBridge/utilities/raycast.html>Raycast</a></li><li><a rel=prefetch href=/PyJavaBridge/utilities/chat.html>Chat</a></li><li><a rel=prefetch href=/PyJavaBridge/utilities/reflect.html>Reflect</a></li></ul></div><div class=sidebar-section><div class=sidebar-heading data-section=internals>Internals</div><ul class=sidebar-links><li><a rel=prefetch href=/PyJavaBridge/internals/bridge.html>Bridge</a></li><li><a rel=prefetch href=/PyJavaBridge/internals/internals/events_internal.html class=active>Events</a></li><li><a rel=prefetch href=/PyJavaBridge/internals/execution.html>Execution</a></li><li><a rel=prefetch href=/PyJavaBridge/internals/serialization.html>Serialization</a></li><li><a rel=prefetch href=/PyJavaBridge/internals/lifecycle.html>Lifecycle</a></li><li><a rel=prefetch href=/PyJavaBridge/internals/debugging.html>Debugging</a></li></ul></div></aside><div class=sidebar-overlay></div><main class=main><div class=content><p class=subtitle>Event subscriptions, dispatch, cancellation, overrides, and commands</p><h1>Events</h1><p>How Bukkit events are captured, sent to Python, and how Python can cancel them or override their values. Also covers command registration, which follows a similar player-triggered dispatch model.</p><hr><h2>Subscription</h2><p>When you use <code>@<a rel=prefetch href=/PyJavaBridge/core/event.html class=filename-reference>event</a></code> in Python, the bridge registers a Bukkit event listener on the Java side:</p><pre><code class=language-python><span class=hl-function>@</span><span class=hl-function>event</span>
+<span class=hl-keyword>async</span> <span class=hl-keyword>def</span> <span class=hl-function>player_join</span>(<span class=hl-variable>event</span>):
+    <span class=hl-keyword>await</span> <span class=hl-variable>event</span>.<span class=hl-property>player</span>.<span class=hl-property>send_message</span>(<span class=hl-string>&quot;Welcome!&quot;</span>)</code></pre><p><strong>Wire message (Python → Java):</strong></p><pre><code class=language-json><span class=hl-punctuation-bracket>{</span>
+  <span class=hl-property>&quot;type&quot;</span><span class=hl-punctuation-delimiter>:</span> <span class=hl-string>&quot;subscribe&quot;</span><span class=hl-punctuation-delimiter>,</span>
+  <span class=hl-property>&quot;event&quot;</span><span class=hl-punctuation-delimiter>:</span> <span class=hl-string>&quot;player_join&quot;</span><span class=hl-punctuation-delimiter>,</span>
+  <span class=hl-property>&quot;priority&quot;</span><span class=hl-punctuation-delimiter>:</span> <span class=hl-string>&quot;NORMAL&quot;</span><span class=hl-punctuation-delimiter>,</span>
+  <span class=hl-property>&quot;once_per_tick&quot;</span><span class=hl-punctuation-delimiter>:</span> <span class=hl-boolean>false</span><span class=hl-punctuation-delimiter>,</span>
+  <span class=hl-property>&quot;throttle_ms&quot;</span><span class=hl-punctuation-delimiter>:</span> <span class=hl-number>0</span>
+<span class=hl-punctuation-bracket>}</span>
+</code></pre><h3>Priority</h3><p>Maps to Bukkit's <code>EventPriority</code> — controls the order handlers run relative to other plugins:</p><table><thead><tr><th>Priority</th><th>When to use</th></tr></thead><tbody><tr><td><code>LOWEST</code></td><td>Read event data before anyone modifies it</td></tr><tr><td><code>LOW</code></td><td>Early processing</td></tr><tr><td><code>NORMAL</code></td><td>Default. Most handlers should use this</td></tr><tr><td><code>HIGH</code></td><td>Override other plugins' decisions</td></tr><tr><td><code>HIGHEST</code></td><td>Final say before MONITOR</td></tr><tr><td><code>MONITOR</code></td><td>Read-only observation. Do not modify the event</td></tr></tbody></table><pre><code class=language-python><span class=hl-function>@</span><span class=hl-function>event</span><span class=hl-function>(</span><span class=hl-variable>priority</span><span class=hl-operator>=</span><span class=hl-string>&quot;HIGH&quot;</span><span class=hl-function>)</span>
+<span class=hl-keyword>async</span> <span class=hl-keyword>def</span> <span class=hl-function>player_chat</span>(<span class=hl-variable>event</span>):
+    <span class=hl-keyword>return</span> <span class=hl-string>f&quot;[VIP] </span><span class=hl-punctuation-special>{</span><span class=hl-variable>event</span><span class=hl-string>.</span><span class=hl-property>message</span><span class=hl-punctuation-special>}</span><span class=hl-string>&quot;</span>  <span class=hl-comment># Override after other plugins</span>
+</code></pre><h3>Throttling</h3><p>Two mechanisms prevent event spam:</p><p><strong><code>once_per_tick</code></strong> — Only dispatch the first occurrence per server tick. Useful for events that fire many times per tick (e.g. <code>entity_move</code>):</p><pre><code class=language-python><span class=hl-function>@</span><span class=hl-function>event</span><span class=hl-function>(</span><span class=hl-variable>once_per_tick</span><span class=hl-operator>=</span><span class=hl-constant-builtin>True</span><span class=hl-function>)</span>
+<span class=hl-keyword>async</span> <span class=hl-keyword>def</span> <span class=hl-function>entity_move</span>(<span class=hl-variable>event</span>):
+    <span class=hl-keyword>pass</span>  <span class=hl-comment># Called at most once per tick per subscription</span>
+</code></pre><p><strong><code>throttle_ms</code></strong> — Minimum milliseconds between dispatches. Nanosecond-precision cooldown:</p><pre><code class=language-python><span class=hl-function>@</span><span class=hl-function>event</span><span class=hl-function>(</span><span class=hl-variable>throttle_ms</span><span class=hl-operator>=</span><span class=hl-number>100</span><span class=hl-function>)</span>
+<span class=hl-keyword>async</span> <span class=hl-keyword>def</span> <span class=hl-function>player_move</span>(<span class=hl-variable>event</span>):
+    <span class=hl-keyword>pass</span>  <span class=hl-comment># At most 10 dispatches per second</span>
+</code></pre><hr><h2>Dispatch Flow</h2><pre><code class=language-flow>1. Bukkit event fires (e.g. PlayerJoinEvent)
          │
 2. Java EventSubscription executor runs
    ├── Check once_per_tick: skip if already fired this tick
@@ -286,174 +43,45 @@
    ├── Cancel: event.setCancelled(true)
    ├── Chat override: replace message text
    ├── Damage override: event.setDamage(value)
-   └── Respawn override: event.setRespawnLocation(location)
-</code></pre>
-<h3>Payload auto-extraction</h3>
-<p>The Java EventDispatcher uses reflection to extract common event fields. It tries multiple getter names for compatibility across Bukkit versions:</p>
-<pre><code class="language-java"><span class="hl-function-method-call">tryAddPayload</span><span class="hl-punctuation-bracket">(</span><span class="hl-variable">payload</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-variable">event</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-string">&quot;player&quot;</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-string">&quot;getPlayer&quot;</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-string">&quot;getWhoClicked&quot;</span><span class="hl-punctuation-bracket">)</span><span class="hl-punctuation-delimiter">;</span>
-<span class="hl-function-method-call">tryAddPayload</span><span class="hl-punctuation-bracket">(</span><span class="hl-variable">payload</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-variable">event</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-string">&quot;entity&quot;</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-string">&quot;getEntity&quot;</span><span class="hl-punctuation-bracket">)</span><span class="hl-punctuation-delimiter">;</span>
-<span class="hl-function-method-call">tryAddPayload</span><span class="hl-punctuation-bracket">(</span><span class="hl-variable">payload</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-variable">event</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-string">&quot;block&quot;</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-string">&quot;getBlock&quot;</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-string">&quot;getClickedBlock&quot;</span><span class="hl-punctuation-bracket">)</span><span class="hl-punctuation-delimiter">;</span>
-<span class="hl-function-method-call">tryAddPayload</span><span class="hl-punctuation-bracket">(</span><span class="hl-variable">payload</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-variable">event</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-string">&quot;inventory&quot;</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-string">&quot;getInventory&quot;</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-string">&quot;getClickedInventory&quot;</span><span class="hl-punctuation-bracket">)</span><span class="hl-punctuation-delimiter">;</span>
-</code></pre>
-<p>Fields are serialized with the full bridge serializer, so you get proper proxy objects in Python (not raw data).</p>
-<hr />
-<h2>Blocking Behavior</h2>
-<p>The Java event handler thread <strong>blocks</strong> while waiting for Python to respond. This is necessary for cancellation/modification to work — Java must wait for Python's answer before the event proceeds.</p>
-<p><strong>Timeout:</strong> 1 second. If Python doesn't respond in time, the event continues unmodified.</p>
-<p><strong>While blocking</strong>, Java calls <code>drainMainThreadQueue()</code> in a loop. This means Python's event handler can make API calls back to Java and they'll be processed — the event dispatch doesn't deadlock the main thread queue.</p>
-<pre><code class="language-java"><span class="hl-keyword-repeat">while</span> <span class="hl-punctuation-bracket">(</span><span class="hl-type">System</span><span class="hl-punctuation-delimiter">.</span><span class="hl-function-method-call">currentTimeMillis</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">)</span> <span class="hl-operator">&lt;</span> <span class="hl-variable">deadline</span> <span class="hl-operator">&amp;&amp;</span> <span class="hl-variable">pending</span><span class="hl-punctuation-delimiter">.</span><span class="hl-variable-member">latch</span><span class="hl-punctuation-delimiter">.</span><span class="hl-function-method-call">getCount</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">)</span> <span class="hl-operator">&gt;</span> <span class="hl-number">0</span><span class="hl-punctuation-bracket">)</span> <span class="hl-punctuation-bracket">{</span>
-    <span class="hl-variable">plugin</span><span class="hl-punctuation-delimiter">.</span><span class="hl-function-method-call">drainMainThreadQueue</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">)</span><span class="hl-punctuation-delimiter">;</span>  <span class="hl-comment">// Process API calls while waiting</span>
-    <span class="hl-variable">pending</span><span class="hl-punctuation-delimiter">.</span><span class="hl-variable-member">latch</span><span class="hl-punctuation-delimiter">.</span><span class="hl-function-method-call">await</span><span class="hl-punctuation-bracket">(</span><span class="hl-number">5</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-type">TimeUnit</span><span class="hl-punctuation-delimiter">.</span><span class="hl-constant">MILLISECONDS</span><span class="hl-punctuation-bracket">)</span><span class="hl-punctuation-delimiter">;</span>
-<span class="hl-punctuation-bracket">}</span>
-</code></pre>
-<h3>Implications</h3>
-<ul>
-<li>Event handlers should be <strong>fast</strong>. Long operations delay the event (and the server tick).</li>
-<li>Each script receives events independently with its own timeout.</li>
-<li>Non-cancellable events (no <code>id</code> field) are fire-and-forget — Java doesn't block.</li>
-</ul>
-<hr />
-<h2>Cancellation</h2>
-<p>Call <code><a rel="prefetch" href="core/event.html" class="filename-reference">event</a>.cancel()</code> inside any handler to cancel a cancellable event:</p>
-<pre><code class="language-python"><span class="hl-function">@</span><span class="hl-function">event</span>
-<span class="hl-keyword">async</span> <span class="hl-keyword">def</span> <span class="hl-function">player_chat</span>(<span class="hl-variable">event</span>):
-    <span class="hl-keyword">if</span> <span class="hl-string">&quot;bad_word&quot;</span> <span class="hl-operator">in</span> <span class="hl-variable">event</span>.<span class="hl-property">message</span>.<span class="hl-property">lower</span>():
-        <span class="hl-variable">event</span>.<span class="hl-property">cancel</span>()
-        <span class="hl-keyword">await</span> <span class="hl-variable">event</span>.<span class="hl-property">player</span>.<span class="hl-property">send_message</span>(<span class="hl-string">&quot;§cWatch your language!&quot;</span>)
-</code></pre>
-<p>Python sends <code>{&quot;type&quot;: &quot;event_cancel&quot;, &quot;id&quot;: 42}</code> before <code>event_done</code>. Java sets <code><a rel="prefetch" href="core/event.html" class="filename-reference">event</a>.setCancelled(true)</code> on the Bukkit event.</p>
-<p>Not all Bukkit events are cancellable. Non-cancellable events (like <code>player_join</code>) ignore cancel requests.</p>
-<hr />
-<h2>Result Overrides</h2>
-<p>Handlers can modify event data by returning values:</p>
-<h3>Chat message override</h3>
-<p>Return a string from a chat event handler to replace the message:</p>
-<pre><code class="language-python"><span class="hl-function">@</span><span class="hl-function">event</span>
-<span class="hl-keyword">async</span> <span class="hl-keyword">def</span> <span class="hl-function">async_chat</span>(<span class="hl-variable">event</span>):
-    <span class="hl-keyword">return</span> <span class="hl-string">f&quot;[</span><span class="hl-punctuation-special">{</span><span class="hl-variable">event</span><span class="hl-string">.</span><span class="hl-property">player</span><span class="hl-string">.</span><span class="hl-property">name</span><span class="hl-punctuation-special">}</span><span class="hl-string">] </span><span class="hl-punctuation-special">{</span><span class="hl-variable">event</span><span class="hl-string">.</span><span class="hl-property">message</span><span class="hl-punctuation-special">}</span><span class="hl-string">&quot;</span>
-</code></pre>
-<p>Sends: <code>{&quot;type&quot;: &quot;event_result&quot;, &quot;id&quot;: 42, &quot;result&quot;: &quot;&#91;Steve&#93; Hello&quot;, &quot;result_type&quot;: &quot;<a rel="prefetch" href="utilities/chat.html" class="filename-reference">chat</a>&quot;}</code></p>
-<h3>Damage override</h3>
-<p>Return a number from a damage event handler to change the damage amount:</p>
-<pre><code class="language-python"><span class="hl-function">@</span><span class="hl-function">event</span>
-<span class="hl-keyword">async</span> <span class="hl-keyword">def</span> <span class="hl-function">entity_damage</span>(<span class="hl-variable">event</span>):
-    <span class="hl-keyword">if</span> <span class="hl-variable">event</span>.<span class="hl-property">entity</span>.<span class="hl-property">type</span> <span class="hl-operator">==</span> <span class="hl-string">&quot;PLAYER&quot;</span>:
-        <span class="hl-keyword">return</span> <span class="hl-variable">event</span>.<span class="hl-property">damage</span> <span class="hl-operator">*</span> <span class="hl-number">0.5</span>  <span class="hl-comment"># Half damage</span>
-</code></pre>
-<p>Sends: <code>{&quot;type&quot;: &quot;event_result&quot;, &quot;id&quot;: 42, &quot;result&quot;: 2.5, &quot;result_type&quot;: &quot;damage&quot;}</code></p>
-<h3>Respawn location override</h3>
-<p>Return a <code><a rel="prefetch" href="world/location.html" class="filename-reference">Location</a></code> from a respawn event handler to change where the player respawns:</p>
-<pre><code class="language-python"><span class="hl-function">@</span><span class="hl-function">event</span>
-<span class="hl-keyword">async</span> <span class="hl-keyword">def</span> <span class="hl-function">player_respawn</span>(<span class="hl-variable">event</span>):
-    <span class="hl-keyword">return</span> <span class="hl-function">Location</span>(<span class="hl-number">0</span>, <span class="hl-number">100</span>, <span class="hl-number">0</span>, <span class="hl-variable">event</span>.<span class="hl-property">player</span>.<span class="hl-property">world</span>)  <span class="hl-comment"># Spawn at world center</span>
-</code></pre>
-<p>Sends: <code>{&quot;type&quot;: &quot;event_result&quot;, &quot;id&quot;: 42, &quot;result&quot;: {&quot;<strong>value</strong>&quot;: &quot;<a rel="prefetch" href="world/location.html" class="filename-reference">Location</a>&quot;, &quot;fields&quot;: {...}}, &quot;result_type&quot;: &quot;respawn&quot;}</code></p>
-<h3>Multiple handlers</h3>
-<p>If multiple handlers return values, the last one wins. All handlers run concurrently via <code>asyncio.gather</code>, so ordering isn't guaranteed.</p>
-<hr />
-<h2>Block Explosion Special Handling</h2>
-<p>Block explosion events (<code>block_explode</code>, <code>entity_explode</code>) get special treatment. Instead of one event for the entire explosion, Java creates one event per affected block and sends them as a batch:</p>
-<pre><code class="language-json"><span class="hl-punctuation-bracket">{</span><span class="hl-property">&quot;type&quot;</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-string">&quot;event_batch&quot;</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">&quot;event&quot;</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-string">&quot;block_explode&quot;</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">&quot;payloads&quot;</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-punctuation-bracket">[</span><span class="hl-punctuation-bracket">{</span>...<span class="hl-punctuation-bracket">}</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-punctuation-bracket">{</span>...<span class="hl-punctuation-bracket">}</span><span class="hl-punctuation-delimiter">,</span> ...<span class="hl-punctuation-bracket">]</span><span class="hl-punctuation-bracket">}</span>
-</code></pre>
-<p>Each payload gets dispatched individually on the Python side. Cancelled blocks are removed from the explosion's block list — you can selectively protect blocks:</p>
-<pre><code class="language-python"><span class="hl-function">@</span><span class="hl-function">event</span>
-<span class="hl-keyword">async</span> <span class="hl-keyword">def</span> <span class="hl-function">block_explode</span>(<span class="hl-variable">event</span>):
-    <span class="hl-keyword">if</span> <span class="hl-keyword">await</span> <span class="hl-variable">event</span>.<span class="hl-property">block</span>.<span class="hl-property">get_type</span>() <span class="hl-operator">==</span> <span class="hl-string">&quot;DIAMOND_ORE&quot;</span>:
-        <span class="hl-variable">event</span>.<span class="hl-property">cancel</span>()  <span class="hl-comment"># Protect diamond ore from explosions</span>
-</code></pre>
-<hr />
-<h2>Event Name Mapping</h2>
-<p>Bukkit event class names are converted to snake_case for Python. The mapping strips common suffixes:</p>
-<table>
-<thead>
-<tr>
-<th>Bukkit Class</th>
-<th>Python Event Name</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>PlayerJoinEvent</code></td>
-<td><code>player_join</code></td>
-</tr>
-<tr>
-<td><code>AsyncChatEvent</code></td>
-<td><code>async_chat</code></td>
-</tr>
-<tr>
-<td><code>EntityDamageByEntityEvent</code></td>
-<td><code>entity_damage_by_entity</code></td>
-</tr>
-<tr>
-<td><code>BlockBreakEvent</code></td>
-<td><code>block_break</code></td>
-</tr>
-<tr>
-<td><code>InventoryClickEvent</code></td>
-<td><code>inventory_click</code></td>
-</tr>
-</tbody>
-</table>
-<p>The <code><a rel="prefetch" href="core/event.html" class="filename-reference">Event</a></code> suffix is always stripped. CamelCase is split into snake_case.</p>
-<hr />
-<h2>Command Registration</h2>
-<p>Commands follow the same pattern as events — a player action triggers a dispatch from Java to Python.</p>
-<h3>The <code>@command</code> decorator</h3>
-<p>Python scripts register commands using the <code>@command</code> decorator:</p>
-<pre><code class="language-python"><span class="hl-keyword">from</span> <span class="hl-variable">bridge</span> <span class="hl-keyword">import</span> <span class="hl-variable">command</span>
+   └── Respawn override: event.setRespawnLocation(location)</code></pre><h3>Payload auto-extraction</h3><p>The Java EventDispatcher uses reflection to extract common event fields. It tries multiple getter names for compatibility across Bukkit versions:</p><pre><code class=language-java><span class=hl-function-method-call>tryAddPayload</span><span class=hl-punctuation-bracket>(</span><span class=hl-variable>payload</span><span class=hl-punctuation-delimiter>,</span> <span class=hl-variable>event</span><span class=hl-punctuation-delimiter>,</span> <span class=hl-string>&quot;player&quot;</span><span class=hl-punctuation-delimiter>,</span> <span class=hl-string>&quot;getPlayer&quot;</span><span class=hl-punctuation-delimiter>,</span> <span class=hl-string>&quot;getWhoClicked&quot;</span><span class=hl-punctuation-bracket>)</span><span class=hl-punctuation-delimiter>;</span>
+<span class=hl-function-method-call>tryAddPayload</span><span class=hl-punctuation-bracket>(</span><span class=hl-variable>payload</span><span class=hl-punctuation-delimiter>,</span> <span class=hl-variable>event</span><span class=hl-punctuation-delimiter>,</span> <span class=hl-string>&quot;entity&quot;</span><span class=hl-punctuation-delimiter>,</span> <span class=hl-string>&quot;getEntity&quot;</span><span class=hl-punctuation-bracket>)</span><span class=hl-punctuation-delimiter>;</span>
+<span class=hl-function-method-call>tryAddPayload</span><span class=hl-punctuation-bracket>(</span><span class=hl-variable>payload</span><span class=hl-punctuation-delimiter>,</span> <span class=hl-variable>event</span><span class=hl-punctuation-delimiter>,</span> <span class=hl-string>&quot;block&quot;</span><span class=hl-punctuation-delimiter>,</span> <span class=hl-string>&quot;getBlock&quot;</span><span class=hl-punctuation-delimiter>,</span> <span class=hl-string>&quot;getClickedBlock&quot;</span><span class=hl-punctuation-bracket>)</span><span class=hl-punctuation-delimiter>;</span>
+<span class=hl-function-method-call>tryAddPayload</span><span class=hl-punctuation-bracket>(</span><span class=hl-variable>payload</span><span class=hl-punctuation-delimiter>,</span> <span class=hl-variable>event</span><span class=hl-punctuation-delimiter>,</span> <span class=hl-string>&quot;inventory&quot;</span><span class=hl-punctuation-delimiter>,</span> <span class=hl-string>&quot;getInventory&quot;</span><span class=hl-punctuation-delimiter>,</span> <span class=hl-string>&quot;getClickedInventory&quot;</span><span class=hl-punctuation-bracket>)</span><span class=hl-punctuation-delimiter>;</span>
+</code></pre><p>Fields are serialized with the full bridge serializer, so you get proper proxy objects in Python (not raw data).</p><hr><h2>Blocking Behavior</h2><p>The Java event handler thread <strong>blocks</strong> while waiting for Python to respond. This is necessary for cancellation/modification to work — Java must wait for Python's answer before the event proceeds.</p><p><strong>Timeout:</strong> 1 second. If Python doesn't respond in time, the event continues unmodified.</p><p><strong>While blocking</strong>, Java calls <code>drainMainThreadQueue()</code> in a loop. This means Python's event handler can make API calls back to Java and they'll be processed — the event dispatch doesn't deadlock the main thread queue.</p><pre><code class=language-java><span class=hl-keyword-repeat>while</span> <span class=hl-punctuation-bracket>(</span><span class=hl-type>System</span><span class=hl-punctuation-delimiter>.</span><span class=hl-function-method-call>currentTimeMillis</span><span class=hl-punctuation-bracket>(</span><span class=hl-punctuation-bracket>)</span> <span class=hl-operator>&lt;</span> <span class=hl-variable>deadline</span> <span class=hl-operator>&amp;&amp;</span> <span class=hl-variable>pending</span><span class=hl-punctuation-delimiter>.</span><span class=hl-variable-member>latch</span><span class=hl-punctuation-delimiter>.</span><span class=hl-function-method-call>getCount</span><span class=hl-punctuation-bracket>(</span><span class=hl-punctuation-bracket>)</span> <span class=hl-operator>&gt;</span> <span class=hl-number>0</span><span class=hl-punctuation-bracket>)</span> <span class=hl-punctuation-bracket>{</span>
+    <span class=hl-variable>plugin</span><span class=hl-punctuation-delimiter>.</span><span class=hl-function-method-call>drainMainThreadQueue</span><span class=hl-punctuation-bracket>(</span><span class=hl-punctuation-bracket>)</span><span class=hl-punctuation-delimiter>;</span>  <span class=hl-comment>// Process API calls while waiting</span>
+    <span class=hl-variable>pending</span><span class=hl-punctuation-delimiter>.</span><span class=hl-variable-member>latch</span><span class=hl-punctuation-delimiter>.</span><span class=hl-function-method-call>await</span><span class=hl-punctuation-bracket>(</span><span class=hl-number>5</span><span class=hl-punctuation-delimiter>,</span> <span class=hl-type>TimeUnit</span><span class=hl-punctuation-delimiter>.</span><span class=hl-constant>MILLISECONDS</span><span class=hl-punctuation-bracket>)</span><span class=hl-punctuation-delimiter>;</span>
+<span class=hl-punctuation-bracket>}</span>
+</code></pre><h3>Implications</h3><ul><li>Event handlers should be <strong>fast</strong>. Long operations delay the event (and the server tick).</li><li>Each script receives events independently with its own timeout.</li><li>Non-cancellable events (no <code>id</code> field) are fire-and-forget — Java doesn't block.</li></ul><hr><h2>Cancellation</h2><p>Call <code><a rel=prefetch href=/PyJavaBridge/core/event.html class=filename-reference>event</a>.cancel()</code> inside any handler to cancel a cancellable event:</p><pre><code class=language-python><span class=hl-function>@</span><span class=hl-function>event</span>
+<span class=hl-keyword>async</span> <span class=hl-keyword>def</span> <span class=hl-function>player_chat</span>(<span class=hl-variable>event</span>):
+    <span class=hl-keyword>if</span> <span class=hl-string>&quot;bad_word&quot;</span> <span class=hl-operator>in</span> <span class=hl-variable>event</span>.<span class=hl-property>message</span>.<span class=hl-property>lower</span>():
+        <span class=hl-variable>event</span>.<span class=hl-property>cancel</span>()
+        <span class=hl-keyword>await</span> <span class=hl-variable>event</span>.<span class=hl-property>player</span>.<span class=hl-property>send_message</span>(<span class=hl-string>&quot;§cWatch your language!&quot;</span>)</code></pre><p>Python sends <code>{&quot;type&quot;: &quot;event_cancel&quot;, &quot;id&quot;: 42}</code> before <code>event_done</code>. Java sets <code><a rel=prefetch href=/PyJavaBridge/core/event.html class=filename-reference>event</a>.setCancelled(true)</code> on the Bukkit event.</p><p>Not all Bukkit events are cancellable. Non-cancellable events (like <code>player_join</code>) ignore cancel requests.</p><hr><h2>Result Overrides</h2><p>Handlers can modify event data by returning values:</p><h3>Chat message override</h3><p>Return a string from a chat event handler to replace the message:</p><pre><code class=language-python><span class=hl-function>@</span><span class=hl-function>event</span>
+<span class=hl-keyword>async</span> <span class=hl-keyword>def</span> <span class=hl-function>async_chat</span>(<span class=hl-variable>event</span>):
+    <span class=hl-keyword>return</span> <span class=hl-string>f&quot;[</span><span class=hl-punctuation-special>{</span><span class=hl-variable>event</span><span class=hl-string>.</span><span class=hl-property>player</span><span class=hl-string>.</span><span class=hl-property>name</span><span class=hl-punctuation-special>}</span><span class=hl-string>] </span><span class=hl-punctuation-special>{</span><span class=hl-variable>event</span><span class=hl-string>.</span><span class=hl-property>message</span><span class=hl-punctuation-special>}</span><span class=hl-string>&quot;</span>
+</code></pre><p>Sends: <code>{&quot;type&quot;: &quot;event_result&quot;, &quot;id&quot;: 42, &quot;result&quot;: &quot;&#91;Steve&#93; Hello&quot;, &quot;result_type&quot;: &quot;<a rel=prefetch href=/PyJavaBridge/utilities/chat.html class=filename-reference>chat</a>&quot;}</code></p><h3>Damage override</h3><p>Return a number from a damage event handler to change the damage amount:</p><pre><code class=language-python><span class=hl-function>@</span><span class=hl-function>event</span>
+<span class=hl-keyword>async</span> <span class=hl-keyword>def</span> <span class=hl-function>entity_damage</span>(<span class=hl-variable>event</span>):
+    <span class=hl-keyword>if</span> <span class=hl-variable>event</span>.<span class=hl-property>entity</span>.<span class=hl-property>type</span> <span class=hl-operator>==</span> <span class=hl-string>&quot;PLAYER&quot;</span>:
+        <span class=hl-keyword>return</span> <span class=hl-variable>event</span>.<span class=hl-property>damage</span> <span class=hl-operator>*</span> <span class=hl-number>0.5</span>  <span class=hl-comment># Half damage</span>
+</code></pre><p>Sends: <code>{&quot;type&quot;: &quot;event_result&quot;, &quot;id&quot;: 42, &quot;result&quot;: 2.5, &quot;result_type&quot;: &quot;damage&quot;}</code></p><h3>Respawn location override</h3><p>Return a <code><a rel=prefetch href=/PyJavaBridge/world/location.html class=filename-reference>Location</a></code> from a respawn event handler to change where the player respawns:</p><pre><code class=language-python><span class=hl-function>@</span><span class=hl-function>event</span>
+<span class=hl-keyword>async</span> <span class=hl-keyword>def</span> <span class=hl-function>player_respawn</span>(<span class=hl-variable>event</span>):
+    <span class=hl-keyword>return</span> <span class=hl-function>Location</span>(<span class=hl-number>0</span>, <span class=hl-number>100</span>, <span class=hl-number>0</span>, <span class=hl-variable>event</span>.<span class=hl-property>player</span>.<span class=hl-property>world</span>)  <span class=hl-comment># Spawn at world center</span>
+</code></pre><p>Sends: <code>{&quot;type&quot;: &quot;event_result&quot;, &quot;id&quot;: 42, &quot;result&quot;: {&quot;<strong>value</strong>&quot;: &quot;<a rel=prefetch href=/PyJavaBridge/world/location.html class=filename-reference>Location</a>&quot;, &quot;fields&quot;: {...}}, &quot;result_type&quot;: &quot;respawn&quot;}</code></p><h3>Multiple handlers</h3><p>If multiple handlers return values, the last one wins. All handlers run concurrently via <code>asyncio.gather</code>, so ordering isn't guaranteed.</p><hr><h2>Block Explosion Special Handling</h2><p>Block explosion events (<code>block_explode</code>, <code>entity_explode</code>) get special treatment. Instead of one event for the entire explosion, Java creates one event per affected block and sends them as a batch:</p><pre><code class=language-json><span class=hl-punctuation-bracket>{</span><span class=hl-property>&quot;type&quot;</span><span class=hl-punctuation-delimiter>:</span> <span class=hl-string>&quot;event_batch&quot;</span><span class=hl-punctuation-delimiter>,</span> <span class=hl-property>&quot;event&quot;</span><span class=hl-punctuation-delimiter>:</span> <span class=hl-string>&quot;block_explode&quot;</span><span class=hl-punctuation-delimiter>,</span> <span class=hl-property>&quot;payloads&quot;</span><span class=hl-punctuation-delimiter>:</span> <span class=hl-punctuation-bracket>[</span><span class=hl-punctuation-bracket>{</span>...<span class=hl-punctuation-bracket>}</span><span class=hl-punctuation-delimiter>,</span> <span class=hl-punctuation-bracket>{</span>...<span class=hl-punctuation-bracket>}</span><span class=hl-punctuation-delimiter>,</span> ...<span class=hl-punctuation-bracket>]</span><span class=hl-punctuation-bracket>}</span>
+</code></pre><p>Each payload gets dispatched individually on the Python side. Cancelled blocks are removed from the explosion's block list — you can selectively protect blocks:</p><pre><code class=language-python><span class=hl-function>@</span><span class=hl-function>event</span>
+<span class=hl-keyword>async</span> <span class=hl-keyword>def</span> <span class=hl-function>block_explode</span>(<span class=hl-variable>event</span>):
+    <span class=hl-keyword>if</span> <span class=hl-keyword>await</span> <span class=hl-variable>event</span>.<span class=hl-property>block</span>.<span class=hl-property>get_type</span>() <span class=hl-operator>==</span> <span class=hl-string>&quot;DIAMOND_ORE&quot;</span>:
+        <span class=hl-variable>event</span>.<span class=hl-property>cancel</span>()  <span class=hl-comment># Protect diamond ore from explosions</span>
+</code></pre><hr><h2>Event Name Mapping</h2><p>Bukkit event class names are converted to snake_case for Python. The mapping strips common suffixes:</p><table><thead><tr><th>Bukkit Class</th><th>Python Event Name</th></tr></thead><tbody><tr><td><code>PlayerJoinEvent</code></td><td><code>player_join</code></td></tr><tr><td><code>AsyncChatEvent</code></td><td><code>async_chat</code></td></tr><tr><td><code>EntityDamageByEntityEvent</code></td><td><code>entity_damage_by_entity</code></td></tr><tr><td><code>BlockBreakEvent</code></td><td><code>block_break</code></td></tr><tr><td><code>InventoryClickEvent</code></td><td><code>inventory_click</code></td></tr></tbody></table><p>The <code><a rel=prefetch href=/PyJavaBridge/core/event.html class=filename-reference>Event</a></code> suffix is always stripped. CamelCase is split into snake_case.</p><hr><h2>Command Registration</h2><p>Commands follow the same pattern as events — a player action triggers a dispatch from Java to Python.</p><h3>The <code>@command</code> decorator</h3><p>Python scripts register commands using the <code>@command</code> decorator:</p><pre><code class=language-python><span class=hl-keyword>from</span> <span class=hl-variable>bridge</span> <span class=hl-keyword>import</span> <span class=hl-variable>command</span>
 
-<span class="hl-function">@</span><span class="hl-function">command</span>
-<span class="hl-keyword">def</span> <span class="hl-function">greet</span>(<span class="hl-variable">player</span>, <span class="hl-variable">name</span>: <span class="hl-type">str</span>, <span class="hl-variable">count</span>: <span class="hl-type">int</span> <span class="hl-operator">=</span> <span class="hl-number">1</span>):
-    <span class="hl-keyword">for</span> <span class="hl-variable">i</span> <span class="hl-operator">in</span> <span class="hl-function-builtin">range</span>(<span class="hl-variable">count</span>):
-        <span class="hl-variable">player</span>.<span class="hl-property">send_message</span>(<span class="hl-string">f&quot;Hello, </span><span class="hl-punctuation-special">{</span><span class="hl-variable">name</span><span class="hl-punctuation-special">}</span><span class="hl-string">!&quot;</span>)
-</code></pre>
-<h3>Signature parsing</h3>
-<p>The decorator inspects the function's signature:</p>
-<ol>
-<li><strong>First parameter</strong> — Always the command sender (Player). Not included in usage.</li>
-<li><strong>Subsequent parameters</strong> — Command arguments</li>
-<li><strong>Type annotations</strong> — <code>str</code>, <code>int</code>, <code>float</code> for auto-conversion</li>
-<li><strong>Default values</strong> — Make arguments optional</li>
-</ol>
-<p>Usage string auto-generated: <code>/greet &lt;name&gt; &#91;count&#93;</code></p>
-<h3>Java-side registration</h3>
-<p>When Python registers a command, it sends:</p>
-<pre><code class="language-json"><span class="hl-punctuation-bracket">{</span><span class="hl-property">&quot;type&quot;</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-string">&quot;register_command&quot;</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">&quot;name&quot;</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-string">&quot;greet&quot;</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">&quot;usage&quot;</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-string">&quot;/greet &lt;name&gt; [count]&quot;</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-property">&quot;description&quot;</span><span class="hl-punctuation-delimiter">:</span> <span class="hl-string">&quot;...&quot;</span><span class="hl-punctuation-bracket">}</span>
-</code></pre>
-<p>Java creates a <code>ScriptCommand</code> and registers it on Bukkit's <code>CommandMap</code>:</p>
-<pre><code class="language-java"><span class="hl-type">ScriptCommand</span> <span class="hl-variable">cmd</span> <span class="hl-operator">=</span> <span class="hl-keyword-operator">new</span> <span class="hl-type">ScriptCommand</span><span class="hl-punctuation-bracket">(</span><span class="hl-variable">name</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-variable">usage</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-variable">description</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-variable">scriptInstance</span><span class="hl-punctuation-bracket">)</span><span class="hl-punctuation-delimiter">;</span>
-<span class="hl-type">Bukkit</span><span class="hl-punctuation-delimiter">.</span><span class="hl-function-method-call">getCommandMap</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">)</span><span class="hl-punctuation-delimiter">.</span><span class="hl-function-method-call">register</span><span class="hl-punctuation-bracket">(</span><span class="hl-string">&quot;pjb&quot;</span><span class="hl-punctuation-delimiter">,</span> <span class="hl-variable">cmd</span><span class="hl-punctuation-bracket">)</span><span class="hl-punctuation-delimiter">;</span>
-</code></pre>
-<h3>Tab completion</h3>
-<p>Commands support tab completion. When a player presses Tab, Java sends a completion request to Python, which returns suggestions based on the current argument position and type.</p>
-<h3>Command cleanup on shutdown</h3>
-<p>When a script is stopped or reloaded, its commands are unregistered:</p>
-<pre><code class="language-java"><span class="hl-type-builtin">void</span> <span class="hl-function-method">unregisterCommands</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">)</span> <span class="hl-punctuation-bracket">{</span>
-    <span class="hl-keyword-repeat">for</span> <span class="hl-punctuation-bracket">(</span><span class="hl-type">ScriptCommand</span> <span class="hl-variable">cmd</span> <span class="hl-operator">:</span> <span class="hl-variable">registeredCommands</span><span class="hl-punctuation-bracket">)</span> <span class="hl-punctuation-bracket">{</span>
-        <span class="hl-variable">cmd</span><span class="hl-punctuation-delimiter">.</span><span class="hl-function-method-call">unregister</span><span class="hl-punctuation-bracket">(</span><span class="hl-type">Bukkit</span><span class="hl-punctuation-delimiter">.</span><span class="hl-function-method-call">getCommandMap</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">)</span><span class="hl-punctuation-bracket">)</span><span class="hl-punctuation-delimiter">;</span>
-    <span class="hl-punctuation-bracket">}</span>
-    <span class="hl-variable">registeredCommands</span><span class="hl-punctuation-delimiter">.</span><span class="hl-function-method-call">clear</span><span class="hl-punctuation-bracket">(</span><span class="hl-punctuation-bracket">)</span><span class="hl-punctuation-delimiter">;</span>
-<span class="hl-punctuation-bracket">}</span>
-</code></pre>
-<p>This means after a hot reload, commands are re-registered fresh from the new script.</p>
-    </div>
-    <footer class="site-footer">
-      &copy; 2026 Omena0 &middot; PyJavaBridge Documentation
-    </footer>
-  </main>
-
-  <!-- Back to top -->
-  <button class="back-to-top" aria-label="Back to top">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
-        <path d="M18 15l-6-6-6 6"/>
-      </svg>
-    </button>
-
-    
-    <script id="code-refs-data" type="application/json">[]</script>
-    <script id="search-config" type="application/json">{"pages": true, "titles": true, "headings": true, "content": true, "symbols": true, "files": true}</script>
-    <script id="features-config" type="application/json">{"backlinks": true, "related": true, "auto_link": true, "versioning": true, "search": true, "code_references": true, "link_preview": true, "code_highlighting": true, "blockquotes": true, "ext_tags": true, "inline_copy": true}</script>
-    <script id="custom-tags-config" type="application/json">{"ext": {"label": "Extensions", "display": "ext", "class": "ext-tag"}}</script>
-    <script src="/PyJavaBridge/script.js" defer></script>
-</body>
-</html>
+<span class=hl-function>@</span><span class=hl-function>command</span>
+<span class=hl-keyword>def</span> <span class=hl-function>greet</span>(<span class=hl-variable>player</span>, <span class=hl-variable>name</span>: <span class=hl-type>str</span>, <span class=hl-variable>count</span>: <span class=hl-type>int</span> <span class=hl-operator>=</span> <span class=hl-number>1</span>):
+    <span class=hl-keyword>for</span> <span class=hl-variable>i</span> <span class=hl-operator>in</span> <span class=hl-function-builtin>range</span>(<span class=hl-variable>count</span>):
+        <span class=hl-variable>player</span>.<span class=hl-property>send_message</span>(<span class=hl-string>f&quot;Hello, </span><span class=hl-punctuation-special>{</span><span class=hl-variable>name</span><span class=hl-punctuation-special>}</span><span class=hl-string>!&quot;</span>)</code></pre><h3>Signature parsing</h3><p>The decorator inspects the function's signature:</p><ol><li><strong>First parameter</strong> — Always the command sender (Player). Not included in usage.</li><li><strong>Subsequent parameters</strong> — Command arguments</li><li><strong>Type annotations</strong> — <code>str</code>, <code>int</code>, <code>float</code> for auto-conversion</li><li><strong>Default values</strong> — Make arguments optional</li></ol><p>Usage string auto-generated: <code>/greet &lt;name&gt; &#91;count&#93;</code></p><h3>Java-side registration</h3><p>When Python registers a command, it sends:</p><pre><code class=language-json><span class=hl-punctuation-bracket>{</span><span class=hl-property>&quot;type&quot;</span><span class=hl-punctuation-delimiter>:</span> <span class=hl-string>&quot;register_command&quot;</span><span class=hl-punctuation-delimiter>,</span> <span class=hl-property>&quot;name&quot;</span><span class=hl-punctuation-delimiter>:</span> <span class=hl-string>&quot;greet&quot;</span><span class=hl-punctuation-delimiter>,</span> <span class=hl-property>&quot;usage&quot;</span><span class=hl-punctuation-delimiter>:</span> <span class=hl-string>&quot;/greet &lt;name&gt; [count]&quot;</span><span class=hl-punctuation-delimiter>,</span> <span class=hl-property>&quot;description&quot;</span><span class=hl-punctuation-delimiter>:</span> <span class=hl-string>&quot;...&quot;</span><span class=hl-punctuation-bracket>}</span>
+</code></pre><p>Java creates a <code>ScriptCommand</code> and registers it on Bukkit's <code>CommandMap</code>:</p><pre><code class=language-java><span class=hl-type>ScriptCommand</span> <span class=hl-variable>cmd</span> <span class=hl-operator>=</span> <span class=hl-keyword-operator>new</span> <span class=hl-type>ScriptCommand</span><span class=hl-punctuation-bracket>(</span><span class=hl-variable>name</span><span class=hl-punctuation-delimiter>,</span> <span class=hl-variable>usage</span><span class=hl-punctuation-delimiter>,</span> <span class=hl-variable>description</span><span class=hl-punctuation-delimiter>,</span> <span class=hl-variable>scriptInstance</span><span class=hl-punctuation-bracket>)</span><span class=hl-punctuation-delimiter>;</span>
+<span class=hl-type>Bukkit</span><span class=hl-punctuation-delimiter>.</span><span class=hl-function-method-call>getCommandMap</span><span class=hl-punctuation-bracket>(</span><span class=hl-punctuation-bracket>)</span><span class=hl-punctuation-delimiter>.</span><span class=hl-function-method-call>register</span><span class=hl-punctuation-bracket>(</span><span class=hl-string>&quot;pjb&quot;</span><span class=hl-punctuation-delimiter>,</span> <span class=hl-variable>cmd</span><span class=hl-punctuation-bracket>)</span><span class=hl-punctuation-delimiter>;</span>
+</code></pre><h3>Tab completion</h3><p>Commands support tab completion. When a player presses Tab, Java sends a completion request to Python, which returns suggestions based on the current argument position and type.</p><h3>Command cleanup on shutdown</h3><p>When a script is stopped or reloaded, its commands are unregistered:</p><pre><code class=language-java><span class=hl-type-builtin>void</span> <span class=hl-function-method>unregisterCommands</span><span class=hl-punctuation-bracket>(</span><span class=hl-punctuation-bracket>)</span> <span class=hl-punctuation-bracket>{</span>
+    <span class=hl-keyword-repeat>for</span> <span class=hl-punctuation-bracket>(</span><span class=hl-type>ScriptCommand</span> <span class=hl-variable>cmd</span> <span class=hl-operator>:</span> <span class=hl-variable>registeredCommands</span><span class=hl-punctuation-bracket>)</span> <span class=hl-punctuation-bracket>{</span>
+        <span class=hl-variable>cmd</span><span class=hl-punctuation-delimiter>.</span><span class=hl-function-method-call>unregister</span><span class=hl-punctuation-bracket>(</span><span class=hl-type>Bukkit</span><span class=hl-punctuation-delimiter>.</span><span class=hl-function-method-call>getCommandMap</span><span class=hl-punctuation-bracket>(</span><span class=hl-punctuation-bracket>)</span><span class=hl-punctuation-bracket>)</span><span class=hl-punctuation-delimiter>;</span>
+    <span class=hl-punctuation-bracket>}</span>
+    <span class=hl-variable>registeredCommands</span><span class=hl-punctuation-delimiter>.</span><span class=hl-function-method-call>clear</span><span class=hl-punctuation-bracket>(</span><span class=hl-punctuation-bracket>)</span><span class=hl-punctuation-delimiter>;</span>
+<span class=hl-punctuation-bracket>}</span>
+</code></pre><p>This means after a hot reload, commands are re-registered fresh from the new script.</p></div><footer class=site-footer>&copy; 2026 Omena0 &middot; PyJavaBridge Documentation</footer></main><button class=back-to-top aria-label="Back to top"><svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true" viewBox="0 0 24 24"><path d="m18 15-6-6-6 6"/></svg></button><script id=code-refs-data type=application/json>[]</script><script id=search-config type=application/json>{"pages": true, "titles": true, "headings": true, "content": true, "symbols": true, "files": true}</script><script id=features-config type=application/json>{"backlinks": true, "related": true, "auto_link": true, "versioning": true, "search": true, "code_references": true, "link_preview": true, "code_highlighting": true, "blockquotes": true, "ext_tags": true, "inline_copy": true}</script><script id=custom-tags-config type=application/json>{"ext": {"label": "Extensions", "display": "ext", "class": "ext-tag"}}</script><script src=/PyJavaBridge/script.js defer></script></body></html>
