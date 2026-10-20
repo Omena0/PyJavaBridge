@@ -1,3 +1,4 @@
+// version: 1
 document.addEventListener('DOMContentLoaded', () => {
   const STORAGE_KEY = 'pjb-sidebar-state';
   const sitePrefixRaw = (document.documentElement.getAttribute('data-site-prefix') || '').trim();
@@ -13,6 +14,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     const clean = String(path || '').replace(/^\/+/, '');
     if (!SITE_PREFIX) return clean;
+    const prefix = SITE_PREFIX.replace(/^\/+|\/+$/g, '');
+    if (clean === prefix || clean.startsWith(`${prefix}/`)) return `/${clean}`;
     return SITE_PREFIX + clean;
   }
 
@@ -20,7 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
     try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; } catch { return {}; }
   }
   function saveState(state) {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch {}
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch { }
   }
 
   // ── Restore sidebar collapsed/expanded state ────────────────
@@ -32,52 +35,70 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     // Measure natural height so CSS max-height animation works
     const ul = h.nextElementSibling;
-    if (ul && ul.classList.contains('sidebar-links') && !h.classList.contains('collapsed')) {
-          ul.style.maxHeight = ul.scrollHeight + 'px';
+    if (ul && ul.classList.contains('sidebar-links')) {
+      if (!h.classList.contains('collapsed')) {
+        ul.style.maxHeight = ul.scrollHeight + 'px';
+      }
     }
   });
 
   // ── Highlight current page ──────────────────────────────────
-  const currentPage = location.pathname.split('/').pop() || 'index.html';
+  const currentPath = location.pathname;
+  const currentPage = currentPath.split('/').pop() || 'index.html';
+  // Normalize the current path relative to the site root (strip site prefix if present)
+  const sitePrefix = (document.querySelector('meta[name="site-prefix"]') || {}).content || '';
+  const currentRelative = sitePrefix && currentPath.startsWith(sitePrefix)
+    ? currentPath.slice(sitePrefix.length).replace(/^\//, '') || 'index.html'
+    : currentPath.replace(/^\//, '') || 'index.html';
+// Resolve a relative href (e.g. '../index.html' or 'core/entity.html') to a
+    // site-root-relative path so we can compare with currentRelative.
+    function resolveHrefToRoot(href) {
+      if (!href || href.startsWith('#') || href.startsWith('http') || href.startsWith('mailto:') || href.startsWith('tel:') || href.startsWith('javascript:')) {
+        return null;
+      }
+      // Strip query/hash
+      const clean = href.split('?')[0].split('#')[0];
+      if (!clean) return null;
+      // Resolve relative to current page's directory
+      const currentDir = currentRelative.includes('/')
+        ? currentRelative.slice(0, currentRelative.lastIndexOf('/') + 1)
+        : '';
+      const parts = (currentDir + clean).split('/');
+      const resolved = [];
+      for (const p of parts) {
+        if (p === '' || p === '.') continue;
+        if (p === '..') resolved.pop();
+        else resolved.push(p);
+      }
+      return resolved.join('/') || 'index.html';
+    }
   document.querySelectorAll('.sidebar-links a').forEach(a => {
     const href = a.getAttribute('href');
     if (href && !href.startsWith('#')) {
-      if (href.split('/').pop() === currentPage) a.classList.add('active');
+      const resolved = resolveHrefToRoot(href);
+      if (resolved === currentRelative || href.split('/').pop() === currentPage) {
+        a.classList.add('active');
+      }
     }
   });
 
   // ── Sidebar search filter ───────────────────────────────────
   const input = document.getElementById('sidebar-search');
   if (input) {
-    let searching = false;
     input.addEventListener('input', () => {
       const q = input.value.toLowerCase().trim();
-      if (q) {
-        searching = true;
-        document.querySelectorAll('.sidebar-links a').forEach(a => {
-          a.style.display = a.textContent.toLowerCase().includes(q) ? '' : 'none';
-        });
-        document.querySelectorAll('.sidebar-section').forEach(sec => {
-          const links = sec.querySelectorAll('.sidebar-links a');
-          const anyVisible = Array.from(links).some(a => a.style.display !== 'none');
-          sec.style.display = anyVisible ? '' : 'none';
+      document.querySelectorAll('.sidebar-links a').forEach(a => {
+        a.style.display = (!q || a.textContent.toLowerCase().includes(q)) ? '' : 'none';
+      });
+      document.querySelectorAll('.sidebar-section').forEach(sec => {
+        const links = sec.querySelectorAll('.sidebar-links a');
+        const anyVisible = Array.from(links).some(a => a.style.display !== 'none');
+        sec.style.display = anyVisible || !q ? '' : 'none';
+        if (q) {
           const heading = sec.querySelector('.sidebar-heading');
           if (heading) expandSection(heading);
-        });
-      } else if (searching) {
-        document.querySelectorAll('.sidebar-links a').forEach(a => {
-          a.style.display = '';
-        });
-        document.querySelectorAll('.sidebar-section').forEach(sec => {
-          sec.style.display = '';
-        });
-        const currentState = loadState();
-        document.querySelectorAll('.sidebar-heading[data-section]').forEach(heading => {
-          if (currentState[heading.dataset.section] === false) expandSection(heading);
-          else collapseSection(heading);
-        });
-        searching = false;
-      }
+        }
+      });
     });
     input.addEventListener('keydown', e => {
       if (e.key === 'Enter') {
@@ -197,7 +218,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const observer = new IntersectionObserver(entries => {
       entries.forEach(entry => {
         if (entry.isIntersecting) {
-          const {id} = entry.target;
+          const { id } = entry.target;
           allLinks.forEach(l => {
             l.classList.toggle('active', l.getAttribute('href') === '#' + id);
           });
@@ -292,6 +313,19 @@ document.addEventListener('DOMContentLoaded', () => {
     return fzstdPromise;
   }
 
+  async function loadCompressedJson(filename, fallback = null) {
+    if (location.protocol === 'file:') return fallback;
+    if (!await ensureFzstd()) return fallback;
+    try {
+      const response = await fetch(toSiteHref(filename), { cache: 'force-cache' });
+      if (!response.ok) return fallback;
+      const compressed = new Uint8Array(await response.arrayBuffer());
+      return JSON.parse(new TextDecoder().decode(fzstd.decompress(compressed)));
+    } catch (e) {
+      return fallback;
+    }
+  }
+
   function loadInlineSearchFallback() {
     const el = document.getElementById('zstd-data');
     if (!el || !el.textContent.trim()) return false;
@@ -319,7 +353,10 @@ document.addEventListener('DOMContentLoaded', () => {
         return false;
       }
 
-      if (loadInlineSearchFallback()) return true;
+      if (loadInlineSearchFallback()) {
+        await Promise.all([loadSymbolIndex(), loadFileIndex()]);
+        return true;
+      }
 
       if (location.protocol === 'file:') {
         return false;
@@ -332,6 +369,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const decompressed = fzstd.decompress(compressed);
         const json = new TextDecoder().decode(decompressed);
         searchIndex = JSON.parse(json);
+
+        // Also load source indexes used by search
+        await Promise.all([loadSymbolIndex(), loadFileIndex()]);
+
         return emitSearchReady();
       } catch (e) {
         console.error('Failed to fetch/decompress search index:', e);
@@ -357,10 +398,74 @@ document.addEventListener('DOMContentLoaded', () => {
       void loadSearchIndex();
     }, SEARCH_PRELOAD_DELAY_MS);
   }
-
   scheduleSearchIndexLoad();
 
-  
+
+  searchIndex = null;
+  let symbolIndex = null;
+  let fileIndex = null;
+  const searchConfig = (() => {
+    const el = document.getElementById('search-config');
+    try {
+      return el ? JSON.parse(el.textContent) : {};
+    } catch (e) {
+      return {};
+    }
+  })();
+  const searchIncludes = Object.assign({
+    pages: true,
+    titles: true,
+    headings: true,
+    content: true,
+    symbols: true,
+    files: true
+  }, searchConfig);
+
+  // Custom-tag config embedded by the builder (e.g. {"ext": {"display": "ext", "class": "ext-tag"}})
+  const customTagsConfig = (() => {
+    const el = document.getElementById('custom-tags-config');
+    try {
+      return el ? JSON.parse(el.textContent) : { ext: { display: 'ext', class: 'ext-tag' } };
+    } catch (e) {
+      return { ext: { display: 'ext', class: 'ext-tag' } };
+    }
+  })();
+
+  function formatCustomTags(text) {
+    if (!text) return text;
+    const tagNames = Object.keys(customTagsConfig);
+    if (!tagNames.length) return text;
+    const pattern = new RegExp('\\[(' + tagNames.map(t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|') + ')\\]', 'g');
+    return text.replace(pattern, (m, tag) => {
+      const spec = customTagsConfig[tag];
+      if (!spec) return m;
+      const cls = spec.class || 'ext-tag';
+      const display = spec.display || tag;
+      return `<span class="${cls}">${display}</span>`;
+    });
+  }
+
+  // ── Load symbol index ──────────────────────────────────────────
+  async function loadSymbolIndex() {
+    if (symbolIndex !== null) return symbolIndex;
+    try {
+      symbolIndex = await loadCompressedJson('symbol_index.zst', []);
+    } catch (e) {
+      console.warn('Failed to load symbol index:', e);
+      symbolIndex = [];
+    }
+    return symbolIndex;
+  }
+
+  async function loadFileIndex() {
+    if (fileIndex !== null) return fileIndex;
+    try {
+      fileIndex = await loadCompressedJson('file_index.zst', []);
+    } catch (e) {
+      fileIndex = [];
+    }
+    return fileIndex;
+  }
 
   // ── Header full-text search ─────────────────────────────────
   const headerSearch = document.getElementById('header-search');
@@ -378,44 +483,98 @@ document.addEventListener('DOMContentLoaded', () => {
     function scorePage(page) {
       let score = 0;
       const title = (page.title || '').toLowerCase();
-      if (title === q) score += 200;
-      else if (title.includes(q)) score += 120 - Math.min(100, title.indexOf(q));
+      if (searchIncludes.titles) {
+        if (title === q) score += 200;
+        else if (title.includes(q)) score += 120 - Math.min(100, title.indexOf(q));
+      }
 
       for (const sec of page.sections || []) {
         const heading = (sec.heading || '').toLowerCase();
         const text = (sec.text || '').toLowerCase();
-        if (heading.includes(q)) score += 40;
-        if (text.includes(q)) score += 20;
+        if (searchIncludes.headings && heading.includes(q)) score += 40;
+        if (searchIncludes.content && text.includes(q)) score += 20;
         for (const t of tokens) {
-          if (heading.includes(t)) score += 8;
-          if (text.includes(t)) score += 4;
+          if (searchIncludes.titles && title.includes(t)) score += 2;
+          if (searchIncludes.headings && heading.includes(t)) score += 8;
+          if (searchIncludes.content && text.includes(t)) score += 4;
         }
       }
-
-      // token coverage bonus
-      let cover = 0;
-      for (const t of tokens) {
-        if (title.includes(t)) cover += 2;
-      }
-      score += cover;
       return score;
     }
 
     for (const page of searchIndex) {
-      const s = scorePage(page);
-      if (s > 0) {
-        // pick best matching section for snippet
-        let bestSec = null;
-        for (const sec of page.sections || []) {
-          for (const t of tokens) {
-            if ((sec.text || '').toLowerCase().includes(t) || (sec.heading || '').toLowerCase().includes(t)) {
-              bestSec = sec; break;
+      if (searchIncludes.pages) {
+        const s = scorePage(page);
+        if (s > 0) {
+          let bestSec = null;
+          for (const sec of page.sections || []) {
+            for (const t of tokens) {
+              if ((sec.text || '').toLowerCase().includes(t) || (sec.heading || '').toLowerCase().includes(t)) {
+                bestSec = sec; break;
+              }
             }
+            if (bestSec) break;
           }
-          if (bestSec) break;
+          hits.push({ url: page.url, title: page.title, text: bestSec ? bestSec.text : '', score: s, type: 'page' });
         }
-        const hit = { url: page.url, title: page.title, text: bestSec ? bestSec.text : '', score: s };
-        hits.push(hit);
+      }
+    }
+
+    // Also search symbols
+    if (searchIncludes.symbols && symbolIndex && symbolIndex.length > 0) {
+      const qLower = q.toLowerCase();
+      for (const sym of symbolIndex) {
+        let score = 0;
+        const name = (sym.name || '').toLowerCase();
+        const file = (sym.file || '').toLowerCase();
+        const type = (sym.type || '').toLowerCase();
+
+        if (name === qLower) score += 150;
+        else if (name.includes(qLower)) score += 80 - Math.min(50, name.indexOf(qLower));
+        else {
+          // Check tokens
+          for (const t of tokens) {
+            if (name.includes(t)) score += 10;
+            if (type.includes(t)) score += 5;
+          }
+        }
+
+        if (score > 0) {
+          const hit = {
+            url: `#coderef:${sym.file}:${sym.line}${sym.end_line ? '-' + sym.end_line : ''}`,
+            title: `${sym.name} (${sym.type})`,
+            text: `in ${sym.file}:${sym.line}${sym.end_line ? '-' + sym.end_line : ''} — ${sym.context || ''}`,
+            score: score,
+            type: 'symbol',
+            symbol: sym
+          };
+          hits.push(hit);
+        }
+      }
+    }
+
+    if (searchIncludes.files && fileIndex && fileIndex.length > 0) {
+      for (const file of fileIndex) {
+        const name = (file.name || '').toLowerCase();
+        const path = (file.file || '').toLowerCase();
+        let score = 0;
+        if (name === q) score += 140;
+        else if (name.includes(q)) score += 70 - Math.min(40, name.indexOf(q));
+        else {
+          for (const token of tokens) {
+            if (name.includes(token)) score += 8;
+            if (path.includes(token)) score += 4;
+          }
+        }
+        if (score > 0) {
+          hits.push({
+            url: `#coderef:${file.file}:1`,
+            title: file.name,
+            text: file.file,
+            score,
+            type: 'file'
+          });
+        }
       }
     }
 
@@ -424,7 +583,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const seen = new Set();
     const unique = [];
     for (const h of hits) {
-      const baseUrl = h.url.split('#')[0];
+      const baseUrl = h.url.includes('#') ? h.url : h.url.split('#')[0];
       if (!seen.has(baseUrl) && unique.length < 12) {
         seen.add(baseUrl);
         unique.push(h);
@@ -438,12 +597,40 @@ document.addEventListener('DOMContentLoaded', () => {
     searchResults.innerHTML = unique.map(h => {
       const snippet = h.text ? h.text.substring(0, 100) : '';
       const heading = h.heading ? ` › ${h.heading}` : '';
-      const fmtTitle = (h.title + heading).replace(/\[ext\]/g, '<span class="ext-tag">ext</span>');
+      const typeBadge = h.type === 'symbol' ? '<span class="ext-tag" style="margin-left:6px;background:var(--primary-soft);color:var(--primary)">symbol</span>' : h.type === 'file' ? '<span class="ext-tag" style="margin-left:6px;background:var(--primary-soft);color:var(--primary)">file</span>' : '';
+      const fmtTitle = formatCustomTags(h.title + heading + typeBadge);
       const href = addVerToHref(h.url);
       return `<a class="search-hit" href="${href}"><strong>${fmtTitle}</strong><span>${snippet}</span></a>`;
     }).join('');
     searchResults.style.display = 'block';
   }
+
+  // Click handler for search results (handles both regular links and coderef links)
+  searchResults.addEventListener('click', async (e) => {
+    const link = e.target.closest('.search-hit');
+    if (!link) return;
+
+    const href = link.getAttribute('href');
+    if (href && href.startsWith('#coderef:')) {
+      e.preventDefault();
+      const match = href.match(/^#coderef:([^:]+):(\d+)(?:-(\d+))?$/);
+      if (match) {
+        const file = match[1];
+        const line = parseInt(match[2], 10);
+        const endLine = match[3] ? parseInt(match[3], 10) : null;
+        const refs = parseCodeRefs();
+        const ref = refs.find(r => r.file === file && r.line === line);
+        // Ensure source files are loaded before showing panel
+        await loadSourceFiles();
+        if (ref) {
+          if (endLine) ref.end_line = endLine;
+          showCodePanel(ref);
+        } else {
+          showCodePanel({ file, line, end_line: endLine, id: 'search-result' });
+        }
+      }
+    }
+  });
 
   if (headerSearch) {
     const onSearchInteract = () => triggerSearchIndexLoad();
@@ -508,10 +695,48 @@ document.addEventListener('DOMContentLoaded', () => {
   // Run immediately for the current page
   try { addCopyButtons(); } catch (e) { /* ignore */ }
 
+  // ── Inline copy commands ──────────────────────────────────────
+  function initInlineCopyCommands() {
+    document.body.addEventListener('click', async (e) => {
+      const link = e.target.closest('a.copy-inline-command');
+      if (!link) return;
+      e.preventDefault();
+      const cmd = link.dataset.copy || link.textContent.trim();
+      try {
+        await navigator.clipboard.writeText(cmd);
+        showInlineToast(link, 'Copied');
+      } catch (err) {
+        console.error('Copy failed', err);
+        showInlineToast(link, 'Failed');
+      }
+    });
+  }
+
+  function showInlineToast(el, text) {
+    const existing = el.querySelector('.inline-toast');
+    if (existing) existing.remove();
+    const toast = document.createElement('span');
+    toast.className = 'inline-toast';
+    toast.textContent = text;
+    el.appendChild(toast);
+    requestAnimationFrame(() => toast.classList.add('show'));
+    setTimeout(() => {
+      toast.classList.remove('show');
+      setTimeout(() => toast.remove(), 150);
+    }, 1200);
+  }
+
+  // Run for current page
+  try { initInlineCopyCommands(); } catch (e) { /* ignore */ }
+
   // ── Backlinks & Related pages ───────────────────────────────
   function renderBacklinksAndRelated() {
     if (!searchIndex || !searchIndex.length) return;
-    const me = searchIndex.find(p => (p.url || '').split('/').pop() === currentPage);
+    // Match current page by full relative path (handles directory-tree output)
+    const me = searchIndex.find(p => {
+      const pUrl = (p.url || '').replace(/^\//, '');
+      return pUrl === currentRelative || pUrl.split('/').pop() === currentPage;
+    });
     if (!me) return;
     const content = document.querySelector('.content');
     if (!content) return;
@@ -586,14 +811,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return null;
     }
 
-    // Load git metadata from a shared JSON asset.
-    try {
-      const r = await fetch(toSiteHref('git_meta.json'), { cache: 'no-store' });
-      if (r && r.ok) return await r.json();
-    } catch (e) {
-      // ignore network errors
-    }
-    return null;
+    return await loadCompressedJson('git_meta.zst', null);
   }
 
   function resolveVerToCommit(ver, meta) {
@@ -637,12 +855,14 @@ document.addEventListener('DOMContentLoaded', () => {
       document.querySelectorAll('.sidebar-links a').forEach(a => {
         const href = a.getAttribute('href') || '';
         if (!href || href.startsWith('#')) return;
-        const page = href.split('/').pop().split('?')[0].split('#')[0];
+        // Match by full relative path (handles directory-tree output like 'core/entity.html')
+        const page = href.replace(/^\//, '').split('?')[0].split('#')[0];
         const base = page.replace(/\.html$/, '');
         const li = a.closest('li') || a.parentElement;
-        if (!allowed.has(base)) {
-                  if (li) li.style.display = 'none'; else a.style.display = 'none';
-                }
+        // Match by full slug or basename (basename for backwards compat)
+        if (!allowed.has(base) && !allowed.has(base.replace(/.*\//, ''))) {
+          if (li) li.style.display = 'none'; else a.style.display = 'none';
+        }
         else if (li) li.style.display = '';
         else a.style.display = '';
       });
@@ -675,8 +895,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // fetching the source markdown and render it client-side using
     // `marked` (included via CDN in the template).
     if (!meta.repo) return;
-    const page = currentPage || 'index.html';
-    const rawHtmlUrl = `https://raw.githubusercontent.com/${meta.repo}/${commit}/docs/site/${page}`;
+    const page = currentRelative || 'index.html';
+    // Use the site path embedded by the builder (e.g. "site", "docs/site",
+    // or a custom build.out_dir value) instead of a hardcoded "docs/site".
+    const sitePath = meta.site_path || 'docs/site';
+    const rawHtmlUrl = `https://raw.githubusercontent.com/${meta.repo}/${commit}/${sitePath}/${page}`;
     try {
       const r = await fetch(rawHtmlUrl, { cache: 'no-store' });
       if (r && r.ok) {
@@ -711,10 +934,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Markdown fallback: attempt to fetch the source markdown for this
     // page at that commit. The build embeds a `src_map` in `git_meta`
-    // mapping page basenames to their docs/src path.
+    // mapping page slugs to their docs/src path.
     try {
       const key = page.replace(/\.html$/, '');
-      const srcPath = meta.src_map && meta.src_map[key];
+      // src_map keys are slugs (e.g. 'core/entity'); look up by full
+      // relative path first, then fall back to basename for legacy builds.
+      let srcPath = (meta.src_map && meta.src_map[key]);
+      if (!srcPath && meta.src_map) {
+        const base = key.replace(/.*\//, '');
+        srcPath = meta.src_map[base];
+      }
       if (srcPath) {
         const mdUrl = `https://raw.githubusercontent.com/${meta.repo}/${commit}/${srcPath}`;
         try {
@@ -780,14 +1009,15 @@ document.addEventListener('DOMContentLoaded', () => {
       // If the builder provided pages_by_commit info, only include versions
       // whose commit contains the current page.
       const pagesByCommit = meta.pages_by_commit || {};
-      const pageBase = (currentPage || 'index.html').replace(/\.html$/, '');
+      const pageBase = (currentRelative || currentPage || 'index.html').replace(/\.html$/, '');
+      const pageBaseName = pageBase.replace(/.*\//, '');
       const useFilter = pagesByCommit && Object.keys(pagesByCommit).length > 0;
       for (const v of list) {
         if (!v || !v.commit || !v.code) continue;
         if (!codeRE.test(String(v.code))) continue;
         if (useFilter) {
-          const avail = pagesByCommit[v.commit] || pagesByCommit[v.commit.slice(0,8)];
-          if (!avail || !avail.includes(pageBase)) continue;
+          const avail = pagesByCommit[v.commit] || pagesByCommit[v.commit.slice(0, 8)];
+          if (!avail || (!avail.includes(pageBase) && !avail.includes(pageBaseName))) continue;
         }
         const opt = document.createElement('option');
         // Use the short version code as the option value so ?ver=1A is compact
@@ -795,24 +1025,27 @@ document.addEventListener('DOMContentLoaded', () => {
         // Display only the compact code in the select
         opt.textContent = v.code;
         if (v.label) opt.dataset.label = v.label;
-        if (v.commit) opt.dataset.commit = v.commit.slice(0,8);
+        if (v.commit) opt.dataset.commit = v.commit.slice(0, 8);
         sel.appendChild(opt);
       }
     } else {
       // Fallback: show latest commit and recent commits (but filter by availability if possible)
       const commits = meta.commits || [];
       const pagesByCommit = meta.pages_by_commit || {};
-      const pageBase = (currentPage || 'index.html').replace(/\.html$/, '');
+      const pageBase = (currentRelative || currentPage || 'index.html').replace(/\.html$/, '');
+      const pageBaseName = pageBase.replace(/.*\//, '');
       const useFilter = pagesByCommit && Object.keys(pagesByCommit).length > 0;
       if (commits.length) {
         const latest = commits[commits.length - 1];
-        if (!useFilter || (pagesByCommit[latest] && pagesByCommit[latest].includes(pageBase))) {
-          const opt = document.createElement('option'); opt.value = latest; opt.textContent = latest.slice(0,8); opt.dataset.commit = latest.slice(0,8); sel.appendChild(opt);
+        const availLatest = pagesByCommit[latest] || [];
+        if (!useFilter || availLatest.includes(pageBase) || availLatest.includes(pageBaseName)) {
+          const opt = document.createElement('option'); opt.value = latest; opt.textContent = latest.slice(0, 8); opt.dataset.commit = latest.slice(0, 8); sel.appendChild(opt);
         }
         const recent = commits.slice(-10).reverse();
         for (const c of recent) {
-          if (useFilter && (!(pagesByCommit[c] && pagesByCommit[c].includes(pageBase)))) continue;
-          const o = document.createElement('option'); o.value = c; o.textContent = c.slice(0,8); o.dataset.commit = c.slice(0,8); sel.appendChild(o);
+          const avail = pagesByCommit[c] || [];
+          if (useFilter && !avail.includes(pageBase) && !avail.includes(pageBaseName)) continue;
+          const o = document.createElement('option'); o.value = c; o.textContent = c.slice(0, 8); o.dataset.commit = c.slice(0, 8); sel.appendChild(o);
         }
       }
     }
@@ -829,7 +1062,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let found = Array.from(sel.options).find(o => String(o.value).toLowerCase() === String(v).toLowerCase());
         if (!found) {
           // Try matching by short commit in data-commit
-          const short = String(v).slice(0,8).toLowerCase();
+          const short = String(v).slice(0, 8).toLowerCase();
           found = Array.from(sel.options).find(o => o.dataset && o.dataset.commit && String(o.dataset.commit).toLowerCase() === short);
         }
         if (found) {
@@ -898,4 +1131,582 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   try { populateVersionSelector(); } catch (e) { /* ignore */ }
+
+  // ── Code Reference Panel ──────────────────────────────────────
+  let sourceFiles = null;
+  let sourceHighlights = null;
+  let codeRefs = null;
+
+  async function loadSourceFiles() {
+    if (sourceFiles !== null) return sourceFiles;
+    try {
+      const [files, highlights] = await Promise.all([
+        loadCompressedJson('source_files.zst', {}),
+        loadCompressedJson('source_highlights.zst', {})
+      ]);
+      sourceFiles = files || {};
+      sourceHighlights = highlights || {};
+    } catch (e) {
+      console.warn('Failed to load source files:', e);
+      sourceFiles = {};
+      sourceHighlights = {};
+    }
+    return sourceFiles;
+  }
+
+  function escapeSourceText(text) {
+    return String(text || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  function highlightedSourceLine(filePath, lineNumber) {
+    const lines = sourceHighlights && sourceHighlights[filePath];
+    if (lines && lines[lineNumber - 1] !== undefined) return lines[lineNumber - 1];
+    const content = sourceFiles && sourceFiles[filePath];
+    if (!content) return '<span class="cm">(empty file)</span>';
+    return escapeSourceText(content.split(/\r?\n/)[lineNumber - 1] || '');
+  }
+
+  function findFunctionRange(content, name) {
+    const lines = content.split(/\r?\n/);
+    const escapedName = String(name).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const patterns = [
+      new RegExp(`^[^\S\n]*(?:async\\s+)?def\\s+${escapedName}\\s*\\(`),
+      new RegExp(`^[^\S\n]*(?:export\\s+)?(?:async\\s+)?function\\s+${escapedName}\\s*\\(`),
+      new RegExp(`^[^\S\n]*(?:export\\s+)?(?:const|let|var)\\s+${escapedName}\\s*=`)
+    ];
+    let definition = -1;
+    for (let i = 0; i < lines.length; i++) {
+      if (patterns.some(pattern => pattern.test(lines[i]))) {
+        definition = i;
+        break;
+      }
+    }
+    if (definition < 0) return null;
+
+    let start = definition;
+    while (start > 0 && /^[^\S\n]*@/.test(lines[start - 1])) start--;
+    let end = lines.length - 1;
+    if (/^[^\S\n]*(?:async\s+)?def\s/.test(lines[definition])) {
+      const indent = (lines[definition].match(/^[^\S\n]*/) || [''])[0].length;
+      end = definition;
+      for (let i = definition + 1; i < lines.length; i++) {
+        if (lines[i].trim() && (lines[i].match(/^[^\S\n]*/) || [''])[0].length <= indent) {
+          end = i - 1;
+          break;
+        }
+      }
+    } else {
+      let depth = 0;
+      let opened = false;
+      for (let i = definition; i < lines.length; i++) {
+        depth += (lines[i].match(/\{/g) || []).length;
+        depth -= (lines[i].match(/\}/g) || []).length;
+        opened ||= lines[i].includes('{');
+        if (opened && depth <= 0) {
+          end = i;
+          break;
+        }
+      }
+    }
+    while (end > definition && !lines[end].trim()) end--;
+    return { start: start + 1, end: end + 1 };
+  }
+
+  function referenceView(ref, content) {
+    const lines = content.split(/\r?\n/);
+    if (ref.function) {
+      const range = findFunctionRange(content, ref.function);
+      if (range) {
+        return {
+          start: Math.max(1, range.start - 1),
+          end: Math.min(lines.length, range.end + 1),
+          selectedStart: range.start,
+          selectedEnd: range.end,
+          range: true,
+          functionName: ref.function
+        };
+      }
+    }
+    if (ref.line && ref.end_line) {
+      return {
+        start: Math.max(1, ref.line - 2),
+        end: Math.min(lines.length, ref.end_line + 2),
+        selectedStart: ref.line,
+        selectedEnd: ref.end_line,
+        range: true
+      };
+    }
+    if (ref.line) {
+      return {
+        start: Math.max(1, ref.line - 2),
+        end: Math.min(lines.length, ref.line + 2),
+        selectedStart: ref.line,
+        selectedEnd: ref.line,
+        range: false
+      };
+    }
+    return { start: 1, end: lines.length, selectedStart: null, selectedEnd: null, range: false };
+  }
+
+  function renderReferenceLines(ref, fileContent, fullFile = false) {
+    if (ref.function && !fullFile) {
+      const range = findFunctionRange(fileContent, ref.function);
+      if (range) {
+        let functionLines = '';
+        for (let i = range.start; i <= range.end; i++) {
+          const boundary = i === range.start || i === range.end;
+          functionLines += `<div class="code-line${boundary ? ' highlight-target' : ''}" data-line="${i}"><span class="line-number">${i}</span>${highlightedSourceLine(ref.file, i)}</div>`;
+        }
+        return {
+          start: range.start,
+          end: range.end,
+          selectedStart: range.start,
+          selectedEnd: range.end,
+          range: true,
+          functionName: ref.function,
+          highlightedLines: `<div class="code-line code-line-blank"><span class="line-number"></span>&nbsp;</div>${functionLines}<div class="code-line code-line-blank"><span class="line-number"></span>&nbsp;</div>`
+        };
+      }
+    }
+    const view = referenceView(ref, fileContent);
+    if (fullFile) {
+      view.start = 1;
+      view.end = fileContent.split(/\r?\n/).length;
+    }
+    let highlightedLines = '';
+    for (let i = view.start; i <= view.end; i++) {
+      const selected = view.selectedStart !== null && i >= view.selectedStart && i <= view.selectedEnd;
+      const boundary = selected && (i === view.selectedStart || i === view.selectedEnd || !view.range);
+      const middle = view.range && selected && !boundary;
+      const classes = ['code-line'];
+      if (boundary) classes.push('highlight-target');
+      if (middle) classes.push('range-middle');
+      highlightedLines += `<div class="${classes.join(' ')}" data-line="${i}"><span class="line-number">${i}</span>${highlightedSourceLine(ref.file, i)}</div>`;
+    }
+    return { ...view, highlightedLines };
+  }
+
+  function parseCodeRefs() {
+    if (codeRefs !== null) return codeRefs;
+    const el = document.getElementById('code-refs-data');
+    if (el && el.textContent.trim()) {
+      try {
+        codeRefs = JSON.parse(el.textContent);
+      } catch (e) {
+        console.warn('Failed to parse code refs:', e);
+        codeRefs = [];
+      }
+    } else {
+      codeRefs = [];
+    }
+    return codeRefs;
+  }
+
+  function createCodePanel(ref, fileContent) {
+    const view = renderReferenceLines(ref, fileContent, true);
+    const panel = document.createElement('div');
+    panel.className = 'code-reference-panel';
+    const location = ref.function
+      ? `Function ${ref.function}`
+      : ref.end_line
+        ? `Lines ${ref.line}-${ref.end_line}`
+        : ref.line
+          ? `Line ${ref.line}`
+          : 'Full file';
+    panel.innerHTML = `
+      <div class="code-panel-header">
+        <span class="code-panel-file">${ref.file}</span>
+        <span class="code-panel-line">${location}</span>
+        <button class="code-panel-close" aria-label="Close">&times;</button>
+      </div>
+      <div class="code-panel-content">
+        <div class="code-lines">${view.highlightedLines}</div>
+      </div>
+    `;
+
+    // Add close handler
+    panel.querySelector('.code-panel-close').addEventListener('click', () => {
+      panel.remove();
+      document.body.classList.remove('code-panel-open');
+    });
+
+    // Close on outside click
+    panel.addEventListener('click', (e) => {
+      if (e.target === panel) {
+        panel.remove();
+        document.body.classList.remove('code-panel-open');
+      }
+    });
+
+    // Close on Escape
+    const handleEscape = (e) => {
+      if (e.key === 'Escape') {
+        panel.remove();
+        document.body.classList.remove('code-panel-open');
+        document.removeEventListener('keydown', handleEscape);
+      }
+    };
+    document.addEventListener('keydown', handleEscape);
+
+    return panel;
+  }
+
+  function showCodePanel(ref) {
+    const fileContent = sourceFiles[ref.file];
+    if (!fileContent) {
+      // Source files are already loaded from source_files.zst at build
+      // time. If the file isn't there, it doesn't exist — don't try to
+      // fetch it from the site root (that would produce a 404 like
+      // /fr-docs/fr_docs/syntax.py).
+      console.warn(`Source file not found in index: ${ref.file}`);
+      return;
+    }
+
+    const panel = createCodePanel(ref, fileContent);
+    document.body.appendChild(panel);
+    document.body.classList.add('code-panel-open');
+    // Scroll to target line
+    requestAnimationFrame(() => {
+      const targetLine = panel.querySelector('.highlight-target');
+      if (targetLine) targetLine.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+  }
+
+  function initCodeReferences() {
+    if (!parseCodeRefs().length) return;
+
+    loadSourceFiles().then(() => {
+      // Use event delegation on document for code reference links
+      // This handles both static and dynamically added links
+      document.addEventListener('click', (e) => {
+        // Handle code-reference links with data-coderef-id
+        const codeRefLink = e.target.closest('a.code-reference[data-coderef-id]');
+        if (codeRefLink) {
+          e.preventDefault();
+          const refId = codeRefLink.dataset.coderefId;
+          const refs = parseCodeRefs();
+          const ref = refs.find(r => r.id === refId);
+          if (ref) {
+            showCodePanel(ref);
+          }
+          return;
+        }
+
+        // Handle search result links with #coderef:file:line format
+        const searchRefLink = e.target.closest('a[href^="#coderef:"]');
+        if (searchRefLink) {
+          console.log(`found coderef: ${searchRefLink}`);
+          e.preventDefault();
+          const href = searchRefLink.getAttribute('href');
+          const match = href.match(/^#coderef:([^:]+):(\d+)(?:-(\d+))?$/);
+          if (match) {
+            const file = match[1];
+            const line = parseInt(match[2], 10);
+            const endLine = match[3] ? parseInt(match[3], 10) : null;
+            const refs = parseCodeRefs();
+            const ref = refs.find(r => r.file === file && r.line === line);
+            if (ref) {
+              if (endLine) ref.end_line = endLine;
+              showCodePanel(ref);
+            } else {
+              showCodePanel({ file, line, end_line: endLine, id: 'search-result' });
+            }
+          }
+          return;
+        }
+      });
+    });
+  }
+
+  // Initialize code references
+  initCodeReferences();
+
+  // ── Link Hover Previews ────────────────────────────────────────
+  let linkPreviewCache = new Map();
+  let previewTooltip = null;
+  let previewHideTimeout = null;
+
+  function createPreviewTooltip() {
+    if (previewTooltip) return previewTooltip;
+    previewTooltip = document.createElement('div');
+    previewTooltip.className = 'link-preview-tooltip';
+    // width set outside
+    previewTooltip.style.cssText = `
+      position: fixed;
+      z-index: 3000;
+      background: var(--bg-soft);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-md);
+      padding: 12px;
+      font-size: 0.85rem;
+      line-height: 1.5;
+      pointer-events: auto;
+      opacity: 0;
+      transition: opacity 0.15s ease;
+    `;
+    document.body.appendChild(previewTooltip);
+    previewTooltip.addEventListener('mouseenter', () => {
+      if (previewHideTimeout) clearTimeout(previewHideTimeout);
+    });
+    previewTooltip.addEventListener('mouseleave', () => {
+      hidePreviewTooltip();
+    });
+    return previewTooltip;
+  }
+
+  async function fetchPagePreview(href) {
+    const cacheKey = href.split('#')[0];
+    if (linkPreviewCache.has(cacheKey)) {
+      return linkPreviewCache.get(cacheKey);
+    }
+
+    try {
+      const response = await fetch(toSiteHref(cacheKey), { cache: 'force-cache' });
+      if (!response.ok) return null;
+      const html = await response.text();
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, 'text/html');
+
+      const h1 = doc.querySelector('h1');
+      const title = h1 ? h1.textContent.trim() : '';
+
+      // Get first paragraph after h1
+      let description = '';
+      if (h1) {
+        let next = h1.nextElementSibling;
+        while (next && next.tagName !== 'H2' && next.tagName !== 'H3') {
+          if (next.tagName === 'P' && next.textContent.trim()) {
+            description = next.textContent.trim().substring(0, 300);
+            break;
+          }
+          next = next.nextElementSibling;
+        }
+      }
+
+      const preview = { title, description };
+      linkPreviewCache.set(cacheKey, preview);
+      return preview;
+    } catch (e) {
+      console.warn('Failed to fetch page preview:', e);
+      return null;
+    }
+  }
+
+  async function fetchCodePreview(filePath, line, endLine, functionName) {
+    const cacheKey = `${filePath}:${line || 0}:${endLine || 0}:${functionName || ''}`;
+    if (linkPreviewCache.has(cacheKey)) {
+      return linkPreviewCache.get(cacheKey);
+    }
+
+    try {
+      // Try to get from sourceFiles first
+      await loadSourceFiles();
+      let content = sourceFiles[filePath];
+
+      if (!content) {
+        const response = await fetch(toSiteHref(filePath), { cache: 'force-cache' });
+        if (response.ok) {
+          content = await response.text();
+          sourceFiles[filePath] = content;
+        }
+      }
+
+      if (!content) return null;
+
+      const previewRef = { file: filePath, line, end_line: endLine, function: functionName };
+      const view = renderReferenceLines(previewRef, content);
+      const preview = {
+        highlightedLines: view.highlightedLines,
+        filePath,
+        targetLine: line || null,
+        endLine: endLine || null,
+        functionName: functionName || null,
+        startLine: view.start,
+        end: view.end
+      };
+      linkPreviewCache.set(cacheKey, preview);
+      return preview;
+    } catch (e) {
+      console.warn('Failed to fetch code preview:', e);
+      return null;
+    }
+  }
+
+  function showPreviewTooltip(x, y, content, isCode = false) {
+    if (previewHideTimeout) clearTimeout(previewHideTimeout);
+    const tooltip = createPreviewTooltip();
+    tooltip.innerHTML = content;
+    tooltip.style.left = `${x + 15}px`;
+    tooltip.style.top = `${y + 15}px`;
+    tooltip.style.opacity = '1';
+    tooltip.style.minWidth = `${isCode ? 350 : 200}px`;
+    tooltip.style.maxWidth = `${isCode ? 80 : 30}vw`;
+  }
+
+  function hidePreviewTooltip() {
+    if (previewHideTimeout) clearTimeout(previewHideTimeout);
+    previewHideTimeout = null;
+    if (previewTooltip) {
+      previewTooltip.style.opacity = '0';
+      // Remove from DOM after fade completes so it doesn't block
+      // pointer events on the page below.
+      const el = previewTooltip;
+      setTimeout(() => {
+        if (el.parentNode && el.style.opacity === '0') {
+          el.parentNode.removeChild(el);
+          previewTooltip = null;
+        }
+      }, 200);
+    }
+  }
+
+  function initLinkPreviews() {
+    if (!featureEnabled('link_preview')) return;
+
+    const hasFinePointer = window.matchMedia('(any-pointer: fine)').matches;
+
+    if (!hasFinePointer) {
+      // No mouse available - skip hover initialization, but set up a listener to
+      // re-initialize if mouse is detected later (e.g., touch-screen laptop).
+      function handleFirstMouse() {
+        if (document.querySelectorAll('a[href]').length === 0) {
+          return;
+        }
+        const stillNoFine = window.matchMedia('(any-pointer: fine)').matches;
+        if (!stillNoFine) {
+          return;
+        }
+        document.removeEventListener('mousemove', handleFirstMouse);
+        document.removeEventListener('mousedown', handleFirstMouse);
+        initLinkPreviews();
+      }
+      document.addEventListener('mousemove', handleFirstMouse, { once: true });
+      document.addEventListener('mousedown', handleFirstMouse, { once: true });
+      return;
+    }
+
+    document.querySelectorAll('a[href]').forEach(link => {
+      // Skip topbar/header navigation links - no hover preview needed
+      if (link.closest('.header-nav')) return;
+
+      const href = link.getAttribute('href');
+      if (!href) return;
+
+      // Skip external links, anchors, and special links
+      if (href.startsWith('http') || href.startsWith('mailto:') || href.startsWith('tel:') || href.startsWith('javascript:')) return;
+
+      // Check if it's a code reference link (data-coderef-id format or #coderef: format)
+      const isCodeRef = link.classList.contains('code-reference');
+      const isSearchCodeRef = href.startsWith('#coderef:');
+
+      let hoverTimeout = null;
+      let lastMouseX = 0;
+      let lastMouseY = 0;
+
+      link.addEventListener('mousemove', (e) => {
+        lastMouseX = e.clientX;
+        lastMouseY = e.clientY;
+        if (previewTooltip && previewTooltip.style.opacity === '1') {
+          previewTooltip.style.left = `${e.clientX + 15}px`;
+          previewTooltip.style.top = `${e.clientY + 15}px`;
+        }
+      });
+
+      link.addEventListener('mouseenter', async (e) => {
+        lastMouseX = e.clientX;
+        lastMouseY = e.clientY;
+        if (hoverTimeout) clearTimeout(hoverTimeout);
+        hoverTimeout = setTimeout(async () => {
+          if (isCodeRef) {
+            const refId = link.dataset.coderefId;
+            const refs = parseCodeRefs();
+            const ref = refs.find(r => r.id === refId);
+            if (ref) {
+              const preview = await fetchCodePreview(ref.file, ref.line, ref.end_line, ref.function);
+              if (preview) {
+                const previewLabel = preview.functionName
+                  ? `Function ${preview.functionName}`
+                  : preview.endLine
+                    ? `Lines ${preview.targetLine}-${preview.endLine}`
+                    : preview.targetLine
+                      ? `Line ${preview.targetLine}`
+                      : 'Full file';
+                const content = `
+                  <div class="preview-header">
+                    <span class="preview-file">${preview.filePath}</span>
+                    <span class="preview-line">${previewLabel}</span>
+                  </div>
+                  <div class="preview-code">${preview.highlightedLines}</div>
+                `;
+                showPreviewTooltip(lastMouseX, lastMouseY, content, isCode = true);
+              }
+            }
+          } else if (isSearchCodeRef) {
+            // Handle search result code reference links
+            const match = href.match(/^#coderef:([^:]+):(\d+)(?:-(\d+))?$/);
+            if (match) {
+              console.log(`opening coderef from fragment: ${match}`);
+              const file = match[1];
+              const line = parseInt(match[2], 10);
+              const endLine = match[3] ? parseInt(match[3], 10) : null;
+              const preview = await fetchCodePreview(file, line, endLine);
+              if (preview) {
+                const content = `
+                  <div class="preview-header">
+                    <span class="preview-file">${preview.filePath}</span>
+                    ${preview.targetLine ? `<span class="preview-line">Line ${preview.targetLine}</span>` : ''}
+                  </div>
+                  <div class="preview-code">${preview.highlightedLines}</div>
+                `;
+                showPreviewTooltip(lastMouseX, lastMouseY, content, isCode = true);
+              }
+            }
+          } else if (!href.startsWith('#')) {
+            // Regular page link
+            const preview = await fetchPagePreview(href);
+            if (preview && (preview.title || preview.description)) {
+              const content = `
+                <div class="preview-header">${preview.title || ''}</div>
+                <div class="preview-description">${preview.description || ''}</div>
+              `;
+              showPreviewTooltip(lastMouseX, lastMouseY, content, isCode = false);
+            }
+          }
+        }, 300); // 300ms delay before showing preview
+      });
+
+      // Hide the tooltip when the link loses hover (with a small delay to
+      // allow moving the mouse into the tooltip itself).
+      link.addEventListener('mouseleave', () => {
+        if (hoverTimeout) {
+          clearTimeout(hoverTimeout);
+          hoverTimeout = null;
+        }
+        // Small delay so the user can move the mouse into the tooltip
+        // without it disappearing.
+        setTimeout(() => {
+          if (previewTooltip && previewTooltip.style.opacity === '1') {
+            hidePreviewTooltip();
+          }
+        }, 150);
+      });
+    });
+  }
+
+  // Check if feature is enabled (from the config embedded by the builder)
+  function featureEnabled(name) {
+    const el = document.getElementById('features-config');
+    if (!el) return true; // fallback: assume enabled if no config embedded
+    try {
+      const state = JSON.parse(el.textContent || '{}');
+      return !!state[name];
+    } catch (e) {
+      return true;
+    }
+  }
+
+  // Initialize link previews
+  initLinkPreviews();
+
 });

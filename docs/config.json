@@ -1,0 +1,150 @@
+{
+  "$schema": "https://raw.githubusercontent.com/Omena0/fr-docs/main/config.schema.json",
+  "project_name": "PyJavaBridge",
+  "copyright_holder": "Omena0",
+  "project_url": "https://github.com/Omena0/PyJavaBridge",
+  "site_path_prefix": "/PyJavaBridge",
+  "src_dir": "src",
+  "out_dir": "site",
+  "docs_dir": ".",
+  "sidebar": [
+      ["Getting Started", [
+          ["getting_started/index", "Home"],
+          ["getting_started/decorators", "Decorators"],
+          ["getting_started/exceptions", "Exceptions"],
+          ["getting_started/examples", "Examples"]
+      ]],
+      ["Core", [
+          ["core/server", "Server"],
+          ["core/event", "Event"],
+          ["core/entity", "Entity"],
+          ["core/entitysubtypes", "Entity Subtypes"],
+          ["core/player", "Player"]
+      ]],
+      ["World & Space", [
+          ["world/world", "World"],
+          ["world/location", "Location"],
+          ["world/block", "Block"],
+          ["world/blocksnapshot", "BlockSnapshot"],
+          ["world/chunk", "Chunk"],
+          ["world/vector", "Vector"]
+      ]],
+      ["Items & Inventory", [
+          ["items/item", "Item"],
+          ["items/itembuilder", "ItemBuilder"],
+          ["items/inventory", "Inventory"],
+          ["items/recipe", "Recipe"]
+      ]],
+      ["Effects & Attributes", [
+          ["effects/effect", "Effect"],
+          ["effects/potion", "Potion"],
+          ["effects/attribute", "Attribute"],
+          ["effects/advancement", "Advancement"],
+          ["effects/firework", "Firework"],
+          ["effects/textcomponent", "TextComponent"],
+          ["effects/bookbuilder", "BookBuilder"]
+      ]],
+      ["Scoreboards & UI", [
+          ["ui/menu", "Menu"],
+          ["ui/menuitem", "MenuItem"],
+          ["ui/sidebar", "Sidebar"],
+          ["ui/actionbardisplay", "ActionBarDisplay"],
+          ["ui/bossbardisplay", "BossBarDisplay"],
+          ["ui/bossbar", "BossBar"],
+          ["ui/scoreboard", "Scoreboard"],
+          ["ui/objective", "Objective"],
+          ["ui/team", "Team"]
+      ]],
+      ["Helpers", [
+          ["helpers/config", "Config"],
+          ["helpers/state", "State"],
+          ["helpers/cooldown", "Cooldown"],
+          ["helpers/paginator", "Paginator"],
+          ["helpers/enums", "Enums"],
+          ["helpers/enumvalue", "EnumValue"]
+      ]],
+      ["Display Entities", [
+          ["display/hologram", "Hologram"],
+          ["display/blockdisplay", "BlockDisplay"],
+          ["display/itemdisplay", "ItemDisplay"]
+      ]],
+      ["Extensions", [
+          ["extensions/imagedisplay", "ImageDisplay"],
+          ["extensions/meshdisplay", "MeshDisplay"],
+          ["extensions/npc", "NPC"],
+          ["extensions/quest", "Quest"],
+          ["extensions/dialog", "Dialog"],
+          ["extensions/bank", "Bank"],
+          ["extensions/shop", "Shop"],
+          ["extensions/trade", "TradeWindow"],
+          ["extensions/ability", "Ability"],
+          ["extensions/mana", "ManaStore"],
+          ["extensions/combat", "CombatSystem"],
+          ["extensions/levels", "LevelSystem"],
+          ["extensions/region", "Region"],
+          ["extensions/party", "Party"],
+          ["extensions/guild", "Guild"],
+          ["extensions/customitem", "CustomItem"],
+          ["extensions/leaderboard", "Leaderboard"],
+          ["extensions/visualeffect", "VisualEffect"],
+          ["extensions/playerdatastore", "PlayerDataStore"],
+          ["extensions/dungeon", "Dungeon"],
+          ["extensions/tablist", "TabList"],
+          ["extensions/statemachine", "StateMachine"],
+          ["extensions/scheduler", "Scheduler"],
+          ["extensions/placeholder", "Placeholder"],
+          ["extensions/loottable", "LootTable"],
+          ["extensions/clientmod", "ClientMod"]
+      ]],
+      ["Utilities", [
+          ["utilities/raycast", "Raycast"],
+          ["utilities/chat", "Chat"],
+          ["utilities/reflect", "Reflect"]
+      ]],
+      ["Internals", [
+          ["internals/bridge", "Bridge"],
+          ["internals/events_internal", "Events"],
+          ["internals/execution", "Execution"],
+          ["internals/serialization", "Serialization"],
+          ["internals/lifecycle", "Lifecycle"],
+          ["internals/debugging", "Debugging"]
+      ]]
+  ],
+  "build": {
+    "workers": 8,
+    "minify_html": true,
+    "optimize_html": true,
+    "zstd_level": 22,
+    "search_index_filename": "search_index.zst",
+    "git_meta_filename": "git_meta.zst"
+  },
+  "versioning": {
+    "commit_message_pattern": "^\\s*[[0-9]+[A-Za-z]]\\s*[-:\u2014\u2013]\\s*[.+]",
+    "live_label": "Live"
+  },
+  "source_files": {
+    "patterns": [
+      "docs/src/*.md",
+      "docs/*.js",
+      "docs/*.css",
+      "src/**/*.py",
+      "src/**/*.java",
+      "client_mod/src/**/*.py",
+      "client_mod/src/**/*.java"
+    ],
+    "ignore_dirs": []
+  },
+  "features": {
+    "backlinks": true,
+    "related": true,
+    "auto_link": true,
+    "versioning": true,
+    "search": true,
+    "code_references": true,
+    "link_preview": true,
+    "code_highlighting": true,
+    "blockquotes": true,
+    "ext_tags": true,
+    "inline_copy": true
+  }
+}

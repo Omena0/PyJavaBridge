@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en" data-site-prefix="/PyJavaBridge/">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Debugging — PyJavaBridge</title>
+  <meta property="og:title" content="Debugging — PyJavaBridge">
+  <meta name="description" content="Debug logging, metrics, error codes, and performance tips">
+  <meta property="og:description" content="Debug logging, metrics, error codes, and performance tips">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="PyJavaBridge Docs">
+  <meta name="theme-color" content="#6366f1">
+  <meta name="color-scheme" content="dark">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="fonts.css" media="print" onload="this.media='all'">
+</head>
+<body>
+  <!-- Header -->
+  <header class="site-header">
+    <button class="menu-toggle" aria-label="Toggle menu">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24" aria-hidden="true">
+        <path d="M3 12h18M3 6h18M3 18h18"/>
+      </svg>
+    </button>
+    <div class="header-brand-row">
+      <a rel="prefetch" href="internals/index.html" class="header-brand">
+          <span class="logo">P</span>
+          PyJavaBridge
+      </a>
+      <div class="version-selector-wrap">  <select id="version-selector" class="version-selector" aria-label="Select version">    {config.get("_version_options", "")}  </select></div>
+    </div>
+    <div class="header-search">
+      <svg class="header-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24" aria-hidden="true">  <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg><input type="text" id="header-search" placeholder="Search docs… (Ctrl+K)" autocomplete="off"><div id="search-results" class="search-results"></div>
+    </div>
+    <nav class="header-nav">
+      <a rel="prefetch" href="internals/index.html">Docs</a>
+    </nav>
+  </header>
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+<div class="search-box">
+  <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20" aria-hidden="true">
+    <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+  </svg>
+  <input type="text" id="sidebar-search" placeholder="Search docs…">
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="getting-started">Getting Started</div>
+  <ul class="sidebar-links">
+    <li><a rel="prefetch" href="getting_started/index.html">Home</a></li>
+    <li><a rel="prefetch" href="getting_started/decorators.html">Decorators</a></li>
+    <li><a rel="prefetch" href="getting_started/exceptions.html">Exceptions</a></li>
+    <li><a rel="prefetch" href="getting_started/examples.html">Examples</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="core">Core</div>
+  <ul class="sidebar-links">
+    <li><a rel="prefetch" href="core/server.html">Server</a></li>
+    <li><a rel="prefetch" href="core/event.html">Event</a></li>
+    <li><a rel="prefetch" href="core/entity.html">Entity</a></li>
+    <li><a rel="prefetch" href="core/entitysubtypes.html">Entity Subtypes</a></li>
+    <li><a rel="prefetch" href="core/player.html">Player</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="world-space">World & Space</div>
+  <ul class="sidebar-links">
+    <li><a rel="prefetch" href="world/world.html">World</a></li>
+    <li><a rel="prefetch" href="world/location.html">Location</a></li>
+    <li><a rel="prefetch" href="world/block.html">Block</a></li>
+    <li><a rel="prefetch" href="world/blocksnapshot.html">BlockSnapshot</a></li>
+    <li><a rel="prefetch" href="world/chunk.html">Chunk</a></li>
+    <li><a rel="prefetch" href="world/vector.html">Vector</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="items-inventory">Items & Inventory</div>
+  <ul class="sidebar-links">
+    <li><a rel="prefetch" href="items/item.html">Item</a></li>
+    <li><a rel="prefetch" href="items/itembuilder.html">ItemBuilder</a></li>
+    <li><a rel="prefetch" href="items/inventory.html">Inventory</a></li>
+    <li><a rel="prefetch" href="items/recipe.html">Recipe</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="effects-attributes">Effects & Attributes</div>
+  <ul class="sidebar-links">
+    <li><a rel="prefetch" href="effects/effect.html">Effect</a></li>
+    <li><a rel="prefetch" href="effects/potion.html">Potion</a></li>
+    <li><a rel="prefetch" href="effects/attribute.html">Attribute</a></li>
+    <li><a rel="prefetch" href="effects/advancement.html">Advancement</a></li>
+    <li><a rel="prefetch" href="effects/firework.html">Firework</a></li>
+    <li><a rel="prefetch" href="effects/textcomponent.html">TextComponent</a></li>
+    <li><a rel="prefetch" href="effects/bookbuilder.html">BookBuilder</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="scoreboards-ui">Scoreboards & UI</div>
+  <ul class="sidebar-links">
+    <li><a rel="prefetch" href="ui/menu.html">Menu</a></li>
+    <li><a rel="prefetch" href="ui/menuitem.html">MenuItem</a></li>
+    <li><a rel="prefetch" href="ui/sidebar.html">Sidebar</a></li>
+    <li><a rel="prefetch" href="ui/actionbardisplay.html">ActionBarDisplay</a></li>
+    <li><a rel="prefetch" href="ui/bossbardisplay.html">BossBarDisplay</a></li>
+    <li><a rel="prefetch" href="ui/bossbar.html">BossBar</a></li>
+    <li><a rel="prefetch" href="ui/scoreboard.html">Scoreboard</a></li>
+    <li><a rel="prefetch" href="ui/objective.html">Objective</a></li>
+    <li><a rel="prefetch" href="ui/team.html">Team</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="helpers">Helpers</div>
+  <ul class="sidebar-links">
+    <li><a rel="prefetch" href="helpers/config.html">Config</a></li>
+    <li><a rel="prefetch" href="helpers/state.html">State</a></li>
+    <li><a rel="prefetch" href="helpers/cooldown.html">Cooldown</a></li>
+    <li><a rel="prefetch" href="helpers/paginator.html">Paginator</a></li>
+    <li><a rel="prefetch" href="helpers/enums.html">Enums</a></li>
+    <li><a rel="prefetch" href="helpers/enumvalue.html">EnumValue</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="display-entities">Display Entities</div>
+  <ul class="sidebar-links">
+    <li><a rel="prefetch" href="display/hologram.html">Hologram</a></li>
+    <li><a rel="prefetch" href="display/blockdisplay.html">BlockDisplay</a></li>
+    <li><a rel="prefetch" href="display/itemdisplay.html">ItemDisplay</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="extensions">Extensions</div>
+  <ul class="sidebar-links">
+    <li><a rel="prefetch" href="extensions/imagedisplay.html">ImageDisplay</a></li>
+    <li><a rel="prefetch" href="extensions/meshdisplay.html">MeshDisplay</a></li>
+    <li><a rel="prefetch" href="extensions/npc.html">NPC</a></li>
+    <li><a rel="prefetch" href="extensions/quest.html">Quest</a></li>
+    <li><a rel="prefetch" href="extensions/dialog.html">Dialog</a></li>
+    <li><a rel="prefetch" href="extensions/bank.html">Bank</a></li>
+    <li><a rel="prefetch" href="extensions/shop.html">Shop</a></li>
+    <li><a rel="prefetch" href="extensions/trade.html">TradeWindow</a></li>
+    <li><a rel="prefetch" href="extensions/ability.html">Ability</a></li>
+    <li><a rel="prefetch" href="extensions/mana.html">ManaStore</a></li>
+    <li><a rel="prefetch" href="extensions/combat.html">CombatSystem</a></li>
+    <li><a rel="prefetch" href="extensions/levels.html">LevelSystem</a></li>
+    <li><a rel="prefetch" href="extensions/region.html">Region</a></li>
+    <li><a rel="prefetch" href="extensions/party.html">Party</a></li>
+    <li><a rel="prefetch" href="extensions/guild.html">Guild</a></li>
+    <li><a rel="prefetch" href="extensions/customitem.html">CustomItem</a></li>
+    <li><a rel="prefetch" href="extensions/leaderboard.html">Leaderboard</a></li>
+    <li><a rel="prefetch" href="extensions/visualeffect.html">VisualEffect</a></li>
+    <li><a rel="prefetch" href="extensions/playerdatastore.html">PlayerDataStore</a></li>
+    <li><a rel="prefetch" href="extensions/dungeon.html">Dungeon</a></li>
+    <li><a rel="prefetch" href="extensions/tablist.html">TabList</a></li>
+    <li><a rel="prefetch" href="extensions/statemachine.html">StateMachine</a></li>
+    <li><a rel="prefetch" href="extensions/scheduler.html">Scheduler</a></li>
+    <li><a rel="prefetch" href="extensions/placeholder.html">Placeholder</a></li>
+    <li><a rel="prefetch" href="extensions/loottable.html">LootTable</a></li>
+    <li><a rel="prefetch" href="extensions/clientmod.html">ClientMod</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="utilities">Utilities</div>
+  <ul class="sidebar-links">
+    <li><a rel="prefetch" href="utilities/raycast.html">Raycast</a></li>
+    <li><a rel="prefetch" href="utilities/chat.html">Chat</a></li>
+    <li><a rel="prefetch" href="utilities/reflect.html">Reflect</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading" data-section="internals">Internals</div>
+  <ul class="sidebar-links">
+    <li><a rel="prefetch" href="internals/bridge.html">Bridge</a></li>
+    <li><a rel="prefetch" href="internals/events_internal.html">Events</a></li>
+    <li><a rel="prefetch" href="internals/execution.html">Execution</a></li>
+    <li><a rel="prefetch" href="internals/serialization.html">Serialization</a></li>
+    <li><a rel="prefetch" href="internals/lifecycle.html">Lifecycle</a></li>
+    <li><a rel="prefetch" href="internals/internals/debugging.html" class="active">Debugging</a></li>
+  </ul>
+</div>
+  </aside>
+  <div class="sidebar-overlay"></div>
+
+  <!-- Main -->
+  <main class="main">
+    <div class="content">
+      <p class="subtitle">Debug logging, metrics, error codes, and performance tips</p>
+      <h1>Debugging</h1>
+<p>Tools and techniques for diagnosing issues with the bridge.</p>
+<hr />
+<h2>Debug Logging</h2>
+<h3>Enabling</h3>
+<p>Toggle debug mode at runtime:</p>
+<ul>
+<li><strong>In-game:</strong> <code>/<a rel="prefetch" href="internals/bridge.html" class="filename-reference">bridge</a> debug</code></li>
+<li><strong>Console:</strong> <code>/<a rel="prefetch" href="internals/bridge.html" class="filename-reference">bridge</a> debug</code></li>
+</ul>
+<p>Debug state is per-server (global toggle), not per-script.</p>
+<h3>Log format</h3>
+<p>Debug messages use the <code>&#91;PJB&#93;</code> prefix with direction indicators:</p>
+<pre><code class="language-output">[PJB] P2J script.py 2.3ms call getHealth [42] → {&quot;health&quot;: 20.0}
+[PJB] J2P script.py 0.1ms event PlayerMoveEvent {player: &quot;Steve&quot;, ...}
+</code></pre>
+<p>Format: <code>&#91;PJB&#93; {direction} {script} {time} {type} {summary}</code></p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Values</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Direction</td>
+<td><code>P2J</code> (Python→Java), <code>J2P</code> (Java→Python)</td>
+</tr>
+<tr>
+<td>Script</td>
+<td>Script filename</td>
+</tr>
+<tr>
+<td>Time</td>
+<td>Round-trip or processing time in milliseconds</td>
+</tr>
+<tr>
+<td>Type</td>
+<td><code>call</code>, <code><a rel="prefetch" href="core/event.html" class="filename-reference">event</a></code>, <code>release</code>, <code>register_command</code>, etc.</td>
+</tr>
+<tr>
+<td>Summary</td>
+<td>Truncated message content</td>
+</tr>
+</tbody>
+</table>
+<h3>Message summarization</h3>
+<p>Large messages are automatically summarized:</p>
+<ul>
+<li>Method calls show: method name + handle + truncated args</li>
+<li>Events show: event name + key fields</li>
+<li>Responses show: truncated return value</li>
+<li>Release batches show: handle count</li>
+</ul>
+<hr />
+<h2>Metrics</h2>
+<p>The Python-side <code>MetricsFacade</code> exposes server performance data:</p>
+<pre><code class="language-python"><span class="hl-keyword">from</span> <span class="hl-variable">bridge</span> <span class="hl-keyword">import</span> <span class="hl-variable">server</span>
+
+<span class="hl-variable">tps</span> <span class="hl-operator">=</span> <span class="hl-variable">server</span>.<span class="hl-property">tps</span>              <span class="hl-comment"># Ticks per second (target: 20.0)</span>
+<span class="hl-variable">mspt</span> <span class="hl-operator">=</span> <span class="hl-variable">server</span>.<span class="hl-property">mspt</span>            <span class="hl-comment"># Milliseconds per tick</span>
+<span class="hl-variable">tick_time</span> <span class="hl-operator">=</span> <span class="hl-variable">server</span>.<span class="hl-property">last_tick</span>   <span class="hl-comment"># Last tick time in ms</span>
+<span class="hl-variable">queue</span> <span class="hl-operator">=</span> <span class="hl-variable">server</span>.<span class="hl-property">queue_length</span>   <span class="hl-comment"># Pending calls in main thread queue</span>
+</code></pre>
+<h3>Metric sources</h3>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Source</th>
+<th>Thread-safe</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>tps</code></td>
+<td><code>Bukkit.getTPS()&#91;0&#93;</code></td>
+<td>Yes</td>
+</tr>
+<tr>
+<td><code>mspt</code></td>
+<td><code>MinecraftServer.getAverageTickTimeNanos()</code></td>
+<td>Yes</td>
+</tr>
+<tr>
+<td><code>last_tick</code></td>
+<td>Bridge-internal counter</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td><code>queue_length</code></td>
+<td>Main thread queue <code>.size()</code></td>
+<td>Yes</td>
+</tr>
+</tbody>
+</table>
+<p>These are all read-only and can be safely accessed from async handlers.</p>
+<hr />
+<h2>Error Codes</h2>
+<h3>ENTITY_GONE</h3>
+<pre><code class="language-text">BridgeError: ENTITY_GONE - Entity no longer exists
+</code></pre>
+<p><strong>Cause:</strong> The proxy refers to an entity that has been removed from the world (died, despawned, unloaded).</p>
+<p><strong>Fix:</strong> Check <code><a rel="prefetch" href="core/entity.html" class="filename-reference">entity</a>.is_valid()</code> before operating, or catch <code>BridgeError</code>:</p>
+<pre><code class="language-python"><span class="hl-keyword">try</span>:
+    <span class="hl-variable">entity</span>.<span class="hl-property">set_health</span>(<span class="hl-number">20</span>)
+<span class="hl-keyword">except</span> <span class="hl-constructor">BridgeError</span>:
+    <span class="hl-keyword">pass</span>  <span class="hl-comment"># Entity was removed</span>
+</code></pre>
+<h3>ATOMIC_ABORT</h3>
+<pre><code class="language-text">BridgeError: ATOMIC_ABORT - Atomic batch failed
+</code></pre>
+<p><strong>Cause:</strong> An operation inside an <code>atomic()</code> block raised an exception, causing the entire batch to abort.</p>
+<p><strong>Fix:</strong> Ensure all operations in the atomic block are valid:</p>
+<pre><code class="language-python"><span class="hl-keyword">async</span> <span class="hl-keyword">with</span> <span class="hl-function">atomic</span>():
+    <span class="hl-comment"># Every operation here must succeed</span>
+    <span class="hl-variable">player</span>.<span class="hl-property">set_health</span>(<span class="hl-number">20</span>)
+    <span class="hl-variable">player</span>.<span class="hl-property">set_food_level</span>(<span class="hl-number">20</span>)
+</code></pre>
+<h3>TIMEOUT</h3>
+<pre><code class="language-text">BridgeError: TIMEOUT - Call did not complete within timeout
+</code></pre>
+<p><strong>Cause:</strong> The Java side didn't respond within the timeout period. Usually means the main thread is blocked or overloaded.</p>
+<p><strong>Fix:</strong> Check server TPS. If the server is lagging, calls will queue up.</p>
+<h3>Generic BridgeError</h3>
+<pre><code class="language-text">BridgeError: {message}
+</code></pre>
+<p><strong>Cause:</strong> Java-side exception during method invocation. The exception message is forwarded.</p>
+<p><strong>Common causes:</strong></p>
+<ul>
+<li><code>NullPointerException</code> — calling methods on null results</li>
+<li><code>IllegalArgumentException</code> — wrong argument types</li>
+<li><code>IllegalStateException</code> — calling Bukkit API from wrong thread</li>
+</ul>
+<hr />
+<h2>Performance Tips</h2>
+<h3>Use batching for related operations</h3>
+<pre><code class="language-python"><span class="hl-comment"># Bad: 20 round-trips</span>
+<span class="hl-keyword">for</span> <span class="hl-variable">i</span> <span class="hl-operator">in</span> <span class="hl-function-builtin">range</span>(<span class="hl-number">20</span>):
+    <span class="hl-variable">player</span>.<span class="hl-property">get_inventory</span>().<span class="hl-property">set_item</span>(<span class="hl-variable">i</span>, <span class="hl-variable">item</span>)
+
+<span class="hl-comment"># Good: 1 round-trip with frame batching</span>
+<span class="hl-keyword">async</span> <span class="hl-keyword">with</span> <span class="hl-function">frame</span>():
+    <span class="hl-keyword">for</span> <span class="hl-variable">i</span> <span class="hl-operator">in</span> <span class="hl-function-builtin">range</span>(<span class="hl-number">20</span>):
+        <span class="hl-variable">player</span>.<span class="hl-property">get_inventory</span>().<span class="hl-property">set_item</span>(<span class="hl-variable">i</span>, <span class="hl-variable">item</span>)
+</code></pre>
+<h3>Fire-and-forget for void calls</h3>
+<p>Most setters and void methods (like <code>send_message</code>, <code>set_health</code>, <code>teleport</code>) are fire-and-forget — Python doesn't wait for a response. This makes them nearly instant:</p>
+<pre><code class="language-python"><span class="hl-comment"># These are fire-and-forget (instant, no round-trip):</span>
+<span class="hl-keyword">await</span> <span class="hl-variable">player</span>.<span class="hl-property">send_message</span>(<span class="hl-string">&quot;Hello&quot;</span>)
+<span class="hl-keyword">await</span> <span class="hl-variable">player</span>.<span class="hl-property">set_health</span>(<span class="hl-number">20</span>)
+<span class="hl-keyword">await</span> <span class="hl-variable">player</span>.<span class="hl-property">teleport</span>(<span class="hl-variable">location</span>)
+
+<span class="hl-comment"># These still need a round-trip (they return data):</span>
+<span class="hl-variable">health</span> <span class="hl-operator">=</span> <span class="hl-keyword">await</span> <span class="hl-variable">player</span>.<span class="hl-property">get_health</span>()
+<span class="hl-variable">world</span> <span class="hl-operator">=</span> <span class="hl-keyword">await</span> <span class="hl-variable">player</span>.<span class="hl-property">get_world</span>()
+</code></pre>
+<h3>Install msgpack for faster serialization</h3>
+<p>The bridge supports msgpack as an alternative wire format. Install it in your Python environment for smaller payloads and faster serialization:</p>
+<pre><code class="language-bash"><span class="hl-function-call">pip</span> <span class="hl-variable-parameter">install</span> <span class="hl-variable-parameter">msgpack</span>
+</code></pre>
+<p>The bridge auto-detects msgpack on startup and negotiates the format with Java. No code changes needed.</p>
+<h3>Use thread-safe APIs when possible</h3>
+<p>Calls that are <a rel="prefetch" href="internals/execution.html">thread-safe</a> skip main thread scheduling and execute immediately:</p>
+<pre><code class="language-python"><span class="hl-comment"># These are thread-safe and fire-and-forget (fastest):</span>
+<span class="hl-keyword">await</span> <span class="hl-variable">player</span>.<span class="hl-property">send_message</span>(<span class="hl-string">&quot;Hello&quot;</span>)
+<span class="hl-keyword">await</span> <span class="hl-variable">player</span>.<span class="hl-property">play_sound</span>(...)
+<span class="hl-keyword">await</span> <span class="hl-variable">player</span>.<span class="hl-property">kick</span>(<span class="hl-string">&quot;reason&quot;</span>)
+
+<span class="hl-comment"># These need main thread (slower):</span>
+<span class="hl-variable">world</span>.<span class="hl-property">get_block_at</span>(<span class="hl-variable">x</span>, <span class="hl-variable">y</span>, <span class="hl-variable">z</span>)
+<span class="hl-variable">entity</span>.<span class="hl-property">get_passengers</span>()
+</code></pre>
+<h3>Keep event handlers fast</h3>
+<p>Event handlers block the server's main thread while waiting for your Python code to respond:</p>
+<pre><code class="language-python"><span class="hl-function">@</span><span class="hl-function">event</span><span class="hl-function">(</span><span class="hl-string">&quot;player_move&quot;</span><span class="hl-function">)</span>
+<span class="hl-keyword">async</span> <span class="hl-keyword">def</span> <span class="hl-function">on_move</span>(<span class="hl-variable">e</span>):
+    <span class="hl-comment"># BAD: slow operation blocks the server</span>
+    <span class="hl-variable">result</span> <span class="hl-operator">=</span> <span class="hl-keyword">await</span> <span class="hl-function">some_expensive_call</span>()
+
+    <span class="hl-comment"># GOOD: only do quick checks in move events</span>
+    <span class="hl-keyword">if</span> <span class="hl-variable">e</span>.<span class="hl-property">player</span>.<span class="hl-property">is_sneaking</span>:
+        <span class="hl-variable">e</span>.<span class="hl-property">cancel</span>()
+</code></pre>
+<p>High-frequency events like <code>player_move</code> should return as quickly as possible.</p>
+<h3>Release references early</h3>
+<pre><code class="language-python"><span class="hl-comment"># BAD: holds references to all chunks forever</span>
+<span class="hl-variable">chunks</span> <span class="hl-operator">=</span> []
+<span class="hl-keyword">for</span> <span class="hl-variable">x</span> <span class="hl-operator">in</span> <span class="hl-function-builtin">range</span>(<span class="hl-number">10</span>):
+    <span class="hl-keyword">for</span> <span class="hl-variable">z</span> <span class="hl-operator">in</span> <span class="hl-function-builtin">range</span>(<span class="hl-number">10</span>):
+        <span class="hl-variable">chunks</span>.<span class="hl-property">append</span>(<span class="hl-variable">world</span>.<span class="hl-property">get_chunk_at</span>(<span class="hl-variable">x</span>, <span class="hl-variable">z</span>))
+
+<span class="hl-comment"># GOOD: process and discard</span>
+<span class="hl-keyword">for</span> <span class="hl-variable">x</span> <span class="hl-operator">in</span> <span class="hl-function-builtin">range</span>(<span class="hl-number">10</span>):
+    <span class="hl-keyword">for</span> <span class="hl-variable">z</span> <span class="hl-operator">in</span> <span class="hl-function-builtin">range</span>(<span class="hl-number">10</span>):
+        <span class="hl-variable">chunk</span> <span class="hl-operator">=</span> <span class="hl-variable">world</span>.<span class="hl-property">get_chunk_at</span>(<span class="hl-variable">x</span>, <span class="hl-variable">z</span>)
+        <span class="hl-function">process</span>(<span class="hl-variable">chunk</span>)
+        <span class="hl-comment"># chunk goes out of scope, handle released on next GC</span>
+</code></pre>
+<h3>Use <code>asyncio.gather</code> for independent calls</h3>
+<pre><code class="language-python"><span class="hl-comment"># Sequential: 3 round-trips</span>
+<span class="hl-variable">health</span> <span class="hl-operator">=</span> <span class="hl-keyword">await</span> <span class="hl-variable">player</span>.<span class="hl-property">get_health</span>()
+<span class="hl-variable">food</span> <span class="hl-operator">=</span> <span class="hl-keyword">await</span> <span class="hl-variable">player</span>.<span class="hl-property">get_food_level</span>()
+<span class="hl-variable">level</span> <span class="hl-operator">=</span> <span class="hl-keyword">await</span> <span class="hl-variable">player</span>.<span class="hl-property">get_level</span>()
+
+<span class="hl-comment"># Parallel: 1 round-trip (all sent together)</span>
+<span class="hl-variable">health</span>, <span class="hl-variable">food</span>, <span class="hl-variable">level</span> <span class="hl-operator">=</span> <span class="hl-keyword">await</span> <span class="hl-variable">asyncio</span>.<span class="hl-property">gather</span>(
+    <span class="hl-variable">player</span>.<span class="hl-property">get_health</span>(),
+    <span class="hl-variable">player</span>.<span class="hl-property">get_food_level</span>(),
+    <span class="hl-variable">player</span>.<span class="hl-property">get_level</span>()
+)
+</code></pre>
+<h3>Monitor with metrics</h3>
+<pre><code class="language-python"><span class="hl-keyword">if</span> <span class="hl-variable">server</span>.<span class="hl-property">tps</span> <span class="hl-operator">&lt;</span> <span class="hl-number">18.0</span>:
+    <span class="hl-comment"># Server is struggling, reduce load</span>
+    <span class="hl-function">skip_expensive_operations</span>()
+
+<span class="hl-keyword">if</span> <span class="hl-variable">server</span>.<span class="hl-property">queue_length</span> <span class="hl-operator">&gt;</span> <span class="hl-number">50</span>:
+    <span class="hl-comment"># Too many pending calls</span>
+    <span class="hl-keyword">await</span> <span class="hl-variable">asyncio</span>.<span class="hl-property">sleep</span>(<span class="hl-number">0.1</span>)  <span class="hl-comment"># Back off</span>
+</code></pre>
+    </div>
+    <footer class="site-footer">
+      &copy; 2026 Omena0 &middot; PyJavaBridge Documentation
+    </footer>
+  </main>
+
+  <!-- Back to top -->
+  <button class="back-to-top" aria-label="Back to top">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+        <path d="M18 15l-6-6-6 6"/>
+      </svg>
+    </button>
+
+    
+    <script id="code-refs-data" type="application/json">[]</script>
+    <script id="search-config" type="application/json">{"pages": true, "titles": true, "headings": true, "content": true, "symbols": true, "files": true}</script>
+    <script id="features-config" type="application/json">{"backlinks": true, "related": true, "auto_link": true, "versioning": true, "search": true, "code_references": true, "link_preview": true, "code_highlighting": true, "blockquotes": true, "ext_tags": true, "inline_copy": true}</script>
+    <script id="custom-tags-config" type="application/json">{"ext": {"label": "Extensions", "display": "ext", "class": "ext-tag"}}</script>
+    <script src="/PyJavaBridge/script.js" defer></script>
+</body>
+</html>

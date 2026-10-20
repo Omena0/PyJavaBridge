@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en" data-site-prefix="/PyJavaBridge/">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BossBarDisplay — PyJavaBridge</title>
+  <meta property="og:title" content="BossBarDisplay — PyJavaBridge">
+  <meta name="description" content="Per-player boss bar manager">
+  <meta property="og:description" content="Per-player boss bar manager">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="PyJavaBridge Docs">
+  <meta name="theme-color" content="#6366f1">
+  <meta name="color-scheme" content="dark">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="fonts.css" media="print" onload="this.media='all'">
+</head>
+<body>
+  <!-- Header -->
+  <header class="site-header">
+    <button class="menu-toggle" aria-label="Toggle menu">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24" aria-hidden="true">
+        <path d="M3 12h18M3 6h18M3 18h18"/>
+      </svg>
+    </button>
+    <div class="header-brand-row">
+      <a rel="prefetch" href="ui/index.html" class="header-brand">
+          <span class="logo">P</span>
+          PyJavaBridge
+      </a>
+      <div class="version-selector-wrap">  <select id="version-selector" class="version-selector" aria-label="Select version">    {config.get("_version_options", "")}  </select></div>
+    </div>
+    <div class="header-search">
+      <svg class="header-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24" aria-hidden="true">  <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg><input type="text" id="header-search" placeholder="Search docs… (Ctrl+K)" autocomplete="off"><div id="search-results" class="search-results"></div>
+    </div>
+    <nav class="header-nav">
+      <a rel="prefetch" href="ui/index.html">Docs</a>
+    </nav>
+  </header>
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+<div class="search-box">
+  <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20" aria-hidden="true">
+    <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+  </svg>
+  <input type="text" id="sidebar-search" placeholder="Search docs…">
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="getting-started">Getting Started</div>
+  <ul class="sidebar-links">
+    <li><a rel="prefetch" href="getting_started/index.html">Home</a></li>
+    <li><a rel="prefetch" href="getting_started/decorators.html">Decorators</a></li>
+    <li><a rel="prefetch" href="getting_started/exceptions.html">Exceptions</a></li>
+    <li><a rel="prefetch" href="getting_started/examples.html">Examples</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="core">Core</div>
+  <ul class="sidebar-links">
+    <li><a rel="prefetch" href="core/server.html">Server</a></li>
+    <li><a rel="prefetch" href="core/event.html">Event</a></li>
+    <li><a rel="prefetch" href="core/entity.html">Entity</a></li>
+    <li><a rel="prefetch" href="core/entitysubtypes.html">Entity Subtypes</a></li>
+    <li><a rel="prefetch" href="core/player.html">Player</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="world-space">World & Space</div>
+  <ul class="sidebar-links">
+    <li><a rel="prefetch" href="world/world.html">World</a></li>
+    <li><a rel="prefetch" href="world/location.html">Location</a></li>
+    <li><a rel="prefetch" href="world/block.html">Block</a></li>
+    <li><a rel="prefetch" href="world/blocksnapshot.html">BlockSnapshot</a></li>
+    <li><a rel="prefetch" href="world/chunk.html">Chunk</a></li>
+    <li><a rel="prefetch" href="world/vector.html">Vector</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="items-inventory">Items & Inventory</div>
+  <ul class="sidebar-links">
+    <li><a rel="prefetch" href="items/item.html">Item</a></li>
+    <li><a rel="prefetch" href="items/itembuilder.html">ItemBuilder</a></li>
+    <li><a rel="prefetch" href="items/inventory.html">Inventory</a></li>
+    <li><a rel="prefetch" href="items/recipe.html">Recipe</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="effects-attributes">Effects & Attributes</div>
+  <ul class="sidebar-links">
+    <li><a rel="prefetch" href="effects/effect.html">Effect</a></li>
+    <li><a rel="prefetch" href="effects/potion.html">Potion</a></li>
+    <li><a rel="prefetch" href="effects/attribute.html">Attribute</a></li>
+    <li><a rel="prefetch" href="effects/advancement.html">Advancement</a></li>
+    <li><a rel="prefetch" href="effects/firework.html">Firework</a></li>
+    <li><a rel="prefetch" href="effects/textcomponent.html">TextComponent</a></li>
+    <li><a rel="prefetch" href="effects/bookbuilder.html">BookBuilder</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading" data-section="scoreboards-ui">Scoreboards & UI</div>
+  <ul class="sidebar-links">
+    <li><a rel="prefetch" href="ui/menu.html">Menu</a></li>
+    <li><a rel="prefetch" href="ui/menuitem.html">MenuItem</a></li>
+    <li><a rel="prefetch" href="ui/sidebar.html">Sidebar</a></li>
+    <li><a rel="prefetch" href="ui/actionbardisplay.html">ActionBarDisplay</a></li>
+    <li><a rel="prefetch" href="ui/ui/bossbardisplay.html" class="active">BossBarDisplay</a></li>
+    <li><a rel="prefetch" href="ui/bossbar.html">BossBar</a></li>
+    <li><a rel="prefetch" href="ui/scoreboard.html">Scoreboard</a></li>
+    <li><a rel="prefetch" href="ui/objective.html">Objective</a></li>
+    <li><a rel="prefetch" href="ui/team.html">Team</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="helpers">Helpers</div>
+  <ul class="sidebar-links">
+    <li><a rel="prefetch" href="helpers/config.html">Config</a></li>
+    <li><a rel="prefetch" href="helpers/state.html">State</a></li>
+    <li><a rel="prefetch" href="helpers/cooldown.html">Cooldown</a></li>
+    <li><a rel="prefetch" href="helpers/paginator.html">Paginator</a></li>
+    <li><a rel="prefetch" href="helpers/enums.html">Enums</a></li>
+    <li><a rel="prefetch" href="helpers/enumvalue.html">EnumValue</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="display-entities">Display Entities</div>
+  <ul class="sidebar-links">
+    <li><a rel="prefetch" href="display/hologram.html">Hologram</a></li>
+    <li><a rel="prefetch" href="display/blockdisplay.html">BlockDisplay</a></li>
+    <li><a rel="prefetch" href="display/itemdisplay.html">ItemDisplay</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="extensions">Extensions</div>
+  <ul class="sidebar-links">
+    <li><a rel="prefetch" href="extensions/imagedisplay.html">ImageDisplay</a></li>
+    <li><a rel="prefetch" href="extensions/meshdisplay.html">MeshDisplay</a></li>
+    <li><a rel="prefetch" href="extensions/npc.html">NPC</a></li>
+    <li><a rel="prefetch" href="extensions/quest.html">Quest</a></li>
+    <li><a rel="prefetch" href="extensions/dialog.html">Dialog</a></li>
+    <li><a rel="prefetch" href="extensions/bank.html">Bank</a></li>
+    <li><a rel="prefetch" href="extensions/shop.html">Shop</a></li>
+    <li><a rel="prefetch" href="extensions/trade.html">TradeWindow</a></li>
+    <li><a rel="prefetch" href="extensions/ability.html">Ability</a></li>
+    <li><a rel="prefetch" href="extensions/mana.html">ManaStore</a></li>
+    <li><a rel="prefetch" href="extensions/combat.html">CombatSystem</a></li>
+    <li><a rel="prefetch" href="extensions/levels.html">LevelSystem</a></li>
+    <li><a rel="prefetch" href="extensions/region.html">Region</a></li>
+    <li><a rel="prefetch" href="extensions/party.html">Party</a></li>
+    <li><a rel="prefetch" href="extensions/guild.html">Guild</a></li>
+    <li><a rel="prefetch" href="extensions/customitem.html">CustomItem</a></li>
+    <li><a rel="prefetch" href="extensions/leaderboard.html">Leaderboard</a></li>
+    <li><a rel="prefetch" href="extensions/visualeffect.html">VisualEffect</a></li>
+    <li><a rel="prefetch" href="extensions/playerdatastore.html">PlayerDataStore</a></li>
+    <li><a rel="prefetch" href="extensions/dungeon.html">Dungeon</a></li>
+    <li><a rel="prefetch" href="extensions/tablist.html">TabList</a></li>
+    <li><a rel="prefetch" href="extensions/statemachine.html">StateMachine</a></li>
+    <li><a rel="prefetch" href="extensions/scheduler.html">Scheduler</a></li>
+    <li><a rel="prefetch" href="extensions/placeholder.html">Placeholder</a></li>
+    <li><a rel="prefetch" href="extensions/loottable.html">LootTable</a></li>
+    <li><a rel="prefetch" href="extensions/clientmod.html">ClientMod</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="utilities">Utilities</div>
+  <ul class="sidebar-links">
+    <li><a rel="prefetch" href="utilities/raycast.html">Raycast</a></li>
+    <li><a rel="prefetch" href="utilities/chat.html">Chat</a></li>
+    <li><a rel="prefetch" href="utilities/reflect.html">Reflect</a></li>
+  </ul>
+</div>
+<div class="sidebar-section">
+  <div class="sidebar-heading collapsed" data-section="internals">Internals</div>
+  <ul class="sidebar-links">
+    <li><a rel="prefetch" href="internals/bridge.html">Bridge</a></li>
+    <li><a rel="prefetch" href="internals/events_internal.html">Events</a></li>
+    <li><a rel="prefetch" href="internals/execution.html">Execution</a></li>
+    <li><a rel="prefetch" href="internals/serialization.html">Serialization</a></li>
+    <li><a rel="prefetch" href="internals/lifecycle.html">Lifecycle</a></li>
+    <li><a rel="prefetch" href="internals/debugging.html">Debugging</a></li>
+  </ul>
+</div>
+  </aside>
+  <div class="sidebar-overlay"></div>
+
+  <!-- Main -->
+  <main class="main">
+    <div class="content">
+      <p class="subtitle">Per-player boss bar manager</p>
+      <h1>BossBarDisplay</h1>
+<p><code><a rel="prefetch" href="ui/ui/bossbardisplay.html" class="filename-reference">BossBarDisplay</a></code> is a high-level wrapper around <code><a rel="prefetch" href="ui/bossbar.html" class="filename-reference">BossBar</a></code> that manages per-player visibility and integrates with <code><a rel="prefetch" href="helpers/cooldown.html" class="filename-reference">Cooldown</a></code> for automatic progress animation.</p>
+<hr />
+<h2>Constructor</h2>
+<pre><code class="language-python"><span class="hl-function">BossBarDisplay</span>(<span class="hl-variable">title</span><span class="hl-operator">=</span><span class="hl-string">&quot;&quot;</span>, <span class="hl-variable">color</span><span class="hl-operator">=</span><span class="hl-string">&quot;PINK&quot;</span>, <span class="hl-variable">style</span><span class="hl-operator">=</span><span class="hl-string">&quot;SOLID&quot;</span>)
+</code></pre>
+<p>Create a boss bar display.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code>title</code> (<code>str</code>) — Bar title. Supports <code>§</code> color codes. Default <code>&quot;&quot;</code>.</li>
+<li><code>color</code> (<code>str</code>) — Bar color name. Default <code>&quot;PINK&quot;</code>. Options: <code>&quot;PINK&quot;</code>, <code>&quot;BLUE&quot;</code>, <code>&quot;RED&quot;</code>, <code>&quot;GREEN&quot;</code>, <code>&quot;YELLOW&quot;</code>, <code>&quot;PURPLE&quot;</code>, <code>&quot;WHITE&quot;</code>.</li>
+<li><code>style</code> (<code>str</code>) — Bar style name. Default <code>&quot;SOLID&quot;</code>. Options: <code>&quot;SOLID&quot;</code>, <code>&quot;SEGMENTED_6&quot;</code>, <code>&quot;SEGMENTED_10&quot;</code>, <code>&quot;SEGMENTED_12&quot;</code>, <code>&quot;SEGMENTED_20&quot;</code>.</li>
+</ul>
+<pre><code class="language-python"><span class="hl-variable">ability_bar</span> <span class="hl-operator">=</span> <span class="hl-function">BossBarDisplay</span>(<span class="hl-string">&quot;§6Fireball&quot;</span>, <span class="hl-variable">color</span><span class="hl-operator">=</span><span class="hl-string">&quot;RED&quot;</span>, <span class="hl-variable">style</span><span class="hl-operator">=</span><span class="hl-string">&quot;SOLID&quot;</span>)
+</code></pre>
+<hr />
+<h2>Attributes</h2>
+<h3>text</h3>
+<ul>
+<li><strong>Type:</strong> <code>str</code></li>
+</ul>
+<p>Current title text.</p>
+<h3>color</h3>
+<ul>
+<li><strong>Type:</strong> <code>str</code></li>
+</ul>
+<p>Current color name.</p>
+<h3>style</h3>
+<ul>
+<li><strong>Type:</strong> <code>str</code></li>
+</ul>
+<p>Current style name.</p>
+<h3>value</h3>
+<ul>
+<li><strong>Type:</strong> <code>float</code></li>
+</ul>
+<p>Current value.</p>
+<h3>max</h3>
+<ul>
+<li><strong>Type:</strong> <code>float</code></li>
+</ul>
+<p>Maximum value.</p>
+<h3>progress</h3>
+<ul>
+<li><strong>Type:</strong> <code>float</code></li>
+</ul>
+<p>Progress from 0.0 to 1.0 (calculated as <code>value / max</code>).</p>
+<h3>visible</h3>
+<ul>
+<li><strong>Type:</strong> <code>bool</code></li>
+</ul>
+<p>Whether the bar is currently visible.</p>
+<hr />
+<h2>Methods</h2>
+<h3>show</h3>
+<pre><code class="language-python"><span class="hl-variable">display</span>.<span class="hl-property">show</span>(<span class="hl-variable">player</span>)
+</code></pre>
+<p>Show the boss bar to a player. This is synchronous.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code><a rel="prefetch" href="core/player.html" class="filename-reference">player</a></code> (<code><a rel="prefetch" href="core/player.html" class="filename-reference">Player</a></code>) — Player to show the bar to.</li>
+</ul>
+<h3>hide</h3>
+<pre><code class="language-python"><span class="hl-variable">display</span>.<span class="hl-property">hide</span>(<span class="hl-variable">player</span>)
+</code></pre>
+<p>Hide the boss bar from a player. This is synchronous.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code><a rel="prefetch" href="core/player.html" class="filename-reference">player</a></code> (<code><a rel="prefetch" href="core/player.html" class="filename-reference">Player</a></code>) — Player to hide from.</li>
+</ul>
+<h3>link_to</h3>
+<pre><code class="language-python"><span class="hl-variable">display</span>.<span class="hl-property">link_to</span>(<span class="hl-variable">cooldown</span>, <span class="hl-variable">player</span>)
+</code></pre>
+<p>Link this bar to a <code><a rel="prefetch" href="helpers/cooldown.html" class="filename-reference">Cooldown</a></code> — the bar progress will automatically animate to reflect the remaining cooldown time.</p>
+<ul>
+<li><strong>Parameters:</strong></li>
+<li><code><a rel="prefetch" href="helpers/cooldown.html" class="filename-reference">cooldown</a></code> (<code><a rel="prefetch" href="helpers/cooldown.html" class="filename-reference">Cooldown</a></code>) — The cooldown to track.</li>
+<li><code><a rel="prefetch" href="core/player.html" class="filename-reference">player</a></code> (<code><a rel="prefetch" href="core/player.html" class="filename-reference">Player</a></code>) — The player to display the cooldown bar to.</li>
+</ul>
+<pre><code class="language-python"><span class="hl-variable">cd</span> <span class="hl-operator">=</span> <span class="hl-function">Cooldown</span>(<span class="hl-variable">seconds</span><span class="hl-operator">=</span><span class="hl-number">10.0</span>)
+<span class="hl-variable">bar</span> <span class="hl-operator">=</span> <span class="hl-function">BossBarDisplay</span>(<span class="hl-string">&quot;§6Fireball Cooldown&quot;</span>, <span class="hl-variable">color</span><span class="hl-operator">=</span><span class="hl-string">&quot;RED&quot;</span>)
+
+<span class="hl-function">@</span><span class="hl-function">command</span><span class="hl-function">(</span><span class="hl-string">&quot;Fireball&quot;</span><span class="hl-function">)</span>
+<span class="hl-keyword">async</span> <span class="hl-keyword">def</span> <span class="hl-function">fireball</span>(<span class="hl-variable">player</span>: <span class="hl-type">Player</span>, <span class="hl-variable">args</span>: <span class="hl-variable">list</span>[<span class="hl-type">str</span>]):
+    <span class="hl-keyword">if</span> <span class="hl-operator">not</span> <span class="hl-variable">cd</span>.<span class="hl-property">check</span>(<span class="hl-variable">player</span>):
+        <span class="hl-keyword">return</span>
+
+    <span class="hl-variable">bar</span>.<span class="hl-property">link_to</span>(<span class="hl-variable">cd</span>, <span class="hl-variable">player</span>)
+    <span class="hl-keyword">await</span> <span class="hl-variable">player</span>.<span class="hl-property">send_message</span>(<span class="hl-string">&quot;§6🔥 Fireball!&quot;</span>)
+</code></pre>
+<hr />
+<h2>Example: Ability cooldown bar</h2>
+<pre><code class="language-python"><span class="hl-keyword">from</span> <span class="hl-variable">bridge</span> <span class="hl-keyword">import</span> <span class="hl-operator">*</span>
+
+<span class="hl-variable">fireball_cd</span> <span class="hl-operator">=</span> <span class="hl-function">Cooldown</span>(<span class="hl-variable">seconds</span><span class="hl-operator">=</span><span class="hl-number">8.0</span>)
+<span class="hl-variable">fireball_bar</span> <span class="hl-operator">=</span> <span class="hl-function">BossBarDisplay</span>(<span class="hl-string">&quot;§6§lFireball&quot;</span>, <span class="hl-variable">color</span><span class="hl-operator">=</span><span class="hl-string">&quot;RED&quot;</span>, <span class="hl-variable">style</span><span class="hl-operator">=</span><span class="hl-string">&quot;SOLID&quot;</span>)
+
+<span class="hl-function">@</span><span class="hl-function">command</span><span class="hl-function">(</span><span class="hl-string">&quot;Shoot a fireball&quot;</span><span class="hl-function">)</span>
+<span class="hl-keyword">async</span> <span class="hl-keyword">def</span> <span class="hl-function">fireball</span>(<span class="hl-variable">player</span>: <span class="hl-type">Player</span>, <span class="hl-variable">args</span>: <span class="hl-variable">list</span>[<span class="hl-type">str</span>]):
+    <span class="hl-keyword">if</span> <span class="hl-operator">not</span> <span class="hl-variable">fireball_cd</span>.<span class="hl-property">check</span>(<span class="hl-variable">player</span>):
+        <span class="hl-variable">r</span> <span class="hl-operator">=</span> <span class="hl-variable">fireball_cd</span>.<span class="hl-property">remaining</span>(<span class="hl-variable">player</span>)
+        <span class="hl-keyword">await</span> <span class="hl-variable">player</span>.<span class="hl-property">send_message</span>(<span class="hl-string">f&quot;§c</span><span class="hl-punctuation-special">{</span><span class="hl-variable">r</span><span class="hl-string">:.1f</span><span class="hl-punctuation-special">}</span><span class="hl-string">s cooldown!&quot;</span>)
+        <span class="hl-keyword">return</span>
+
+    <span class="hl-variable">fireball_bar</span>.<span class="hl-property">link_to</span>(<span class="hl-variable">fireball_cd</span>, <span class="hl-variable">player</span>)
+    <span class="hl-keyword">await</span> <span class="hl-variable">world</span>.<span class="hl-property">spawn_projectile</span>(<span class="hl-variable">player</span>, <span class="hl-string">&quot;FIREBALL&quot;</span>)
+    <span class="hl-keyword">await</span> <span class="hl-variable">player</span>.<span class="hl-property">send_message</span>(<span class="hl-string">&quot;§6🔥 Fireball launched!&quot;</span>)
+</code></pre>
+<h2>Example: Multiple ability bars</h2>
+<pre><code class="language-python"><span class="hl-keyword">from</span> <span class="hl-variable">bridge</span> <span class="hl-keyword">import</span> <span class="hl-operator">*</span>
+
+<span class="hl-variable">abilities</span> <span class="hl-operator">=</span> {
+    <span class="hl-string">&quot;fireball&quot;</span>: {
+        <span class="hl-string">&quot;cd&quot;</span>: <span class="hl-function">Cooldown</span>(<span class="hl-variable">seconds</span><span class="hl-operator">=</span><span class="hl-number">8.0</span>),
+        <span class="hl-string">&quot;bar&quot;</span>: <span class="hl-function">BossBarDisplay</span>(<span class="hl-string">&quot;§6Fireball&quot;</span>, <span class="hl-variable">color</span><span class="hl-operator">=</span><span class="hl-string">&quot;RED&quot;</span>),
+    },
+    <span class="hl-string">&quot;heal&quot;</span>: {
+        <span class="hl-string">&quot;cd&quot;</span>: <span class="hl-function">Cooldown</span>(<span class="hl-variable">seconds</span><span class="hl-operator">=</span><span class="hl-number">15.0</span>),
+        <span class="hl-string">&quot;bar&quot;</span>: <span class="hl-function">BossBarDisplay</span>(<span class="hl-string">&quot;§aHeal&quot;</span>, <span class="hl-variable">color</span><span class="hl-operator">=</span><span class="hl-string">&quot;GREEN&quot;</span>),
+    },
+    <span class="hl-string">&quot;dash&quot;</span>: {
+        <span class="hl-string">&quot;cd&quot;</span>: <span class="hl-function">Cooldown</span>(<span class="hl-variable">seconds</span><span class="hl-operator">=</span><span class="hl-number">3.0</span>),
+        <span class="hl-string">&quot;bar&quot;</span>: <span class="hl-function">BossBarDisplay</span>(<span class="hl-string">&quot;§bDash&quot;</span>, <span class="hl-variable">color</span><span class="hl-operator">=</span><span class="hl-string">&quot;BLUE&quot;</span>),
+    },
+}
+
+<span class="hl-function">@</span><span class="hl-function">command</span><span class="hl-function">(</span><span class="hl-string">&quot;Use an ability&quot;</span><span class="hl-function">)</span>
+<span class="hl-keyword">async</span> <span class="hl-keyword">def</span> <span class="hl-function">ability</span>(<span class="hl-variable">player</span>: <span class="hl-type">Player</span>, <span class="hl-variable">args</span>: <span class="hl-variable">list</span>[<span class="hl-type">str</span>]):
+    <span class="hl-keyword">if</span> <span class="hl-operator">not</span> <span class="hl-variable">args</span> <span class="hl-operator">or</span> <span class="hl-variable">args</span>[<span class="hl-number">0</span>] <span class="hl-operator">not</span><span class="hl-operator"> </span><span class="hl-operator">in</span> <span class="hl-variable">abilities</span>:
+        <span class="hl-keyword">await</span> <span class="hl-variable">player</span>.<span class="hl-property">send_message</span>(<span class="hl-string">&quot;§cUsage: /ability &lt;fireball|heal|dash&gt;&quot;</span>)
+        <span class="hl-keyword">return</span>
+
+    <span class="hl-variable">ab</span> <span class="hl-operator">=</span> <span class="hl-variable">abilities</span>[<span class="hl-variable">args</span>[<span class="hl-number">0</span>]]
+    <span class="hl-keyword">if</span> <span class="hl-operator">not</span> <span class="hl-variable">ab</span>[<span class="hl-string">&quot;cd&quot;</span>].<span class="hl-property">check</span>(<span class="hl-variable">player</span>):
+        <span class="hl-keyword">return</span>
+
+    <span class="hl-variable">ab</span>[<span class="hl-string">&quot;bar&quot;</span>].<span class="hl-property">link_to</span>(<span class="hl-variable">ab</span>[<span class="hl-string">&quot;cd&quot;</span>], <span class="hl-variable">player</span>)
+    <span class="hl-keyword">await</span> <span class="hl-variable">player</span>.<span class="hl-property">send_message</span>(<span class="hl-string">f&quot;§aUsed </span><span class="hl-punctuation-special">{</span><span class="hl-variable">args</span><span class="hl-string">[</span><span class="hl-number">0</span><span class="hl-string">]</span><span class="hl-punctuation-special">}</span><span class="hl-string">!&quot;</span>)
+</code></pre>
+<div class="callout callout-info">  <span class="callout-icon" aria-hidden="true">    <svg viewBox="0 0 24 24">      <circle cx="12" cy="12" r="9"/><path d="M12 11v5m0-8h.01"/>    </svg>  </span>  <div class="callout-content">    <p><strong>See also:</strong> <code><a rel="prefetch" href="ui/bossbar.html" class="filename-reference">BossBar</a></code> for the lower-level boss bar API, <code><a rel="prefetch" href="helpers/cooldown.html" class="filename-reference">Cooldown</a></code> for standalone cooldown tracking.</p>  </div></div>
+    </div>
+    <footer class="site-footer">
+      &copy; 2026 Omena0 &middot; PyJavaBridge Documentation
+    </footer>
+  </main>
+
+  <!-- Back to top -->
+  <button class="back-to-top" aria-label="Back to top">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+        <path d="M18 15l-6-6-6 6"/>
+      </svg>
+    </button>
+
+    
+    <script id="code-refs-data" type="application/json">[]</script>
+    <script id="search-config" type="application/json">{"pages": true, "titles": true, "headings": true, "content": true, "symbols": true, "files": true}</script>
+    <script id="features-config" type="application/json">{"backlinks": true, "related": true, "auto_link": true, "versioning": true, "search": true, "code_references": true, "link_preview": true, "code_highlighting": true, "blockquotes": true, "ext_tags": true, "inline_copy": true}</script>
+    <script id="custom-tags-config" type="application/json">{"ext": {"label": "Extensions", "display": "ext", "class": "ext-tag"}}</script>
+    <script src="/PyJavaBridge/script.js" defer></script>
+</body>
+</html>
