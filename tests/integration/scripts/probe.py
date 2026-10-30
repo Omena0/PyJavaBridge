@@ -846,3 +846,226 @@ async def world_block_snapshot(event: Event, data: Dict[str, Any]) -> Any:
         result["error"] = str(exc)
     return result
 
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Entity and Block API tests
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+@probe("entity_spawn_props")
+async def entity_spawn_props(event: Event, data: Dict[str, Any]) -> Any:
+    """Test entity attributes."""
+    w = await server.world("world")
+    p = event.player
+    try:
+        loc = Location(w, p.location.x + 4, p.location.y, p.location.z + 4)
+        ent = await Entity.spawn(EntityType.SHEEP, loc)
+        result = {
+            "uuid": str(getattr(ent, "uuid", None)),
+            "type": str(getattr(ent, "type", None)),
+            "is_alive": getattr(ent, "is_alive", None),
+            "is_valid": getattr(ent, "is_valid", None),
+        }
+        try:
+            ent.remove()
+        except Exception:
+            pass
+    except Exception as exc:
+        result = {"error": str(exc)}
+    return result
+
+
+@probe("entity_teleport_velocity")
+async def entity_teleport_velocity(event: Event, data: Dict[str, Any]) -> Any:
+    """Test entity teleport and velocity."""
+    w = await server.world("world")
+    p = event.player
+    try:
+        loc = Location(w, p.location.x + 6, p.location.y, p.location.z + 6)
+        ent = await Entity.spawn(EntityType.PIG, loc)
+        await ent.teleport(Location(w, p.location.x + 7, p.location.y, p.location.z + 7))
+        await ent.set_velocity(Vector(0, 0.5, 0))
+        await ent.set_fire_ticks(10)
+        result = {"teleport_vel_ok": True}
+        try:
+            ent.remove()
+        except Exception:
+            pass
+    except Exception as exc:
+        result = {"error": str(exc)}
+    return result
+
+
+@probe("entity_damage")
+async def entity_damage(event: Event, data: Dict[str, Any]) -> Any:
+    """Test entity damage."""
+    w = await server.world("world")
+    p = event.player
+    try:
+        loc = Location(w, p.location.x + 8, p.location.y, p.location.z + 8)
+        ent = await Entity.spawn(EntityType.CHICKEN, loc)
+        await ent.damage(2, p)
+        result = {"damaged": True}
+        try:
+            ent.remove()
+        except Exception:
+            pass
+    except Exception as exc:
+        result = {"error": str(exc)}
+    return result
+
+
+@probe("entity_tags_metadata")
+async def entity_tags_metadata(event: Event, data: Dict[str, Any]) -> Any:
+    """Test entity tags and metadata."""
+    w = await server.world("world")
+    p = event.player
+    try:
+        loc = Location(w, p.location.x + 9, p.location.y, p.location.z + 9)
+        ent = await Entity.spawn(EntityType.RABBIT, loc)
+        await ent.add_tag("pjb_test")
+        tags = as_list(ent.tags)
+        ent.metadata["test"] = "value"
+        result = {"tagged": "pjb_test" in tags, "meta": ent.metadata.get("test")}
+        try:
+            await ent.remove_tag("pjb_test")
+            ent.remove()
+        except Exception:
+            pass
+    except Exception as exc:
+        result = {"error": str(exc)}
+    return result
+
+
+@probe("block_props")
+async def block_props(event: Event, data: Dict[str, Any]) -> Any:
+    """Test block attributes."""
+    w = await server.world("world")
+    p = event.player
+    try:
+        loc = Location(w, p.location.x + 11, -60, p.location.z + 11)
+        await w.set_block(loc, Material.IRON_BLOCK)
+        block = await w.block_at(loc)
+        result = {
+            "type": str(getattr(block, "type", None)),
+            "x": getattr(block, "x", None),
+            "y": getattr(block, "y", None),
+            "z": getattr(block, "z", None),
+            "is_solid": getattr(block, "is_solid", None),
+        }
+    except Exception as exc:
+        result = {"error": str(exc)}
+    return result
+
+
+@probe("block_drops")
+async def block_drops(event: Event, data: Dict[str, Any]) -> Any:
+    """Test block drops."""
+    w = await server.world("world")
+    p = event.player
+    try:
+        loc = Location(w, p.location.x + 12, -60, p.location.z + 12)
+        await w.set_block(loc, Material.DIAMOND_ORE)
+        block = await w.block_at(loc)
+        drops = as_list(await block.get_drops(p.held_item))
+        result = {"drops_count": len(drops)}
+    except Exception as exc:
+        result = {"error": str(exc)}
+    return result
+
+
+@probe("block_pdc")
+async def block_pdc(event: Event, data: Dict[str, Any]) -> Any:
+    """Test block PDC."""
+    w = await server.world("world")
+    p = event.player
+    try:
+        loc = Location(w, p.location.x + 13, -60, p.location.z + 13)
+        await w.set_block(loc, Material.CHEST)
+        block = await w.block_at(loc)
+        await block.set_persistent_data("bkey", "bval")
+        val = await block.get_persistent_data("bkey")
+        result = {"pdc": val == "bval"}
+    except Exception as exc:
+        result = {"error": str(exc)}
+    return result
+
+
+@probe("chunk_ops")
+async def chunk_ops(event: Event, data: Dict[str, Any]) -> Any:
+    """Test chunk operations."""
+    w = await server.world("world")
+    p = event.player
+    try:
+        chunk = w.chunk_at(p.location)
+        result = {"x": getattr(chunk, "x", None), "z": getattr(chunk, "z", None), "is_loaded": getattr(chunk, "is_loaded", None)}
+    except Exception as exc:
+        result = {"error": str(exc)}
+    return result
+
+
+@probe("location_ops")
+async def location_ops(event: Event, data: Dict[str, Any]) -> Any:
+    """Test location operations."""
+    w = await server.world("world")
+    p = event.player
+    try:
+        loc = p.location.clone()
+        loc2 = loc + Vector(1, 0, 0)
+        loc3 = loc2 - Vector(0.5, 0, 0)
+        dist = loc.distance(loc3)
+        result = {"dist": dist}
+    except Exception as exc:
+        result = {"error": str(exc)}
+    return result
+
+
+@probe("vector_ops")
+async def vector_ops(event: Event, data: Dict[str, Any]) -> Any:
+    """Test vector operations."""
+    try:
+        v = Vector(1, 2, 3)
+        v2 = v * 2
+        v3 = v2.normalize()
+        result = {"len": v3.length()}
+    except Exception as exc:
+        result = {"error": str(exc)}
+    return result
+
+
+@probe("itembuilder")
+async def itembuilder(event: Event, data: Dict[str, Any]) -> Any:
+    """Test ItemBuilder."""
+    try:
+        item = ItemBuilder(Material.DIAMOND_SWORD).amount(1).name("§cBlade").lore(["line1", "line2"]).enchant(Enchantment.SHARPNESS, 5).glow().build()
+        result = {"name": getattr(item, "name", None), "amount": getattr(item, "amount", None)}
+    except Exception as exc:
+        result = {"error": str(exc)}
+    return result
+
+
+@probe("inventory_ops")
+async def inventory_ops(event: Event, data: Dict[str, Any]) -> Any:
+    """Test inventory operations."""
+    p = event.player
+    try:
+        inv = p.inventory
+        item = ItemBuilder(Material.EMERALD).amount(3).build()
+        await inv.add_item(item)
+        has = await inv.contains(Material.EMERALD)
+        result = {"has": has}
+    except Exception as exc:
+        result["error"] = str(exc)
+    return result
+
+
+@probe("recipe")
+async def recipe_test(event: Event, data: Dict[str, Any]) -> Any:
+    """Test recipe methods exist."""
+    try:
+        result = {"has_shaped": callable(getattr(Recipe, "shaped", None)), "has_shapeless": callable(getattr(Recipe, "shapeless", None))}
+    except Exception as exc:
+        result["error"] = str(exc)
+    return result
+
