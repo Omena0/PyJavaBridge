@@ -1357,3 +1357,132 @@ async def event_fire_test(event: Event, data: Dict[str, Any]) -> Any:
         result["error"] = str(exc)
     return result
 
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Decorators and exceptions tests
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+@probe("decorators_presence")
+async def decorators_presence(event: Event, data: Dict[str, Any]) -> Any:
+    """Test decorators are importable."""
+    try:
+        result = {
+            "has_event": callable(event),
+            "has_command": callable(command),
+            "has_task": callable(task),
+            "has_preserve": callable(preserve),
+        }
+    except Exception as exc:
+        result["error"] = str(exc)
+    return result
+
+
+@probe("exceptions")
+async def exceptions_test(event: Event, data: Dict[str, Any]) -> Any:
+    """Test exception classes exist."""
+    try:
+        result = {
+            "BridgeError": issubclass(BridgeError, Exception),
+            "PlayerOfflineException": issubclass(PlayerOfflineException, BridgeError),
+            "EntityGoneException": issubclass(EntityGoneException, BridgeError),
+            "WorldNotLoadedException": issubclass(WorldNotLoadedException, BridgeError),
+            "ChunkNotLoadedException": issubclass(ChunkNotLoadedException, BridgeError),
+            "InvalidLocationError": issubclass(InvalidLocationError, BridgeError),
+            "InvalidMaterialError": issubclass(InvalidMaterialError, BridgeError),
+            "InvalidItemError": issubclass(InvalidItemError, BridgeError),
+            "MethodNotFoundError": issubclass(MethodNotFoundError, BridgeError),
+            "ClassNotFoundError": issubclass(ClassNotFoundError, BridgeError),
+            "AccessDeniedError": issubclass(AccessDeniedError, BridgeError),
+            "InvalidEventError": issubclass(InvalidEventError, BridgeError),
+            "CommandRegistrationError": issubclass(CommandRegistrationError, BridgeError),
+            "ConfigError": issubclass(ConfigError, BridgeError),
+            "UnsupportedFormatError": issubclass(UnsupportedFormatError, BridgeError),
+            "InvalidEnumError": issubclass(InvalidEnumError, BridgeError),
+            "SlotOutOfRangeError": issubclass(SlotOutOfRangeError, BridgeError),
+            "PermissionError": issubclass(PermissionError, BridgeError),
+            "AtomicAbortError": issubclass(AtomicAbortError, BridgeError),
+            "TimeoutError": issubclass(TimeoutError, BridgeError),
+            "ConnectionError": issubclass(ConnectionError, BridgeError),
+        }
+    except Exception as exc:
+        result["error"] = str(exc)
+    return result
+
+
+@probe("entity_subtypes")
+async def entity_subtypes_test(event: Event, data: Dict[str, Any]) -> Any:
+    """Test entity subtype classes exist."""
+    try:
+        result = {
+            "ArmorStand": ArmorStand is not None,
+            "Villager": Villager is not None,
+            "ItemFrame": ItemFrame is not None,
+            "FallingBlock": FallingBlock is not None,
+            "AreaEffectCloud": AreaEffectCloud is not None,
+        }
+    except Exception as exc:
+        result["error"] = str(exc)
+    return result
+
+
+@probe("player_vanish_unvanish")
+async def player_vanish_unvanish(event: Event, data: Dict[str, Any]) -> Any:
+    """Test vanish methods."""
+    p = event.player
+    try:
+        await p.vanish()
+        v = await p.is_vanished()
+        await p.unvanish()
+        v2 = await p.is_vanished()
+        result = {"vanished": v, "unvanished": v2}
+    except Exception as exc:
+        result["error"] = str(exc)
+    return result
+
+
+@probe("player_open_book")
+async def player_open_book(event: Event, data: Dict[str, Any]) -> Any:
+    """Test open_book."""
+    p = event.player
+    try:
+        book = BookBuilder("Test", "Server").page("Hello").build()
+        result = {"open_book_method": callable(getattr(p, "open_book", None))}
+    except Exception as exc:
+        result["error"] = str(exc)
+    return result
+
+
+@probe("console_player")
+async def console_player_test(event: Event, data: Dict[str, Any]) -> Any:
+    """Test ConsolePlayer."""
+    try:
+        result = {"ConsolePlayer": ConsolePlayer is not None}
+    except Exception as exc:
+        result["error"] = str(exc)
+    return result
+
+
+@probe("world_at_time")
+async def world_at_time_test(event: Event, data: Dict[str, Any]) -> Any:
+    """Test world.at_time."""
+    w = await server.world("world")
+    try:
+        result = {"has_at_time": callable(getattr(w, "at_time", None))}
+    except Exception as exc:
+        result["error"] = str(exc)
+    return result
+
+
+@probe("world_world_time")
+async def world_world_time_test(event: Event, data: Dict[str, Any]) -> Any:
+    """Test world.world_time."""
+    w = await server.world("world")
+    try:
+        wt = getattr(w, "world_time", None)
+        result = {"has_world_time": wt is not None}
+    except Exception as exc:
+        result["error"] = str(exc)
+    return result
+
