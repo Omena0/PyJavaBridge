@@ -1,0 +1,127 @@
+[09:51:09] [ServerMain/INFO]: [bootstrap] Running Java 21 (OpenJDK 64-Bit Server VM 21.0.2+13-jvmci-23.1-b30; GraalVM Community GraalVM CE 21.0.2+13.1) on Linux 7.2.11-zen1-1-zen (amd64)
+[09:51:09] [ServerMain/INFO]: [bootstrap] Loading Leaf 1.21.4-524-ver/1.21.4@8757c36 (2025-10-13T03:43:50Z) for Minecraft 1.21.4
+[09:51:09] [ServerMain/INFO]: [LeafConfig] Loading config...
+[09:51:09] [ServerMain/INFO]: [LeafConfig] Successfully loaded config in 48ms.
+[09:51:09] [ServerMain/INFO]: [PluginInitializerManager] Initializing plugins...
+[09:51:09] [Paper Plugin Remapper Thread - 1/INFO]: [ReobfServer] Remapping server...
+[09:51:12] [Paper Plugin Remapper Thread - 1/INFO]: [ReobfServer] Done remapping server in 2785ms.
+[09:51:12] [Paper Plugin Remapper Thread - 1/INFO]: [PluginRemapper] Remapping plugin 'plugins/pyjavabridge-dev.jar'...
+[09:51:12] [Paper Plugin Remapper Thread - 1/INFO]: [PluginRemapper] Done remapping plugin 'plugins/pyjavabridge-dev.jar' in 115ms.
+[09:51:12] [ServerMain/INFO]: [PluginInitializerManager] Initialized 2 plugins
+[09:51:12] [ServerMain/INFO]: [PluginInitializerManager] Bukkit plugins (2):
+ - ProtocolLib (5.4.0), PyJavaBridge (dev)
+[09:51:15] [ServerMain/ERROR]: You have used the Spigot command line EULA agreement flag.
+[09:51:15] [ServerMain/ERROR]: By using this setting you are indicating your agreement to Mojang's EULA (https://aka.ms/MinecraftEULA).
+[09:51:15] [ServerMain/ERROR]: If you do not agree to the above EULA please stop your server and remove this flag immediately.
+[09:51:15] [ServerMain/INFO]: Environment: Environment[sessionHost=https://sessionserver.mojang.com, servicesHost=https://api.minecraftservices.com, name=PROD]
+[09:51:15] [ServerMain/INFO]: Found new data pack file/bukkit, loading it automatically
+[09:51:15] [ServerMain/INFO]: Found new data pack paper, loading it automatically
+[09:51:15] [ServerMain/INFO]: No existing world data, creating new world
+[09:51:15] [ServerMain/ERROR]: No key layers in MapLike[{}]
+[09:51:16] [ServerMain/INFO]: Loaded 1370 recipes
+[09:51:16] [ServerMain/INFO]: Loaded 1481 advancements
+[09:51:16] [ServerMain/INFO]: [MCTypeRegistry] Initialising converters for DataConverter...
+[09:51:16] [ServerMain/INFO]: [MCTypeRegistry] Finished initialising converters for DataConverter in 134.3ms
+[09:51:16] [Server thread/INFO]: Starting minecraft server version 1.21.4
+[09:51:16] [Server thread/INFO]: Loading properties
+[09:51:16] [Server thread/INFO]: This server is running Leaf version 1.21.4-524-ver/1.21.4@8757c36 (2025-10-13T03:43:50Z) (Implementing API version 1.21.4-R0.1-SNAPSHOT)
+[09:51:16] [Server thread/INFO]: [spark] This server bundles the spark profiler. For more information please visit https://docs.papermc.io/paper/profiling
+[09:51:16] [Server thread/INFO]: Server Ping Player Sample Count: 12
+[09:51:16] [Server thread/INFO]: Using 4 threads for Netty based IO
+[09:51:17] [Server thread/INFO]: [MoonriseCommon] Paper is using 4 worker threads, 1 I/O threads
+[09:51:17] [Server thread/INFO]: [ChunkTaskScheduler] Chunk system is using population gen parallelism: true
+[09:51:17] [Server thread/INFO]: Default game type: CREATIVE
+[09:51:17] [Server thread/INFO]: Generating keypair
+[09:51:17] [Server thread/INFO]: Starting Minecraft server on 127.0.0.1:25599
+[09:51:17] [Server thread/INFO]: Using epoll channel type
+[09:51:17] [Server thread/INFO]: Paper: Using libdeflate (Linux x86_64) compression from Velocity.
+[09:51:17] [Server thread/INFO]: Paper: Using OpenSSL 3.x.x (Linux x86_64) cipher from Velocity.
+[09:51:17] [Server thread/INFO]: [ProtocolLib] Loading server plugin ProtocolLib v5.4.0
+[09:51:17] [Server thread/INFO]: [PyJavaBridge] Loading server plugin PyJavaBridge vdev
+[09:51:17] [Server thread/INFO]: [ProtocolLib] Enabling ProtocolLib v5.4.0
+[09:51:17] [Server thread/WARN]: **** SERVER IS RUNNING IN OFFLINE/INSECURE MODE!
+[09:51:17] [Server thread/WARN]: The server will make no attempt to authenticate usernames. Beware.
+[09:51:17] [Server thread/WARN]: While this makes the game possible to play without internet access, it also opens up the ability for hackers to connect with any username they choose.
+[09:51:17] [Server thread/WARN]: To change this, set "online-mode" to "true" in the server.properties file.
+[09:51:17] [Server thread/INFO]: Preparing level "world"
+[09:51:17] [Server thread/ERROR]: No key layers in MapLike[{}]
+[09:51:18] [Server thread/ERROR]: No key layers in MapLike[{}]
+[09:51:19] [Server thread/ERROR]: No key layers in MapLike[{}]
+[09:51:19] [Server thread/INFO]: Preparing start region for dimension minecraft:overworld
+[09:51:19] [Server thread/INFO]: Preparing spawn area: 2%
+[09:51:19] [Server thread/INFO]: Time elapsed: 98 ms
+[09:51:19] [Server thread/INFO]: Preparing start region for dimension minecraft:the_nether
+[09:51:19] [Server thread/INFO]: Preparing spawn area: 2%
+[09:51:19] [Server thread/INFO]: Preparing spawn area: 55%
+[09:51:19] [Server thread/INFO]: Time elapsed: 621 ms
+[09:51:19] [Server thread/INFO]: Preparing start region for dimension minecraft:the_end
+[09:51:19] [Server thread/INFO]: Preparing spawn area: 2%
+[09:51:20] [Server thread/INFO]: Time elapsed: 394 ms
+[09:51:20] [Server thread/INFO]: [PyJavaBridge] Enabling PyJavaBridge vdev
+[09:51:20] [Server thread/INFO]: [PyJavaBridge] PyJavaBridge runtime initialized at plugins/PyJavaBridge/runtime
+[09:51:20] [Server thread/INFO]: [PyJavaBridge] PacketBridge: ProtocolLib integration enabled
+[09:51:20] [Server thread/INFO]: [PyJavaBridge] Client mod packet bridge enabled on channel pyjavabridge:client_mod
+[09:51:20] [Server thread/INFO]: [PyJavaBridge] Scanning scripts in plugins/PyJavaBridge/scripts
+[09:51:20] [Server thread/INFO]: [PyJavaBridge] Starting script: pjb_probe.py
+[09:51:20] [Server thread/INFO]: [PyJavaBridge] [pjb_probe.py] Launching python: python3 -u /home/omena0/Github/PyJavaBridge/tests/integration/.server/plugins/PyJavaBridge/runtime/runner.py /home/omena0/Github/PyJavaBridge/tests/integration/.server/plugins/PyJavaBridge/scripts/pjb_probe.py
+[09:51:20] [PyJavaBridge-pjb_probe.py/INFO]: [PyJavaBridge] [pjb_probe.py] Bridge connected via stdin/stdout
+[09:51:20] [PyJavaBridge-pjb_probe.py/INFO]: [PyJavaBridge] [pjb_probe.py] Using JSON serialization
+[09:51:20] [Server thread/INFO]: [spark] Starting background profiler...
+[09:51:20] [PyJavaBridge-pjb_probe.py/INFO]: [PyJavaBridge] [pjb_probe.py] Registering command /pjbtest
+[09:51:20] [PyJavaBridge-pjb_probe.py/INFO]: [PyJavaBridge] [pjb_probe.py] Registering command /pjbcases
+[09:51:20] [Server thread/INFO]: Done preparing level "world" (2.757s)
+[09:51:20] [Server thread/INFO]: Running delayed init tasks
+[09:51:20] [Server thread/INFO]: Done (12.144s)! For help, type "help"
+[09:51:20] [Server thread/INFO]: *************************************************************************************
+[09:51:20] [Server thread/INFO]: This is the first time you're starting this server.
+[09:51:20] [Server thread/INFO]: It's recommended you read our 'Getting Started' documentation for guidance.
+[09:51:20] [Server thread/INFO]: View this and more helpful information here: https://docs.papermc.io/paper/next-steps
+[09:51:20] [Server thread/INFO]: *************************************************************************************
+[09:51:20] [Server thread/WARN]: [PyJavaBridge] Method not found: hasPacketApi on org.bukkit.craftbukkit.CraftServer.
+Available methods with same name:
+ (no methods with exact name found)
+Provided args (count=0): 
+[09:51:20] [Server thread/ERROR]: [PyJavaBridge] [pjb_probe.py] Main-thread call failed: Method not found: hasPacketApi on org.bukkit.craftbukkit.CraftServer
+[09:51:22] [User Authenticator #0/INFO]: UUID of player PJBBot is 57794ffd-7468-36ff-86e6-4986c90e7b69
+[09:51:22] [Server thread/INFO]: PJBBot joined the game
+[09:51:22] [Server thread/INFO]: PJBBot[IP hidden] logged in with entity id 21 at ([world]-3.5, -60.0, 5.5)
+[09:51:22] [Server thread/INFO]: PJBBot issued server command: /pjbtest ping ping-64a26066-2793-4a0c-ad23-ff14dc100b66
+[09:51:22] [Server thread/INFO]: PJBBot lost connection: Disconnected
+[09:51:22] [Server thread/INFO]: [PyJavaBridge] Client mod session cleared for PJBBot
+[09:51:22] [Server thread/INFO]: PJBBot left the game
+[09:51:22] [Server thread/INFO]: Stopping the server
+[09:51:22] [Server thread/INFO]: Stopping server
+[09:51:22] [Server thread/INFO]: [PyJavaBridge] Disabling PyJavaBridge vdev
+[09:51:22] [Server thread/INFO]: [ProtocolLib] Disabling ProtocolLib v5.4.0
+[09:51:22] [Server thread/INFO]: Saving players
+[09:51:22] [Server thread/INFO]: Saving worlds
+[09:51:22] [Server thread/INFO]: Saving chunks for level 'ServerLevel[world]'/minecraft:overworld
+[09:51:22] [Server thread/INFO]: [ChunkHolderManager] Waiting 60s for chunk system to halt for world 'world'
+[09:51:22] [Server thread/INFO]: [ChunkHolderManager] Halted chunk system for world 'world'
+[09:51:22] [Server thread/INFO]: [ChunkHolderManager] Saving all chunkholders for world 'world'
+[09:51:23] [Server thread/INFO]: [ChunkHolderManager] Saved 841 block chunks, 49 entity chunks, 0 poi chunks in world 'world' in 0.39s
+[09:51:23] [Server thread/INFO]: [ChunkHolderManager] Waiting 60s for chunk I/O to halt for world 'world'
+[09:51:23] [Server thread/INFO]: [ChunkHolderManager] Halted I/O scheduler for world 'world'
+[09:51:23] [Server thread/INFO]: Saving chunks for level 'ServerLevel[world_nether]'/minecraft:the_nether
+[09:51:23] [Server thread/INFO]: [ChunkHolderManager] Waiting 60s for chunk system to halt for world 'world_nether'
+[09:51:23] [Server thread/INFO]: [ChunkHolderManager] Halted chunk system for world 'world_nether'
+[09:51:23] [Server thread/INFO]: [ChunkHolderManager] Saving all chunkholders for world 'world_nether'
+[09:51:23] [Server thread/INFO]: [ChunkHolderManager] Saved 841 block chunks, 49 entity chunks, 0 poi chunks in world 'world_nether' in 0.15s
+[09:51:23] [Server thread/INFO]: [ChunkHolderManager] Waiting 60s for chunk I/O to halt for world 'world_nether'
+[09:51:23] [Server thread/INFO]: [ChunkHolderManager] Halted I/O scheduler for world 'world_nether'
+[09:51:23] [Server thread/INFO]: Saving chunks for level 'ServerLevel[world_the_end]'/minecraft:the_end
+[09:51:23] [Server thread/INFO]: [ChunkHolderManager] Waiting 60s for chunk system to halt for world 'world_the_end'
+[09:51:23] [Server thread/INFO]: [ChunkHolderManager] Halted chunk system for world 'world_the_end'
+[09:51:23] [Server thread/INFO]: [ChunkHolderManager] Saving all chunkholders for world 'world_the_end'
+[09:51:23] [Server thread/INFO]: [ChunkHolderManager] Saved 841 block chunks, 49 entity chunks, 0 poi chunks in world 'world_the_end' in 0.16s
+[09:51:23] [Server thread/INFO]: [ChunkHolderManager] Waiting 60s for chunk I/O to halt for world 'world_the_end'
+[09:51:23] [Server thread/INFO]: [ChunkHolderManager] Halted I/O scheduler for world 'world_the_end'
+[09:51:23] [Server thread/INFO]: ThreadedChunkStorage (world): All chunks are saved
+[09:51:23] [Server thread/INFO]: ThreadedChunkStorage (DIM-1): All chunks are saved
+[09:51:23] [Server thread/INFO]: ThreadedChunkStorage (DIM1): All chunks are saved
+[09:51:23] [Server thread/INFO]: ThreadedChunkStorage: All dimensions are saved
+[09:51:23] [Server thread/INFO]: Waiting for I/O tasks to complete...
+[09:51:23] [Server thread/INFO]: All I/O tasks to complete
+[09:51:23] [Server thread/INFO]: [MoonriseCommon] Awaiting termination of worker pool for up to 60s...
+[09:51:23] [Server thread/INFO]: [MoonriseCommon] Awaiting termination of I/O pool for up to 60s...
+[09:51:23] [Server thread/INFO]: [Leaf] Waiting for mob spawning thread to shutdown...

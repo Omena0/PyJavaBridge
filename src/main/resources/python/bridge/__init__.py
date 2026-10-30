@@ -51,9 +51,9 @@ def _bootstrap(script_path: str) -> None:
     from bridge import helpers as _help_mod
     from bridge import decorators as _dec_mod
     from bridge import api as _api_mod
-    from bridge.extensions import npc as _npc_mod
-    from bridge.extensions import client_mod as _client_mod
-
+    import importlib
+    _npc_mod = importlib.import_module("bridge.extensions.npc")
+    _client_mod = importlib.import_module("bridge.extensions.client_mod")
     _conn_mod._connection = _connection  # type: ignore[attr-defined]
     _wrap_mod._connection = _connection
     _wrap_mod._player_uuid_cache = _player_uuid_cache

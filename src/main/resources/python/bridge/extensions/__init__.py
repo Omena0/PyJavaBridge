@@ -58,7 +58,7 @@ from bridge.extensions.loot_table import LootTable, LootPool, LootEntry
 from bridge.extensions.client_mod import (
     ClientMod,
     ClientModSession,
-    client_mod,
+    client as client_mod,
 )
 
 __all__ = [

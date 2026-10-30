@@ -1,0 +1,13 @@
+{
+  "name": "pyjavabridge-integration-tests",
+  "private": true,
+  "type": "module",
+  "description": "Live Minecraft server integration tests for PyJavaBridge",
+  "scripts": {
+    "build:plugin": "cd ../.. && ./gradlew --console=plain shadowJar",
+    "test": "npm run build:plugin && node --test --test-isolation=none --test-concurrency=1 --test-reporter=spec --test-timeout=600000 specs/"
+  },
+  "dependencies": {
+    "mineflayer": "^4.39.0"
+  }
+}
