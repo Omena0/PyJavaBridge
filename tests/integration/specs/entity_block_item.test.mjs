@@ -13,7 +13,6 @@ describe('Entity Block Item API', () => {
 
   test.after(async () => {
     await closeBot(bot)
-    await server.stop()
   })
 
   test('entity spawn props', async () => {

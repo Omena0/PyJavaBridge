@@ -13,7 +13,6 @@ describe('Effects UI Helpers API', () => {
 
   test.after(async () => {
     await closeBot(bot)
-    await server.stop()
   })
 
   test('effect potion', async () => {

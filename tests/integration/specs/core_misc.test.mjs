@@ -13,7 +13,6 @@ describe('Core Misc API', () => {
 
   test.after(async () => {
     await closeBot(bot)
-    await server.stop()
   })
 
   test('decorators presence', async () => {

@@ -13,7 +13,6 @@ describe('World API', () => {
 
   test.after(async () => {
     await closeBot(bot)
-    await server.stop()
   })
 
   test('world props', async () => {

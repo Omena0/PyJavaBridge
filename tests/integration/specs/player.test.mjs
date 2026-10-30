@@ -13,7 +13,6 @@ describe('Player API', () => {
 
   test.after(async () => {
     await closeBot(bot)
-    await server.stop()
   })
 
   test('player props', async () => {

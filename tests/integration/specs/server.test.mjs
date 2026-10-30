@@ -13,7 +13,6 @@ describe('Server API', () => {
 
   test.after(async () => {
     await closeBot(bot)
-    await server.stop()
   })
 
   test('server props', async () => {

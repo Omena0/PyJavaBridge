@@ -281,7 +281,7 @@ network:
     asteorbar-protocol: false
     chatimage-protocol: false
     xaero-map-protocol: false
-    xaero-map-server-id: 646303156
+    xaero-map-server-id: -19058564
     syncmatica-protocol: false
     syncmatica-quota: false
     syncmatica-quota-limit: 40000000
