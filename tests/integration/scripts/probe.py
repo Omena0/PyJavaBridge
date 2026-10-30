@@ -1486,3 +1486,222 @@ async def world_world_time_test(event: Event, data: Dict[str, Any]) -> Any:
         result["error"] = str(exc)
     return result
 
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Additional coverage
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+@probe("player_send_particle_block_change")
+async def player_send_particle_block_change(event: Event, data: Dict[str, Any]) -> Any:
+    """Test player particle and block change."""
+    p = event.player
+    try:
+        await p.send_particle(Particle.FLAME, p.location, count=5)
+        await p.send_block_change(p.location, Material.GOLD_BLOCK)
+        result = {"ok": True}
+    except Exception as exc:
+        result["error"] = str(exc)
+    return result
+
+
+@probe("player_set_resource_pack")
+async def player_set_resource_pack(event: Event, data: Dict[str, Any]) -> Any:
+    """Test set_resource_pack method exists."""
+    p = event.player
+    try:
+        result = {"method_exists": callable(getattr(p, "set_resource_pack", None))}
+    except Exception as exc:
+        result["error"] = str(exc)
+    return result
+
+
+@probe("entity_remove_passenger")
+async def entity_remove_passenger(event: Event, data: Dict[str, Any]) -> Any:
+    """Test passenger methods."""
+    w = await server.world("world")
+    p = event.player
+    try:
+        loc = Location(w, p.location.x + 18, p.location.y, p.location.z + 18)
+        ent = await Entity.spawn(EntityType.HORSE, loc)
+        result = {"has_add_passenger": callable(getattr(ent, "add_passenger", None))}
+        try:
+            ent.remove()
+        except Exception:
+            pass
+    except Exception as exc:
+        result["error"] = str(exc)
+    return result
+
+
+@probe("world_get_chunk_at_async")
+async def world_get_chunk_at_async(event: Event, data: Dict[str, Any]) -> Any:
+    """Test get_chunk_at_async."""
+    w = await server.world("world")
+    p = event.player
+    try:
+        chunk = await w.get_chunk_at_async(int(p.location.x) >> 4, int(p.location.z) >> 4)
+        result = {"chunk": chunk is not None}
+    except Exception as exc:
+        result["error"] = str(exc)
+    return result
+
+
+@probe("world_entities_near_blocks_near")
+async def world_entities_near_blocks_near(event: Event, data: Dict[str, Any]) -> Any:
+    """Test entities_near and blocks_near."""
+    w = await server.world("world")
+    p = event.player
+    try:
+        ents = as_list(w.entities_near(p.location, 10))
+        blocks = as_list(w.blocks_near(p.location, 5))
+        result = {"ents": len(ents), "blocks": len(blocks)}
+    except Exception as exc:
+        result["error"] = str(exc)
+    return result
+
+
+@probe("world_batch_spawn")
+async def world_batch_spawn(event: Event, data: Dict[str, Any]) -> Any:
+    """Test batch_spawn."""
+    w = await server.world("world")
+    p = event.player
+    try:
+        loc = p.location
+        spawned = await w.batch_spawn([(EntityType.CHICKEN, Location(w, loc.x + 19, loc.y, loc.z))])
+        result = {"count": len(as_list(spawned))}
+        for s in as_list(spawned):
+            try:
+                s.remove()
+            except Exception:
+                pass
+    except Exception as exc:
+        result["error"] = str(exc)
+    return result
+
+
+@probe("world_find_entities")
+async def world_find_entities(event: Event, data: Dict[str, Any]) -> Any:
+    """Test find_entities."""
+    w = await server.world("world")
+    try:
+        ents = as_list(await w.find_entities(limit=10))
+        result = {"count": len(ents)}
+    except Exception as exc:
+        result["error"] = str(exc)
+    return result
+
+
+@probe("world_spawn_at_player_spawn_projectile")
+async def world_spawn_at_player_spawn_projectile(event: Event, data: Dict[str, Any]) -> Any:
+    """Test spawn helpers."""
+    w = await server.world("world")
+    p = event.player
+    try:
+        result = {"has_spawn_at_player": callable(getattr(w, "spawn_at_player", None))}
+        result["has_spawn_projectile"] = callable(getattr(w, "spawn_projectile", None))
+    except Exception as exc:
+        result["error"] = str(exc)
+    return result
+
+
+@probe("location_arithmetic")
+async def location_arithmetic(event: Event, data: Dict[str, Any]) -> Any:
+    """Test location arithmetic."""
+    w = await server.world("world")
+    p = event.player
+    try:
+        loc = p.location
+        loc2 = loc * 2
+        loc3 = loc2 / 2
+        result = {"ok": abs(loc3.x - loc.x) < 0.01}
+    except Exception as exc:
+        result["error"] = str(exc)
+    return result
+
+
+@probe("inventory_menu_open_close")
+async def inventory_menu_open_close(event: Event, data: Dict[str, Any]) -> Any:
+    """Test inventory/menu methods."""
+    p = event.player
+    try:
+        inv = p.inventory
+        result = {"has_open": callable(getattr(inv, "open", None))}
+    except Exception as exc:
+        result["error"] = str(exc)
+    return result
+
+
+@probe("block_create")
+async def block_create(event: Event, data: Dict[str, Any]) -> Any:
+    """Test Block.create."""
+    try:
+        result = {"has_create": callable(getattr(Block, "create", None))}
+    except Exception as exc:
+        result["error"] = str(exc)
+    return result
+
+
+@probe("entity_pathfind")
+async def entity_pathfind_test(event: Event, data: Dict[str, Any]) -> Any:
+    """Test pathfinding methods exist."""
+    w = await server.world("world")
+    p = event.player
+    try:
+        loc = Location(w, p.location.x + 20, p.location.y, p.location.z + 20)
+        ent = await Entity.spawn(EntityType.ZOMBIE, loc)
+        result = {"has_pathfind": callable(getattr(ent, "pathfind_to", None))}
+        try:
+            ent.remove()
+        except Exception:
+            pass
+    except Exception as exc:
+        result["error"] = str(exc)
+    return result
+
+
+@probe("player_hide_show")
+async def player_hide_show_test(event: Event, data: Dict[str, Any]) -> Any:
+    """Test hide_player/show_player."""
+    p = event.player
+    try:
+        await p.hide_player(p)
+        can = await p.can_see(p)
+        await p.show_player(p)
+        can2 = await p.can_see(p)
+        result = {"hid_self": not can, "showed_self": can2}
+    except Exception as exc:
+        result["error"] = str(exc)
+    return result
+
+
+@probe("item_methods")
+async def item_methods_test(event: Event, data: Dict[str, Any]) -> Any:
+    """Test Item methods."""
+    try:
+        result = {"has_drop": callable(getattr(Item, "drop", None)), "has_give": callable(getattr(Item, "give", None))}
+    except Exception as exc:
+        result["error"] = str(exc)
+    return result
+
+
+@probe("advancement")
+async def advancement_test(event: Event, data: Dict[str, Any]) -> Any:
+    """Test Advancement."""
+    try:
+        result = {"has_grant": callable(getattr(Advancement, "grant", None))}
+    except Exception as exc:
+        result["error"] = str(exc)
+    return result
+
+
+@probe("enchantment")
+async def enchantment_test(event: Event, data: Dict[str, Any]) -> Any:
+    """Test Enchantment enum."""
+    try:
+        result = {"sharpness": str(Enchantment.SHARPNESS)}
+    except Exception as exc:
+        result["error"] = str(exc)
+    return result
+
