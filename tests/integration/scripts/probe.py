@@ -1069,3 +1069,291 @@ async def recipe_test(event: Event, data: Dict[str, Any]) -> Any:
         result["error"] = str(exc)
     return result
 
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Effects, UI, Helpers API tests
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+@probe("effect_potion")
+async def effect_potion(event: Event, data: Dict[str, Any]) -> Any:
+    """Test effects and potions."""
+    p = event.player
+    try:
+        eff = Effect(EffectType.REGENERATION, duration=100, amplifier=0)
+        await eff.apply(p)
+        result = {"applied": True}
+    except Exception as exc:
+        result["error"] = str(exc)
+    return result
+
+
+@probe("attribute")
+async def attribute_test(event: Event, data: Dict[str, Any]) -> Any:
+    """Test attributes."""
+    p = event.player
+    try:
+        await Attribute.apply(p, AttributeType.GENERIC_MAX_HEALTH, 40)
+        attrs = getattr(p, "attributes", {})
+        result = {"applied": True}
+    except Exception as exc:
+        result["error"] = str(exc)
+    return result
+
+
+@probe("textcomponent")
+async def textcomponent_test(event: Event, data: Dict[str, Any]) -> Any:
+    """Test TextComponent."""
+    try:
+        tc = TextComponent("Hello").bold().color("red").click_command("/help")
+        s = str(tc)
+        result = {"str": len(s) > 0}
+    except Exception as exc:
+        result["error"] = str(exc)
+    return result
+
+
+@probe("bookbuilder")
+async def bookbuilder_test(event: Event, data: Dict[str, Any]) -> Any:
+    """Test BookBuilder."""
+    try:
+        book = BookBuilder("Title", "Author").page("Page 1").build()
+        result = {"built": book is not None}
+    except Exception as exc:
+        result["error"] = str(exc)
+    return result
+
+
+@probe("firework")
+async def firework_test(event: Event, data: Dict[str, Any]) -> Any:
+    """Test Firework."""
+    w = await server.world("world")
+    p = event.player
+    try:
+        loc = p.location
+        result = {"firework_class": Firework is not None}
+    except Exception as exc:
+        result["error"] = str(exc)
+    return result
+
+
+@probe("bossbar_ui")
+async def bossbar_ui(event: Event, data: Dict[str, Any]) -> Any:
+    """Test BossBar and BossBarDisplay."""
+    p = event.player
+    try:
+        bar = BossBar.create("Boss", BarColor.PURPLE, BarStyle.SOLID)
+        bar.add_player(p)
+        bar.set_progress(0.5)
+        bar.remove_player(p)
+        bar.remove()
+        result = {"bossbar_ok": True}
+    except Exception as exc:
+        result["error"] = str(exc)
+    return result
+
+
+@probe("scoreboard_objective_team")
+async def scoreboard_objective_team(event: Event, data: Dict[str, Any]) -> Any:
+    """Test scoreboard API."""
+    try:
+        sb = Scoreboard.create("pjb_test_sb")
+        obj = Objective.create(sb, "test_obj", "dummy", "Test")
+        obj.set_display_name("Test")
+        team = Team.create(sb, "pjb_team")
+        team.set_color("RED")
+        result = {"scoreboard_ok": True}
+    except Exception as exc:
+        result["error"] = str(exc)
+    return result
+
+
+@probe("sidebar")
+async def sidebar_test(event: Event, data: Dict[str, Any]) -> Any:
+    """Test Sidebar."""
+    p = event.player
+    try:
+        sb = Sidebar("§6Test Sidebar")
+        sb[0] = "§fLine 1"
+        sb[1] = "§fLine 2"
+        sb.show(p)
+        result = {"sidebar_ok": True}
+    except Exception as exc:
+        result["error"] = str(exc)
+    return result
+
+
+@probe("menu")
+async def menu_test(event: Event, data: Dict[str, Any]) -> Any:
+    """Test Menu."""
+    p = event.player
+    try:
+        m = Menu("§8Test Menu", rows=3)
+        item = MenuItem(ItemBuilder(Material.APPLE).name("Click").build())
+        m[0, 0] = item
+        result = {"menu_ok": True}
+    except Exception as exc:
+        result["error"] = str(exc)
+    return result
+
+
+@probe("actionbar_display")
+async def actionbar_display_test(event: Event, data: Dict[str, Any]) -> Any:
+    """Test ActionBarDisplay."""
+    p = event.player
+    try:
+        abd = ActionBarDisplay(p)
+        abd.text = "Test"
+        result = {"actionbar_ok": True}
+    except Exception as exc:
+        result["error"] = str(exc)
+    return result
+
+
+@probe("hologram")
+async def hologram_test(event: Event, data: Dict[str, Any]) -> Any:
+    """Test Hologram."""
+    w = await server.world("world")
+    p = event.player
+    try:
+        holo = Hologram(Location(w, p.location.x + 15, p.location.y + 2, p.location.z + 15))
+        holo[0] = "§aHello"
+        holo.append_line("§bWorld")
+        result = {"hologram_ok": True}
+        try:
+            holo.remove()
+        except Exception:
+            pass
+    except Exception as exc:
+        result["error"] = str(exc)
+    return result
+
+
+@probe("display_entities")
+async def display_entities_test(event: Event, data: Dict[str, Any]) -> Any:
+    """Test BlockDisplay and ItemDisplay."""
+    w = await server.world("world")
+    p = event.player
+    try:
+        bd = BlockDisplay(Location(w, p.location.x + 16, p.location.y + 2, p.location.z + 16), Material.GLOWSTONE)
+        result = {"block_display": bd is not None}
+        try:
+            bd.remove()
+        except Exception:
+            pass
+    except Exception as exc:
+        result["block_display_error"] = str(exc)
+    try:
+        idisp = ItemDisplay(Location(w, p.location.x + 17, p.location.y + 2, p.location.z + 17), Material.DIAMOND)
+        result["item_display"] = idisp is not None
+        try:
+            idisp.remove()
+        except Exception:
+            pass
+    except Exception as exc:
+        result["item_display_error"] = str(exc)
+    return result
+
+
+@probe("config_state_cooldown")
+async def config_state_cooldown_test(event: Event, data: Dict[str, Any]) -> Any:
+    """Test Config, State, Cooldown."""
+    try:
+        cfg = Config("pjbtest")
+        cfg.set("test", "value")
+        cfg.save()
+        cfg2 = Config("pjbtest")
+        cfg2.reload()
+        result = {"config": cfg2.get("test")}
+    except Exception as exc:
+        result["config_error"] = str(exc)
+    try:
+        st = State("pjbtest")
+        st.update({"count": 1})
+        st.save()
+        st2 = State("pjbtest")
+        st2.load()
+        result["state"] = st2.get("count")
+    except Exception as exc:
+        result["state_error"] = str(exc)
+    try:
+        cd = Cooldown(5)
+        ok = cd.check()
+        result["cooldown_ok"] = ok is not None
+    except Exception as exc:
+        result["cooldown_error"] = str(exc)
+    return result
+
+
+@probe("paginator")
+async def paginator_test(event: Event, data: Dict[str, Any]) -> Any:
+    """Test Paginator."""
+    try:
+        pg = Paginator("Test")
+        pg.add_page()
+        pg.add_page()
+        result = {"pages": pg.page_count}
+    except Exception as exc:
+        result["error"] = str(exc)
+    return result
+
+
+@probe("raycast")
+async def raycast_test(event: Event, data: Dict[str, Any]) -> Any:
+    """Test raycast function."""
+    w = await server.world("world")
+    p = event.player
+    try:
+        res = await raycast(w, p.location, (p.location.yaw, p.location.pitch), max_distance=10)
+        result = {"has_result": res is not None}
+    except Exception as exc:
+        result["error"] = str(exc)
+    return result
+
+
+@probe("enums")
+async def enums_test(event: Event, data: Dict[str, Any]) -> Any:
+    """Test enum access."""
+    try:
+        result = {
+            "material_diamond": str(Material.DIAMOND),
+            "gamemode_creative": str(GameMode.CREATIVE),
+            "particle_flame": str(Particle.FLAME),
+        }
+    except Exception as exc:
+        result["error"] = str(exc)
+    return result
+
+
+@probe("datapack")
+async def datapack_test(event: Event, data: Dict[str, Any]) -> Any:
+    """Test Datapack class."""
+    try:
+        dp = Datapack("test")
+        result = {"has_datapack": dp is not None}
+    except Exception as exc:
+        result["error"] = str(exc)
+    return result
+
+
+@probe("script_messaging")
+async def script_messaging_test(event: Event, data: Dict[str, Any]) -> Any:
+    """Test inter-script messaging."""
+    try:
+        result = {"has_script_send": callable(script_send), "has_get_scripts": callable(get_scripts)}
+    except Exception as exc:
+        result["error"] = str(exc)
+    return result
+
+
+@probe("event_fire")
+async def event_fire_test(event: Event, data: Dict[str, Any]) -> Any:
+    """Test fire_event."""
+    try:
+        fire_event("pjb_test_custom", {"x": 1})
+        result = {"fired": True}
+    except Exception as exc:
+        result["error"] = str(exc)
+    return result
+
