@@ -191,3 +191,174 @@ def _write_ready() -> None:
 
 
 _write_ready()
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Server API tests
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+@probe("server_props")
+async def server_props(event: Event, data: Dict[str, Any]) -> Any:
+    """Test server attributes and basic methods."""
+    players = as_list(server.players)
+    worlds = as_list(server.worlds)
+    boss_bars = as_list(server.boss_bars)
+    structures = as_list(server.structures)
+
+    result = {
+        "name": str(server.name),
+        "version": str(server.version),
+        "motd": str(server.motd),
+        "max_players": int(server.max_players),
+        "tps": as_list(server.tps),
+        "mspt": float(server.mspt),
+        "last_tick_time": float(server.last_tick_time),
+        "queue_len": int(server.queue_len),
+        "players_count": len(players),
+        "worlds_count": len(worlds),
+        "boss_bars_count": len(boss_bars),
+        "structures": structures,
+    }
+
+    # broadcast and execute
+    await server.broadcast("§7[PJB-TEST] server_props")
+    exec_result = await server.execute("time set day")
+    result["execute_time_set"] = exec_result
+
+    # get_advancement
+    try:
+        adv = await server.get_advancement("minecraft:story/root")
+        result["has_advancement"] = adv is not None
+    except Exception as exc:
+        result["get_advancement_error"] = str(exc)
+
+    return result
+
+
+@probe("server_world")
+async def server_world(event: Event, data: Dict[str, Any]) -> Any:
+    """Test server.world and world management."""
+    world = await server.world("world")
+    wname = getattr(world, "name", None)
+    if wname is None and hasattr(world, "fields"):
+        wname = world.fields.get("name")
+    result = {"world_name": wname}
+
+    # create and unload world
+    try:
+        created = await server.create_world("pjb_test_world", environment="NORMAL", world_type="NORMAL", seed=12345, generate_structures=False)
+        c_name = getattr(created, "name", None)
+        if c_name is None and hasattr(created, "fields"):
+            c_name = created.fields.get("name")
+        result["created_world"] = c_name
+        await server.after(20)
+        unloaded = await server.unload_world("pjb_test_world")
+        result["unloaded"] = bool(unloaded)
+    except Exception as exc:
+        result["world_manage_error"] = str(exc)
+
+    return result
+
+
+@probe("server_bossbar_create")
+async def server_bossbar_create(event: Event, data: Dict[str, Any]) -> Any:
+    """Test create_boss_bar."""
+    try:
+        bar = await server.create_boss_bar("Test Bar", BarColor.RED, BarStyle.SEGMENTED_6)
+        title = getattr(bar, "title", None)
+        if title is None and hasattr(bar, "fields"):
+            title = bar.fields.get("title")
+        result = {"bar_created": bar is not None, "title": title}
+        # clean up if possible
+        try:
+            bar.remove()
+        except Exception:
+            pass
+    except Exception as exc:
+        result = {"error": str(exc)}
+    return result
+
+
+@probe("server_flush_frame_atomic")
+async def server_flush_frame_atomic(event: Event, data: Dict[str, Any]) -> Any:
+    """Test frame, atomic, flush."""
+    result = {}
+    try:
+        frame = server.frame()
+        result["has_frame"] = frame is not None
+    except Exception as exc:
+        result["frame_error"] = str(exc)
+    try:
+        atomic_ctx = server.atomic()
+        result["has_atomic"] = atomic_ctx is not None
+    except Exception as exc:
+        result["atomic_error"] = str(exc)
+    try:
+        flushed = await server.flush()
+        result["flush_count"] = flushed
+    except Exception as exc:
+        result["flush_error"] = str(exc)
+    return result
+
+
+@probe("server_after")
+async def server_after(event: Event, data: Dict[str, Any]) -> Any:
+    """Test server.after."""
+    try:
+        await server.after(5)
+        result = {"after_ok": True}
+    except Exception as exc:
+        result = {"error": str(exc)}
+    return result
+
+
+@probe("server_structures")
+async def server_structures(event: Event, data: Dict[str, Any]) -> Any:
+    """Test structure save/load/delete."""
+    result = {}
+    try:
+        world = await server.world("world")
+        # save a small structure
+        name = "pjb_test_struct"
+        try:
+            saved = await server.save_structure(name, world, 0, -60, 0, 1, -59, 1)
+            result["saved"] = saved
+        except Exception as exc:
+            result["save_error"] = str(exc)
+        try:
+            loaded = await server.load_structure(name, world, 10, -60, 10, include_entities=False)
+            result["loaded"] = loaded
+        except Exception as exc:
+            result["load_error"] = str(exc)
+        try:
+            deleted = await server.delete_structure(name)
+            result["deleted"] = str(deleted)
+        except Exception as exc:
+            result["delete_error"] = str(exc)
+    except Exception as exc:
+        result["error"] = str(exc)
+    return result
+
+
+@probe("server_chat_broadcast")
+async def server_chat_broadcast(event: Event, data: Dict[str, Any]) -> Any:
+    """Test chat and server.broadcast."""
+    try:
+        await chat.broadcast("PJB chat broadcast test")
+        result = {"chat_broadcast": True}
+    except Exception as exc:
+        result["error"] = str(exc)
+    return result
+
+
+@probe("server_reflect_clazz")
+async def server_reflect_clazz(event: Event, data: Dict[str, Any]) -> Any:
+    """Test reflect.clazz."""
+    try:
+        cls = await reflect.clazz("org.bukkit.Material")
+        result = {"reflect_ok": cls is not None}
+    except Exception as exc:
+        result["error"] = str(exc)
+    return result
+
