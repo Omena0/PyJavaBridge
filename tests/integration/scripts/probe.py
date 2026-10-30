@@ -626,3 +626,223 @@ async def player_kick(event: Event, data: Dict[str, Any]) -> Any:
     result = {"kick_method": callable(getattr(p, "kick", None))}
     return result
 
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# World API tests
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+@probe("world_props")
+async def world_props(event: Event, data: Dict[str, Any]) -> Any:
+    """Test world attributes."""
+    w = await server.world("world")
+    result = {
+        "name": getattr(w, "name", None),
+        "environment": str(getattr(w, "environment", None)),
+        "time": getattr(w, "time", None),
+        "full_time": getattr(w, "full_time", None),
+        "difficulty": str(getattr(w, "difficulty", None)),
+        "pvp": getattr(w, "pvp", None),
+        "seed": getattr(w, "seed", None),
+    }
+    try:
+        sl = w.spawn_location
+        result["spawn_x"] = getattr(sl, "x", None)
+    except Exception as exc:
+        result["spawn_error"] = str(exc)
+    return result
+
+
+@probe("world_time_weather")
+async def world_time_weather(event: Event, data: Dict[str, Any]) -> Any:
+    """Test time and weather."""
+    w = await server.world("world")
+    try:
+        w.time = 6000
+        await w.set_full_time(1000)
+        await w.set_difficulty(Difficulty.NORMAL)
+        await w.set_storm(False)
+        await w.set_thundering(False)
+        result = {"time": w.time, "difficulty": str(w.difficulty)}
+    except Exception as exc:
+        result["error"] = str(exc)
+    return result
+
+
+@probe("world_spawn_location")
+async def world_spawn_location(event: Event, data: Dict[str, Any]) -> Any:
+    """Test spawn location."""
+    w = await server.world("world")
+    try:
+        loc = event.player.location
+        await w.set_spawn_location(int(loc.x), int(loc.y), int(loc.z))
+        result = {"spawn_set": True}
+    except Exception as exc:
+        result["error"] = str(exc)
+    return result
+
+
+@probe("world_game_rules")
+async def world_game_rules(event: Event, data: Dict[str, Any]) -> Any:
+    """Test gamerules."""
+    w = await server.world("world")
+    try:
+        await w.set_game_rule("doDaylightCycle", False)
+        rule = await w.get_game_rule("doDaylightCycle")
+        await w.set_game_rule("doDaylightCycle", True)
+        result = {"gamerule": rule}
+    except Exception as exc:
+        result["error"] = str(exc)
+    return result
+
+
+@probe("world_block_ops")
+async def world_block_ops(event: Event, data: Dict[str, Any]) -> Any:
+    """Test block operations."""
+    w = await server.world("world")
+    p = event.player
+    try:
+        base = Location(w, p.location.x + 2, -60, p.location.z + 2)
+        await w.set_block(base, Material.STONE)
+        block = await w.block_at(base)
+        result = {"block_type": str(getattr(block, "type", None))}
+        await block.set_type(Material.DIAMOND_BLOCK)
+        result["changed"] = True
+    except Exception as exc:
+        result["error"] = str(exc)
+    return result
+
+
+@probe("world_region_ops")
+async def world_region_ops(event: Event, data: Dict[str, Any]) -> Any:
+    """Test region fill/replace."""
+    w = await server.world("world")
+    p = event.player
+    try:
+        x, z = int(p.location.x) + 10, int(p.location.z) + 10
+        await w.fill(x, -59, z, x + 2, -59, z + 2, Material.GLASS)
+        await w.replace(x, -59, z, x, -59, z, Material.GLASS, Material.GOLD_BLOCK)
+        result = {"fill_replace_ok": True}
+    except Exception as exc:
+        result["error"] = str(exc)
+    return result
+
+
+@probe("world_spawn_entities")
+async def world_spawn_entities(event: Event, data: Dict[str, Any]) -> Any:
+    """Test spawning."""
+    w = await server.world("world")
+    p = event.player
+    try:
+        loc = Location(w, p.location.x + 3, p.location.y, p.location.z + 3)
+        cow = await w.spawn(EntityType.COW, loc)
+        result = {"spawned": cow is not None}
+        try:
+            cow.remove()
+        except Exception:
+            pass
+    except Exception as exc:
+        result["error"] = str(exc)
+    return result
+
+
+@probe("world_spawn_particle")
+async def world_spawn_particle(event: Event, data: Dict[str, Any]) -> Any:
+    """Test particles."""
+    w = await server.world("world")
+    p = event.player
+    try:
+        loc = p.location
+        await w.spawn_particle(Particle.FLAME, loc, 10)
+        await w.particle_line(loc, Location(w, loc.x + 5, loc.y, loc.z), Particle.HEART, density=2)
+        await w.particle_sphere(loc, 2, Particle.VILLAGER_HAPPY, density=2)
+        await w.particle_cube(loc, Location(w, loc.x + 1, loc.y + 1, loc.z + 1), Particle.CRIT, density=2)
+        result = {"particles_ok": True}
+    except Exception as exc:
+        result["error"] = str(exc)
+    return result
+
+
+@probe("world_strike_lightning")
+async def world_strike_lightning(event: Event, data: Dict[str, Any]) -> Any:
+    """Test lightning."""
+    w = await server.world("world")
+    p = event.player
+    try:
+        loc = p.location
+        await w.strike_lightning_effect(loc)
+        result = {"lightning_ok": True}
+    except Exception as exc:
+        result["error"] = str(exc)
+    return result
+
+
+@probe("world_explosion")
+async def world_explosion(event: Event, data: Dict[str, Any]) -> Any:
+    """Test explosion."""
+    w = await server.world("world")
+    p = event.player
+    try:
+        loc = Location(w, p.location.x + 10, p.location.y, p.location.z + 10)
+        await w.create_explosion(loc, 0, False)
+        result = {"explosion_ok": True}
+    except Exception as exc:
+        result["error"] = str(exc)
+    return result
+
+
+@probe("world_nearby_entities")
+async def world_nearby_entities(event: Event, data: Dict[str, Any]) -> Any:
+    """Test entity queries."""
+    w = await server.world("world")
+    p = event.player
+    try:
+        nearby = await w.get_nearby_entities(p.location, 16, 16, 16)
+        result = {"nearby_count": len(as_list(nearby))}
+    except Exception as exc:
+        result["error"] = str(exc)
+    return result
+
+
+@probe("world_ray_trace")
+async def world_ray_trace(event: Event, data: Dict[str, Any]) -> Any:
+    """Test ray trace."""
+    w = await server.world("world")
+    p = event.player
+    try:
+        result_rt = await w.ray_trace(p.location, p.location.direction, max_distance=10)
+        result = {"has_raytrace": result_rt is not None}
+    except Exception as exc:
+        result["error"] = str(exc)
+    return result
+
+
+@probe("world_time_constants")
+async def world_time_constants(event: Event, data: Dict[str, Any]) -> Any:
+    """Test WorldTime constants."""
+    try:
+        wt = WorldTime.NOON
+        result = {"noon_ticks": wt.ticks}
+    except Exception as exc:
+        result["error"] = str(exc)
+    return result
+
+
+@probe("world_block_snapshot")
+async def world_block_snapshot(event: Event, data: Dict[str, Any]) -> Any:
+    """Test BlockSnapshot."""
+    w = await server.world("world")
+    p = event.player
+    try:
+        x, z = int(p.location.x) + 20, int(p.location.z) + 20
+        await w.set_block(Location(w, x, -60, z), Material.COBBLESTONE)
+        snap = BlockSnapshot.capture(w, x, -60, z, x, -60, z)
+        result = {"snapshot_len": len(snap)}
+        await w.set_block(Location(w, x, -60, z), Material.STONE)
+        await snap.restore()
+        result["restored"] = True
+    except Exception as exc:
+        result["error"] = str(exc)
+    return result
+
