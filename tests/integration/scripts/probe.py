@@ -362,3 +362,267 @@ async def server_reflect_clazz(event: Event, data: Dict[str, Any]) -> Any:
         result["error"] = str(exc)
     return result
 
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Player API tests
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+@probe("player_props")
+async def player_props(event: Event, data: Dict[str, Any]) -> Any:
+    """Test player attributes."""
+    p = event.player
+    result = {
+        "name": getattr(p, "name", None),
+        "uuid": str(getattr(p, "uuid", None)),
+        "health": getattr(p, "health", None),
+        "max_health": getattr(p, "max_health", None),
+        "food_level": getattr(p, "food_level", None),
+        "game_mode": str(getattr(p, "game_mode", None)),
+        "level": getattr(p, "level", None),
+        "exp": getattr(p, "exp", None),
+        "is_op": getattr(p, "is_op", None),
+        "is_flying": getattr(p, "is_flying", None),
+        "ping": getattr(p, "ping", None),
+        "locale": getattr(p, "locale", None),
+        "absorption": getattr(p, "absorption", None),
+        "saturation": getattr(p, "saturation", None),
+    }
+    # location
+    try:
+        loc = p.location
+        result["loc_x"] = getattr(loc, "x", None)
+        result["loc_y"] = getattr(loc, "y", None)
+        result["loc_z"] = getattr(loc, "z", None)
+    except Exception as exc:
+        result["loc_error"] = str(exc)
+    return result
+
+
+@probe("player_messages")
+async def player_messages(event: Event, data: Dict[str, Any]) -> Any:
+    """Test player messaging."""
+    p = event.player
+    try:
+        await p.send_message("PJB test message")
+        await p.chat("PJB test chat")
+        await p.send_action_bar("PJB action bar")
+        result = {"messages_ok": True}
+    except Exception as exc:
+        result["error"] = str(exc)
+    return result
+
+
+@probe("player_teleport")
+async def player_teleport(event: Event, data: Dict[str, Any]) -> Any:
+    """Test player teleport."""
+    p = event.player
+    try:
+        start = p.location
+        sx, sy, sz = getattr(start, "x", 0), getattr(start, "y", -60), getattr(start, "z", 0)
+        await p.teleport(Location(start.world, sx + 5, sy + 1, sz + 5))
+        await server.after(10)
+        end = p.location
+        result = {"teleported": True, "ex": getattr(end, "x", None)}
+    except Exception as exc:
+        result["error"] = str(exc)
+    return result
+
+
+@probe("player_experience")
+async def player_experience(event: Event, data: Dict[str, Any]) -> Any:
+    """Test exp/level."""
+    p = event.player
+    try:
+        await p.give_exp(10)
+        await p.set_exp(0.5)
+        await p.set_level(5)
+        result = {"level": p.level, "exp": p.exp}
+    except Exception as exc:
+        result["error"] = str(exc)
+    return result
+
+
+@probe("player_health_food")
+async def player_health_food(event: Event, data: Dict[str, Any]) -> Any:
+    """Test health and food."""
+    p = event.player
+    try:
+        await p.set_health(20)
+        await p.set_food_level(20)
+        result = {"health": p.health, "food_level": p.food_level}
+    except Exception as exc:
+        result["error"] = str(exc)
+    return result
+
+
+@probe("player_gamemode_op_fly")
+async def player_gamemode_op_fly(event: Event, data: Dict[str, Any]) -> Any:
+    """Test gamemode, op, flying."""
+    p = event.player
+    try:
+        await p.set_game_mode(GameMode.SURVIVAL)
+        await p.set_game_mode(GameMode.CREATIVE)
+        await p.set_op(True)
+        await p.set_flying(True)
+        result = {"gamemode": str(p.game_mode), "is_op": p.is_op, "is_flying": p.is_flying}
+    except Exception as exc:
+        result["error"] = str(exc)
+    return result
+
+
+@probe("player_sneak_sprint_speed")
+async def player_sneak_sprint_speed(event: Event, data: Dict[str, Any]) -> Any:
+    """Test sneaking/sprinting/speeds."""
+    p = event.player
+    try:
+        await p.set_sneaking(False)
+        await p.set_sprinting(False)
+        await p.set_walk_speed(0.2)
+        await p.set_fly_speed(0.1)
+        result = {"walk_speed": p.walk_speed, "fly_speed": p.fly_speed}
+    except Exception as exc:
+        result["error"] = str(exc)
+    return result
+
+
+@probe("player_give_item")
+async def player_give_item(event: Event, data: Dict[str, Any]) -> Any:
+    """Test giving items."""
+    p = event.player
+    try:
+        item = ItemBuilder(Material.DIAMOND).amount(5).name("§bTest Diamond").build()
+        await p.give(item)
+        result = {"gave": True}
+    except Exception as exc:
+        result["error"] = str(exc)
+    return result
+
+
+@probe("player_inventory")
+async def player_inventory(event: Event, data: Dict[str, Any]) -> Any:
+    """Test player inventory access."""
+    p = event.player
+    try:
+        inv = p.inventory
+        result = {"inv_size": getattr(inv, "size", None)}
+        if inv is not None:
+            try:
+                item = await inv.get_item(0)
+                result["slot0"] = str(item) if item is not None else None
+            except Exception as exc:
+                result["slot_error"] = str(exc)
+    except Exception as exc:
+        result["error"] = str(exc)
+    return result
+
+
+@probe("player_effects")
+async def player_effects(event: Event, data: Dict[str, Any]) -> Any:
+    """Test potion effects."""
+    p = event.player
+    try:
+        await p.add_effect(EffectType.SPEED, duration=200, amplifier=1)
+        effects = as_list(getattr(p, "effects", []))
+        result = {"effects_count": len(effects)}
+        try:
+            await p.remove_effect(EffectType.SPEED)
+            result["removed"] = True
+        except Exception as exc:
+            result["remove_error"] = str(exc)
+    except Exception as exc:
+        result["error"] = str(exc)
+    return result
+
+
+@probe("player_cooldown")
+async def player_cooldown(event: Event, data: Dict[str, Any]) -> Any:
+    """Test cooldowns."""
+    p = event.player
+    try:
+        await p.set_cooldown(Material.ENDER_PEARL, 100)
+        cd = await p.get_cooldown(Material.ENDER_PEARL)
+        result = {"cooldown": cd, "has_cooldown": bool(await p.has_cooldown(Material.ENDER_PEARL))}
+    except Exception as exc:
+        result["error"] = str(exc)
+    return result
+
+
+@probe("player_title_tablist")
+async def player_title_tablist(event: Event, data: Dict[str, Any]) -> Any:
+    """Test titles and tab list."""
+    p = event.player
+    try:
+        await p.send_title("Hello", "World", fade_in=10, stay=20, fade_out=10)
+        await p.set_tab_list_header_footer("§aHeader", "§bFooter")
+        await p.set_tab_list_name("§eTestName")
+        result = {"title_ok": True}
+    except Exception as exc:
+        result["error"] = str(exc)
+    return result
+
+
+@probe("player_permissions")
+async def player_permissions(event: Event, data: Dict[str, Any]) -> Any:
+    """Test permissions/groups."""
+    p = event.player
+    try:
+        has = await p.has_permission("pjb.test")
+        groups = as_list(await p.permission_groups)
+        primary = await p.primary_group
+        result = {"has_perm": has, "groups": groups, "primary_group": primary}
+    except Exception as exc:
+        result["error"] = str(exc)
+    return result
+
+
+@probe("player_pdc")
+async def player_pdc(event: Event, data: Dict[str, Any]) -> Any:
+    """Test persistent data container."""
+    p = event.player
+    try:
+        await p.set_persistent_data("testkey", "testvalue")
+        val = await p.get_persistent_data("testkey")
+        has = await p.has_persistent_data("testkey")
+        await p.remove_persistent_data("testkey")
+        result = {"set_get": val == "testvalue", "has": has}
+    except Exception as exc:
+        result["error"] = str(exc)
+    return result
+
+
+@probe("player_scoreboard")
+async def player_scoreboard(event: Event, data: Dict[str, Any]) -> Any:
+    """Test player scoreboard."""
+    p = event.player
+    try:
+        sb = getattr(p, "scoreboard", None)
+        result = {"has_scoreboard": sb is not None}
+    except Exception as exc:
+        result["error"] = str(exc)
+    return result
+
+
+@probe("player_freeze_vanish")
+async def player_freeze_vanish(event: Event, data: Dict[str, Any]) -> Any:
+    """Test freeze and vanish."""
+    p = event.player
+    try:
+        await p.freeze()
+        frozen = await p.is_frozen()
+        await p.unfreeze()
+        unfrozen = await p.is_frozen()
+        result = {"frozen": frozen, "unfrozen": unfrozen}
+    except Exception as exc:
+        result["error"] = str(exc)
+    return result
+
+
+@probe("player_kick")
+async def player_kick(event: Event, data: Dict[str, Any]) -> Any:
+    """Test kick method exists."""
+    p = event.player
+    result = {"kick_method": callable(getattr(p, "kick", None))}
+    return result
+
